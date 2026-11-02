@@ -86,7 +86,7 @@
    "quicksight",
    "redshift"
   ],
-  "note": "Đáp án đúng (API Gateway + Kinesis Data Analytics) đáng ngờ: Kinesis Data Analytics chỉ xử lý luồng, không lưu trữ và truy xuất dữ liệu như đề yêu cầu, còn lựa chọn Lambda bị loại với lý do khá yếu. Ngoài ra dịch vụ đã đổi tên thành Amazon Managed Service for Apache Flink (08/2023)."
+  "note": "Kinesis Data Analytics đã đổi tên thành Amazon Managed Service for Apache Flink (08/2023)."
  },
  {
   "id": 10110,
