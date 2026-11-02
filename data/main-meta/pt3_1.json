@@ -111,7 +111,8 @@
       "dynamodb",
       "ebs",
       "ec2"
-    ]
+    ],
+    "note": "Từ 11/2022 Amazon EFS có thêm chế độ Elastic Throughput, tự co giãn thông lượng theo tải và chỉ tính tiền theo lượng dữ liệu đọc ghi; AWS khuyên dùng chế độ này cho tải khó đoán. Provisioned Throughput vẫn phù hợp khi tải cao và ổn định."
   },
   {
     "id": 10512,
@@ -205,7 +206,8 @@
     "services": [
       "cloudwatch",
       "ec2"
-    ]
+    ],
+    "note": "Nhiều loại EC2 instance hiện có sẵn simplified automatic recovery (bật mặc định), tự khôi phục instance khi lỗi phần cứng mà không cần tạo CloudWatch alarm; alarm với hành động recover vẫn dùng được."
   },
   {
     "id": 10521,

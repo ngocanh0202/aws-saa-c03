@@ -1,0 +1,650 @@
+[
+  {
+    "id": 10501,
+    "stemVi": "Một công ty dịch vụ tài chính đang chuyển các hàng đợi tin nhắn từ hệ thống message-oriented middleware tự quản lý sang Amazon Simple Queue Service (Amazon SQS). Nhóm phát triển của công ty muốn giảm tối đa chi phí dùng Amazon SQS.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng lựa chọn nào cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng SQS visibility timeout để nhận tin nhắn từ các hàng đợi Amazon SQS",
+        "reason": "Visibility timeout chỉ ẩn tin nhắn đang được xử lý khỏi consumer khác; nó không thay đổi cách gọi ReceiveMessage nên không giảm số request rỗng hay chi phí."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng SQS message timer để nhận tin nhắn từ các hàng đợi Amazon SQS",
+        "reason": "Message timer chỉ trì hoãn thời điểm một tin nhắn trở nên hiển thị trong hàng đợi, không phải cơ chế nhận tin nhắn và không giảm số lần gọi API."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng SQS long polling để nhận tin nhắn từ các hàng đợi Amazon SQS",
+        "reason": "Long polling chờ (tối đa 20 giây) đến khi có tin nhắn mới trả kết quả, nên giảm mạnh số request rỗng — mà SQS tính tiền theo số request — từ đó giảm chi phí."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng SQS short polling để nhận tin nhắn từ các hàng đợi Amazon SQS",
+        "reason": "Short polling là chế độ mặc định, trả kết quả ngay cả khi không có tin nhắn, nên tạo nhiều request rỗng và tốn tiền hơn long polling."
+      }
+    ],
+    "explanationVi": "SQS tính phí theo số request, kể cả request nhận về rỗng. Long polling giữ kết nối chờ tới khi có tin nhắn (hoặc hết thời gian chờ), nên giảm số lần nhận rỗng và giảm chi phí. Visibility timeout và message timer là các thiết lập khác của SQS, không liên quan đến cách nhận tin nhắn; short polling thì ngược lại, tốn request hơn.",
+    "keyHint": "\"minimize the costs of using Amazon SQS\" → SQS long polling (giảm request rỗng)."
+  },
+  {
+    "id": 10502,
+    "stemVi": "Một chuyên gia tư vấn IT đang giúp một doanh nghiệp nhỏ làm mới hạ tầng công nghệ trên AWS Cloud. Doanh nghiệp có hai tài khoản AWS và mọi tài nguyên đều nằm ở Region us-west-2. Chuyên gia muốn chạy một Amazon EC2 instance trong mỗi tài khoản sao cho hai instance nằm cùng một Availability Zone (AZ) của Region us-west-2. Dù đã chọn cùng default subnet (us-west-2a) khi chạy instance ở mỗi tài khoản, chuyên gia nhận thấy hai Availability Zone vẫn khác nhau.",
+    "promptVi": "Là solutions architect, bạn đề xuất cách nào để giải quyết vấn đề này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Liên hệ AWS Support để tạo các Amazon EC2 instance trong cùng Availability Zone (AZ) ở hai tài khoản AWS",
+        "reason": "Không cần AWS Support: người dùng tự xác định được AZ vật lý qua AZ ID rồi chọn subnet tương ứng."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng default subnet để xác định duy nhất các Availability Zone giữa hai tài khoản AWS",
+        "reason": "Default subnet gắn với tên AZ (như us-west-2a) của từng tài khoản, mà tên này được ánh xạ khác nhau giữa các tài khoản — chính là nguyên nhân của sự cố."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Availability Zone (AZ) ID để xác định duy nhất các Availability Zone giữa hai tài khoản AWS",
+        "reason": "AZ ID (ví dụ usw2-az2) là định danh nhất quán của một AZ vật lý ở mọi tài khoản, nên dùng nó để chọn subnet sẽ đặt hai instance vào đúng cùng một AZ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng default VPC để xác định duy nhất các Availability Zone giữa hai tài khoản AWS",
+        "reason": "Default VPC là riêng của từng tài khoản và trải trên mọi AZ trong Region, nó không cho biết AZ vật lý nào trùng nhau giữa các tài khoản."
+      }
+    ],
+    "explanationVi": "AWS ánh xạ tên AZ (us-west-2a, us-west-2b…) sang AZ vật lý khác nhau cho mỗi tài khoản để phân tán tải, nên cùng tên chưa chắc cùng nơi. Muốn phối hợp AZ giữa các tài khoản phải dùng AZ ID — định danh duy nhất, nhất quán. Default subnet và default VPC đều dựa trên tên AZ của từng tài khoản nên không giải quyết được.",
+    "keyHint": "\"same Availability Zone\" giữa \"two AWS accounts\" → dùng AZ ID, không dùng tên AZ."
+  },
+  {
+    "id": 10503,
+    "stemVi": "Một startup về media streaming đang xây bộ API backend cho các ứng dụng di động bên ngoài sử dụng. Để chống lạm dụng API, bảo vệ tài nguyên phía sau và bảo đảm sử dụng công bằng giữa các client, kiến trúc phải áp dụng rate limiting và throttling theo từng client. Nhóm cũng muốn định nghĩa hạn mức sử dụng (usage quota) và áp các giới hạn khác nhau cho từng bên dùng API.",
+    "promptVi": "Nhóm nên triển khai giải pháp nào để áp dụng rate limiting và usage quota ở lớp API?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Gateway Load Balancer để kiểm tra và kiểm soát lưu lượng HTTP đến, throttle request bằng cách tích hợp với các firewall appliance của bên thứ ba",
+        "reason": "Gateway Load Balancer chuyển lưu lượng ở tầng mạng qua các appliance kiểm tra gói tin; nó không có khái niệm client/API key nên không đặt được giới hạn và hạn mức riêng cho từng client."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon API Gateway và cấu hình usage plan với API key để áp dụng rate limit và quota cho từng client",
+        "reason": "Usage plan gắn với API key cho phép đặt rate, burst và quota riêng cho từng client ngay ở API Gateway, bảo vệ backend mà không cần tự viết logic — đáp ứng đủ các yêu cầu."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Network Load Balancer (NLB) để terminate TLS và đặt logic rate limiting trong các EC2 instance ở backend",
+        "reason": "NLB không có throttling theo client; đẩy logic rate limiting xuống EC2 nghĩa là tự viết, tự vận hành, và request vẫn chạm tới backend chứ không bị chặn ở lớp API."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Application Load Balancer (ALB) với path-based routing và cấu hình listener rule để giới hạn request",
+        "reason": "Listener rule của ALB chỉ định tuyến theo path/header, không có tính năng giới hạn số request hay quota theo từng client."
+      }
+    ],
+    "explanationVi": "Yêu cầu then chốt là rate limiting, throttling và quota theo từng client của API. API Gateway hỗ trợ sẵn điều này qua usage plan và API key. Các load balancer (GWLB, NLB, ALB) chỉ phân phối lưu lượng, không có khái niệm usage quota theo client; bẫy là nghĩ listener rule của ALB có thể đếm request.",
+    "keyHint": "\"rate limiting and throttling on a per-client basis\" + \"usage quotas\" → API Gateway usage plan + API key."
+  },
+  {
+    "id": 10504,
+    "stemVi": "Một công ty dịch vụ tài chính muốn đưa các cluster Windows file server ra khỏi trung tâm dữ liệu của mình. Họ tìm các dịch vụ lưu trữ file trên cloud tương thích đầy đủ với Windows.",
+    "promptVi": "Bạn hãy chỉ ra các dịch vụ lưu trữ AWS cung cấp lưu trữ file có độ tin cậy cao, truy cập được qua giao thức chuẩn Server Message Block (SMB) tương thích với hệ thống Windows? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon Simple Storage Service (Amazon S3)",
+        "reason": "S3 là object storage truy cập qua API HTTPS, bản thân nó không cung cấp file share SMB."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon FSx for Windows File Server",
+        "reason": "FSx for Windows File Server là file system Windows được quản lý hoàn toàn, xây trên Windows Server, truy cập qua SMB và tích hợp Active Directory — đúng yêu cầu tương thích Windows."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình File Gateway của AWS Storage Gateway",
+        "reason": "File Gateway (S3 File Gateway) cho phép lưu và đọc đối tượng S3 qua giao thức file NFS và SMB, nên các máy Windows truy cập được qua SMB với độ bền dữ liệu của S3."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon Elastic File System (Amazon EFS)",
+        "reason": "EFS chỉ hỗ trợ giao thức NFS cho máy Linux, không hỗ trợ SMB và không được hỗ trợ trên Windows."
+      },
+      {
+        "key": "E",
+        "textVi": "Amazon Elastic Block Store (Amazon EBS)",
+        "reason": "EBS là block storage gắn vào một EC2 instance, không phải dịch vụ file share truy cập qua SMB."
+      }
+    ],
+    "explanationVi": "Đề cần lưu trữ file truy cập qua SMB cho Windows. Hai dịch vụ AWS đáp ứng là FSx for Windows File Server (file system Windows thuần) và File Gateway của Storage Gateway (cung cấp share SMB/NFS, dữ liệu nằm trên S3). Bẫy thường gặp là EFS: nó là file system dùng chung nhưng chỉ hỗ trợ NFS.",
+    "keyHint": "\"Server Message Block (SMB)\" + \"Windows compatibility\" → FSx for Windows File Server và S3 File Gateway."
+  },
+  {
+    "id": 10505,
+    "stemVi": "Một công ty game online hàng đầu đang chuyển ứng dụng chủ lực lên AWS Cloud để phục vụ game cho người dùng khắp thế giới. Công ty muốn dùng Network Load Balancer để xử lý hàng triệu request mỗi giây. Nhóm kỹ thuật đã tạo nhiều instance trong một public subnet và khai báo instance ID của chúng làm target cho NLB.",
+    "promptVi": "Là solutions architect, bạn hãy giúp nhóm hiểu đúng cơ chế định tuyến tới các target instance này.",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lưu lượng được định tuyến tới instance bằng instance ID ghi trong primary network interface của instance",
+        "reason": "Instance ID chỉ là cách khai báo target, không phải địa chỉ mạng; gói tin phải được gửi tới một địa chỉ IP."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu lượng được định tuyến tới instance bằng primary Elastic IP address ghi trong primary network interface của instance",
+        "reason": "Elastic IP là địa chỉ public để giao tiếp với internet; NLB gửi lưu lượng trong VPC tới địa chỉ private, không dùng Elastic IP."
+      },
+      {
+        "key": "C",
+        "textVi": "Lưu lượng được định tuyến tới instance bằng primary private IP address ghi trong primary network interface của instance",
+        "reason": "Theo tài liệu AWS, khi target được khai báo bằng instance ID, NLB định tuyến lưu lượng tới primary private IP address của primary network interface của instance."
+      },
+      {
+        "key": "D",
+        "textVi": "Lưu lượng được định tuyến tới instance bằng primary public IP address ghi trong primary network interface của instance",
+        "reason": "Dù instance nằm trong public subnet, NLB vẫn định tuyến nội bộ VPC qua private IP, không qua public IP."
+      }
+    ],
+    "explanationVi": "Khi đăng ký target bằng instance ID, NLB gửi lưu lượng tới primary private IP của primary network interface (và có thể giữ nguyên IP nguồn của client). Nếu đăng ký target theo IP thì có thể chọn bất kỳ private IP nào của instance. Bẫy là việc instance nằm ở public subnet khiến nhiều người nghĩ lưu lượng đi qua public IP hoặc Elastic IP.",
+    "keyHint": "\"specified these instance IDs as the targets for the NLB\" → định tuyến tới primary private IP của primary network interface."
+  },
+  {
+    "id": 10506,
+    "stemVi": "Một công ty dịch vụ tài chính vừa chuyển từ hạ tầng on-premises lên AWS Cloud. Nhóm DevOps muốn có giải pháp cho phép rà soát cấu hình của mọi tài nguyên và bảo đảm chúng đáp ứng các quy định tuân thủ. Giải pháp cũng phải cho phép xem lịch sử cấu hình tài nguyên trên toàn bộ stack ứng dụng.",
+    "promptVi": "Là solutions architect, bạn khuyên nhóm dùng giải pháp nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon CloudWatch để rà soát cấu hình tài nguyên theo quy định tuân thủ và lưu lịch sử thay đổi cấu hình tài nguyên",
+        "reason": "CloudWatch thu thập metric, log và alarm về hiệu năng; nó không ghi lại cấu hình tài nguyên hay đánh giá tuân thủ cấu hình."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Systems Manager để rà soát cấu hình tài nguyên theo quy định tuân thủ và lưu lịch sử thay đổi cấu hình tài nguyên",
+        "reason": "Systems Manager quản lý vận hành (patch, chạy lệnh, inventory phần mềm trên instance), không lưu lịch sử cấu hình của mọi loại tài nguyên AWS và đánh giá chúng theo rule tuân thủ."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS CloudTrail để rà soát cấu hình tài nguyên theo quy định tuân thủ và lưu lịch sử thay đổi cấu hình tài nguyên",
+        "reason": "CloudTrail ghi lại các lời gọi API (ai làm gì, khi nào), không ghi trạng thái cấu hình của tài nguyên theo thời gian và không đánh giá tuân thủ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Config để rà soát cấu hình tài nguyên theo quy định tuân thủ và lưu lịch sử thay đổi cấu hình tài nguyên",
+        "reason": "AWS Config ghi lại cấu hình và quan hệ giữa các tài nguyên theo thời gian, đồng thời dùng Config rule để đánh giá tuân thủ — đáp ứng cả hai yêu cầu."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu là đánh giá tuân thủ cấu hình và xem lịch sử cấu hình tài nguyên — đó chính là AWS Config (\"tài nguyên trông như thế nào tại thời điểm X?\"). Bẫy hay gặp là CloudTrail: nó trả lời \"ai đã gọi API nào\", chứ không lưu trạng thái cấu hình hay chấm tuân thủ.",
+    "keyHint": "\"meet compliance guidelines\" + \"resource configuration history\" → AWS Config."
+  },
+  {
+    "id": 10507,
+    "stemVi": "Một công ty thương mại điện tử dùng Elastic Load Balancing (ELB) cho nhóm Amazon EC2 instance trải trên hai Availability Zone (AZ): một instance làm target ở Availability Zone A và bốn instance làm target ở Availability Zone B. Công ty đang đo hiệu năng máy chủ khi bật cross-zone load balancing so với khi tắt.",
+    "promptVi": "Là solutions architect, bạn xác định kết quả phân phối lưu lượng nào sau đây là đúng?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Khi bật cross-zone load balancing, một instance ở Availability Zone A nhận 20% lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 20%. Khi tắt cross-zone load balancing, instance ở Availability Zone A không nhận lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 25%",
+        "reason": "Phần khi bật đúng, nhưng khi tắt thì node của load balancer ở AZ A vẫn nhận 50% lưu lượng và chuyển hết cho instance duy nhất trong AZ A, nên instance này không thể nhận 0%."
+      },
+      {
+        "key": "B",
+        "textVi": "Khi bật cross-zone load balancing, một instance ở Availability Zone A nhận 20% lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 20%. Khi tắt cross-zone load balancing, instance ở Availability Zone A nhận 50% lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 12,5%",
+        "reason": "Khi bật, mọi node chia đều cho cả 5 target nên mỗi target 20%; khi tắt, mỗi node (mỗi AZ nhận 50%) chỉ chia cho target trong AZ của nó: 50% cho một instance ở AZ A và 50%/4 = 12,5% cho mỗi instance ở AZ B."
+      },
+      {
+        "key": "C",
+        "textVi": "Khi bật cross-zone load balancing, một instance ở Availability Zone A không nhận lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 25%. Khi tắt cross-zone load balancing, instance ở Availability Zone A nhận 50% lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 12,5%",
+        "reason": "Khi bật cross-zone, mọi target healthy ở mọi AZ đều nhận lưu lượng như nhau, nên instance ở AZ A nhận 20% chứ không phải 0%."
+      },
+      {
+        "key": "D",
+        "textVi": "Khi bật cross-zone load balancing, một instance ở Availability Zone A nhận 50% lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 12,5%. Khi tắt cross-zone load balancing, một instance ở Availability Zone A nhận 20% lưu lượng và bốn instance ở Availability Zone B mỗi instance nhận 20%",
+        "reason": "Lựa chọn này đảo ngược hai trường hợp: chia đều 20% là kết quả khi bật cross-zone, còn 50%/12,5% là kết quả khi tắt."
+      }
+    ],
+    "explanationVi": "Client phân lưu lượng đều cho các node của load balancer, mỗi AZ một node nên mỗi AZ nhận 50%. Bật cross-zone: mỗi node chia cho mọi target ở mọi AZ, 5 target nên mỗi target 20%. Tắt cross-zone: mỗi node chỉ chia trong AZ của mình, nên instance duy nhất ở AZ A nhận 50% còn mỗi instance ở AZ B nhận 12,5%. Bẫy là nhầm hai trường hợp với nhau.",
+    "keyHint": "\"cross-zone load balancing is enabled\" vs \"disabled\" → bật: chia đều mọi target; tắt: mỗi AZ 50% chia trong AZ đó."
+  },
+  {
+    "id": 10508,
+    "stemVi": "Backend cơ sở dữ liệu của website một công ty bán lẻ chạy trên Amazon RDS for MySQL với một primary instance và ba read replica để mở rộng khả năng đọc. Công ty quy định read replica không được trễ quá 1 giây so với primary instance để có trải nghiệm người dùng tốt nhất. Trong các đợt lưu lượng tăng đột biến, read replica ngày càng bị trễ nhiều hơn, khiến kết quả tìm kiếm không nhất quán và trải nghiệm người dùng kém.\n\nBạn được thuê với vai trò AWS Certified Solutions Architect - Associate để giảm độ trễ sao chép (replication lag) nhiều nhất có thể, với ít thay đổi mã ứng dụng nhất và ít công quản lý tài nguyên bên dưới.",
+    "promptVi": "Bạn sẽ khuyên dùng phương án nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dựng một Amazon ElastiCache for Redis cluster phía trước cơ sở dữ liệu MySQL. Cập nhật website để kiểm tra cache trước khi truy vấn read replica",
+        "reason": "Cache giảm tải đọc nhưng không giảm replication lag; lại phải sửa mã website để thêm logic cache, trái với yêu cầu ít thay đổi mã."
+      },
+      {
+        "key": "B",
+        "textVi": "Đặt cơ sở dữ liệu MySQL primary trên một Amazon EC2 instance tối ưu bộ nhớ. Tạo thêm các Amazon EC2 instance tối ưu tính toán để chạy read replica",
+        "reason": "Tự chạy MySQL trên EC2 làm tăng công quản lý (cài đặt, sao lưu, sao chép) và vẫn dùng cơ chế sao chép binlog của MySQL nên lag không được giải quyết tận gốc."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển cơ sở dữ liệu từ Amazon RDS MySQL sang Amazon DynamoDB. Cấp nhiều read capacity unit (RCU) để đáp ứng thông lượng cần thiết và bật Auto Scaling",
+        "reason": "Chuyển từ quan hệ sang NoSQL đòi hỏi viết lại mô hình dữ liệu và mã ứng dụng, trái với yêu cầu ít thay đổi mã."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển cơ sở dữ liệu từ Amazon RDS MySQL sang Amazon Aurora MySQL. Thay các MySQL read replica bằng Aurora Replica. Cấu hình Aurora Auto Scaling",
+        "reason": "Aurora Replica dùng chung volume lưu trữ với primary nên lag thường dưới 100 ms; Aurora tương thích MySQL nên gần như không phải sửa mã, và Aurora Auto Scaling tự thêm replica khi tải tăng."
+      }
+    ],
+    "explanationVi": "Read replica của RDS MySQL sao chép bất đồng bộ qua binlog nên dễ trễ khi tải cao. Aurora tách lưu trữ khỏi compute: Aurora Replica đọc cùng một volume chung với primary, nên lag thường chỉ vài chục mili giây. Aurora MySQL tương thích với MySQL nên ít đổi mã, là dịch vụ được quản lý nên ít công vận hành. Bẫy là ElastiCache: nó giảm tải đọc nhưng không giảm lag và cần sửa mã.",
+    "keyHint": "\"replication lag\" + \"minimal changes to the application code\" → Aurora MySQL với Aurora Replica + Aurora Auto Scaling."
+  },
+  {
+    "id": 10509,
+    "stemVi": "Một công ty game dùng Application Load Balancer phía trước các Amazon EC2 instance cho nhiều service và microservice. Kiến trúc nay trở nên phức tạp với quá nhiều Application Load Balancer ở nhiều AWS Region. Việc cập nhật bảo mật, cấu hình firewall và logic định tuyến lưu lượng trở nên rắc rối vì có quá nhiều địa chỉ IP và cấu hình.\n\nCông ty tìm một cách dễ và hiệu quả để giảm số địa chỉ IP được firewall cho phép và quản lý toàn bộ hạ tầng mạng dễ dàng.",
+    "promptVi": "Lựa chọn nào sau đây là giải pháp phù hợp cho yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Elastic IP cho từng Application Load Balancer ở mỗi Region",
+        "reason": "ALB không hỗ trợ gắn Elastic IP; và kể cả có thì vẫn còn mỗi ALB một IP, không giảm số IP phải quản lý."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo AWS Global Accelerator và tạo endpoint cho tất cả Region. Đăng ký Application Load Balancer của mỗi Region vào endpoint tương ứng",
+        "reason": "Global Accelerator cung cấp hai địa chỉ IP anycast tĩnh cho toàn bộ ứng dụng, đặt các ALB ở nhiều Region phía sau làm endpoint; firewall chỉ cần cho phép hai IP này."
+      },
+      {
+        "key": "C",
+        "textVi": "Gán một Elastic IP cho Auto Scaling Group (ASG), và chạy nhiều Amazon EC2 instance phía sau Auto Scaling Group ở mỗi Region",
+        "reason": "Không thể gán Elastic IP cho cả một Auto Scaling group; Elastic IP gắn với từng instance hoặc network interface, nên cách này không khả thi."
+      },
+      {
+        "key": "D",
+        "textVi": "Dựng một Network Load Balancer có Elastic IP. Đăng ký private IP của tất cả Application Load Balancer làm target của Network Load Balancer này",
+        "reason": "NLB chỉ hoạt động trong một Region; target là ALB phải nằm cùng Region (và IP của ALB có thể thay đổi), nên không gom được ALB ở nhiều Region."
+      }
+    ],
+    "explanationVi": "Mục tiêu là giảm số IP mà firewall phải cho phép trong khi ALB trải ở nhiều Region. Global Accelerator cung cấp hai IP anycast tĩnh toàn cầu và định tuyến tới ALB ở từng Region qua mạng AWS. Bẫy là Elastic IP: ALB và Auto Scaling group không gắn được Elastic IP, còn NLB chỉ giới hạn trong một Region.",
+    "keyHint": "\"too many Application Load Balancers in multiple AWS Regions\" + \"bring down the number of IP addresses\" → AWS Global Accelerator (2 IP tĩnh)."
+  },
+  {
+    "id": 10510,
+    "stemVi": "Một doanh nghiệp nhỏ đang chạy hệ thống IT trên hạ tầng on-premises nhưng nay định chuyển lên AWS Cloud để vận hành hiệu quả hơn.",
+    "promptVi": "Là Solutions Architect, bạn đề xuất giải pháp serverless tiết kiệm chi phí (cost-effective) nào cho ứng dụng chủ lực có cả nội dung tĩnh lẫn động?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lưu cả nội dung tĩnh và động của ứng dụng web trên Amazon S3 và dùng Amazon CloudFront để phân phối tới nhiều Region/quốc gia",
+        "reason": "S3 chỉ phục vụ nội dung tĩnh, không chạy được mã phía server để sinh nội dung động."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu nội dung tĩnh trên Amazon S3 và dùng Amazon EC2 với Amazon RDS để sinh nội dung động. Có thể cấu hình Amazon CloudFront phía trước Amazon EC2 instance để phân phối toàn cầu dễ dàng",
+        "reason": "EC2 và RDS là máy chủ cần quản lý, không phải serverless, và tốn tiền kể cả khi không có tải."
+      },
+      {
+        "key": "C",
+        "textVi": "Lưu nội dung tĩnh trên Amazon S3 và dùng AWS Lambda với Amazon DynamoDB cho ứng dụng web serverless xử lý nội dung động. Amazon CloudFront đặt phía trước AWS Lambda để phân phối tới nhiều Region",
+        "reason": "S3 phục vụ nội dung tĩnh, Lambda và DynamoDB xử lý nội dung động theo mô hình serverless trả theo mức dùng, CloudFront giảm độ trễ cho người dùng ở xa — vừa serverless vừa tiết kiệm."
+      },
+      {
+        "key": "D",
+        "textVi": "Lưu cả nội dung tĩnh và động của ứng dụng web trên Amazon EC2 với Amazon RDS làm cơ sở dữ liệu. Cấu hình Amazon CloudFront để phân phối nội dung tới các Region phân tán về địa lý",
+        "reason": "Toàn bộ chạy trên EC2 và RDS nên không serverless, lại phải trả tiền máy chủ cho cả phần nội dung tĩnh vốn rẻ hơn khi đặt trên S3."
+      }
+    ],
+    "explanationVi": "Đề yêu cầu serverless và tiết kiệm chi phí cho cả nội dung tĩnh lẫn động. Bộ S3 (tĩnh) + Lambda + DynamoDB (động) + CloudFront (phân phối) đều là dịch vụ serverless, trả theo mức dùng. Các phương án dùng EC2/RDS không serverless, còn chỉ dùng S3 thì không sinh được nội dung động.",
+    "keyHint": "\"cost-effective serverless solution\" + \"static and dynamic content\" → S3 + Lambda + DynamoDB + CloudFront."
+  },
+  {
+    "id": 10511,
+    "stemVi": "Một nhóm kỹ thuật muốn điều phối nhiều loại task Amazon ECS chạy trên các Amazon EC2 instance thuộc Amazon ECS cluster. Dữ liệu đầu ra và trạng thái của tất cả task đều phải được lưu lại. Mỗi task xuất ra khoảng 20 megabyte dữ liệu và có thể có hàng trăm task chạy cùng lúc. Vì đầu ra cũ được lưu trữ (archive) đi nơi khác, dung lượng lưu trữ dự kiến không vượt quá 1 terabyte.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp tối ưu nào sau đây cho việc đọc ghi tần suất cao?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon EFS với chế độ Provisioned Throughput",
+        "reason": "EFS cho hàng trăm task trên nhiều instance cùng đọc ghi song song; Provisioned Throughput cho thông lượng cao cố định không phụ thuộc dung lượng lưu trữ, hợp với dữ liệu nhỏ (dưới 1 TB) nhưng đọc ghi tần suất cao."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng bảng Amazon DynamoDB mà mọi instance trong ECS cluster đều truy cập được",
+        "reason": "Mỗi item DynamoDB tối đa 400 KB, không hợp để lưu các file đầu ra khoảng 20 MB."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon EFS với chế độ Bursting Throughput",
+        "reason": "Ở chế độ Bursting, thông lượng nền tỷ lệ với dung lượng lưu trữ; với dưới 1 TB dữ liệu, thông lượng nền thấp và credit burst sẽ cạn khi đọc ghi liên tục với tần suất cao."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng một Amazon EBS volume gắn vào các instance của Amazon ECS cluster",
+        "reason": "EBS volume thường chỉ gắn vào một instance (Multi-Attach chỉ có với io1/io2 và cần file system cluster), nên không làm kho dùng chung cho nhiều instance trong cluster."
+      }
+    ],
+    "explanationVi": "Cần một kho dùng chung cho nhiều task trên nhiều instance, nên EFS là lựa chọn tự nhiên. Điểm quyết định là chế độ thông lượng: với Bursting, thông lượng tăng theo dung lượng lưu trữ nên dưới 1 TB thì thông lượng nền thấp; Provisioned Throughput cho phép đặt thông lượng cao độc lập với dung lượng. DynamoDB vướng giới hạn kích thước item, còn EBS không dùng chung được.",
+    "keyHint": "\"high-frequency reading and writing\" + \"not expected to exceed 1 terabyte\" → EFS Provisioned Throughput."
+  },
+  {
+    "id": 10512,
+    "stemVi": "Một công ty dịch vụ tài chính chạy một công cụ phân tích rủi ro dạng container trong trung tâm dữ liệu on-premises bằng Docker. Công cụ cần lưu trữ dữ liệu bền vững (persistent) để giữ kết quả mô phỏng của khách hàng và chạy trên một máy chủ duy nhất với volume được mount cục bộ. Nhóm hạ tầng muốn đưa công cụ lên AWS (replatform) bằng dịch vụ được quản lý hoàn toàn vì họ không muốn quản lý EC2 instance, volume hay máy chủ bên dưới.",
+    "promptVi": "Giải pháp AWS nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon ECS với launch type Fargate. Gắn một Amazon S3 bucket bằng script truy cập dùng chung để mount S3 bucket vào container làm nơi lưu dữ liệu",
+        "reason": "S3 là object storage, không phải volume được Fargate hỗ trợ mount sẵn; tự viết script mount S3 vào container vừa tốn công vừa không có ngữ nghĩa file system như volume cục bộ cũ."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon ECS với launch type Fargate. Tạo một Amazon Elastic File System (Amazon EFS) file system. Mount EFS volume vào container lúc chạy để có lưu trữ bền vững",
+        "reason": "Fargate chạy container mà không phải quản lý EC2, và tích hợp sẵn với EFS qua task definition để cung cấp lưu trữ file bền vững, được quản lý hoàn toàn — đúng mọi yêu cầu."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon EKS với managed node group. Tạo một Amazon EBS volume và mount vào container bằng cách tạo Kubernetes persistent volume và claim. Quản lý vòng đời lưu trữ thủ công",
+        "reason": "Managed node group vẫn là EC2 instance trong tài khoản, và phải tự quản lý EBS volume cùng vòng đời lưu trữ — trái với yêu cầu không quản lý instance và volume."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Lambda với runtime container image. Lưu dữ liệu trạng thái trong bộ nhớ tạm cục bộ (/tmp) và đồng bộ định kỳ với Amazon S3",
+        "reason": "/tmp của Lambda là tạm thời và mất khi môi trường thực thi bị thu hồi, nên dữ liệu có thể mất giữa các lần đồng bộ; Lambda cũng giới hạn 15 phút mỗi lần chạy."
+      }
+    ],
+    "explanationVi": "Yêu cầu: chạy container, cần lưu trữ bền vững, và không quản lý máy chủ hay volume. ECS trên Fargate loại bỏ việc quản lý EC2, còn EFS là file system được quản lý hoàn toàn mà Fargate hỗ trợ mount sẵn. Bẫy là EKS managed node group (vẫn là EC2) và Lambda /tmp (không bền vững).",
+    "keyHint": "\"persistent data storage\" + \"avoid managing EC2 instances, volumes\" → ECS Fargate + EFS."
+  },
+  {
+    "id": 10513,
+    "stemVi": "Một công ty có các application server trong public subnet kết nối tới các database instance trong private subnet. Để bảo trì định kỳ, các database instance cần tải bản vá từ internet.",
+    "promptVi": "Biết công ty chỉ dùng địa chỉ IPv4 và muốn một dịch vụ được quản lý hoàn toàn, bạn đề xuất giải pháp tối ưu nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Egress-only internet gateway cho các tài nguyên trong private subnet của VPC",
+        "reason": "Egress-only internet gateway chỉ dành cho lưu lượng IPv6, không dùng được khi công ty chỉ dùng IPv4."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình một Network Address Translation instance (NAT instance) trong public subnet của VPC",
+        "reason": "NAT instance là EC2 instance tự quản lý (vá lỗi, chịu lỗi, mở rộng), không phải dịch vụ được quản lý hoàn toàn."
+      },
+      {
+        "key": "C",
+        "textVi": "Cho các tài nguyên trong private subnet truy cập Internet Gateway của VPC bằng cách sửa route table",
+        "reason": "Route ra Internet Gateway sẽ biến subnet thành public subnet và buộc database có public IP, làm lộ database ra internet."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình một Network Address Translation gateway (NAT gateway) trong public subnet của VPC",
+        "reason": "NAT gateway là dịch vụ được quản lý hoàn toàn cho IPv4, cho phép instance trong private subnet đi ra internet để tải bản vá mà internet không khởi tạo kết nối ngược vào được."
+      }
+    ],
+    "explanationVi": "Cần cho database trong private subnet đi ra internet bằng IPv4, với một dịch vụ được quản lý hoàn toàn. NAT gateway đặt trong public subnet đáp ứng đúng: chỉ cho kết nối đi ra và AWS lo khả năng mở rộng, sẵn sàng. NAT instance làm được nhưng phải tự quản lý; egress-only internet gateway chỉ dùng cho IPv6.",
+    "keyHint": "\"only IPv4\" + \"fully managed service\" + private subnet ra internet → NAT gateway trong public subnet."
+  },
+  {
+    "id": 10514,
+    "stemVi": "Một startup đang xây kiến trúc microservices serverless, trong đó ứng dụng client (web và mobile) xác thực người dùng qua một identity provider bên thứ ba tuân thủ OIDC. Các API backend phải kiểm tra JSON Web Token (JWT) do provider này cấp, áp dụng kiểm soát truy cập theo scope, đồng thời tiết kiệm chi phí và có độ trễ tối thiểu. Nhóm phát triển muốn dùng dịch vụ được quản lý hoàn toàn có hỗ trợ sẵn kiểm tra JWT, không phải tự viết logic xác thực.",
+    "promptVi": "Nhóm nên triển khai giải pháp nào để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon API Gateway REST API với một Lambda function tự kiểm tra JWT token",
+        "reason": "Phải tự viết logic kiểm tra JWT trong Lambda, thêm độ trễ và chi phí gọi Lambda, trái với yêu cầu không viết logic xác thực riêng."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon API Gateway HTTP API với JWT authorizer có sẵn, cấu hình để kiểm tra token từ OIDC provider",
+        "reason": "HTTP API có JWT authorizer tích hợp: tự kiểm tra chữ ký, issuer, audience và scope của token từ OIDC provider, không cần mã riêng; HTTP API cũng rẻ hơn và độ trễ thấp hơn REST API."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai backend gRPC trên Amazon ECS Fargate và cung cấp ra ngoài qua AWS App Runner, xử lý kiểm tra JWT bên trong các service container",
+        "reason": "Kiểm tra JWT trong container nghĩa là tự viết logic xác thực, đồng thời thêm hạ tầng container không cần thiết cho một kiến trúc serverless."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon API Gateway WebSocket API với các claim JWT được kiểm tra bởi một Lambda authorizer",
+        "reason": "WebSocket API dành cho giao tiếp hai chiều thời gian thực, không có JWT authorizer sẵn nên vẫn phải tự viết Lambda authorizer."
+      }
+    ],
+    "explanationVi": "Từ khóa là \"supports JWT validation natively, without writing custom authentication logic\". Chỉ API Gateway HTTP API có JWT authorizer tích hợp, kiểm tra token OIDC và scope mà không cần Lambda. Các phương án Lambda authorizer hay kiểm tra trong container đều là logic tự viết, thêm độ trễ và chi phí.",
+    "keyHint": "\"validate JSON Web Tokens\" + \"natively, without writing custom authentication logic\" → API Gateway HTTP API + JWT authorizer."
+  },
+  {
+    "id": 10515,
+    "stemVi": "Nhóm bảo trì ứng dụng của một công ty nhận thấy ứng dụng production chạy rất chậm khi chạy báo cáo kinh doanh trên cơ sở dữ liệu Amazon RDS. Các báo cáo này lấy lượng dữ liệu lớn và có truy vấn phức tạp với nhiều phép join trên nhiều bảng lõi quan trọng. Các metric CPU, bộ nhớ và lưu trữ ở mức khoảng 50% tổng dung lượng.",
+    "promptVi": "Bạn đề xuất cách nào tốt hơn và tiết kiệm chi phí để tạo báo cáo kinh doanh mà không ảnh hưởng ứng dụng production?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Amazon RDS instance thành Multi-AZ DB instance, và kết nối công cụ tạo báo cáo tới DB instance ở AZ khác",
+        "reason": "Ở Multi-AZ DB instance, standby chỉ để failover và không nhận kết nối đọc, nên công cụ báo cáo không thể truy vấn nó."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển từ General Purpose SSD sang magnetic storage để tăng IOPS",
+        "reason": "Magnetic storage là loại cũ, IOPS thấp hơn General Purpose SSD, nên làm hiệu năng tệ hơn chứ không tốt hơn."
+      },
+      {
+        "key": "C",
+        "textVi": "Tăng kích thước Amazon RDS instance",
+        "reason": "Tài nguyên mới dùng khoảng 50% nên tăng cỡ instance chỉ tốn thêm tiền, trong khi báo cáo và ứng dụng vẫn tranh nhau cùng một instance."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một read replica và kết nối công cụ/ứng dụng tạo báo cáo tới nó",
+        "reason": "Read replica tách tải đọc nặng của báo cáo ra một bản sao riêng, nên primary phục vụ production không bị ảnh hưởng, với chi phí hợp lý."
+      }
+    ],
+    "explanationVi": "Vấn đề là truy vấn báo cáo nặng tranh tài nguyên với ứng dụng production trên cùng instance. Read replica tách tải đọc ra một bản sao, đúng mẫu dùng cho báo cáo/BI. Bẫy là Multi-AZ: standby của Multi-AZ DB instance không phục vụ đọc. Tăng cỡ instance tốn tiền mà không cô lập tải.",
+    "keyHint": "\"business reports\" + \"keeping the production application unaffected\" → RDS read replica."
+  },
+  {
+    "id": 10516,
+    "stemVi": "Một trưởng nhóm kỹ thuật đang thiết kế một VPC có public subnet và private subnet. VPC và các subnet dùng IPv4 CIDR block. Mỗi Availability Zone (AZ) trong ba AZ có một public subnet và một private subnet để đạt tính sẵn sàng cao. Một internet gateway cung cấp truy cập internet cho các public subnet. Các private subnet cần truy cập internet để Amazon EC2 instance tải bản cập nhật phần mềm.",
+    "promptVi": "Lựa chọn nào sau đây là cách đúng để thiết lập truy cập internet cho các private subnet?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo ba NAT gateway, mỗi cái trong public subnet của mỗi AZ. Tạo một custom route table cho mỗi AZ, chuyển lưu lượng không phải nội bộ (non-local) tới NAT gateway trong AZ đó",
+        "reason": "NAT gateway phải nằm trong public subnet để đi ra internet qua internet gateway; mỗi AZ một NAT gateway và route table riêng giúp lỗi một AZ không ảnh hưởng AZ khác."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo ba egress-only internet gateway, mỗi cái trong public subnet của mỗi AZ. Tạo một custom route table cho mỗi AZ, chuyển lưu lượng non-local tới egress-only internet gateway trong AZ đó",
+        "reason": "Egress-only internet gateway chỉ dùng cho IPv6, trong khi VPC dùng IPv4; nó cũng gắn vào VPC chứ không đặt trong subnet."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo ba Internet gateway, mỗi cái trong private subnet của mỗi AZ. Tạo một custom route table cho mỗi AZ, chuyển lưu lượng non-local tới Internet gateway trong AZ đó",
+        "reason": "Mỗi VPC chỉ gắn được một internet gateway và nó gắn ở cấp VPC; route ra internet gateway cũng sẽ biến private subnet thành public subnet."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo ba NAT gateway, mỗi cái trong private subnet của mỗi AZ. Tạo một custom route table cho mỗi AZ, chuyển lưu lượng non-local tới NAT gateway trong AZ đó",
+        "reason": "NAT gateway (public) đặt trong private subnet không có đường ra internet gateway, nên không cung cấp được truy cập internet."
+      }
+    ],
+    "explanationVi": "Với IPv4, private subnet ra internet qua NAT gateway, và NAT gateway phải đặt trong public subnet. Để có tính sẵn sàng cao, mỗi AZ dùng một NAT gateway riêng và route table riêng trỏ tới NAT gateway cùng AZ. Bẫy: đặt NAT gateway trong private subnet, dùng egress-only internet gateway (chỉ IPv6), hoặc tạo nhiều internet gateway cho một VPC.",
+    "keyHint": "\"IPv4\" + private subnet \"download software updates\" + \"three Availability Zones\" → mỗi AZ một NAT gateway trong public subnet."
+  },
+  {
+    "id": 10517,
+    "stemVi": "Một ứng dụng hội nghị truyền hình chạy trên nhóm EC2 instance thuộc một Auto Scaling group. Auto Scaling group dùng Launch Template (LT1) với instance tenancy \"dedicated\", nhưng VPC (V1) mà LT1 dùng có instance tenancy là default. Sau đó nhóm DevOps tạo Launch Template mới (LT2) với instance tenancy shared (default), nhưng VPC (V2) mà LT2 dùng có instance tenancy là dedicated.",
+    "promptVi": "Phát biểu nào sau đây đúng về các instance được chạy qua Launch Template LT1 và Launch Template LT2?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Các instance chạy bởi cả Launch Template LT1 và Launch Template LT2 đều có instance tenancy dedicated",
+        "reason": "Chỉ cần launch template hoặc VPC đặt tenancy dedicated là instance sẽ chạy dedicated: LT1 đặt dedicated, còn V2 có tenancy dedicated nên instance của LT2 cũng dedicated."
+      },
+      {
+        "key": "B",
+        "textVi": "Các instance chạy bởi cả Launch Template LT1 và Launch Template LT2 đều có instance tenancy default",
+        "reason": "Tenancy dedicated ở bất kỳ phía nào (launch template hoặc VPC) đều thắng, nên không trường hợp nào ở đây ra default."
+      },
+      {
+        "key": "C",
+        "textVi": "Các instance chạy bởi Launch Template LT1 có instance tenancy dedicated, còn instance chạy bởi Launch Template LT2 có instance tenancy shared (default)",
+        "reason": "VPC V2 có tenancy dedicated nên mọi instance chạy trong nó đều dedicated, bất kể LT2 đặt shared."
+      },
+      {
+        "key": "D",
+        "textVi": "Các instance chạy bởi Launch Template LT1 có instance tenancy default, còn instance chạy bởi Launch Template LT2 có instance tenancy dedicated",
+        "reason": "LT1 đặt tenancy dedicated thì instance chạy dedicated dù VPC V1 là default."
+      }
+    ],
+    "explanationVi": "Quy tắc: instance chạy dedicated nếu launch template đặt dedicated hoặc VPC có tenancy dedicated; chỉ khi cả hai là default/shared thì instance mới là shared. LT1 (dedicated, VPC default) và LT2 (shared, VPC dedicated) đều cho ra instance dedicated. Bẫy là nghĩ một bên \"ghi đè\" bên kia theo một chiều cố định.",
+    "keyHint": "\"instance tenancy\" ở launch template và ở VPC → bên nào đặt \"dedicated\" thì instance là dedicated."
+  },
+  {
+    "id": 10518,
+    "stemVi": "Nhóm kỹ thuật của một công ty muốn dùng Amazon Simple Queue Service (Amazon SQS) để tách rời (decouple) các thành phần của kiến trúc ứng dụng. Tuy nhiên, nhóm lo ngại việc các thành phần nằm trong VPC truy cập Amazon SQS qua internet công cộng.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Network Address Translation (NAT) instance để truy cập Amazon SQS",
+        "reason": "NAT instance chỉ giúp instance private đi ra internet; lưu lượng tới SQS vẫn đi qua endpoint công khai trên internet, không giải quyết mối lo."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng kết nối VPN để truy cập Amazon SQS",
+        "reason": "VPN nối mạng on-premises với VPC; nó không tạo đường riêng từ VPC tới SQS, nên lưu lượng tới SQS vẫn phải ra endpoint công khai."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng VPC endpoint để truy cập Amazon SQS",
+        "reason": "Interface VPC endpoint (AWS PrivateLink) cho SQS cho phép các thành phần trong VPC gọi SQS bằng IP private, lưu lượng không đi qua internet công cộng."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Internet Gateway để truy cập Amazon SQS",
+        "reason": "Internet Gateway chính là đường ra internet công cộng — điều mà nhóm muốn tránh."
+      }
+    ],
+    "explanationVi": "Muốn các thành phần trong VPC gọi một dịch vụ AWS mà không qua internet công cộng thì dùng VPC endpoint. SQS hỗ trợ interface endpoint chạy trên AWS PrivateLink, không cần internet gateway, NAT hay VPN. Các lựa chọn còn lại đều vẫn đưa lưu lượng ra endpoint công khai.",
+    "keyHint": "\"VPC-bound components\" + \"not over the public internet\" → VPC endpoint (PrivateLink) cho SQS."
+  },
+  {
+    "id": 10519,
+    "stemVi": "Một công ty đang chuyển một lượng lớn dữ liệu từ hệ thống lưu trữ tại chỗ lên AWS, nơi dữ liệu sẽ được các Amazon EC2 instance chạy Windows, Mac và Linux trong cùng một AWS Region truy cập bằng cả giao thức SMB và NFS. Một phần dữ liệu được truy cập thường xuyên, phần còn lại ít được truy cập hơn. Công ty cần một giải pháp lưu trữ dữ liệu này với ít công vận hành nhất (minimizes operational overhead).",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Elastic File System (Amazon EFS) volume dùng EFS Intelligent-Tiering. Dùng AWS DataSync để chuyển dữ liệu sang EFS volume",
+        "reason": "EFS chỉ hỗ trợ NFS, không hỗ trợ SMB nên các máy Windows không truy cập được qua SMB như yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon FSx for OpenZFS instance. Cấu hình file system FSx for OpenZFS trên root volume và chuyển dữ liệu sang volume FSx for OpenZFS",
+        "reason": "FSx for OpenZFS chỉ phục vụ qua NFS, không hỗ trợ SMB, nên không đáp ứng yêu cầu truy cập qua SMB."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon Elastic File System (Amazon EFS) volume dùng EFS Infrequent Access. Dùng AWS DataSync để chuyển dữ liệu sang EFS volume",
+        "reason": "Vẫn là EFS nên không có SMB; ngoài ra đặt toàn bộ dữ liệu ở lớp Infrequent Access làm tăng phí truy cập cho phần dữ liệu dùng thường xuyên."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon FSx for ONTAP instance. Cấu hình file system FSx for ONTAP trên root volume và chuyển dữ liệu sang volume FSx for ONTAP",
+        "reason": "FSx for NetApp ONTAP được quản lý hoàn toàn, truy cập đồng thời qua cả SMB và NFS từ Windows, Mac và Linux, và có tự động phân tầng dữ liệu ít dùng sang capacity pool rẻ hơn."
+      }
+    ],
+    "explanationVi": "Yêu cầu quyết định là truy cập đồng thời bằng SMB và NFS. Trong các lựa chọn, chỉ FSx for NetApp ONTAP hỗ trợ đa giao thức này, lại có phân tầng tự động giữa SSD và capacity pool cho dữ liệu ít truy cập. EFS chỉ có NFS; FSx for OpenZFS cũng chỉ phục vụ qua NFS.",
+    "keyHint": "\"both SMB and NFS protocols\" + Windows, Mac, Linux → Amazon FSx for NetApp ONTAP."
+  },
+  {
+    "id": 10520,
+    "stemVi": "Nhóm kỹ thuật của một công ty mạng xã hội muốn dùng Amazon CloudWatch alarm để tự động khôi phục (recover) Amazon EC2 instance khi chúng bị suy giảm (impaired). Nhóm thuê bạn làm solutions architect để tư vấn chuyên môn.",
+    "promptVi": "Là solutions architect, bạn xác định những phát biểu nào sau đây là ĐÚNG về quá trình tự động khôi phục này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Nếu instance có địa chỉ public IPv4, nó vẫn giữ địa chỉ public IPv4 đó sau khi khôi phục",
+        "reason": "Theo tài liệu AWS, instance được khôi phục giữ nguyên địa chỉ public IPv4 (khác với stop/start, vốn đổi public IPv4)."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon EC2 instance đã bị terminate có thể được khôi phục nếu được cấu hình từ lúc chạy instance",
+        "reason": "Instance đã terminate thì không khôi phục được; recovery chỉ áp dụng cho instance đang bị suy giảm do sự cố phần cứng bên dưới."
+      },
+      {
+        "key": "C",
+        "textVi": "Nếu instance có địa chỉ public IPv4, nó không giữ địa chỉ public IPv4 đó sau khi khôi phục",
+        "reason": "Sai: recovery giữ nguyên public IPv4 của instance."
+      },
+      {
+        "key": "D",
+        "textVi": "Trong quá trình khôi phục, instance được chuyển sang máy khác thông qua một lần reboot, và mọi dữ liệu trong bộ nhớ đều được giữ lại",
+        "reason": "Instance được chuyển sang phần cứng khác qua một lần reboot, và dữ liệu trong bộ nhớ (RAM) sẽ bị mất, không được giữ lại."
+      },
+      {
+        "key": "E",
+        "textVi": "Instance được khôi phục giống hệt instance gốc, bao gồm instance ID, các private IP, Elastic IP và toàn bộ instance metadata",
+        "reason": "Recovery chuyển instance sang host mới nhưng giữ nguyên instance ID, private IP, Elastic IP và metadata, nên với ứng dụng nó là cùng một instance."
+      }
+    ],
+    "explanationVi": "CloudWatch alarm với hành động recover chuyển instance bị suy giảm do lỗi phần cứng sang host mới qua một lần reboot. Instance giữ nguyên instance ID, private IP, Elastic IP, metadata và cả public IPv4. Hai bẫy: dữ liệu trong RAM bị mất do reboot, và instance đã terminate thì không khôi phục được.",
+    "keyHint": "\"automatically recover Amazon EC2 instances\" → giữ instance ID, IP (cả public IPv4), metadata; mất dữ liệu trong RAM."
+  },
+  {
+    "id": 10521,
+    "stemVi": "Nhóm DevOps của một công ty IT đã tạo một custom VPC (V1) và gắn Internet Gateway (I1) vào VPC. Nhóm cũng tạo một subnet (S1) trong VPC này và thêm vào route table (R1) của subnet một route chuyển lưu lượng ra internet tới Internet Gateway. Sau đó nhóm chạy một Amazon EC2 instance (E1) trong subnet S1 và gán cho nó một địa chỉ public IPv4. Tiếp theo nhóm chạy thêm một Network Address Translation (NAT) instance (N1) trong subnet S1.",
+    "promptVi": "Với hạ tầng như trên, thực thể nào sau đây đang thực hiện Network Address Translation cho Amazon EC2 instance E1?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Subnet (S1)",
+        "reason": "Subnet chỉ là một dải địa chỉ IP trong VPC, không thực hiện dịch địa chỉ."
+      },
+      {
+        "key": "B",
+        "textVi": "Network Address Translation (NAT) instance (N1)",
+        "reason": "E1 có public IPv4 và route của S1 trỏ thẳng tới Internet Gateway, nên lưu lượng của E1 không đi qua N1; NAT instance chỉ phục vụ instance private có route trỏ tới nó."
+      },
+      {
+        "key": "C",
+        "textVi": "Internet Gateway (I1)",
+        "reason": "Internet Gateway vừa là target trong route table cho lưu lượng internet, vừa thực hiện NAT một-một giữa private IP và public IPv4 của các instance có public IPv4 — như E1."
+      },
+      {
+        "key": "D",
+        "textVi": "Route Table (R1)",
+        "reason": "Route table chỉ quyết định lưu lượng đi đâu, không dịch địa chỉ."
+      }
+    ],
+    "explanationVi": "Instance có public IPv4 trong subnet có route tới Internet Gateway thì Internet Gateway thực hiện NAT giữa private IP và public IP của instance. NAT instance N1 dù nằm cùng subnet nhưng không nằm trên đường đi của E1. Bẫy là thấy chữ \"NAT instance\" trong đề và chọn ngay.",
+    "keyHint": "\"assigns a public IPv4 address\" + route tới Internet Gateway → Internet Gateway làm NAT cho instance."
+  },
+  {
+    "id": 10522,
+    "stemVi": "Một công ty lưu dữ liệu khách hàng quan trọng trên hệ thống on-premises ở dạng mã hóa. Qua nhiều năm, công ty đã chuyển từ dùng một khóa mã hóa duy nhất sang nhiều khóa bằng cách chia dữ liệu thành các phần logic. Với quyết định chuyển toàn bộ dữ liệu sang một Amazon S3 bucket, công ty nay tìm cách mã hóa mỗi file bằng một khóa khác nhau để bảo mật tối đa cho dữ liệu chuyển từ on-premises.",
+    "promptVi": "Bạn sẽ hiện thực yêu cầu này thế nào mà không phải tốn công chia dữ liệu thành các nhóm logic?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình một Amazon S3 bucket duy nhất chứa toàn bộ dữ liệu. Dùng server-side encryption với khóa do Amazon S3 quản lý (SSE-S3) để mã hóa dữ liệu",
+        "reason": "Với SSE-S3, mỗi object được mã hóa bằng một khóa riêng, và khóa đó lại được mã hóa bằng root key được xoay vòng định kỳ — đáp ứng yêu cầu mỗi file một khóa mà không cần chia nhóm hay quản lý khóa."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu dữ liệu đã chia logic vào các Amazon S3 bucket khác nhau. Dùng server-side encryption với khóa do Amazon S3 quản lý (SSE-S3) để mã hóa dữ liệu",
+        "reason": "SSE-S3 đã cho mỗi object một khóa riêng, nên chia dữ liệu ra nhiều bucket chỉ thêm công — trái với yêu cầu không chia nhóm logic."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình một Amazon S3 bucket duy nhất chứa toàn bộ dữ liệu. Dùng server-side encryption với AWS KMS (SSE-KMS) và dùng encryption context để sinh một khóa khác nhau cho mỗi file/object lưu trong S3 bucket",
+        "reason": "Encryption context là dữ liệu xác thực bổ sung gắn với thao tác mã hóa, không phải cơ chế sinh khóa khác nhau cho mỗi object."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Multi-Region key cho client-side encryption trong AWS S3 Encryption Client để sinh khóa riêng cho mỗi file dữ liệu",
+        "reason": "Multi-Region key dùng để mã hóa/giải mã giữa nhiều Region, không liên quan yêu cầu; client-side encryption còn buộc công ty tự quản lý quy trình mã hóa, tốn công hơn."
+      }
+    ],
+    "explanationVi": "Điểm mấu chốt: SSE-S3 vốn đã mã hóa mỗi object bằng một khóa dữ liệu duy nhất (envelope encryption với root key xoay vòng). Vì vậy chỉ cần một bucket với SSE-S3 là đạt \"mỗi file một khóa\" mà không phải chia dữ liệu. Bẫy là nghĩ phải dùng KMS với encryption context hoặc client-side encryption mới có khóa riêng cho từng file.",
+    "keyHint": "\"encrypt each file with a different encryption key\" + \"without ... splitting the data\" → một bucket + SSE-S3 (mỗi object một khóa riêng)."
+  }
+]
