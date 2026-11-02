@@ -1330,5 +1330,649 @@
     ],
     "explanationVi": "Phân biệt hai chế độ Volume Gateway: cached volume để dữ liệu chính trên S3 và chỉ cache phần hay dùng tại chỗ; stored volume giữ toàn bộ dữ liệu tại chỗ và sao lưu lên S3. Đề muốn chỉ log hay dùng nằm tại chỗ nên chọn cached volume. Snowball và Direct Connect không phải giải pháp cache lưu trữ.",
     "keyHint": "\"only the most frequently accessed logs ... cached data locally\" + toàn bộ trên S3 → Volume Gateway cached volume."
+  },
+  {
+    "id": 10545,
+    "stemVi": "Một công ty dịch vụ tài chính muốn xác định mọi dữ liệu nhạy cảm đang lưu trong các Amazon S3 bucket của mình. Công ty cũng muốn giám sát và bảo vệ toàn bộ dữ liệu trên Amazon S3 trước mọi hoạt động độc hại.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây để đáp ứng các yêu cầu đã nêu?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon Macie để giám sát hoạt động độc hại trên dữ liệu lưu trong Amazon S3. Dùng Amazon GuardDuty để xác định dữ liệu nhạy cảm lưu trên Amazon S3",
+        "reason": "Phương án này đảo ngược vai trò: Macie mới là dịch vụ tìm dữ liệu nhạy cảm, còn GuardDuty là dịch vụ phát hiện mối đe dọa."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon GuardDuty để giám sát hoạt động độc hại trên dữ liệu lưu trong Amazon S3 và đồng thời để xác định dữ liệu nhạy cảm lưu trên Amazon S3",
+        "reason": "GuardDuty phát hiện hoạt động đáng ngờ nhưng không quét nội dung object để tìm dữ liệu nhạy cảm như PII."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Macie để giám sát hoạt động độc hại trên dữ liệu lưu trong Amazon S3 và đồng thời để xác định dữ liệu nhạy cảm lưu trên Amazon S3",
+        "reason": "Macie phát hiện dữ liệu nhạy cảm và đánh giá cấu hình bảo mật bucket, nhưng không phải dịch vụ phát hiện mối đe dọa dựa trên phân tích hoạt động như GuardDuty."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon GuardDuty để giám sát hoạt động độc hại trên dữ liệu lưu trong Amazon S3. Dùng Amazon Macie để xác định dữ liệu nhạy cảm lưu trên Amazon S3",
+        "reason": "GuardDuty (với S3 Protection) phân tích sự kiện CloudTrail để phát hiện hoạt động độc hại trên dữ liệu S3, còn Macie dùng machine learning và so khớp mẫu để tìm dữ liệu nhạy cảm — mỗi dịch vụ đúng một yêu cầu."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu ứng với hai dịch vụ: tìm dữ liệu nhạy cảm (PII, dữ liệu tài chính) trong S3 là Amazon Macie; giám sát hoạt động độc hại là Amazon GuardDuty. Bẫy là các phương án đảo vai trò hoặc giao cả hai việc cho một dịch vụ.",
+    "keyHint": "\"identify any sensitive data\" → Amazon Macie; \"monitor ... against any malicious activity\" → Amazon GuardDuty."
+  },
+  {
+    "id": 10546,
+    "stemVi": "Một công ty đào tạo IT đã đặt website trên Amazon S3 từ vài năm trước. Do các hạn chế đi lại vì COVID-19, website đào tạo bỗng nhiên thu hút nhiều người dùng. Với số request phục vụ mỗi ngày tăng gần 300%, chi phí AWS của công ty tăng vọt chỉ riêng phần phí truyền dữ liệu ra ngoài (outbound) của Amazon S3.",
+    "promptVi": "Là Solutions Architect, bạn đề xuất cách thay thế nào để giảm chi phí trong khi vẫn giữ độ trễ thấp?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Amazon S3 Batch Operations để đọc dữ liệu hàng loạt một lần, nhằm giảm số lần gọi tới Amazon S3 bucket",
+        "reason": "S3 Batch Operations thực hiện thao tác hàng loạt trên object (sao chép, gắn tag…) cho quản trị viên, không liên quan việc phục vụ người truy cập website và không giảm phí truyền dữ liệu ra ngoài."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng dịch vụ Amazon EFS, vì nó cung cấp file system NFS dùng chung, có khả năng mở rộng, được quản lý hoàn toàn để lưu dữ liệu trên AWS Cloud hoặc on-premises",
+        "reason": "EFS là file system cho máy chủ mount vào, không phục vụ website trực tiếp; vẫn cần máy chủ và vẫn phải trả phí truyền dữ liệu ra internet."
+      },
+      {
+        "key": "C",
+        "textVi": "Để giảm chi phí Amazon S3, dữ liệu có thể được lưu trên Amazon EBS volume gắn với một Amazon EC2 instance chạy ứng dụng",
+        "reason": "Chuyển sang EC2 + EBS thêm chi phí máy chủ và công vận hành, trong khi phí truyền dữ liệu từ EC2 ra internet cũng không rẻ hơn, lại không giảm độ trễ cho người dùng ở xa."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình Amazon CloudFront để phân phối dữ liệu lưu trên Amazon S3 một cách tiết kiệm chi phí",
+        "reason": "Truyền dữ liệu từ S3 tới CloudFront không mất phí và phí truyền ra từ CloudFront thường thấp hơn từ S3; nội dung được cache ở edge nên giảm số request về S3 và giảm độ trễ cho người dùng."
+      }
+    ],
+    "explanationVi": "Chi phí tăng vì phí truyền dữ liệu ra ngoài trực tiếp từ S3. Đặt CloudFront phía trước S3 giúp giảm chi phí (truyền S3 → CloudFront miễn phí, nhiều request được phục vụ từ cache ở edge) và đồng thời giảm độ trễ. Các phương án EFS, EBS hay S3 Batch Operations không giải quyết bài toán phân phối nội dung tới người dùng.",
+    "keyHint": "\"Amazon S3 outbound data costs\" + \"keeping the latency low\" → CloudFront trước S3."
+  },
+  {
+    "id": 10547,
+    "stemVi": "Ứng dụng của bạn được một nhà cung cấp chạy tại yourapp.provider.com. Bạn muốn người dùng truy cập ứng dụng qua www.your-domain.com, tên miền bạn sở hữu và quản lý bằng Amazon Route 53.",
+    "promptVi": "Bạn nên tạo bản ghi Amazon Route 53 nào?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo bản ghi A",
+        "reason": "Bản ghi A ánh xạ tên miền tới địa chỉ IPv4, không trỏ được sang một tên miền khác như yourapp.provider.com."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo bản ghi Alias",
+        "reason": "Alias chỉ trỏ tới một số tài nguyên AWS (CloudFront, ELB, S3 website…) hoặc bản ghi khác trong cùng hosted zone, không trỏ được tới tên miền của nhà cung cấp bên ngoài."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo bản ghi CNAME",
+        "reason": "CNAME ánh xạ một tên (www.your-domain.com) sang một tên miền bất kỳ khác (yourapp.provider.com); vì www không phải zone apex nên dùng CNAME được."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo bản ghi PTR",
+        "reason": "Bản ghi PTR dùng cho tra cứu ngược từ địa chỉ IP sang tên miền, không dùng để chuyển tên miền này sang tên miền khác."
+      }
+    ],
+    "explanationVi": "Cần trỏ subdomain www.your-domain.com sang một tên miền bên ngoài AWS. CNAME làm đúng việc này và được phép vì www không phải zone apex. Bẫy là Alias: nó chỉ trỏ tới tài nguyên AWS hoặc bản ghi trong cùng hosted zone.",
+    "keyHint": "\"www.your-domain.com\" trỏ tới \"yourapp.provider.com\" (tên miền ngoài AWS) → bản ghi CNAME."
+  },
+  {
+    "id": 10548,
+    "stemVi": "Một công ty logistics quốc gia có một kết nối AWS Direct Connect dedicated từ trung tâm dữ liệu của công ty tới AWS. Trong tài khoản AWS, công ty vận hành 25 Amazon VPC trong cùng một Region, mỗi VPC phục vụ một dịch vụ phân phối khu vực khác nhau. Các VPC có CIDR block không trùng nhau và hiện dùng private VIF để truy cập tài nguyên on-premises qua Direct Connect. Khi kiến trúc mở rộng, công ty muốn cho phép mọi VPC và môi trường on-premises giao tiếp với nhau. Giải pháp phải mở rộng hiệu quả, hỗ trợ kết nối full-mesh và giảm độ phức tạp của việc duy trì private VIF riêng cho từng VPC.",
+    "promptVi": "Tổ hợp giải pháp nào đáp ứng tốt nhất các yêu cầu này với ít công vận hành nhất (least amount of operational overhead)? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một transit virtual interface (VIF) từ kết nối Direct Connect và liên kết nó với transit gateway",
+        "reason": "Transit VIF đi qua Direct Connect gateway tới transit gateway, nên chỉ cần một VIF cho on-premises truy cập mọi VPC gắn vào transit gateway, thay cho 25 private VIF."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình lại mỗi VPC để kết nối qua AWS PrivateLink endpoint tới một VPC dịch vụ mạng trung tâm. Chia sẻ dịch vụ với các VPC khác bằng VPC endpoint service",
+        "reason": "PrivateLink chỉ cung cấp truy cập một chiều tới từng dịch vụ cụ thể, không tạo định tuyến full-mesh giữa các VPC và on-premises."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo các kết nối Site-to-Site VPN riêng từ trung tâm dữ liệu tới từng VPC. Thiết lập BGP route propagation cho mọi tunnel để định tuyến từ on-premises tới VPC",
+        "reason": "25 kết nối VPN (50 tunnel) là quá nhiều thứ phải quản lý, bỏ phí Direct Connect sẵn có và vẫn không cho các VPC giao tiếp với nhau."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển mỗi private VIF hiện có thành một Direct Connect gateway association bằng cách gắn virtual private gateway (VGW) vào mỗi VPC. Cấu hình định tuyến giữa các VGW thủ công",
+        "reason": "Direct Connect gateway với VGW không định tuyến giữa các VPC với nhau, và định tuyến thủ công cho 25 VGW tốn nhiều công vận hành."
+      },
+      {
+        "key": "E",
+        "textVi": "Tạo một AWS Transit Gateway và gắn cả 25 VPC vào. Bật route propagation cho mỗi attachment để tự động quản lý định tuyến giữa các VPC",
+        "reason": "Transit Gateway là hub trung tâm cho định tuyến bắc cầu giữa mọi VPC; route propagation tự cập nhật route nên có full-mesh mà không phải quản lý từng cặp kết nối."
+      }
+    ],
+    "explanationVi": "Mô hình hub-and-spoke với AWS Transit Gateway thay cho nhiều kết nối riêng lẻ: gắn 25 VPC vào Transit Gateway (bật route propagation) để các VPC giao tiếp với nhau, và dùng một transit VIF (qua Direct Connect gateway) để on-premises tới mọi VPC. Các phương án VPN cho từng VPC, VGW từng VPC hay PrivateLink đều không tạo được full-mesh với ít công vận hành.",
+    "keyHint": "\"25 Amazon VPCs\" + \"full-mesh connectivity\" + \"reduce ... separate private VIFs\" → Transit Gateway + transit VIF."
+  },
+  {
+    "id": 10549,
+    "stemVi": "Một ứng dụng chạy trên Amazon EC2 instance cần truy cập một bảng Amazon DynamoDB trong cùng tài khoản AWS.",
+    "promptVi": "Solutions architect nên cấu hình giải pháp nào sau đây để cấp quyền cần thiết?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một IAM service role có quyền phù hợp để truy cập bảng Amazon DynamoDB. Cấu hình một instance profile để gán IAM role này cho Amazon EC2 instance",
+        "reason": "IAM role gắn qua instance profile cấp thông tin xác thực tạm thời, tự xoay vòng cho ứng dụng trên EC2, không phải lưu access key — đúng cách AWS khuyên dùng."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một IAM user có quyền phù hợp để truy cập bảng Amazon DynamoDB. Lưu thông tin xác thực trong một Amazon S3 bucket và đọc trực tiếp từ mã ứng dụng",
+        "reason": "Dùng access key dài hạn của IAM user và lưu trong S3 là thực hành bảo mật kém: khóa không tự xoay vòng và dễ bị lộ."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một IAM user có quyền phù hợp để truy cập bảng Amazon DynamoDB. Lưu thông tin xác thực trong bộ nhớ cục bộ và đọc trực tiếp từ mã ứng dụng",
+        "reason": "Access key dài hạn lưu trên đĩa của instance có thể bị lộ nếu instance bị xâm nhập, và phải tự xoay vòng thủ công."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một IAM service role có quyền phù hợp để truy cập bảng Amazon DynamoDB. Thêm Amazon EC2 instance vào trust relationship policy để instance có thể assume role",
+        "reason": "Trust policy chỉ định principal là dịch vụ ec2.amazonaws.com chứ không phải từng instance; muốn instance dùng role thì phải gắn role qua instance profile."
+      }
+    ],
+    "explanationVi": "Cách chuẩn để ứng dụng trên EC2 gọi dịch vụ AWS là IAM role gắn qua instance profile: ứng dụng nhận thông tin xác thực tạm thời từ instance metadata. Mọi phương án dùng access key của IAM user đều là thực hành kém. Bẫy: không thể thêm một instance cụ thể vào trust policy; instance profile mới là cơ chế gắn role vào EC2.",
+    "keyHint": "Ứng dụng trên \"Amazon EC2 instance\" cần quyền truy cập \"DynamoDB\" → IAM role + instance profile."
+  },
+  {
+    "id": 10550,
+    "stemVi": "Một công ty đã thiết lập AWS Organizations để quản lý nhiều phòng ban, mỗi phòng ban có tài khoản AWS riêng. Các phòng ban hoạt động ở nhiều quốc gia và trải trên nhiều AWS Region. Công ty muốn có quy trình tạo tài nguyên nhất quán giữa các phòng ban, để mỗi tài nguyên theo cấu hình định sẵn như dùng một loại Amazon EC2 instance cụ thể, IAM role cụ thể cho AWS Lambda function…",
+    "promptVi": "Là solutions architect, bạn khuyên dùng lựa chọn nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS CloudFormation template để triển khai cùng một template trên nhiều tài khoản và Region",
+        "reason": "Template chỉ là bản mô tả; tự nó không triển khai đồng loạt sang nhiều tài khoản và Region, mà phải tạo stack thủ công ở từng nơi."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Resource Access Manager (AWS RAM) để triển khai cùng một template trên nhiều tài khoản và Region",
+        "reason": "AWS RAM chia sẻ tài nguyên có sẵn (subnet, Transit Gateway…) giữa các tài khoản, không triển khai template CloudFormation."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS CloudFormation stack để triển khai cùng một template trên nhiều tài khoản và Region",
+        "reason": "Một stack chỉ nằm trong một tài khoản và một Region; triển khai ra nhiều nơi phải tạo và cập nhật từng stack riêng."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS CloudFormation StackSets để triển khai cùng một template trên nhiều tài khoản và Region",
+        "reason": "StackSets tạo, cập nhật hoặc xóa stack trên nhiều tài khoản và Region bằng một thao tác từ một template, tích hợp với AWS Organizations — đúng nhu cầu cấu hình nhất quán."
+      }
+    ],
+    "explanationVi": "Từ khóa là cùng một cấu hình triển khai trên nhiều tài khoản và nhiều Region. CloudFormation StackSets mở rộng stack ra nhiều tài khoản/Region với một thao tác và quản lý tập trung từ tài khoản quản trị của Organizations. Template hay stack đơn lẻ chỉ áp dụng ở một nơi; RAM là dịch vụ chia sẻ tài nguyên.",
+    "keyHint": "\"same template across AWS accounts and regions\" + \"AWS Organizations\" → CloudFormation StackSets."
+  },
+  {
+    "id": 10551,
+    "stemVi": "Một công ty phân tích big data đang làm giải pháp theo dõi phương tiện theo thời gian thực. Luồng xử lý dữ liệu gồm cả workload cơ sở dữ liệu nặng về I/O và nặng về thông lượng. Nhóm phát triển cần lưu dữ liệu thời gian thực này trong một cơ sở dữ liệu NoSQL chạy trên Amazon EC2 instance và cần hỗ trợ tới 25.000 IOPS mỗi volume.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng loại Amazon Elastic Block Store (Amazon EBS) volume nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Provisioned IOPS SSD (io1)",
+        "reason": "io1 là SSD hiệu năng cao cho cơ sở dữ liệu nặng I/O, cho tới 50 IOPS/GB và tối đa 64.000 IOPS mỗi volume, nên đáp ứng 25.000 IOPS ổn định."
+      },
+      {
+        "key": "B",
+        "textVi": "Throughput Optimized HDD (st1)",
+        "reason": "st1 là HDD tối ưu thông lượng tuần tự, chỉ đạt khoảng 500 IOPS mỗi volume, không hợp với cơ sở dữ liệu cần IOPS cao."
+      },
+      {
+        "key": "C",
+        "textVi": "Cold HDD (sc1)",
+        "reason": "sc1 là HDD rẻ nhất cho dữ liệu ít truy cập, IOPS rất thấp (khoảng 250), không dùng cho cơ sở dữ liệu thời gian thực."
+      },
+      {
+        "key": "D",
+        "textVi": "General Purpose SSD (gp2)",
+        "reason": "gp2 tối đa 16.000 IOPS mỗi volume, không đạt mức 25.000 IOPS yêu cầu."
+      }
+    ],
+    "explanationVi": "Mốc 25.000 IOPS mỗi volume loại ngay gp2 (tối đa 16.000) và các loại HDD (vài trăm IOPS). Provisioned IOPS SSD (io1) cho tới 64.000 IOPS và dành cho cơ sở dữ liệu nặng I/O. Bẫy là st1: \"throughput intensive\" dễ khiến chọn HDD tối ưu thông lượng, nhưng cơ sở dữ liệu cần IOPS ngẫu nhiên cao.",
+    "keyHint": "\"I/O intensive\" + \"25,000 IOPS per volume\" → Provisioned IOPS SSD (io1)."
+  },
+  {
+    "id": 10552,
+    "stemVi": "Một công ty IT chạy các ứng dụng Windows trong trung tâm dữ liệu on-premises. Công ty đang tính chuyển hoạt động lên AWS Cloud. Giải pháp cloud phải cung cấp không gian lưu trữ dùng chung mà nhiều ứng dụng truy cập được mà không cần sao chép dữ liệu. Giải pháp cũng phải tích hợp với domain Active Directory tự quản lý (self-managed) của công ty.",
+    "promptVi": "Giải pháp nào sau đây đáp ứng các yêu cầu này với ít công tích hợp nhất?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon FSx for Windows File Server làm giải pháp lưu trữ dùng chung",
+        "reason": "FSx for Windows File Server là file share SMB được quản lý hoàn toàn cho nhiều ứng dụng Windows cùng truy cập, và tham gia trực tiếp domain Active Directory tự quản lý của công ty."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng File Gateway của AWS Storage Gateway để tạo giải pháp lưu trữ hybrid",
+        "reason": "File Gateway là cầu nối on-premises tới S3, cần chạy thêm gateway và không phải file server Windows đầy đủ tính năng cho ứng dụng chạy trên AWS."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon FSx for Lustre làm giải pháp lưu trữ dùng chung với độ trễ mili giây",
+        "reason": "FSx for Lustre dành cho HPC trên Linux, không hỗ trợ Windows client hay tích hợp Active Directory."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon Elastic File System (Amazon EFS) làm giải pháp lưu trữ dùng chung",
+        "reason": "EFS chỉ hỗ trợ NFS cho Linux, không hỗ trợ ứng dụng Windows và không tích hợp Active Directory."
+      }
+    ],
+    "explanationVi": "Ứng dụng Windows cần lưu trữ dùng chung và tích hợp Active Directory tự quản lý — đó là FSx for Windows File Server (SMB, NTFS, join domain AD). EFS và FSx for Lustre dành cho Linux; File Gateway là giải pháp hybrid về S3, thêm thành phần phải vận hành.",
+    "keyHint": "\"windows based applications\" + \"shared storage\" + \"self-managed Active Directory\" → FSx for Windows File Server."
+  },
+  {
+    "id": 10553,
+    "stemVi": "Một ứng dụng game online có phần lớn lưu lượng đến từ người dùng tải các tài nguyên tĩnh như báo cáo bảng xếp hạng cũ và chiến thuật chơi của nhiều game. Hạ tầng và thiết kế hiện tại không chịu nổi lưu lượng và ứng dụng bị treo ở hầu hết các trang.",
+    "promptVi": "Giải pháp tối ưu chi phí nào sau đây không cần cấp phát hạ tầng?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình AWS Lambda với cơ sở dữ liệu Amazon RDS để có kiến trúc serverless",
+        "reason": "RDS là cơ sở dữ liệu phải cấp phát instance, và Lambda + RDS không phải cách phục vụ file tĩnh hiệu quả về chi phí."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon CloudFront với Amazon S3 làm giải pháp lưu trữ cho các tài nguyên tĩnh",
+        "reason": "S3 lưu file tĩnh không cần máy chủ và tự mở rộng, CloudFront cache ở edge để giảm tải và độ trễ — rẻ và không phải cấp phát hạ tầng."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Lambda với Amazon ElastiCache và Amazon RDS để phục vụ tài nguyên tĩnh với tốc độ cao và độ trễ thấp",
+        "reason": "ElastiCache và RDS đều phải cấp phát node/instance, tốn kém và quá phức tạp cho việc phục vụ file tĩnh."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon CloudFront với Amazon DynamoDB để truy cập tài nguyên tĩnh nhanh hơn và độ trễ thấp",
+        "reason": "DynamoDB không phải origin của CloudFront và không hợp để lưu file tĩnh (item tối đa 400 KB)."
+      }
+    ],
+    "explanationVi": "Lưu lượng chủ yếu là tải file tĩnh, nên mẫu chuẩn là lưu trên S3 và phân phối qua CloudFront: không máy chủ, tự mở rộng, trả theo mức dùng, đồng thời giảm tải cho ứng dụng chính. Các phương án dùng RDS, ElastiCache hay DynamoDB vừa phải cấp phát tài nguyên vừa không phù hợp với file tĩnh.",
+    "keyHint": "\"static assets\" + \"cost-optimal\" + \"does not need provisioning of infrastructure\" → S3 + CloudFront."
+  },
+  {
+    "id": 10554,
+    "stemVi": "Nhóm DevOps của một công ty IT đang dựng một ứng dụng hai tầng (two-tier) trong VPC có một public subnet và một private subnet. Nhóm muốn dùng Network Address Translation (NAT) instance hoặc Network Address Translation (NAT) gateway trong public subnet để các instance trong private subnet khởi tạo được lưu lượng IPv4 ra internet, nhưng cần hỗ trợ kỹ thuật về các tùy chọn cấu hình của NAT instance và NAT gateway.",
+    "promptVi": "Là solutions architect, bạn xác định những lựa chọn nào sau đây là ĐÚNG? (Chọn ba.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "NAT instance hỗ trợ port forwarding",
+        "reason": "NAT instance là EC2 instance do bạn quản lý nên có thể tự cấu hình port forwarding (ví dụ bằng iptables)."
+      },
+      {
+        "key": "B",
+        "textVi": "NAT gateway hỗ trợ port forwarding",
+        "reason": "NAT gateway là dịch vụ được quản lý, không hỗ trợ port forwarding."
+      },
+      {
+        "key": "C",
+        "textVi": "Có thể gắn Security Group với NAT instance",
+        "reason": "NAT instance là EC2 instance nên gắn được security group để kiểm soát lưu lượng vào ra."
+      },
+      {
+        "key": "D",
+        "textVi": "NAT gateway có thể dùng làm bastion server",
+        "reason": "NAT gateway không phải máy chủ để đăng nhập, nên không dùng làm bastion được."
+      },
+      {
+        "key": "E",
+        "textVi": "Có thể gắn Security Group với NAT gateway",
+        "reason": "Không gắn được security group với NAT gateway; kiểm soát lưu lượng qua nó bằng network ACL của subnet và security group của các instance phía sau."
+      },
+      {
+        "key": "F",
+        "textVi": "NAT instance có thể dùng làm bastion server",
+        "reason": "NAT instance là một EC2 instance trong public subnet nên có thể kiêm luôn vai trò bastion để SSH vào các instance private."
+      }
+    ],
+    "explanationVi": "Bí quyết là nhớ NAT instance là một EC2 instance bình thường do bạn quản lý, còn NAT gateway là dịch vụ được quản lý. Vì vậy NAT instance gắn được security group, cấu hình được port forwarding và kiêm được bastion; NAT gateway thì không làm được những việc này, đổi lại có tính sẵn sàng cao và tự mở rộng.",
+    "keyHint": "So sánh \"NAT instance\" với \"NAT gateway\" → instance tự quản: có security group, port forwarding, bastion; gateway thì không."
+  },
+  {
+    "id": 10555,
+    "stemVi": "Một startup mạng xã hội dùng AWS Cloud để quản lý hạ tầng IT. Nhóm kỹ thuật muốn thực hiện rollover cơ sở dữ liệu hằng tuần cho một MySQL database server bằng một cron job serverless; script rollover viết bằng Python thường chạy khoảng 5 phút. Việc rollover sẽ chuyển dữ liệu của tuần trước từ cơ sở dữ liệu production sang lưu trữ (archive) để giữ cơ sở dữ liệu nhỏ gọn mà dữ liệu vẫn truy cập được.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây là tiết kiệm chi phí nhất (MOST cost-efficient) và đáng tin cậy?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo tùy chọn lịch theo thời gian trong một AWS Glue job để tự kích hoạt hằng tuần và chạy script rollover",
+        "reason": "Glue job dành cho ETL, tính phí theo DPU với mức tối thiểu và có thời gian khởi động, tốn hơn Lambda cho một script 5 phút."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấp phát một Amazon EC2 scheduled reserved instance để chạy script rollover qua cron expression hằng tuần của hệ điều hành",
+        "reason": "EC2 không phải serverless, phải quản lý máy chủ; Scheduled Reserved Instances cũng không còn mua được."
+      },
+      {
+        "key": "C",
+        "textVi": "Lập lịch một Amazon EventBridge event với cron expression hằng tuần để gọi một AWS Lambda function chạy job rollover",
+        "reason": "EventBridge lịch cron gọi Lambda là serverless hoàn toàn, chỉ trả tiền cho khoảng 5 phút chạy mỗi tuần, và job 5 phút nằm trong giới hạn 15 phút của Lambda."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấp phát một Amazon EC2 spot instance để chạy script rollover qua cron expression hằng tuần của hệ điều hành",
+        "reason": "Spot instance có thể bị thu hồi bất cứ lúc nào nên không đáng tin cậy, và vẫn là máy chủ phải quản lý, không phải serverless."
+      }
+    ],
+    "explanationVi": "Job ngắn (khoảng 5 phút), chạy hằng tuần, cần serverless, rẻ và tin cậy: EventBridge với lịch cron gọi Lambda là lựa chọn chuẩn. Lambda chạy tối đa 15 phút nên đủ cho script này. Bẫy: Spot instance rẻ nhưng không tin cậy, Glue tốn hơn cho script nhỏ.",
+    "keyHint": "\"serverless cron job\" + \"about 5 minutes\" + \"MOST cost-efficient\" → EventBridge cron + Lambda."
+  },
+  {
+    "id": 10556,
+    "stemVi": "Một ứng dụng y tế xử lý dữ liệu sức khỏe thời gian thực của bệnh nhân trong một luồng phân tích. Khi số người dùng tăng mạnh, hệ thống trở nên chậm và đôi khi không phản hồi vì không có cơ chế thử lại (retry). Startup đang tìm một giải pháp có khả năng mở rộng (scalable) với ít công triển khai nhất.",
+    "promptVi": "Bạn khuyên dùng phương án nào sau đây làm giải pháp thay thế có khả năng mở rộng cho hệ thống hiện tại?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon API Gateway với giao diện REST hiện có để tạo kiến trúc hiệu năng cao",
+        "reason": "API Gateway chỉ là lớp nhận request; nó không đệm dữ liệu hay thử lại xử lý, nên phía sau vẫn quá tải như cũ."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon Kinesis Data Streams để thu nạp dữ liệu, xử lý bằng AWS Lambda hoặc chạy phân tích bằng Amazon Kinesis Data Analytics",
+        "reason": "Kinesis Data Streams thu nạp dữ liệu thời gian thực ở quy mô lớn, lưu dữ liệu để consumer đọc lại và thử lại khi lỗi; Lambda hoặc Kinesis Data Analytics xử lý và phân tích luồng mà không phải quản lý máy chủ."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Simple Notification Service (Amazon SNS) để thu nạp dữ liệu và cấu hình AWS Lambda kích hoạt logic xử lý phía sau",
+        "reason": "SNS là dịch vụ pub/sub đẩy thông báo, không lưu dữ liệu để đọc lại theo thứ tự, không phải dịch vụ thu nạp luồng dữ liệu cho phân tích thời gian thực."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon Simple Queue Service (Amazon SQS) để thu nạp dữ liệu và cấu hình AWS Lambda kích hoạt logic xử lý phía sau",
+        "reason": "SQS có thử lại nhưng là hàng đợi tin nhắn: tin nhắn bị xóa sau khi xử lý và không hỗ trợ nhiều ứng dụng phân tích cùng đọc một luồng theo thứ tự như Kinesis."
+      }
+    ],
+    "explanationVi": "Đề mô tả dữ liệu sức khỏe thời gian thực đưa vào luồng phân tích, cần mở rộng và có cơ chế thử lại. Kinesis Data Streams là dịch vụ streaming có thể mở rộng, lưu dữ liệu để consumer (Lambda, Kinesis Data Analytics) đọc và thử lại khi lỗi. SQS cũng có thử lại nhưng là hàng đợi công việc, không phải nền tảng cho phân tích luồng thời gian thực.",
+    "keyHint": "\"real-time health data\" + \"analytics workflow\" + \"retry mechanism\" → Kinesis Data Streams + Lambda/Kinesis Data Analytics."
+  },
+  {
+    "id": 10557,
+    "stemVi": "Một công ty bán lẻ đã kết nối trung tâm dữ liệu on-premises với AWS Cloud qua AWS Direct Connect. Công ty muốn phân giải được truy vấn Domain Name System (DNS) cho mọi tài nguyên trong mạng on-premises từ AWS VPC, và cũng phân giải được truy vấn DNS cho tài nguyên trong AWS VPC từ mạng on-premises.",
+    "promptVi": "Là solutions architect, những giải pháp nào sau đây có thể kết hợp để giải quyết tình huống này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một universal endpoint trên Amazon Route 53 Resolver, rồi Amazon Route 53 Resolver có thể nhận và chuyển tiếp truy vấn tới các resolver trong mạng on-premises qua endpoint này",
+        "reason": "Route 53 Resolver không có loại \"universal endpoint\"; chỉ có inbound endpoint và outbound endpoint."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một inbound endpoint trên Amazon Route 53 Resolver, rồi các DNS resolver trong mạng on-premises có thể chuyển tiếp truy vấn DNS tới Amazon Route 53 Resolver qua endpoint này",
+        "reason": "Inbound endpoint cung cấp địa chỉ IP trong VPC để DNS resolver on-premises chuyển tiếp truy vấn vào, nhờ đó on-premises phân giải được tên tài nguyên trong VPC."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một outbound endpoint trên Amazon Route 53 Resolver, rồi các DNS resolver trong mạng on-premises có thể chuyển tiếp truy vấn DNS tới Amazon Route 53 Resolver qua endpoint này",
+        "reason": "Outbound endpoint dùng cho chiều ngược lại: Route 53 Resolver gửi truy vấn ra ngoài, không nhận truy vấn từ on-premises."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một outbound endpoint trên Amazon Route 53 Resolver, rồi Amazon Route 53 Resolver có thể chuyển tiếp có điều kiện các truy vấn tới resolver trong mạng on-premises qua endpoint này",
+        "reason": "Outbound endpoint cùng forwarding rule cho phép Route 53 Resolver chuyển tiếp có điều kiện truy vấn tên miền on-premises tới DNS server on-premises, nhờ đó VPC phân giải được tài nguyên on-premises."
+      },
+      {
+        "key": "E",
+        "textVi": "Tạo một inbound endpoint trên Amazon Route 53 Resolver, rồi Amazon Route 53 Resolver có thể chuyển tiếp có điều kiện các truy vấn tới resolver trong mạng on-premises qua endpoint này",
+        "reason": "Inbound endpoint chỉ nhận truy vấn đi vào VPC, không dùng để chuyển tiếp truy vấn ra on-premises."
+      }
+    ],
+    "explanationVi": "DNS hybrid cần hai chiều: on-premises → VPC dùng inbound endpoint (DNS on-premises chuyển tiếp truy vấn vào Route 53 Resolver); VPC → on-premises dùng outbound endpoint kèm forwarding rule có điều kiện. Mẹo nhớ: hướng của endpoint tính theo góc nhìn của VPC. Bẫy là các phương án đảo hướng và \"universal endpoint\" không tồn tại.",
+    "keyHint": "Phân giải DNS hai chiều giữa \"on-premises network\" và \"AWS VPC\" → Route 53 Resolver inbound endpoint + outbound endpoint."
+  },
+  {
+    "id": 10558,
+    "stemVi": "Một startup đã tạo ứng dụng web mới để người dùng tự làm bảng khảo sát đánh giá nguy cơ triệu chứng COVID-19. Startup đã mua tên miền covid19survey.com qua Amazon Route 53. Nhóm phát triển web muốn tạo bản ghi Amazon Route 53 để mọi lưu lượng tới covid19survey.com được chuyển tới www.covid19survey.com.",
+    "promptVi": "Là solutions architect, bạn khuyên nhóm phát triển web dùng giải pháp nào là tiết kiệm chi phí nhất (MOST cost-effective)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một bản ghi MX cho covid19survey.com để chuyển lưu lượng tới www.covid19survey.com",
+        "reason": "Bản ghi MX chỉ định mail server nhận email cho tên miền, không định tuyến lưu lượng web."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một bản ghi NS cho covid19survey.com để chuyển lưu lượng tới www.covid19survey.com",
+        "reason": "Bản ghi NS chỉ định name server có thẩm quyền cho zone, không trỏ tên miền tới một tên khác."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một bản ghi CNAME cho covid19survey.com để chuyển lưu lượng tới www.covid19survey.com",
+        "reason": "covid19survey.com là zone apex, mà DNS không cho tạo CNAME ở zone apex."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một bản ghi alias cho covid19survey.com để chuyển lưu lượng tới www.covid19survey.com",
+        "reason": "Alias tạo được ở zone apex và trỏ được tới một bản ghi khác trong cùng hosted zone; Route 53 cũng không tính phí cho truy vấn alias tới tài nguyên AWS, nên đây là cách rẻ nhất."
+      }
+    ],
+    "explanationVi": "covid19survey.com là zone apex nên không dùng CNAME được. Alias record của Route 53 là phần mở rộng cho phép trỏ zone apex tới tài nguyên AWS hoặc tới bản ghi khác trong cùng hosted zone (như www.covid19survey.com), và truy vấn alias tới tài nguyên AWS không mất phí. MX và NS phục vụ mục đích khác hẳn.",
+    "keyHint": "\"covid19survey.com\" (zone apex) trỏ tới \"www.covid19survey.com\" + \"MOST cost-effective\" → Route 53 alias record."
+  },
+  {
+    "id": 10559,
+    "stemVi": "Một công ty có một giải pháp cơ sở dữ liệu thương mại cũ, tính phí theo license và đắt đỏ, chạy trong trung tâm dữ liệu on-premises. Công ty muốn chuyển cơ sở dữ liệu này sang một lựa chọn mã nguồn mở, hiệu quả và tiết kiệm chi phí hơn trên AWS Cloud. CTO muốn giải pháp xử lý được các cấu hình cơ sở dữ liệu phức tạp như secondary index, foreign key và stored procedure.",
+    "promptVi": "Là solutions architect, những dịch vụ AWS nào sau đây nên được kết hợp cho tình huống này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "AWS Schema Conversion Tool (AWS SCT)",
+        "reason": "Khi chuyển giữa hai engine khác nhau, SCT chuyển đổi schema cùng các đối tượng phức tạp như secondary index, foreign key và stored procedure sang engine đích mã nguồn mở."
+      },
+      {
+        "key": "B",
+        "textVi": "Basic Schema Copy",
+        "reason": "Basic Schema Copy của DMS chỉ tạo bảng và primary key cơ bản, không chuyển secondary index, foreign key hay stored procedure."
+      },
+      {
+        "key": "C",
+        "textVi": "AWS Glue",
+        "reason": "Glue là dịch vụ ETL cho phân tích dữ liệu, không phải công cụ di chuyển cơ sở dữ liệu và chuyển đổi schema."
+      },
+      {
+        "key": "D",
+        "textVi": "AWS Snowball Edge",
+        "reason": "Snowball Edge chuyển khối lượng lớn dữ liệu offline, không chuyển đổi schema hay stored procedure giữa các engine."
+      },
+      {
+        "key": "E",
+        "textVi": "AWS Database Migration Service (AWS DMS)",
+        "reason": "DMS di chuyển dữ liệu từ cơ sở dữ liệu nguồn sang đích (kể cả khác engine) trong khi nguồn vẫn hoạt động, giảm thời gian ngừng."
+      }
+    ],
+    "explanationVi": "Chuyển từ cơ sở dữ liệu thương mại sang engine mã nguồn mở là di chuyển khác engine (heterogeneous): SCT lo phần schema và mã (index, foreign key, stored procedure), DMS lo phần di chuyển dữ liệu. Bẫy là Basic Schema Copy: nghe giống chuyển schema nhưng chỉ tạo bảng và primary key.",
+    "keyHint": "\"open-source\" thay cho \"commercial database\" + \"secondary indexes, foreign keys, and stored procedures\" → AWS SCT + AWS DMS."
+  },
+  {
+    "id": 10560,
+    "stemVi": "Một tổ chức bán lẻ đang chuyển một phần dữ liệu on-premises lên AWS Cloud. Nhóm DevOps của tổ chức đã thiết lập một AWS Managed IPSec VPN Connection giữa mạng on-premises từ xa và Amazon VPC qua internet.",
+    "promptVi": "Cấu hình nào sau đây là đúng cho IPSec VPN Connection?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo virtual private gateway (VGW) ở cả phía AWS lẫn phía on-premises của VPN",
+        "reason": "Virtual private gateway chỉ tồn tại ở phía AWS; phía on-premises được đại diện bằng customer gateway."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo virtual private gateway (VGW) ở phía AWS của VPN và Customer Gateway ở phía on-premises của VPN",
+        "reason": "Virtual private gateway là điểm cuối VPN gắn vào VPC ở phía AWS, còn customer gateway đại diện cho thiết bị hoặc phần mềm VPN ở phía on-premises — đúng cấu hình Site-to-Site VPN."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo Customer Gateway ở cả phía AWS lẫn phía on-premises của VPN",
+        "reason": "Customer gateway chỉ đại diện cho phía khách hàng; phía AWS cần virtual private gateway (hoặc transit gateway)."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo virtual private gateway (VGW) ở phía on-premises của VPN và Customer Gateway ở phía AWS của VPN",
+        "reason": "Phương án này đảo ngược vai trò hai thành phần."
+      }
+    ],
+    "explanationVi": "Site-to-Site VPN có hai đầu: virtual private gateway (VPN gateway) gắn vào VPC ở phía AWS, và customer gateway là tài nguyên mô tả thiết bị VPN ở phía on-premises. Nhớ theo tên: \"customer\" là phía khách hàng. Các phương án còn lại đều đặt sai hoặc đảo vị trí.",
+    "keyHint": "\"AWS Managed IPSec VPN Connection\" → virtual private gateway phía AWS + customer gateway phía on-premises."
+  },
+  {
+    "id": 10561,
+    "stemVi": "Nhóm phát triển của một công ty bán lẻ muốn tối ưu chi phí Amazon EC2 instance. Nhóm muốn chuyển một số batch job chạy hằng đêm sang spot instance. Nhóm thuê bạn làm solutions architect để đưa ra hướng dẫn ban đầu.",
+    "promptVi": "Bạn xác định những phát biểu nào sau đây là ĐÚNG về khả năng của spot instance? (Chọn ba.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Spot Fleet có thể duy trì target capacity bằng cách chạy instance thay thế sau khi các Spot Instance trong fleet bị terminate",
+        "reason": "Spot Fleet loại maintain tự chạy instance thay thế khi Spot Instance bị thu hồi để giữ đúng target capacity."
+      },
+      {
+        "key": "B",
+        "textVi": "Spot Fleet không thể duy trì target capacity bằng cách chạy instance thay thế sau khi các Spot Instance trong fleet bị terminate",
+        "reason": "Sai: duy trì target capacity chính là tính năng của Spot Fleet loại maintain."
+      },
+      {
+        "key": "C",
+        "textVi": "Nếu spot request là persistent, nó được mở lại sau khi bạn stop Spot Instance",
+        "reason": "Khi bạn tự stop Spot Instance, persistent request chuyển sang trạng thái disabled và chỉ hoạt động lại khi instance được start lại; request được mở lại khi instance bị gián đoạn (interrupt)."
+      },
+      {
+        "key": "D",
+        "textVi": "Khi bạn hủy một spot request đang hoạt động, instance tương ứng cũng bị terminate",
+        "reason": "Hủy spot request không terminate instance đã chạy; muốn dừng phải tự terminate instance."
+      },
+      {
+        "key": "E",
+        "textVi": "Nếu spot request là persistent, nó được mở lại sau khi Spot Instance bị gián đoạn (interrupted)",
+        "reason": "Persistent request vẫn còn hiệu lực sau khi Spot Instance bị gián đoạn, nên được mở lại để chạy instance mới khi có capacity."
+      },
+      {
+        "key": "F",
+        "textVi": "Khi bạn hủy một spot request đang hoạt động, instance tương ứng không bị terminate",
+        "reason": "Hủy request chỉ ngăn việc tạo instance mới; instance đang chạy vẫn tiếp tục cho đến khi bạn terminate hoặc nó bị gián đoạn."
+      }
+    ],
+    "explanationVi": "Ba điểm cần nhớ về Spot: Spot Fleet giữ target capacity bằng cách chạy instance thay thế; persistent request được mở lại khi instance bị gián đoạn (không phải khi bạn tự stop); và hủy spot request không terminate instance đang chạy. Bẫy phổ biến là nghĩ hủy request sẽ tự tắt instance.",
+    "keyHint": "\"spot instances\" → Spot Fleet giữ target capacity, persistent request mở lại khi bị \"interrupted\", hủy request không terminate instance."
+  },
+  {
+    "id": 10562,
+    "stemVi": "Một công ty y tế đã triển khai ứng dụng web trên các container instance của Amazon Elastic Container Service (Amazon ECS) phía sau một Application Load Balancer. Website chậm lại khi lưu lượng tăng đột biến và tính sẵn sàng cũng giảm. Nhóm phát triển đã cấu hình Amazon CloudWatch alarm để nhận thông báo mỗi khi có vấn đề về tính sẵn sàng, để nhóm mở rộng tài nguyên. Công ty muốn có giải pháp tự động phản ứng với các sự kiện này.",
+    "promptVi": "Phương án nào sau đây giải quyết được tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình AWS Auto Scaling để scale out Amazon ECS cluster khi CPU utilization của Application Load Balancer vượt ngưỡng",
+        "reason": "ALB là dịch vụ được quản lý, không có metric CPU utilization để làm căn cứ scaling."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình AWS Auto Scaling để scale out Amazon ECS cluster khi CPU utilization của target group của Application Load Balancer vượt ngưỡng",
+        "reason": "Target group không có metric CPU utilization; nó chỉ có các metric như số request hay số target healthy."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình AWS Auto Scaling để scale out Amazon ECS cluster khi CPU utilization của ECS service vượt ngưỡng",
+        "reason": "ECS service công bố metric CPUUtilization lên CloudWatch; dùng nó với target tracking hoặc step scaling sẽ tự tăng số task khi tải tăng — đúng yêu cầu tự động."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình AWS Auto Scaling để scale out Amazon ECS cluster khi CPU utilization của CloudWatch alarm vượt ngưỡng",
+        "reason": "CloudWatch alarm không có CPU utilization riêng; alarm chỉ theo dõi một metric của tài nguyên khác, nên phương án này không có nghĩa."
+      }
+    ],
+    "explanationVi": "Muốn tự động mở rộng ứng dụng ECS, dùng Service Auto Scaling dựa trên metric của chính ECS service, như CPUUtilization trung bình của service. Các phương án dựa trên CPU của ALB, của target group hay của CloudWatch alarm đều sai vì những thành phần này không có metric CPU utilization.",
+    "keyHint": "\"Amazon ECS\" + \"automated solution\" khi tải tăng → Auto Scaling theo CPU utilization của ECS service."
+  },
+  {
+    "id": 10563,
+    "stemVi": "Nhóm DevOps của một công ty IT vừa chuyển lên AWS và đang cấu hình security group cho ứng dụng hai tầng gồm web server public và database server private. Nhóm muốn hiểu các tùy chọn cấu hình được phép cho một inbound rule của security group.",
+    "promptVi": "Là solutions architect, bạn xác định lựa chọn nào sau đây là KHÔNG HỢP LỆ (INVALID) khi cấu hình như vậy?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bạn có thể dùng Internet Gateway ID làm custom source cho inbound rule",
+        "reason": "Đây là phát biểu không hợp lệ: nguồn của rule security group chỉ có thể là địa chỉ IP, dải CIDR, security group hoặc prefix list, không thể là Internet Gateway ID."
+      },
+      {
+        "key": "B",
+        "textVi": "Bạn có thể dùng một dải địa chỉ IP dạng CIDR block làm custom source cho inbound rule",
+        "reason": "Hợp lệ: dải CIDR (IPv4 hoặc IPv6) là loại nguồn phổ biến nhất của rule."
+      },
+      {
+        "key": "C",
+        "textVi": "Bạn có thể dùng một địa chỉ IP làm custom source cho inbound rule",
+        "reason": "Hợp lệ: một địa chỉ IP đơn được nhập dưới dạng CIDR /32 (IPv4) hoặc /128 (IPv6)."
+      },
+      {
+        "key": "D",
+        "textVi": "Bạn có thể dùng một security group làm custom source cho inbound rule",
+        "reason": "Hợp lệ: tham chiếu security group khác làm nguồn, ví dụ cho database chỉ nhận lưu lượng từ security group của web server."
+      }
+    ],
+    "explanationVi": "Đề hỏi lựa chọn KHÔNG hợp lệ. Nguồn của inbound rule có thể là IP đơn, dải CIDR, security group khác hoặc prefix list; Internet Gateway ID không nằm trong danh sách đó. Cẩn thận đọc chữ INVALID để khỏi chọn nhầm một phát biểu đúng.",
+    "keyHint": "\"INVALID option\" cho nguồn của inbound rule → Internet Gateway ID (chỉ chấp nhận IP, CIDR, security group, prefix list)."
+  },
+  {
+    "id": 10564,
+    "stemVi": "Một công ty media muốn có cách phân phối kết quả thể thao trực tiếp với độ trễ thấp; kết quả được gửi qua một ứng dụng độc quyền dùng giao thức UDP.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây để có hiệu năng TỐT NHẤT (BEST) cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon CloudFront để phân phối kết quả thể thao trực tiếp với độ trễ thấp",
+        "reason": "CloudFront là CDN cho nội dung HTTP/HTTPS (và WebSocket), không hỗ trợ ứng dụng dùng giao thức UDP."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Auto Scaling group để phân phối kết quả thể thao trực tiếp với độ trễ thấp",
+        "reason": "Auto Scaling group chỉ điều chỉnh số EC2 instance, không cải thiện độ trễ mạng tới người dùng ở xa."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Global Accelerator để phân phối kết quả thể thao trực tiếp với độ trễ thấp",
+        "reason": "Global Accelerator hỗ trợ cả TCP và UDP, đưa lưu lượng vào mạng toàn cầu của AWS tại edge gần người dùng nhất và định tuyến tới endpoint tối ưu, giảm độ trễ và jitter."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Elastic Load Balancing (ELB) để phân phối kết quả thể thao trực tiếp với độ trễ thấp",
+        "reason": "ELB (như NLB) phân phối lưu lượng UDP trong một Region, nhưng không tối ưu đường mạng cho người dùng toàn cầu như Global Accelerator."
+      }
+    ],
+    "explanationVi": "Giao thức UDP loại ngay CloudFront (chỉ phục vụ HTTP/HTTPS). Global Accelerator chạy ở tầng 4, hỗ trợ TCP lẫn UDP và đưa lưu lượng đi trên mạng riêng của AWS, phù hợp cho game, VoIP hay dữ liệu trực tiếp. Bẫy là CloudFront vì đề nói tới \"distribute\" nội dung với độ trễ thấp.",
+    "keyHint": "\"UDP protocol\" + \"low-latency\" → AWS Global Accelerator."
+  },
+  {
+    "id": 10565,
+    "stemVi": "Một công ty thương mại điện tử dùng Microsoft Active Directory để cấp quyền truy cập tài nguyên trên hạ tầng on-premises cho user và group. Công ty đã mở rộng hạ tầng IT lên AWS theo mô hình hybrid cloud. Nhóm kỹ thuật muốn chạy các workload nhận biết thư mục (directory-aware) trên AWS cho một ứng dụng dùng SQL Server. Nhóm cũng muốn cấu hình trust relationship để người dùng đăng nhập một lần (SSO) và truy cập tài nguyên ở cả hai domain.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng dịch vụ AWS nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Active Directory Connector",
+        "reason": "AD Connector chỉ là proxy chuyển yêu cầu xác thực về AD on-premises; nó không lưu thư mục, không chạy được workload directory-aware như SQL Server và không hỗ trợ trust relationship."
+      },
+      {
+        "key": "B",
+        "textVi": "Simple Active Directory (Simple AD)",
+        "reason": "Simple AD là thư mục tương thích AD dựa trên Samba, không hỗ trợ trust relationship với domain khác và không hợp với ứng dụng SQL Server cần AD thật."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon Cloud Directory",
+        "reason": "Cloud Directory là kho thư mục phân cấp cho ứng dụng tự xây, không phải Microsoft Active Directory và không tạo trust với AD on-premises."
+      },
+      {
+        "key": "D",
+        "textVi": "AWS Directory Service for Microsoft Active Directory (AWS Managed Microsoft AD)",
+        "reason": "AWS Managed Microsoft AD là Microsoft Active Directory thật do AWS quản lý, chạy được workload directory-aware như SQL Server và tạo được trust relationship với AD on-premises để người dùng SSO giữa hai domain."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu then chốt: chạy workload directory-aware (SQL Server) trên AWS và tạo trust với AD on-premises. Chỉ AWS Managed Microsoft AD — Active Directory thật do AWS quản lý — làm được cả hai. AD Connector chỉ chuyển tiếp xác thực về on-premises, Simple AD không hỗ trợ trust, Cloud Directory không phải AD.",
+    "keyHint": "\"directory-aware workloads\" + \"SQL Server\" + \"trust relationship\" → AWS Managed Microsoft AD."
   }
 ]

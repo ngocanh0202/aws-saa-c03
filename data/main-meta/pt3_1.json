@@ -541,7 +541,8 @@
     "services": [
       "ebs",
       "ec2"
-    ]
+    ],
+    "note": "AWS nay khuyên dùng io2 Block Express thay cho io1: cùng mức giá nhưng độ bền dữ liệu cao hơn (99,999%) và hiệu năng tối đa cao hơn (tới 256.000 IOPS mỗi volume)."
   },
   {
     "id": 10552,
@@ -629,7 +630,8 @@
       "dms",
       "glue",
       "snowball"
-    ]
+    ],
+    "note": "AWS DMS nay có thêm DMS Schema Conversion chạy ngay trong console, làm phần việc chuyển đổi schema của AWS SCT mà không cần cài công cụ trên máy; AWS SCT vẫn dùng được."
   },
   {
     "id": 10560,
