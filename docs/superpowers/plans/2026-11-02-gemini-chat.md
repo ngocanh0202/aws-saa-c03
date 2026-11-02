@@ -81,7 +81,7 @@
 
 - [ ] **Step 1: Write failing tests** in `config.test.ts`: `đọc VITE_RECAPTCHA_SITE_KEY và VITE_GEMINI_MODEL khi có`; `thiếu hai biến này vẫn trả cấu hình, trường là undefined`.
 - [ ] **Step 2:** `npx vitest run src/sync/config.test.ts` → FAIL.
-- [ ] **Step 3:** Implement config, adapters, fakes, `AppDeps`, `main.tsx` (`ai: clients ? createGeminiClient(clients.app, config.geminiModel ?? 'gemini-2.5-flash') : undefined`, `chats: clients?.chats`). `chats` in firebase.ts: `get`/`set` on the path from Global Constraints; `load` returns `[]` when missing and drops malformed JSON (returns `[]`).
+- [ ] **Step 3:** Implement config, adapters, fakes, `AppDeps`, `main.tsx` (`ai: clients ? createGeminiClient(clients.app, config.geminiModel ?? DEFAULT_GEMINI_MODEL) : undefined`, `chats: clients?.chats`). `chats` in firebase.ts: `get`/`set` on the path from Global Constraints; `load` returns `[]` when missing and drops malformed JSON (returns `[]`).
 - [ ] **Step 4:** `database.rules.json`: under `$uid`, add `"aiChats": { "$attemptId": { "$qid": { ".validate": "newData.hasChildren(['json', 'updatedAt']) && newData.child('json').isString() && newData.child('json').val().length < 200000 && newData.child('updatedAt').isNumber()" } } }`. Docs: enable Firebase AI Logic (Gemini Developer API) in console, deploy rules, optional App Check with reCAPTCHA Enterprise key; `.env.example` adds both variables with comments.
 - [ ] **Step 5:** `npm run check` and `npm run build` → PASS.
 - [ ] **Step 6: Commit** `feat(ai): Firebase AI Logic adapter and chat history store`.
