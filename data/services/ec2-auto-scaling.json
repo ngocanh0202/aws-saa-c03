@@ -1,0 +1,12 @@
+{
+  "id": "ec2-auto-scaling", "name": "Amazon EC2 Auto Scaling", "category": "Compute", "tier": "core",
+  "overview": "EC2 Auto Scaling duy trì số lượng EC2 instance mong muốn và tự điều chỉnh fleet theo lịch hoặc tín hiệu tải.",
+  "concepts": [{ "term": "Auto Scaling group", "desc": "Định nghĩa min, max, desired capacity, subnet/AZ và lifecycle của instance." }, { "term": "Launch template", "desc": "Mẫu AMI, instance type, role, storage và cấu hình instance khi scale out." }, { "term": "Scaling policy", "desc": "Target tracking, step hoặc scheduled policy thay đổi desired capacity theo điều kiện." }],
+  "howItWorks": "Group khởi chạy/terminate instance để đạt desired capacity; health checks và scaling policies phản ứng với lỗi hoặc metrics.",
+  "useCases": ["Duy trì ứng dụng qua lỗi instance/AZ", "Tự động scale theo CPU hoặc request", "Quản lý fleet EC2 đồng nhất"],
+  "pricing": "Auto Scaling không tính phí riêng; instance, EBS, load balancer, metrics nâng cao và data transfer vẫn được tính phí.",
+  "examSignals": ["Duy trì desired instance count và thay instance lỗi: Auto Scaling group", "Mở rộng theo metric mục tiêu: target tracking", "Tải dự đoán được theo giờ: scheduled scaling"],
+  "compareWith": [{ "service": "Elastic Load Balancing", "diff": "Auto Scaling điều chỉnh số lượng instance; ELB phân phối traffic tới targets khỏe." }, { "service": "AWS Lambda", "diff": "Auto Scaling quản lý fleet EC2; Lambda tự cấp phát compute theo invocation mà không quản lý instance." }],
+  "facts": ["Min/desired/max capacity giới hạn hành vi của group.", "Health check replacement có thể xóa và thay instance không khỏe.", "Desired capacity bằng 0 là cách dừng lab fleet, nhưng cần kiểm tra EBS/IP còn tính phí."],
+  "practice": { "steps": ["Dùng launch template tối thiểu trong sandbox và group min=0, desired=0, max=1.", "Xem policy/health check configuration; nếu khởi chạy instance, theo dõi cost và không dùng image chứa dữ liệu thật.", "Thử scale thủ công về desired=0 trước khi kết thúc."], "freeTier": "Auto Scaling miễn phí riêng nhưng mọi EC2/EBS/ELB/metrics resource có thể tính phí; xác minh ưu đãi tài khoản trước khi scale out.", "cleanup": ["Đặt desired/min về 0 rồi xóa Auto Scaling group.", "Xóa launch template/version chỉ tạo cho bài lab.", "Terminate instance còn sót và xóa volume/snapshot, Elastic IP cùng security group thử."] }
+}

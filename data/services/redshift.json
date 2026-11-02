@@ -1,0 +1,12 @@
+{
+  "id": "redshift", "name": "Amazon Redshift", "category": "Analytics", "tier": "core",
+  "overview": "Amazon Redshift là cloud data warehouse dạng columnar/Massively Parallel Processing cho analytics và BI trên dữ liệu lớn.",
+  "concepts": [{ "term": "Cluster/serverless workgroup", "desc": "Provisioned cluster hoặc serverless namespace/workgroup cung cấp capacity SQL warehouse." }, { "term": "COPY/UNLOAD", "desc": "Nạp/xuất dữ liệu khối lượng lớn giữa Redshift và S3." }, { "term": "Distribution/sort keys", "desc": "Thiết kế physical layout ảnh hưởng data locality và query performance ở provisioned workloads." }],
+  "howItWorks": "Dữ liệu được nạp hoặc truy vấn external; compute thực thi SQL phân tán, kết quả truy xuất qua client/API/BI và có thể kết hợp lake query.",
+  "useCases": ["Data warehouse cho BI/analytics SQL", "Tổng hợp dữ liệu nhiều nguồn", "Workload analytics lặp lại cần query performance"],
+  "pricing": "Provisioned compute/RA3/serverless capacity, storage, snapshot, data transfer và concurrency features có các cách tính khác nhau.",
+  "examSignals": ["Enterprise data warehouse/BI SQL workload: Redshift", "Ad hoc query trực tiếp S3 không dựng warehouse: Athena", "OLTP giao dịch relational: RDS/Aurora, không phải Redshift"],
+  "compareWith": [{ "service": "Amazon Athena", "diff": "Redshift warehouse có compute/capacity cho analytics; Athena serverless query S3 thường phù hợp ad hoc." }, { "service": "Amazon RDS", "diff": "Redshift tối ưu analytics/columnar MPP; RDS tối ưu relational transactional application database." }],
+  "facts": ["Không dùng Redshift như OLTP database mặc định.", "Redshift Data API cho phép gọi query qua API không cần quản lý persistent client connection.", "Cluster/workgroup networking và IAM/database permissions cần phối hợp."],
+  "practice": { "steps": ["Chỉ tạo serverless/provisioned Redshift lab khi có ngân sách; dùng sample data và private networking.", "Chạy truy vấn SELECT nhỏ, thử Data API hoặc nạp từ S3 bằng role tối thiểu.", "Đặt usage limits/alarms; không import dữ liệu production nhạy cảm."], "freeTier": "Compute/capacity, storage, snapshots, data transfer và S3 có thể tính phí; kiểm tra giá/ưu đãi hiện hành và giới hạn usage trước khi tạo.", "cleanup": ["Pause/delete namespace hoặc cluster theo hướng dẫn để dừng compute charge.", "Xóa snapshot/backup, S3 staging data và IAM role chỉ tạo cho lab nếu không cần.", "Xác nhận workload không còn phụ thuộc trước khi xóa endpoint/credentials."] }
+}

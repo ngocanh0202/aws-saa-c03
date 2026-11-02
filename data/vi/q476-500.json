@@ -1,0 +1,751 @@
+[
+  {
+    "id": 476,
+    "stemVi": "Một công ty muốn cho một khách hàng khả năng dùng Microsoft Active Directory on-premises để tải xuống các file được lưu trong Amazon S3. Ứng dụng của khách hàng dùng một SFTP client để tải file.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead) và không phải thay đổi ứng dụng của khách hàng?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thiết lập AWS Transfer Family với SFTP cho Amazon S3. Cấu hình xác thực tích hợp với Active Directory.",
+        "reason": "Transfer Family cung cấp SFTP endpoint được quản lý hoàn toàn với backend là S3, và hỗ trợ xác thực bằng Active Directory (qua AWS Directory Service/AD Connector); SFTP client của khách giữ nguyên, không có máy chủ nào phải vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập AWS Database Migration Service (AWS DMS) để đồng bộ client on-premises với Amazon S3. Cấu hình xác thực tích hợp với Active Directory.",
+        "reason": "DMS dùng để migrate và sao chép cơ sở dữ liệu, không cung cấp endpoint SFTP để client tải file."
+      },
+      {
+        "key": "C",
+        "textVi": "Thiết lập AWS DataSync để đồng bộ giữa địa điểm on-premises và vị trí S3 bằng AWS IAM Identity Center (AWS Single Sign-On).",
+        "reason": "DataSync là dịch vụ chuyển dữ liệu theo task, không cung cấp giao thức SFTP cho client; khách hàng sẽ phải đổi cách lấy file, và IAM Identity Center không dùng để xác thực client SFTP."
+      },
+      {
+        "key": "D",
+        "textVi": "Thiết lập một Amazon EC2 instance chạy Windows với SFTP để kết nối client on-premises với Amazon S3. Tích hợp AWS Identity and Access Management (IAM).",
+        "reason": "Phải tự dựng, vá lỗi và co giãn máy chủ SFTP trên EC2, tốn công vận hành; IAM cũng không xác thực trực tiếp bằng tài khoản Active Directory on-premises."
+      }
+    ],
+    "explanationVi": "Khách hàng dùng SFTP client và tài khoản Active Directory, dữ liệu nằm trong S3. AWS Transfer Family cung cấp SFTP managed trên S3 và tích hợp xác thực AD, nên không phải sửa ứng dụng và không có máy chủ để quản lý. Bẫy: DMS và DataSync là công cụ di chuyển dữ liệu, không phải SFTP server; tự dựng EC2 tốn công vận hành.",
+    "keyHint": "\"SFTP client\" + \"on-premises Microsoft Active Directory\" + \"files that are stored in Amazon S3\" → AWS Transfer Family (SFTP) với xác thực Active Directory."
+  },
+  {
+    "id": 477,
+    "stemVi": "Một solutions architect đã cấu hình một VPC có dải địa chỉ IP nhỏ. Số lượng Amazon EC2 instance trong VPC đang tăng lên, và không còn đủ địa chỉ IP cho các workload trong tương lai.",
+    "promptVi": "Giải pháp nào giải quyết vấn đề này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thêm một IPv4 CIDR block bổ sung để tăng số địa chỉ IP và tạo thêm subnet trong VPC. Tạo tài nguyên mới trong các subnet mới bằng CIDR mới.",
+        "reason": "VPC cho phép gắn thêm secondary IPv4 CIDR block; chỉ cần thêm CIDR, tạo subnet mới và đặt tài nguyên mới vào đó — các subnet trong cùng VPC tự định tuyến với nhau qua local route, không phải dựng thêm kết nối nào."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một VPC thứ hai với các subnet bổ sung. Dùng peering connection để nối VPC thứ hai với VPC thứ nhất. Cập nhật route và tạo tài nguyên mới trong các subnet của VPC thứ hai.",
+        "reason": "Phải tạo VPC mới, peering connection và cập nhật route table ở cả hai phía, sau này còn phải quản lý hai VPC — nhiều công vận hành hơn việc thêm CIDR."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Transit Gateway để thêm một transit gateway và nối VPC thứ hai với VPC thứ nhất. Cập nhật route của transit gateway và các VPC. Tạo tài nguyên mới trong các subnet của VPC thứ hai.",
+        "reason": "Transit Gateway là dịch vụ trung tâm có phí theo giờ và theo dữ liệu, cần cấu hình attachment và route table — quá phức tạp và tốn kém cho việc chỉ thiếu địa chỉ IP."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một VPC thứ hai. Tạo kết nối Site-to-Site VPN giữa VPC thứ nhất và VPC thứ hai bằng một giải pháp VPN chạy trên Amazon EC2 và một virtual private gateway. Cập nhật route giữa các VPC để traffic đi qua VPN. Tạo tài nguyên mới trong các subnet của VPC thứ hai.",
+        "reason": "Tự vận hành VPN trên EC2 thêm máy chủ phải quản lý, giới hạn băng thông và tạo điểm lỗi; đây là cách tốn công vận hành nhất."
+      }
+    ],
+    "explanationVi": "Vấn đề chỉ là thiếu địa chỉ IP trong VPC, và VPC hỗ trợ gắn thêm secondary IPv4 CIDR block. Thêm CIDR rồi tạo subnet mới giữ mọi thứ trong cùng một VPC, không phải cấu hình kết nối giữa các VPC. Bẫy: peering, Transit Gateway hay VPN đều giải quyết được nhưng thêm nhiều thành phần cần quản lý.",
+    "keyHint": "\"insufficient number of IP addresses\" trong VPC + \"LEAST operational overhead\" → thêm secondary IPv4 CIDR block cho VPC."
+  },
+  {
+    "id": 478,
+    "stemVi": "Một công ty đã phát triển một trò chơi điện tử mới dưới dạng ứng dụng web. Ứng dụng có kiến trúc ba tầng (three-tier) trong một VPC với Amazon RDS for MySQL ở tầng cơ sở dữ liệu. Nhiều người chơi sẽ thi đấu trực tuyến cùng lúc. Các nhà phát triển trò chơi muốn hiển thị bảng xếp hạng top 10 gần thời gian thực (near-real time) và cho phép dừng rồi khôi phục trò chơi mà vẫn giữ nguyên điểm số hiện tại.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thiết lập một Amazon ElastiCache for Memcached cluster để cache điểm số cho ứng dụng web hiển thị.",
+        "reason": "Memcached chỉ lưu key-value đơn giản, không có cấu trúc dữ liệu để xếp hạng và không có persistence hay snapshot, nên dừng rồi khôi phục sẽ mất điểm số."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một Amazon ElastiCache for Redis cluster để tính toán và cache điểm số cho ứng dụng web hiển thị.",
+        "reason": "Redis có sorted set để cập nhật điểm và lấy top 10 tức thì; Redis còn hỗ trợ persistence và snapshot nên dừng rồi khôi phục vẫn giữ được điểm số hiện tại."
+      },
+      {
+        "key": "C",
+        "textVi": "Đặt một Amazon CloudFront distribution phía trước ứng dụng web để cache bảng xếp hạng trong một phần của ứng dụng.",
+        "reason": "CloudFront cache nội dung tại edge, không tính được bảng xếp hạng; cache bảng điểm thay đổi liên tục sẽ trả về dữ liệu cũ, không gần thời gian thực."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một read replica cho Amazon RDS for MySQL để chạy truy vấn tính bảng xếp hạng và phục vụ traffic đọc cho ứng dụng web.",
+        "reason": "Truy vấn sắp xếp liên tục trên cơ sở dữ liệu quan hệ khi nhiều người chơi cập nhật điểm là nặng, còn replication bất đồng bộ có độ trễ; khó đạt bảng xếp hạng gần thời gian thực."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu: bảng xếp hạng top 10 gần thời gian thực và giữ điểm số khi dừng rồi khôi phục. ElastiCache for Redis đáp ứng cả hai nhờ sorted set (xếp hạng trong bộ nhớ) và persistence/snapshot. Bẫy: Memcached cũng là cache in-memory nhưng không có sorted set và không lưu bền dữ liệu.",
+    "keyHint": "\"top-10 scoreboard in near-real time\" + \"preserving the current scores\" → ElastiCache for Redis (sorted set + persistence)."
+  },
+  {
+    "id": 479,
+    "stemVi": "Một công ty dùng AWS Organizations với chế độ all features và chạy nhiều workload Amazon EC2 ở Region ap-southeast-2. Công ty có một service control policy (SCP) ngăn việc tạo bất kỳ tài nguyên nào ở các Region khác. Một chính sách bảo mật yêu cầu công ty mã hóa mọi dữ liệu khi lưu (at rest).\n\nMột đợt kiểm tra phát hiện nhân viên đã tạo các Amazon Elastic Block Store (Amazon EBS) volume cho EC2 instance mà không mã hóa. Công ty muốn mọi EC2 instance mới do bất kỳ IAM user hay root user nào khởi chạy ở ap-southeast-2 đều dùng EBS volume được mã hóa. Công ty muốn một giải pháp ảnh hưởng ít nhất tới nhân viên tạo EBS volume.",
+    "promptVi": "Tổ hợp bước nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Trong Amazon EC2 console, chọn thuộc tính account EBS encryption và định nghĩa một key mã hóa mặc định.",
+        "reason": "Theo đáp án gốc, đây không phải lựa chọn được chọn; tuy vậy, bật EBS encryption by default trong EC2 console (theo từng account và Region) chính là cách làm volume mới tự được mã hóa mà nhân viên không phải thao tác gì (xem ghi chú review)."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một IAM permission boundary. Gắn permission boundary vào root organizational unit (OU). Định nghĩa boundary để từ chối hành động ec2:CreateVolume khi điều kiện ec2:Encrypted bằng false.",
+        "reason": "Permission boundary chỉ gắn được vào IAM user hoặc role, không gắn vào OU; nó cũng không áp dụng cho root user."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một SCP. Gắn SCP vào root organizational unit (OU). Định nghĩa SCP để từ chối hành động ec2:CreateVolume khi điều kiện ec2:Encrypted bằng false.",
+        "reason": "SCP gắn vào root OU áp dụng cho mọi account thành viên, kể cả root user của các account đó; từ chối ec2:CreateVolume khi ec2:Encrypted là false buộc mọi EBS volume mới phải được mã hóa."
+      },
+      {
+        "key": "D",
+        "textVi": "Cập nhật IAM policy của từng account để từ chối hành động ec2:CreateVolume khi điều kiện ec2:Encrypted bằng false.",
+        "reason": "IAM policy không áp dụng cho root user, và sửa policy ở từng account tốn công, dễ bỏ sót."
+      },
+      {
+        "key": "E",
+        "textVi": "Trong management account của Organizations, chỉ định thiết lập Default EBS volume encryption.",
+        "reason": "Theo đáp án gốc, thiết lập mã hóa EBS mặc định một cách tập trung để volume mới tự được mã hóa mà nhân viên không phải làm gì, kết hợp với SCP để chặn volume không mã hóa."
+      }
+    ],
+    "explanationVi": "Đề cần hai thứ: một biện pháp bắt buộc áp dụng cho mọi principal kể cả root user, và một cơ chế tự mã hóa để không làm phiền nhân viên. SCP gắn vào root OU chặn tạo volume không mã hóa cho mọi account; thiết lập mã hóa EBS mặc định làm volume mới tự được mã hóa. Bẫy: permission boundary và IAM policy không áp dụng cho root user.",
+    "keyHint": "\"IAM user or root user\" + \"encrypted EBS volumes\" + \"minimal effect on employees\" → SCP chặn ec2:Encrypted = false + EBS encryption by default.",
+    "review": {
+      "reason": "Đáp án có thể sai: EBS encryption by default là thiết lập theo từng account và từng Region, bật trong EC2 console (Account attributes → Data protection and security); không có thiết lập \"Default EBS volume encryption\" nào ở Organizations management account áp dụng cho cả organization. Ngay cả declarative policy cho EC2 của Organizations hiện cũng chỉ hỗ trợ các thuộc tính như VPC Block Public Access, Serial Console Access, Image Block Public Access, Allowed Images Settings, Instance Metadata Defaults và Snapshot Block Public Access, không có mã hóa EBS mặc định. Vì vậy cặp đúng hơn là bật thuộc tính EBS encryption trong EC2 console cùng với SCP chặn ec2:CreateVolume khi ec2:Encrypted là false."
+    }
+  },
+  {
+    "id": 480,
+    "stemVi": "Một công ty muốn dùng một Amazon RDS for PostgreSQL DB cluster để đơn giản hóa các tác vụ quản trị cơ sở dữ liệu tốn thời gian cho workload production. Công ty muốn đảm bảo cơ sở dữ liệu có tính sẵn sàng cao (highly available) và hỗ trợ failover tự động trong hầu hết trường hợp với thời gian dưới 40 giây. Công ty muốn chuyển tải đọc ra khỏi primary instance và giữ chi phí thấp nhất có thể.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng triển khai Amazon RDS Multi-AZ DB instance. Tạo một read replica và trỏ tải đọc tới read replica.",
+        "reason": "Multi-AZ DB instance thường failover mất 60–120 giây, vượt mức 40 giây; còn phải trả thêm cho read replica."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng triển khai Amazon RDS Multi-AZ DB cluster. Tạo hai read replica và trỏ tải đọc tới các read replica.",
+        "reason": "Multi-AZ DB cluster đã có hai standby đọc được; tạo thêm hai read replica là trả tiền cho instance không cần thiết, trái yêu cầu chi phí thấp nhất."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng triển khai Amazon RDS Multi-AZ DB instance. Trỏ tải đọc tới các secondary instance trong cặp Multi-AZ.",
+        "reason": "Standby của Multi-AZ DB instance không phục vụ traffic đọc, nên không chuyển tải đọc được; failover cũng chậm hơn 40 giây."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng triển khai Amazon RDS Multi-AZ DB cluster. Trỏ tải đọc tới reader endpoint.",
+        "reason": "Multi-AZ DB cluster gồm một writer và hai reader standby ở hai AZ khác, failover thường dưới 35 giây; reader endpoint chia tải đọc lên hai standby mà không phải trả thêm read replica — đáp ứng cả sẵn sàng cao, failover nhanh và chi phí thấp."
+      }
+    ],
+    "explanationVi": "Failover dưới 40 giây, chuyển tải đọc và chi phí thấp cùng chỉ về RDS Multi-AZ DB cluster: hai standby vừa dùng để failover nhanh vừa phục vụ đọc qua reader endpoint. Bẫy: Multi-AZ DB instance có standby không đọc được và failover chậm hơn; thêm read replica vào DB cluster là tốn tiền thừa.",
+    "keyHint": "\"automatic failover ... less than 40 seconds\" + \"offload reads\" + \"costs as low as possible\" → RDS Multi-AZ DB cluster với reader endpoint."
+  },
+  {
+    "id": 481,
+    "stemVi": "Một ứng dụng serverless dùng Amazon API Gateway, AWS Lambda và Amazon DynamoDB. Lambda function cần quyền đọc và ghi vào bảng DynamoDB.",
+    "promptVi": "Giải pháp nào cấp cho Lambda function quyền truy cập bảng DynamoDB một cách an toàn nhất (MOST securely)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một IAM user có programmatic access cho Lambda function. Gắn policy vào user cho phép đọc và ghi bảng DynamoDB. Lưu tham số access_key_id và secret_access_key trong environment variable của Lambda. Đảm bảo các AWS user khác không có quyền đọc và ghi cấu hình Lambda function.",
+        "reason": "Access key dài hạn lưu trong environment variable có thể bị lộ và không tự xoay vòng; đây là cách AWS khuyến cáo tránh."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một IAM role có Lambda là trusted service. Gắn policy vào role cho phép đọc và ghi bảng DynamoDB. Cập nhật cấu hình Lambda function để dùng role mới làm execution role.",
+        "reason": "Execution role có trust policy cho lambda.amazonaws.com cấp cho function temporary credentials được xoay vòng tự động, không phải lưu secret nào; policy giới hạn quyền đọc/ghi đúng bảng cần thiết — cách an toàn nhất."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một IAM user có programmatic access cho Lambda function. Gắn policy vào user cho phép đọc và ghi bảng DynamoDB. Lưu tham số access_key_id và secret_access_key trong AWS Systems Manager Parameter Store dưới dạng secure string. Cập nhật code Lambda function để lấy các secure string trước khi kết nối tới bảng DynamoDB.",
+        "reason": "Lưu access key trong Parameter Store an toàn hơn environment variable, nhưng vẫn dùng credential dài hạn của IAM user, phải tự xoay vòng và thêm code — kém an toàn hơn execution role."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một IAM role có DynamoDB là trusted service. Gắn policy vào role cho phép truy cập đọc và ghi từ Lambda function. Cập nhật code Lambda function để gắn role mới làm execution role.",
+        "reason": "Trust policy phải tin cậy dịch vụ Lambda để function assume được role, không phải DynamoDB; execution role cũng được cấu hình trên function chứ không gắn từ trong code."
+      }
+    ],
+    "explanationVi": "Cách chuẩn và an toàn nhất để Lambda truy cập dịch vụ AWS khác là dùng IAM execution role tin cậy dịch vụ Lambda, kèm policy tối thiểu cho bảng DynamoDB. Function tự nhận temporary credentials, không phải lưu access key. Bẫy: mọi phương án dùng IAM user và access key đều kém an toàn; trust policy phải đúng dịch vụ sẽ assume role.",
+    "keyHint": "\"Lambda function access to the DynamoDB table MOST securely\" → IAM execution role tin cậy Lambda."
+  },
+  {
+    "id": 482,
+    "stemVi": "Một công ty muốn chia sẻ dữ liệu kế toán với một kiểm toán viên bên ngoài. Dữ liệu được lưu trong một Amazon RDS DB instance nằm trong private subnet. Kiểm toán viên có AWS account riêng và cần một bản sao cơ sở dữ liệu của riêng mình.",
+    "promptVi": "Cách an toàn nhất (MOST secure) để công ty chia sẻ cơ sở dữ liệu với kiểm toán viên là gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một read replica của cơ sở dữ liệu. Cấu hình IAM standard database authentication để cấp quyền truy cập cho kiểm toán viên.",
+        "reason": "Read replica vẫn nằm trong account của công ty, không phải bản sao riêng của kiểm toán viên; phải mở đường truy cập mạng vào private subnet cho bên ngoài."
+      },
+      {
+        "key": "B",
+        "textVi": "Xuất nội dung cơ sở dữ liệu ra file text. Lưu các file vào một Amazon S3 bucket. Tạo một IAM user mới cho kiểm toán viên. Cấp quyền cho user truy cập S3 bucket.",
+        "reason": "Dữ liệu kế toán ở dạng file text dễ bị lộ hơn, không còn là cơ sở dữ liệu; tạo IAM user trong account của công ty cho người ngoài cũng kém an toàn hơn chia sẻ cross-account."
+      },
+      {
+        "key": "C",
+        "textVi": "Sao chép một snapshot của cơ sở dữ liệu vào một Amazon S3 bucket. Tạo một IAM user. Chia sẻ key của user cho kiểm toán viên để cấp quyền truy cập object trong S3 bucket.",
+        "reason": "Chia sẻ access key dài hạn cho bên ngoài là rủi ro bảo mật lớn; RDS snapshot cũng không phải object để tự chép vào bucket rồi kiểm toán viên dùng trực tiếp."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một snapshot được mã hóa của cơ sở dữ liệu. Chia sẻ snapshot với kiểm toán viên. Cho phép truy cập AWS Key Management Service (AWS KMS) encryption key.",
+        "reason": "Snapshot mã hóa bằng customer managed KMS key được chia sẻ trực tiếp cho account của kiểm toán viên, kèm quyền dùng key qua key policy; kiểm toán viên tự khôi phục thành bản sao riêng, dữ liệu luôn được mã hóa và không phải chia sẻ credential."
+      }
+    ],
+    "explanationVi": "Kiểm toán viên có account riêng và cần bản sao riêng: chia sẻ snapshot cross-account là cách tự nhiên nhất. Mã hóa snapshot bằng customer managed KMS key và cấp quyền dùng key cho account kiểm toán giúp dữ liệu luôn được bảo vệ. Lưu ý: snapshot mã hóa bằng AWS managed key mặc định thì không chia sẻ được. Bẫy: chia sẻ access key của IAM user hay xuất file text đều kém an toàn.",
+    "keyHint": "\"auditor has its own AWS account\" + \"its own copy of the database\" + \"MOST secure\" → chia sẻ RDS snapshot mã hóa kèm quyền KMS key."
+  },
+  {
+    "id": 483,
+    "stemVi": "Một công ty đã chuyển cơ sở dữ liệu PostgreSQL on-premises sang một Amazon RDS for PostgreSQL DB instance. Công ty đã ra mắt thành công một sản phẩm mới. Tải trên cơ sở dữ liệu đã tăng lên. Công ty muốn đáp ứng tải lớn hơn mà không thêm hạ tầng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mua reserved DB instance cho toàn bộ workload. Tăng kích thước Amazon RDS for PostgreSQL DB instance.",
+        "reason": "Tăng cỡ instance (scale up) đáp ứng tải lớn hơn mà không thêm instance nào; mua reserved DB instance cho workload ổn định lâu dài giảm đáng kể chi phí so với On-Demand."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển Amazon RDS for PostgreSQL DB instance thành Multi-AZ DB instance.",
+        "reason": "Multi-AZ chỉ thêm standby để tăng tính sẵn sàng, standby không xử lý tải; lại thêm hạ tầng và gần như gấp đôi chi phí."
+      },
+      {
+        "key": "C",
+        "textVi": "Mua reserved DB instance cho toàn bộ workload. Thêm một Amazon RDS for PostgreSQL DB instance khác.",
+        "reason": "Thêm một DB instance là thêm hạ tầng, trái yêu cầu; hai instance riêng biệt cũng không tự chia tải cho cùng một cơ sở dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển Amazon RDS for PostgreSQL DB instance thành on-demand DB instance.",
+        "reason": "On-Demand là mức giá cao nhất cho workload chạy liên tục và không tăng năng lực xử lý — không giải quyết tải tăng và không tiết kiệm chi phí."
+      }
+    ],
+    "explanationVi": "Không được thêm hạ tầng nên cách đáp ứng tải lớn hơn là scale up instance hiện có. Workload production ổn định lâu dài nên mua reserved DB instance để có giá thấp nhất. Bẫy: Multi-AZ tăng tính sẵn sàng chứ không tăng năng lực xử lý; thêm instance là thêm hạ tầng.",
+    "keyHint": "\"without adding infrastructure\" + \"MOST cost-effectively\" → scale up RDS instance + reserved DB instance."
+  },
+  {
+    "id": 484,
+    "stemVi": "Một công ty host ứng dụng trên AWS Cloud. Ứng dụng chạy trên các Amazon EC2 instance phía sau một Elastic Load Balancer trong một Auto Scaling group, cùng với một bảng Amazon DynamoDB. Công ty muốn đảm bảo ứng dụng có thể hoạt động ở một AWS Region khác với thời gian downtime tối thiểu.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này với ít downtime nhất?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Auto Scaling group và một load balancer ở Region khắc phục thảm họa (disaster recovery). Cấu hình bảng DynamoDB thành global table. Cấu hình DNS failover để trỏ tới load balancer ở Region disaster recovery mới.",
+        "reason": "Hạ tầng ở Region DR đã chạy sẵn, global table replicate dữ liệu liên tục giữa các Region, và Route 53 DNS failover dựa trên health check tự chuyển traffic khi Region chính gặp sự cố — downtime ít nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một AWS CloudFormation template để tạo EC2 instance, load balancer và bảng DynamoDB, sẽ được khởi chạy khi cần. Cấu hình DNS failover để trỏ tới load balancer ở Region disaster recovery mới.",
+        "reason": "Phải chờ CloudFormation dựng hạ tầng khi có sự cố, và bảng DynamoDB mới tạo không có dữ liệu — downtime dài và mất dữ liệu."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS CloudFormation template để tạo EC2 instance và một load balancer, sẽ được khởi chạy khi cần. Cấu hình bảng DynamoDB thành global table. Cấu hình DNS failover để trỏ tới load balancer ở Region disaster recovery mới.",
+        "reason": "Dữ liệu đã được replicate qua global table, nhưng tầng ứng dụng vẫn phải chờ dựng bằng CloudFormation khi có sự cố, nên downtime dài hơn việc có hạ tầng chạy sẵn."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Auto Scaling group và load balancer ở Region disaster recovery. Cấu hình bảng DynamoDB thành global table. Tạo một Amazon CloudWatch alarm kích hoạt một AWS Lambda function cập nhật Amazon Route 53 trỏ tới load balancer ở Region disaster recovery.",
+        "reason": "Hạ tầng sẵn sàng như nhau, nhưng tự viết chuỗi alarm và Lambda để sửa DNS phức tạp hơn và chậm hơn so với DNS failover có sẵn của Route 53, lại thêm điểm có thể hỏng."
+      }
+    ],
+    "explanationVi": "Để downtime ít nhất khi chuyển sang Region khác, hạ tầng ở Region DR phải chạy sẵn, dữ liệu phải được replicate liên tục và việc chuyển traffic phải tự động. Auto Scaling group + load balancer sẵn ở Region DR, DynamoDB global table và Route 53 DNS failover đáp ứng cả ba. Bẫy: dựng hạ tầng bằng CloudFormation khi có sự cố làm tăng downtime; tự viết Lambda để sửa DNS là thừa.",
+    "keyHint": "\"another AWS Region\" + \"LEAST amount of downtime\" với DynamoDB → hạ tầng chạy sẵn ở Region DR + DynamoDB global table + Route 53 DNS failover."
+  },
+  {
+    "id": 485,
+    "stemVi": "Một công ty chạy một ứng dụng xử lý ảnh có tính sẵn sàng cao trên các Amazon EC2 instance trong một VPC. Các EC2 instance chạy trong nhiều subnet trải trên nhiều Availability Zone. Các EC2 instance không giao tiếp với nhau. Tuy nhiên, các EC2 instance tải ảnh xuống từ Amazon S3 và tải ảnh lên Amazon S3 thông qua một NAT gateway duy nhất. Công ty lo ngại về phí truyền dữ liệu.",
+    "promptVi": "Cách tiết kiệm chi phí nhất (MOST cost-effective) để công ty tránh phí truyền dữ liệu trong Region (Regional data transfer) là gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Khởi chạy NAT gateway ở mỗi Availability Zone.",
+        "reason": "Giúp tránh phí truyền dữ liệu giữa các AZ tới NAT gateway, nhưng phải trả phí theo giờ cho nhiều NAT gateway và vẫn trả phí xử lý dữ liệu theo GB cho traffic tới S3."
+      },
+      {
+        "key": "B",
+        "textVi": "Thay NAT gateway bằng một NAT instance.",
+        "reason": "Traffic vẫn đi qua một điểm duy nhất, vẫn có phí truyền dữ liệu giữa các AZ; công ty còn phải tự quản lý NAT instance và chịu điểm lỗi đơn."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai một gateway VPC endpoint cho Amazon S3.",
+        "reason": "Gateway VPC endpoint cho S3 miễn phí; traffic tới S3 đi thẳng qua endpoint bằng route trong route table, không còn qua NAT gateway, nên loại bỏ phí xử lý dữ liệu của NAT và phí truyền dữ liệu giữa các AZ tới NAT."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấp phát một EC2 Dedicated Host để chạy các EC2 instance.",
+        "reason": "Dedicated Host là máy chủ vật lý riêng phục vụ yêu cầu license hoặc tuân thủ; nó đắt hơn và không liên quan tới phí truyền dữ liệu tới S3."
+      }
+    ],
+    "explanationVi": "Phí phát sinh vì traffic tới S3 phải đi qua một NAT gateway nằm ở một AZ. Gateway VPC endpoint cho S3 miễn phí và đưa traffic tới S3 đi thẳng mà không qua NAT, loại bỏ cả phí xử lý của NAT lẫn phí truyền dữ liệu giữa các AZ. Bẫy: thêm NAT gateway ở mỗi AZ chỉ giảm một phần chi phí và tốn thêm phí theo giờ.",
+    "keyHint": "\"upload images to Amazon S3 through a single NAT gateway\" + \"data transfer charges\" → gateway VPC endpoint cho S3."
+  },
+  {
+    "id": 486,
+    "stemVi": "Một công ty dùng dung lượng block storage lớn để chạy các workload on-premises. Số giao dịch đầu vào/đầu ra mỗi giây lúc cao điểm hằng ngày của công ty không vượt quá 15.000 IOPS. Công ty muốn chuyển các workload sang Amazon EC2 và muốn cấp phát hiệu năng đĩa độc lập với dung lượng lưu trữ.",
+    "promptVi": "Loại Amazon Elastic Block Store (Amazon EBS) volume nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Loại volume GP2",
+        "reason": "IOPS của gp2 gắn với dung lượng (3 IOPS/GiB), không cấu hình độc lập được; muốn có hiệu năng cao phải mua thêm dung lượng."
+      },
+      {
+        "key": "B",
+        "textVi": "Loại volume io2",
+        "reason": "io2 cho phép cấp phát IOPS độc lập với dung lượng, nhưng tính phí cho từng IOPS được cấp phát, đắt hơn nhiều so với gp3 khi chỉ cần 15.000 IOPS."
+      },
+      {
+        "key": "C",
+        "textVi": "Loại volume GP3",
+        "reason": "gp3 cho phép cấu hình IOPS (tới 16.000) và throughput độc lập với dung lượng, rẻ hơn gp2 theo GB và rẻ hơn nhiều so với io1/io2; 15.000 IOPS nằm trong giới hạn của gp3."
+      },
+      {
+        "key": "D",
+        "textVi": "Loại volume io1",
+        "reason": "io1 cấp phát IOPS độc lập với dung lượng nhưng là loại đắt nhất trong các lựa chọn, chỉ cần khi vượt giới hạn của gp3 hoặc cần độ trễ cực thấp."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu: hiệu năng độc lập với dung lượng và tối đa 15.000 IOPS với chi phí thấp nhất. gp3 cho phép cấp phát IOPS và throughput riêng, tối đa 16.000 IOPS, với giá thấp hơn cả gp2 lẫn io1/io2. Bẫy: io1/io2 cũng cấp phát IOPS độc lập nhưng đắt hơn và chỉ cần cho workload rất lớn; gp2 thì hiệu năng phụ thuộc dung lượng.",
+    "keyHint": "\"not more than 15,000 IOPS\" + \"performance independent of storage capacity\" + \"MOST cost-effectively\" → EBS gp3."
+  },
+  {
+    "id": 487,
+    "stemVi": "Một công ty vận hành một website thương mại điện tử trên các Amazon EC2 instance phía sau một Application Load Balancer (ALB) trong một Auto Scaling group. Website đang gặp vấn đề hiệu năng do tốc độ request cao từ các hệ thống bên ngoài không hợp lệ với địa chỉ IP thay đổi liên tục. Đội bảo mật lo ngại về các cuộc tấn công DDoS tiềm ẩn vào website. Công ty phải chặn các request không hợp lệ theo cách ảnh hưởng ít nhất tới người dùng hợp lệ.",
+    "promptVi": "Solutions architect nên đề xuất gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai Amazon Inspector và gắn nó với ALB.",
+        "reason": "Amazon Inspector quét lỗ hổng phần mềm trên EC2, container và Lambda; nó không gắn được vào ALB và không chặn request."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai AWS WAF, gắn nó với ALB và cấu hình một rule giới hạn tốc độ (rate-limiting rule).",
+        "reason": "AWS WAF gắn trực tiếp vào ALB; rate-based rule tự chặn mọi IP gửi vượt ngưỡng request trong một khoảng thời gian, kể cả khi kẻ tấn công đổi IP, trong khi người dùng bình thường không chạm ngưỡng nên không bị ảnh hưởng."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai các rule trong network ACL gắn với ALB để chặn traffic đến.",
+        "reason": "Network ACL chỉ chặn theo IP/dải IP cố định và có giới hạn số rule; IP của kẻ tấn công thay đổi liên tục nên phải cập nhật thủ công mãi và dễ chặn nhầm người dùng hợp lệ."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai Amazon GuardDuty và bật tính năng bảo vệ giới hạn tốc độ khi cấu hình GuardDuty.",
+        "reason": "GuardDuty là dịch vụ phát hiện mối đe dọa, chỉ tạo finding chứ không chặn traffic; GuardDuty cũng không có tính năng giới hạn tốc độ."
+      }
+    ],
+    "explanationVi": "Cần chặn các nguồn gửi quá nhiều request, với IP thay đổi, mà không ảnh hưởng người dùng hợp lệ. AWS WAF gắn vào ALB với rate-based rule tự động chặn IP vượt ngưỡng nên xử lý tốt cả IP thay đổi. Bẫy: GuardDuty và Inspector chỉ phát hiện, không chặn; network ACL không theo kịp IP thay đổi.",
+    "keyHint": "\"high request rate\" + \"changing IP addresses\" trước ALB → AWS WAF với rate-based rule."
+  },
+  {
+    "id": 488,
+    "stemVi": "Một công ty sản xuất có các cảm biến máy móc tải file .csv lên một Amazon S3 bucket. Các file .csv này phải được chuyển thành ảnh và phải sẵn sàng càng sớm càng tốt để tự động tạo báo cáo đồ họa.\n\nCác ảnh hết giá trị sau 1 tháng, nhưng các file .csv phải được giữ lại để huấn luyện mô hình machine learning (ML) hai lần một năm. Các đợt huấn luyện ML và kiểm toán được lên kế hoạch trước nhiều tuần.",
+    "promptVi": "Tổ hợp bước nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Khởi chạy một Amazon EC2 Spot Instance mỗi giờ tải các file .csv xuống, tạo file ảnh và tải ảnh lên S3 bucket.",
+        "reason": "Xử lý theo chu kỳ mỗi giờ làm ảnh trễ tới một giờ, không đạt yêu cầu càng sớm càng tốt; Spot Instance còn có thể bị thu hồi giữa chừng."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết kế một AWS Lambda function chuyển file .csv thành ảnh và lưu ảnh vào S3 bucket. Gọi Lambda function khi một file .csv được tải lên.",
+        "reason": "S3 event gọi Lambda ngay khi file .csv được tải lên nên ảnh có gần như tức thì; Lambda chỉ tính phí khi chạy, không có máy chủ chờ — rẻ và nhanh."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo S3 Lifecycle rule cho file .csv và file ảnh trong S3 bucket. Chuyển file .csv từ S3 Standard sang S3 Glacier 1 ngày sau khi tải lên. Cho file ảnh hết hạn (expire) sau 30 ngày.",
+        "reason": "File .csv chỉ dùng hai lần một năm và được lên kế hoạch trước nhiều tuần, nên chấp nhận thời gian khôi phục của S3 Glacier để có giá lưu trữ rẻ nhất; ảnh hết hạn sau 30 ngày đúng lúc hết giá trị."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo S3 Lifecycle rule cho file .csv và file ảnh trong S3 bucket. Chuyển file .csv từ S3 Standard sang S3 One Zone-Infrequent Access (S3 One Zone-IA) 1 ngày sau khi tải lên. Cho file ảnh hết hạn sau 30 ngày.",
+        "reason": "One Zone-IA đắt hơn Glacier cho dữ liệu chỉ truy cập hai lần một năm, lại chỉ lưu trong một AZ; Lifecycle cũng yêu cầu object ở Standard tối thiểu 30 ngày trước khi chuyển sang IA."
+      },
+      {
+        "key": "E",
+        "textVi": "Tạo S3 Lifecycle rule cho file .csv và file ảnh trong S3 bucket. Chuyển file .csv từ S3 Standard sang S3 Standard-Infrequent Access (S3 Standard-IA) 1 ngày sau khi tải lên. Giữ file ảnh trong Reduced Redundancy Storage (RRS).",
+        "reason": "Standard-IA đắt hơn Glacier cho dữ liệu hiếm khi dùng; RRS là lớp lưu trữ cũ không còn được khuyến nghị, và giữ ảnh mãi thay vì xóa sau 1 tháng là tốn tiền thừa."
+      }
+    ],
+    "explanationVi": "Có hai bài toán: tạo ảnh ngay khi file tải lên, và lưu trữ rẻ nhất cho từng loại dữ liệu. Lambda kích hoạt bởi S3 event xử lý tức thì với chi phí theo lần chạy; Lifecycle rule chuyển .csv sang Glacier (truy cập hiếm, có kế hoạch trước) và xóa ảnh sau 30 ngày. Bẫy: xử lý theo giờ không đủ nhanh, còn các lớp IA đắt hơn Glacier cho dữ liệu chỉ dùng hai lần một năm.",
+    "keyHint": "\"as soon as possible\" + \"twice a year\" + \"planned weeks in advance\" → Lambda theo S3 event + Lifecycle sang S3 Glacier và expire ảnh."
+  },
+  {
+    "id": 489,
+    "stemVi": "Một solutions architect muốn dùng đoạn JSON sau làm identity-based policy để cấp một số quyền cụ thể. (Tài liệu identity-based IAM policy được hiển thị trong video.)",
+    "promptVi": "Solutions architect có thể gắn policy này vào những IAM principal nào? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Role",
+        "reason": "IAM role là IAM identity, nên gắn được identity-based policy để xác định quyền của role."
+      },
+      {
+        "key": "B",
+        "textVi": "Group",
+        "reason": "IAM group là IAM identity nhận identity-based policy; mọi user trong group thừa hưởng các quyền đó."
+      },
+      {
+        "key": "C",
+        "textVi": "Organization",
+        "reason": "Organization không phải IAM identity; ở cấp Organizations dùng service control policy (SCP), không gắn identity-based policy."
+      },
+      {
+        "key": "D",
+        "textVi": "Tài nguyên Amazon Elastic Container Service (Amazon ECS)",
+        "reason": "Tài nguyên ECS không phải IAM principal; muốn cấp quyền cho task phải dùng IAM role (task role)."
+      },
+      {
+        "key": "E",
+        "textVi": "Tài nguyên Amazon EC2",
+        "reason": "EC2 instance không phải IAM principal; quyền cho instance được cấp qua IAM role trong instance profile."
+      }
+    ],
+    "explanationVi": "Identity-based policy chỉ gắn được vào IAM identity: user, group và role. Bẫy: Organization dùng SCP; tài nguyên như EC2 hay ECS nhận quyền gián tiếp qua IAM role (instance profile, task role) chứ không gắn policy trực tiếp.",
+    "keyHint": "\"identity-based policy\" → gắn vào IAM user, group, role."
+  },
+  {
+    "id": 490,
+    "stemVi": "Một công ty cần di chuyển một cơ sở dữ liệu MySQL từ data center on-premises lên AWS trong vòng 2 tuần. Cơ sở dữ liệu có dung lượng 20 TB. Công ty muốn hoàn tất việc di chuyển với thời gian downtime tối thiểu.",
+    "promptVi": "Giải pháp nào di chuyển cơ sở dữ liệu một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Đặt một thiết bị AWS Snowball Edge Storage Optimized. Dùng AWS Database Migration Service (AWS DMS) với AWS Schema Conversion Tool (AWS SCT) để di chuyển cơ sở dữ liệu kèm replication các thay đổi đang diễn ra. Gửi thiết bị Snowball Edge về AWS để hoàn tất việc di chuyển và tiếp tục replication các thay đổi.",
+        "reason": "Snowball Edge Storage Optimized đủ chứa 20 TB, chi phí thấp và kịp trong 2 tuần; DMS kết hợp Snowball chuyển dữ liệu ban đầu qua thiết bị rồi replicate các thay đổi (CDC) để giảm downtime."
+      },
+      {
+        "key": "B",
+        "textVi": "Đặt một xe AWS Snowmobile. Dùng AWS Database Migration Service (AWS DMS) với AWS Schema Conversion Tool (AWS SCT) để di chuyển cơ sở dữ liệu kèm các thay đổi đang diễn ra. Gửi xe Snowmobile về AWS để hoàn tất việc di chuyển và tiếp tục replication các thay đổi.",
+        "reason": "Snowmobile dành cho quy mô hàng chục petabyte trở lên (và đã ngừng cung cấp); dùng cho 20 TB là quá tốn kém."
+      },
+      {
+        "key": "C",
+        "textVi": "Đặt một thiết bị AWS Snowball Edge Compute Optimized with GPU. Dùng AWS Database Migration Service (AWS DMS) với AWS Schema Conversion Tool (AWS SCT) để di chuyển cơ sở dữ liệu kèm các thay đổi đang diễn ra. Gửi thiết bị Snowball về AWS để hoàn tất việc di chuyển và tiếp tục replication các thay đổi.",
+        "reason": "Bản Compute Optimized có GPU dành cho xử lý tính toán tại biên, đắt hơn và không cần cho việc chỉ chuyển dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Đặt một kết nối AWS Direct Connect dedicated 1 GB để kết nối với data center. Dùng AWS Database Migration Service (AWS DMS) với AWS Schema Conversion Tool (AWS SCT) để di chuyển cơ sở dữ liệu kèm replication các thay đổi đang diễn ra.",
+        "reason": "Thiết lập Direct Connect dedicated thường mất nhiều tuần tới vài tháng, có thể không kịp 2 tuần, và tốn chi phí cổng cùng đường truyền cho một lần di chuyển."
+      }
+    ],
+    "explanationVi": "20 TB trong 2 tuần với chi phí thấp phù hợp với chuyển dữ liệu offline bằng Snowball Edge Storage Optimized, kết hợp DMS để replicate các thay đổi nhằm giảm downtime. Bẫy: Snowmobile dành cho quy mô PB, bản có GPU là thừa, còn Direct Connect khó kịp thời hạn và đắt cho việc dùng một lần.",
+    "keyHint": "\"20 TB\" + \"within 2 weeks\" + \"minimal downtime\" + \"MOST cost-effectively\" → Snowball Edge Storage Optimized + DMS (CDC).",
+    "review": {
+      "reason": "Đáp án có thể sai: từ 07/11/2025 AWS Snowball Edge chỉ còn dành cho khách hàng hiện hữu, và riêng mẫu Snowball Edge Storage Optimized 80TB cùng bản Compute Optimized with GPU đã bị ngừng từ 12/11/2024; Snowmobile cũng đã ngừng. Đề không nói công ty là khách hàng Snowball hiện hữu, nên phương án dùng Snowball Edge với DMS không còn triển khai được cho khách hàng mới; AWS khuyên dùng AWS DataSync hoặc chuyển qua mạng (ví dụ DMS qua Direct Connect/VPN), nên câu này cần cập nhật lại lựa chọn."
+    }
+  },
+  {
+    "id": 491,
+    "stemVi": "Một công ty thương mại điện tử muốn dùng các thuật toán machine learning (ML) để xây dựng và huấn luyện mô hình. Công ty sẽ dùng các mô hình để trực quan hóa các kịch bản phức tạp và phát hiện xu hướng trong dữ liệu khách hàng. Đội kiến trúc muốn tích hợp các mô hình ML với một nền tảng báo cáo để phân tích dữ liệu đã được bổ sung (augmented data) và dùng dữ liệu đó trực tiếp trong các dashboard business intelligence (BI).",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Glue để tạo ML transform để xây dựng và huấn luyện mô hình. Dùng Amazon OpenSearch Service để trực quan hóa dữ liệu.",
+        "reason": "Glue ML transform (FindMatches) chỉ dùng để khớp và khử trùng lặp bản ghi, không xây dựng mô hình phát hiện xu hướng; OpenSearch Service phục vụ tìm kiếm và phân tích log, không phải nền tảng dashboard BI."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon SageMaker để xây dựng và huấn luyện mô hình. Dùng Amazon QuickSight để trực quan hóa dữ liệu.",
+        "reason": "SageMaker là dịch vụ được quản lý để xây dựng, huấn luyện và triển khai mô hình ML; QuickSight là dịch vụ BI serverless, tích hợp sẵn với SageMaker để bổ sung kết quả dự đoán vào dữ liệu và dùng ngay trong dashboard."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng một ML Amazon Machine Image (AMI) dựng sẵn từ AWS Marketplace để xây dựng và huấn luyện mô hình. Dùng Amazon OpenSearch Service để trực quan hóa dữ liệu.",
+        "reason": "Chạy AMI trên EC2 nghĩa là công ty tự quản lý máy chủ, môi trường huấn luyện và mở rộng — tốn công vận hành; OpenSearch cũng không phải công cụ BI."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon QuickSight để xây dựng và huấn luyện mô hình bằng calculated field. Dùng Amazon QuickSight để trực quan hóa dữ liệu.",
+        "reason": "Calculated field chỉ là phép tính trên dữ liệu, không phải cách xây dựng và huấn luyện mô hình ML tùy chỉnh."
+      }
+    ],
+    "explanationVi": "Đề cần hai thành phần được quản lý: một nơi xây dựng và huấn luyện mô hình ML, và một nền tảng BI dùng được dữ liệu đã bổ sung kết quả mô hình. SageMaker và QuickSight là cặp dịch vụ được quản lý, tích hợp sẵn với nhau. Bẫy: Glue ML transform chỉ để khử trùng lặp; OpenSearch không phải công cụ BI; AMI tự quản tốn công.",
+    "keyHint": "\"build and train models\" + \"business intelligence dashboards\" + \"LEAST operational overhead\" → Amazon SageMaker + Amazon QuickSight."
+  },
+  {
+    "id": 492,
+    "stemVi": "Một công ty cần lưu trữ dữ liệu từ ứng dụng chăm sóc sức khỏe của mình. Dữ liệu của ứng dụng thay đổi thường xuyên. Một quy định mới yêu cầu có thể kiểm toán truy cập ở mọi cấp của dữ liệu được lưu trữ.\n\nCông ty host ứng dụng trên hạ tầng on-premises đang sắp hết dung lượng lưu trữ. Solutions architect phải di chuyển an toàn dữ liệu hiện có lên AWS đồng thời đáp ứng quy định mới.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS DataSync để chuyển dữ liệu hiện có sang Amazon S3. Dùng AWS CloudTrail để ghi log data event.",
+        "reason": "DataSync chuyển dữ liệu qua mạng có mã hóa TLS, kiểm tra toàn vẹn và hỗ trợ đồng bộ dữ liệu thay đổi thường xuyên; CloudTrail data event ghi lại các thao tác ở cấp object như GetObject, PutObject, đáp ứng yêu cầu kiểm toán ở mọi cấp."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Snowcone để chuyển dữ liệu hiện có sang Amazon S3. Dùng AWS CloudTrail để ghi log management event.",
+        "reason": "Management event chỉ ghi các thao tác quản lý như tạo hay cấu hình bucket, không ghi truy cập vào từng object; Snowcone chuyển offline không theo kịp dữ liệu thay đổi thường xuyên (và đã ngừng cung cấp)."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon S3 Transfer Acceleration để chuyển dữ liệu hiện có sang Amazon S3. Dùng AWS CloudTrail để ghi log data event.",
+        "reason": "Transfer Acceleration chỉ tăng tốc upload qua edge, không phải công cụ migration có lập lịch, kiểm tra toàn vẹn và đồng bộ thay đổi; phải tự viết script để tải lên."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Storage Gateway để chuyển dữ liệu hiện có sang Amazon S3. Dùng AWS CloudTrail để ghi log management event.",
+        "reason": "Management event không ghi được truy cập ở cấp object nên không đáp ứng yêu cầu kiểm toán mọi cấp; Storage Gateway dành cho truy cập hybrid lâu dài hơn là di chuyển dữ liệu."
+      }
+    ],
+    "explanationVi": "Yêu cầu có hai phần: di chuyển an toàn dữ liệu đang thay đổi lên AWS, và kiểm toán truy cập ở mọi cấp. DataSync là công cụ migration trực tuyến an toàn, còn CloudTrail data event ghi truy cập tới từng object. Bẫy: management event chỉ ghi thao tác quản lý bucket, không đủ cho yêu cầu kiểm toán ở cấp dữ liệu.",
+    "keyHint": "\"audit access at all levels of the stored data\" + \"securely migrate\" → AWS DataSync + CloudTrail data events."
+  },
+  {
+    "id": 493,
+    "stemVi": "Một công ty dùng AWS Organizations để chạy workload trong nhiều AWS account. Công ty cần thiết kế một giải pháp ngăn việc sửa đổi các tag dùng để theo dõi chi phí (cost usage tag).",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một custom AWS Config rule để ngăn việc sửa tag, trừ các principal được cấp quyền.",
+        "reason": "AWS Config rule chỉ đánh giá và phát hiện cấu hình không tuân thủ sau khi thay đổi đã xảy ra; nó không chặn được hành động sửa tag."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một custom trail trong AWS CloudTrail để ngăn việc sửa tag.",
+        "reason": "CloudTrail chỉ ghi lại các lời gọi API để kiểm toán, không có khả năng từ chối hay ngăn hành động nào."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một service control policy (SCP) để ngăn việc sửa tag, trừ các principal được cấp quyền.",
+        "reason": "SCP là biện pháp phòng ngừa áp dụng cho mọi account trong organization: từ chối các action tag/untag với tag key chỉ định, trừ các principal được phép (điều kiện aws:PrincipalArn) — chặn ngay từ đầu."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo custom Amazon CloudWatch log để ngăn việc sửa tag.",
+        "reason": "CloudWatch Logs chỉ thu thập và lưu log, không thể ngăn hành động sửa tag."
+      }
+    ],
+    "explanationVi": "Từ khóa là \"prevent\" trên nhiều account trong Organizations: biện pháp phòng ngừa tập trung chính là SCP. SCP từ chối các action sửa tag cho mọi principal, trừ các principal được miễn trừ. Bẫy: Config, CloudTrail và CloudWatch Logs đều là công cụ phát hiện hoặc ghi log, không chặn được hành động.",
+    "keyHint": "\"AWS Organizations\" + \"prevent the modification of cost usage tags\" → service control policy (SCP)."
+  },
+  {
+    "id": 494,
+    "stemVi": "Một công ty chạy một dịch vụ SFTP có tính sẵn sàng cao. Dịch vụ SFTP dùng hai Amazon EC2 Linux instance có Elastic IP address để nhận traffic từ các nguồn IP tin cậy trên internet. Dịch vụ SFTP dùng shared storage được gắn vào các instance. Tài khoản người dùng được tạo và quản lý dưới dạng user Linux trên các SFTP server.\n\nCông ty muốn một lựa chọn serverless cung cấp hiệu năng IOPS cao và bảo mật có thể cấu hình chi tiết. Công ty cũng muốn giữ quyền kiểm soát đối với quyền của người dùng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Elastic Block Store (Amazon EBS) volume được mã hóa. Tạo một AWS Transfer Family SFTP service với public endpoint chỉ cho phép các địa chỉ IP tin cậy. Gắn EBS volume vào endpoint của SFTP service. Cấp quyền truy cập SFTP service cho người dùng.",
+        "reason": "Transfer Family chỉ hỗ trợ S3 và EFS làm backend, không gắn được EBS volume; public endpoint cũng không lọc được IP nguồn bằng security group."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon Elastic File System (Amazon EFS) volume được mã hóa. Tạo một AWS Transfer Family SFTP service với Elastic IP address và một VPC endpoint có truy cập từ internet (internet-facing). Gắn một security group vào endpoint chỉ cho phép các địa chỉ IP tin cậy. Gắn EFS volume vào endpoint của SFTP service. Cấp quyền truy cập SFTP service cho người dùng.",
+        "reason": "Transfer Family là SFTP serverless; EFS là shared storage hiệu năng cao, giữ quyền kiểu POSIX (UID/GID) giống user Linux hiện tại nên công ty vẫn kiểm soát quyền; VPC endpoint internet-facing kèm Elastic IP và security group cho phép chỉ nhận traffic từ IP tin cậy."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon S3 bucket có bật mã hóa mặc định. Tạo một AWS Transfer Family SFTP service với public endpoint chỉ cho phép các địa chỉ IP tin cậy. Gắn S3 bucket vào endpoint của SFTP service. Cấp quyền truy cập SFTP service cho người dùng.",
+        "reason": "Public endpoint của Transfer Family không gắn được security group nên không giới hạn được IP tin cậy như mô tả; S3 là object storage, không có IOPS và quyền kiểu POSIX như shared storage hiện tại."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon S3 bucket có bật mã hóa mặc định. Tạo một AWS Transfer Family SFTP service với một VPC endpoint chỉ truy cập nội bộ (internal) trong private subnet. Gắn một security group chỉ cho phép các địa chỉ IP tin cậy. Gắn S3 bucket vào endpoint của SFTP service. Cấp quyền truy cập SFTP service cho người dùng.",
+        "reason": "Endpoint internal trong private subnet không truy cập được từ internet, trong khi các nguồn tin cậy nằm trên internet."
+      }
+    ],
+    "explanationVi": "Cần SFTP serverless, IOPS cao, lọc IP tin cậy trên internet và giữ quyền người dùng kiểu Linux. Transfer Family với EFS backend giữ quyền POSIX và cho hiệu năng cao; VPC endpoint internet-facing với Elastic IP và security group cho phép lọc IP nguồn. Bẫy: Transfer Family không hỗ trợ EBS, public endpoint không gắn security group, còn endpoint internal không nhận được traffic từ internet.",
+    "keyHint": "\"serverless\" SFTP + \"high IOPS\" + \"trusted IP sources on the internet\" → Transfer Family với EFS và VPC endpoint internet-facing có security group."
+  },
+  {
+    "id": 495,
+    "stemVi": "Một công ty chạy một ứng dụng tùy chỉnh trên các Amazon EC2 On-Demand Instance. Ứng dụng có các node frontend cần chạy 24 giờ mỗi ngày, 7 ngày mỗi tuần và các node backend chỉ cần chạy trong thời gian ngắn tùy theo khối lượng công việc. Số lượng node backend thay đổi trong ngày.\n\nCông ty cần scale out và scale in thêm instance dựa trên khối lượng công việc.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Reserved Instances cho các node frontend. Dùng AWS Fargate cho các node backend.",
+        "reason": "Reserved Instances phù hợp cho frontend chạy liên tục, nhưng Fargate đắt hơn Spot Instance và đòi hỏi đóng gói lại ứng dụng thành container."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Reserved Instances cho các node frontend. Dùng Spot Instances cho các node backend.",
+        "reason": "Frontend chạy 24/7 ổn định nên Reserved Instances giảm giá đáng kể; backend chạy ngắn, số lượng thay đổi theo tải nên Spot Instances là rẻ nhất (giảm tới 90%) và dễ scale out/in."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Spot Instances cho các node frontend. Dùng Reserved Instances cho các node backend.",
+        "reason": "Spot có thể bị thu hồi bất cứ lúc nào, không hợp với frontend phải chạy liên tục; mua Reserved Instances cho backend chỉ chạy ngắn là trả tiền cho thời gian không dùng."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Spot Instances cho các node frontend. Dùng AWS Fargate cho các node backend.",
+        "reason": "Frontend chạy 24/7 trên Spot có nguy cơ bị gián đoạn; Fargate cho backend cũng đắt hơn Spot và cần đóng gói lại ứng dụng."
+      }
+    ],
+    "explanationVi": "Ghép mô hình mua với kiểu workload: chạy liên tục 24/7 thì dùng Reserved Instances, chạy ngắn và biến động thì dùng Spot Instances. Bẫy: đặt Spot cho frontend luôn chạy là rủi ro gián đoạn, còn Fargate tiện nhưng đắt hơn Spot và ứng dụng hiện chưa chạy trên container.",
+    "keyHint": "\"24 hours a day, 7 days a week\" → Reserved Instances; \"run only for a short time\" và số lượng thay đổi → Spot Instances."
+  },
+  {
+    "id": 496,
+    "stemVi": "Một công ty có một ứng dụng on-premises tạo ra lượng lớn dữ liệu nhạy cảm về thời gian (time-sensitive) được sao lưu lên Amazon S3. Ứng dụng đã phát triển lớn hơn và người dùng phàn nàn về giới hạn băng thông internet. Solutions architect cần thiết kế một giải pháp lâu dài cho phép sao lưu kịp thời lên Amazon S3 và ảnh hưởng ít nhất tới kết nối internet của người dùng nội bộ.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thiết lập các kết nối AWS VPN và chuyển toàn bộ traffic qua một VPC gateway endpoint.",
+        "reason": "VPN vẫn chạy trên đường internet hiện có nên vẫn chiếm băng thông của người dùng nội bộ; gateway endpoint cũng không nhận được traffic từ on-premises qua VPN."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một kết nối AWS Direct Connect mới và chuyển traffic sao lưu qua kết nối mới này.",
+        "reason": "Direct Connect là đường kết nối riêng với băng thông ổn định, tách traffic sao lưu khỏi đường internet của người dùng nội bộ, giúp sao lưu kịp thời — giải pháp lâu dài phù hợp."
+      },
+      {
+        "key": "C",
+        "textVi": "Đặt thiết bị AWS Snowball hằng ngày. Nạp dữ liệu lên thiết bị Snowball và gửi trả thiết bị về AWS mỗi ngày.",
+        "reason": "Vận chuyển thiết bị mất nhiều ngày nên dữ liệu không được sao lưu kịp thời, và việc đặt thiết bị mỗi ngày không thực tế cho giải pháp lâu dài."
+      },
+      {
+        "key": "D",
+        "textVi": "Gửi một support ticket qua AWS Management Console. Yêu cầu gỡ bỏ các giới hạn dịch vụ S3 khỏi account.",
+        "reason": "Điểm nghẽn là băng thông internet của công ty, không phải service limit của S3; gỡ giới hạn S3 không giải quyết được vấn đề."
+      }
+    ],
+    "explanationVi": "Vấn đề là traffic sao lưu chiếm hết băng thông internet dùng chung với người dùng nội bộ. Direct Connect tạo một đường riêng tới AWS cho traffic sao lưu, vừa kịp thời vừa không ảnh hưởng internet nội bộ, và phù hợp làm giải pháp lâu dài. Bẫy: VPN vẫn đi qua internet; Snowball không kịp thời cho sao lưu hằng ngày.",
+    "keyHint": "\"internet bandwidth limitations\" + \"long-term solution\" + \"timely backups\" → AWS Direct Connect riêng cho traffic sao lưu."
+  },
+  {
+    "id": 497,
+    "stemVi": "Một công ty chạy nhiều workload Windows trên AWS. Nhân viên của công ty dùng các Windows file share được host trên hai Amazon EC2 instance. Các file share đồng bộ dữ liệu với nhau và giữ các bản sao trùng lặp. Công ty muốn một giải pháp lưu trữ có tính sẵn sàng cao (highly available), bền vững (durable) và giữ nguyên cách người dùng đang truy cập file.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển toàn bộ dữ liệu sang Amazon S3. Thiết lập xác thực IAM để người dùng truy cập file.",
+        "reason": "S3 là object storage truy cập qua API, không phải Windows file share; người dùng phải thay đổi hoàn toàn cách truy cập file."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một Amazon S3 File Gateway. Mount S3 File Gateway trên các EC2 instance hiện có.",
+        "reason": "File Gateway dành cho môi trường hybrid kết nối on-premises với S3; đặt nó trên các EC2 instance hiện có vẫn giữ các instance làm điểm lỗi và thêm một lớp phải quản lý."
+      },
+      {
+        "key": "C",
+        "textVi": "Mở rộng môi trường file share sang Amazon FSx for Windows File Server với cấu hình Multi-AZ. Chuyển toàn bộ dữ liệu sang FSx for Windows File Server.",
+        "reason": "FSx for Windows File Server cung cấp SMB share native, hỗ trợ Active Directory và NTFS ACL nên người dùng truy cập như cũ; cấu hình Multi-AZ tự failover giữa các AZ, mang lại tính sẵn sàng cao và độ bền."
+      },
+      {
+        "key": "D",
+        "textVi": "Mở rộng môi trường file share sang Amazon Elastic File System (Amazon EFS) với cấu hình Multi-AZ. Chuyển toàn bộ dữ liệu sang Amazon EFS.",
+        "reason": "EFS dùng giao thức NFS cho Linux, không hỗ trợ SMB trên Windows nên không giữ được cách truy cập Windows file share hiện tại."
+      }
+    ],
+    "explanationVi": "Người dùng đang dùng Windows file share (SMB) và cần giữ nguyên cách truy cập, đồng thời có tính sẵn sàng cao và bền vững. FSx for Windows File Server Multi-AZ là dịch vụ SMB native được quản lý, thay thế cặp EC2 tự đồng bộ. Bẫy: EFS là NFS cho Linux; S3 và File Gateway thay đổi cách truy cập hoặc vẫn phụ thuộc vào EC2.",
+    "keyHint": "\"Windows file shares\" + \"highly available and durable\" + \"preserves how users currently access\" → FSx for Windows File Server Multi-AZ."
+  },
+  {
+    "id": 498,
+    "stemVi": "Một công ty muốn dùng AWS Cloud để cải thiện cấu hình khắc phục thảm họa (disaster recovery – DR) on-premises. Ứng dụng kinh doanh production cốt lõi của công ty dùng Microsoft SQL Server Standard, chạy trên một máy ảo (VM). Ứng dụng có recovery point objective (RPO) từ 30 giây trở xuống và recovery time objective (RTO) là 60 phút. Giải pháp DR cần giảm chi phí ở mọi chỗ có thể.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình mô hình multi-site active/active giữa server on-premises và AWS bằng Microsoft SQL Server Enterprise với Always On availability groups.",
+        "reason": "Active/active cần nâng cấp lên SQL Server Enterprise (license đắt) và chạy đầy đủ hạ tầng ở cả hai nơi — vượt xa mức RPO/RTO cần thiết và trái yêu cầu giảm chi phí."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình một cơ sở dữ liệu Amazon RDS for SQL Server dạng warm standby trên AWS. Cấu hình AWS Database Migration Service (AWS DMS) dùng change data capture (CDC).",
+        "reason": "Theo đáp án gốc, DMS CDC replicate liên tục thay đổi sang RDS for SQL Server nên RPO tính bằng giây, và khi có sự cố chỉ cần chuyển ứng dụng sang RDS đang chạy sẵn, kịp trong RTO 60 phút."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Elastic Disaster Recovery cấu hình replicate các thay đổi ổ đĩa lên AWS theo mô hình pilot light.",
+        "reason": "Theo đáp án gốc, đây không phải lựa chọn được chọn; tuy vậy, Elastic Disaster Recovery replicate liên tục ở cấp block (RPO vài giây, RTO vài phút) với vùng staging chi phí thấp, nên thực tế có vẻ đáp ứng yêu cầu với chi phí thấp hơn (xem ghi chú review)."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng phần mềm sao lưu bên thứ ba để sao lưu mỗi đêm. Lưu một bộ bản sao lưu thứ cấp trong Amazon S3.",
+        "reason": "Sao lưu mỗi đêm cho RPO tới 24 giờ, vượt xa yêu cầu 30 giây."
+      }
+    ],
+    "explanationVi": "RPO 30 giây đòi hỏi replication liên tục, còn RTO 60 phút cho phép không cần chạy active/active. Đáp án gốc chọn warm standby RDS for SQL Server với DMS CDC để replicate liên tục. Bẫy: sao lưu theo đêm không đạt RPO; active/active với bản Enterprise là quá đắt.",
+    "keyHint": "\"RPO of 30 seconds or fewer\" + \"RTO of 60 minutes\" + \"minimize costs\" → replication liên tục với mô hình DR chi phí thấp (warm standby hoặc pilot light).",
+    "review": {
+      "reason": "Đáp án có thể sai: yêu cầu giảm chi phí cùng RPO tính bằng giây và RTO 60 phút phù hợp hơn với AWS Elastic Disaster Recovery theo mô hình pilot light: replicate liên tục ở cấp block (RPO vài giây, RTO vài phút) và chỉ duy trì vùng staging giá rẻ, không phải chạy RDS for SQL Server 24/7 như phương án warm standby với DMS CDC. Elastic Disaster Recovery cũng giữ nguyên SQL Server Standard trên VM mà không phải chuyển đổi sang RDS."
+    }
+  },
+  {
+    "id": 499,
+    "stemVi": "Một công ty streaming video toàn cầu dùng Amazon CloudFront làm mạng phân phối nội dung (CDN). Công ty muốn phát hành nội dung theo từng giai đoạn ở nhiều quốc gia. Công ty cần đảm bảo người xem ở ngoài các quốc gia mà công ty đã phát hành nội dung không xem được nội dung.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thêm giới hạn địa lý (geographic restrictions) cho nội dung trong CloudFront bằng một allow list. Thiết lập một thông báo lỗi tùy chỉnh.",
+        "reason": "Geographic restriction với allow list chỉ cho người xem ở các quốc gia trong danh sách truy cập, người ở nơi khác nhận lỗi 403 kèm trang lỗi tùy chỉnh; khi mở rộng sang quốc gia mới chỉ cần thêm vào allow list."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một URL mới cho nội dung bị giới hạn. Cấp quyền truy cập bằng signed URL và cookie. Thiết lập một thông báo lỗi tùy chỉnh.",
+        "reason": "Signed URL và signed cookie kiểm soát ai được truy cập dựa trên chữ ký và thời hạn, không dựa vào vị trí địa lý của người xem."
+      },
+      {
+        "key": "C",
+        "textVi": "Mã hóa dữ liệu của nội dung mà công ty phân phối. Thiết lập một thông báo lỗi tùy chỉnh.",
+        "reason": "Mã hóa bảo vệ dữ liệu khi truyền hoặc lưu, nhưng không chặn người xem theo quốc gia."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một URL mới cho nội dung bị giới hạn. Thiết lập chính sách truy cập giới hạn thời gian cho signed URL.",
+        "reason": "Giới hạn theo thời gian chỉ kiểm soát khi nào URL hết hạn, không ngăn người xem ở quốc gia chưa phát hành."
+      }
+    ],
+    "explanationVi": "Yêu cầu là chặn người xem theo quốc gia khi phát hành theo giai đoạn. CloudFront geographic restrictions (geo blocking) với allow list làm đúng việc này và dễ mở rộng khi thêm quốc gia. Bẫy: signed URL/cookie và mã hóa là cơ chế kiểm soát truy cập khác, không dựa trên vị trí địa lý.",
+    "keyHint": "\"viewers who are outside the countries\" không được xem → CloudFront geographic restrictions với allow list."
+  },
+  {
+    "id": 500,
+    "stemVi": "Một công ty muốn cấp cho các nhà khoa học dữ liệu quyền truy cập chỉ đọc gần thời gian thực (near real-time) vào cơ sở dữ liệu Amazon RDS for PostgreSQL production của công ty. Cơ sở dữ liệu hiện được cấu hình Single-AZ. Các nhà khoa học dữ liệu chạy những truy vấn phức tạp, không được ảnh hưởng tới cơ sở dữ liệu production. Công ty cần một giải pháp có tính sẵn sàng cao (highly available).",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Scale cơ sở dữ liệu production hiện có trong một maintenance window để có đủ năng lực cho các nhà khoa học dữ liệu.",
+        "reason": "Truy vấn phức tạp vẫn chạy trên database production nên vẫn ảnh hưởng tới nó, và cấu hình Single-AZ vẫn không có tính sẵn sàng cao."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển cấu hình từ Single-AZ sang triển khai Multi-AZ instance với một secondary standby instance lớn hơn. Cấp cho các nhà khoa học dữ liệu quyền truy cập secondary instance.",
+        "reason": "Standby của Multi-AZ DB instance không phục vụ traffic đọc, nên các nhà khoa học dữ liệu không truy vấn được nó."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển cấu hình từ Single-AZ sang triển khai Multi-AZ instance. Cung cấp thêm hai read replica cho các nhà khoa học dữ liệu.",
+        "reason": "Đáp ứng được yêu cầu nhưng phải trả cho standby không đọc được cộng thêm hai read replica — tốn kém hơn Multi-AZ DB cluster có sẵn standby đọc được."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển cấu hình từ Single-AZ sang triển khai Multi-AZ cluster với hai standby instance đọc được. Cung cấp read endpoint cho các nhà khoa học dữ liệu.",
+        "reason": "Multi-AZ DB cluster có một writer và hai standby đọc được ở hai AZ khác: vừa sẵn sàng cao, vừa cho đọc gần thời gian thực qua reader endpoint mà không ảnh hưởng writer và không phải trả thêm cho read replica."
+      }
+    ],
+    "explanationVi": "Cần đồng thời: tính sẵn sàng cao, đọc gần thời gian thực tách khỏi writer và chi phí thấp nhất. RDS Multi-AZ DB cluster đáp ứng cả ba vì hai standby vừa dùng để failover vừa phục vụ đọc qua reader endpoint. Bẫy: standby của Multi-AZ DB instance không đọc được; thêm read replica làm tăng chi phí.",
+    "keyHint": "\"near real-time read-only access\" + \"highly available\" + \"MOST cost-effectively\" → RDS Multi-AZ DB cluster với readable standby và reader endpoint."
+  }
+]

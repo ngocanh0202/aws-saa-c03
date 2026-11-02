@@ -1,0 +1,6 @@
+{
+  "id": "fsx-ontap", "name": "Amazon FSx for NetApp ONTAP", "category": "Storage", "tier": "minor",
+  "overview": "Amazon FSx for NetApp ONTAP provides managed ONTAP shared storage, protocols and data-management features for compatible workloads.",
+  "examSignals": ["Managed ONTAP features/protocols and migration of NetApp workloads: FSx for ONTAP", "Windows SMB native file server: FSx for Windows"],
+  "compareWith": [{ "service": "Amazon FSx for Windows File Server", "diff": "FSx ONTAP offers NetApp ONTAP data services and multi-protocol options; FSx Windows is managed Windows-native SMB storage." }]
+}

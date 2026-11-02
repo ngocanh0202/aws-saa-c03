@@ -1,0 +1,6 @@
+{
+  "id": "app-mesh", "name": "AWS App Mesh", "category": "Networking and Content Delivery", "tier": "minor",
+  "overview": "AWS App Mesh sắp kết thúc hỗ trợ vào 30/09/2026. Không nên chọn cho triển khai mới; hãy đánh giá phương án migration, thường là Amazon ECS Service Connect cho workloads ECS.",
+  "examSignals": ["Câu hỏi cũ có thể nhắc App Mesh như service mesh; kiểm tra ngày và trạng thái hỗ trợ trước khi áp dụng", "Container orchestration không tự đồng nghĩa service mesh; phân biệt ECS/EKS workload placement"],
+  "compareWith": [{ "service": "Amazon ECS", "diff": "App Mesh điều khiển service-to-service traffic; ECS lập lịch và duy trì container tasks/services." }]
+}

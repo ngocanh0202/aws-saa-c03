@@ -1,0 +1,12 @@
+{
+  "id": "global-accelerator", "name": "AWS Global Accelerator", "category": "Networking and Content Delivery", "tier": "core",
+  "overview": "AWS Global Accelerator cung cấp IP anycast tĩnh và đưa traffic người dùng qua AWS global network tới healthy application endpoints.",
+  "concepts": [{ "term": "Accelerator/listener", "desc": "Accelerator cung cấp static IPs; listener định nghĩa protocol/ports nhận traffic." }, { "term": "Endpoint group", "desc": "Khu vực và traffic dial cấu hình phân phối tới endpoint group." }, { "term": "Health check", "desc": "Theo dõi endpoint để routing/failover tới endpoint khỏe." }],
+  "howItWorks": "Client kết nối IP anycast gần nhất; AWS backbone định tuyến tới endpoint group/endpoint theo health và traffic configuration.",
+  "useCases": ["Cải thiện global availability/performance cho TCP/UDP apps", "Cấp static IP frontend cho endpoint thay đổi", "Multi-Region failover nhanh hơn DNS-only workflows"],
+  "pricing": "Có phí accelerator cố định theo giờ và data transfer premium; endpoint/service data transfer cũng có thể tính riêng.",
+  "examSignals": ["Static anycast IP, cải thiện latency qua AWS global network: Global Accelerator", "HTTP content caching tại edge: CloudFront", "DNS latency/failover policy: Route 53"],
+  "compareWith": [{ "service": "Amazon CloudFront", "diff": "Global Accelerator tối ưu network routing cho TCP/UDP và static IP; CloudFront là CDN cache/phân phối HTTP content." }, { "service": "Amazon Route 53", "diff": "Global Accelerator cấp static anycast IP và health-based traffic routing; Route 53 phân giải DNS theo policy." }],
+  "facts": ["Global Accelerator không tự cache application content.", "Có thể dùng với ALB/NLB/EC2/EIP endpoint tùy Region/configuration.", "Health check và endpoint eligibility ảnh hưởng failover."],
+  "practice": { "steps": ["Chỉ tạo accelerator lab nếu có ngân sách; trỏ listener tới non-production endpoint do bạn kiểm soát.", "Kiểm tra static IP/listener/endpoint health; dùng test traffic giới hạn.", "Không đổi production DNS/client configuration cho bài thực hành."], "freeTier": "Accelerator hourly fee, data transfer premium, endpoint resources và transfer có thể tính phí; xem pricing hiện hành trước khi tạo.", "cleanup": ["Xóa accelerator sau khi gỡ listener/endpoint group theo console/API yêu cầu.", "Xác nhận không còn static IP/routing nào được dùng bởi client lab.", "Dừng/xóa endpoint backend chỉ tạo cho bài thực hành."] }
+}

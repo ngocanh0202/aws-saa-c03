@@ -1,0 +1,6 @@
+{
+  "id": "msk", "name": "Amazon Managed Streaming for Apache Kafka", "category": "Analytics", "tier": "minor",
+  "overview": "Amazon MSK provides managed Apache Kafka clusters/serverless options for applications using Kafka APIs and ecosystem tools.",
+  "examSignals": ["Existing Kafka applications/tools/protocol compatibility: MSK", "AWS-native simpler managed stream/shard model: Kinesis Data Streams", "Managed stream delivery to destinations: Data Firehose"],
+  "compareWith": [{ "service": "Amazon Kinesis Data Streams", "diff": "MSK preserves Kafka APIs/ecosystem; Kinesis Data Streams uses AWS shard/record APIs and operational model." }]
+}

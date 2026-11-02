@@ -1,0 +1,12 @@
+{
+  "id": "efs", "name": "Amazon Elastic File System", "category": "Storage", "tier": "core",
+  "overview": "Amazon EFS là managed NFS file system có thể được mount đồng thời từ nhiều EC2/Linux clients qua nhiều Availability Zones.",
+  "concepts": [{ "term": "Mount target", "desc": "Network endpoint trong subnet/AZ để clients trong VPC mount file system." }, { "term": "Storage class/lifecycle", "desc": "Standard, IA/archive options và lifecycle policy cân bằng tần suất truy cập, latency, giá." }, { "term": "Performance mode/throughput", "desc": "Cấu hình performance và throughput ảnh hưởng hiệu năng/cost theo workload." }],
+  "howItWorks": "EFS cung cấp NFS endpoint qua mount target; client có quyền mạng và IAM/file-system policy phù hợp thì mount file system chia sẻ.",
+  "useCases": ["Shared home/content directory cho Linux instances", "Container workloads cần shared POSIX filesystem", "File data cần truy cập đồng thời qua nhiều AZ"],
+  "pricing": "Chi phí theo storage class/bytes, throughput mode, lifecycle, backup và transfer; dữ liệu IA/archive có retrieval/minimum-duration considerations.",
+  "examSignals": ["Shared file system NFS cho nhiều Linux EC2/AZ: EFS", "Windows SMB file share: FSx for Windows File Server", "Block device cho một EC2: EBS"],
+  "compareWith": [{ "service": "Amazon EBS", "diff": "EFS là filesystem NFS chia sẻ nhiều clients; EBS là block volume gắn vào EC2 theo AZ." }, { "service": "Amazon S3", "diff": "EFS dùng filesystem/NFS semantics; S3 lưu object qua API." }],
+  "facts": ["Mount target và security group phải cho phép NFS cần thiết giữa client và file system.", "Throughput/performance mode cần chọn theo access pattern.", "Lifecycle chuyển storage class có thể làm phát sinh retrieval cost/latency tradeoff."],
+  "practice": { "steps": ["Tạo EFS thử trong VPC sandbox và mount target chỉ ở AZ cần dùng.", "Chỉ cho security group của client lab truy cập NFS; tạo file giả và xác nhận shared mount.", "Không mount trên production host hoặc ghi dữ liệu nhạy cảm."], "freeTier": "Storage, throughput, backup, transfer và lifecycle retrieval có thể tính phí; kiểm tra giá EFS theo class và Region.", "cleanup": ["Unmount từ client rồi xóa file system thử.", "Xóa mount targets/security groups/subnet resources lab sau khi EFS đã xóa.", "Xóa backup/replication còn lại nếu không cần; kiểm tra EC2 lab còn chạy hay không."] }
+}

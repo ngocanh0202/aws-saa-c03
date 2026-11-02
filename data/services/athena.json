@@ -1,0 +1,12 @@
+{
+  "id": "athena", "name": "Amazon Athena", "category": "Analytics", "tier": "core",
+  "overview": "Amazon Athena là dịch vụ truy vấn tương tác serverless dùng SQL để phân tích dữ liệu lưu trên S3.",
+  "concepts": [{ "term": "Data catalog", "desc": "Schema/table metadata thường được quản lý qua AWS Glue Data Catalog." }, { "term": "Workgroup", "desc": "Tách cấu hình query, output, encryption, metrics và giới hạn kiểm soát chi phí." }, { "term": "Partition/columnar format", "desc": "Partition pruning và Parquet/ORC giảm dữ liệu scan, thời gian và chi phí." }],
+  "howItWorks": "Athena đọc object từ S3 theo schema/catalog, thực thi SQL phân tán và ghi query results vào output location đã cấu hình.",
+  "useCases": ["Truy vấn log/data lake trên S3", "Ad hoc analytics không dựng cluster", "Kiểm tra dữ liệu qua SQL"],
+  "pricing": "Phần lớn truy vấn tính theo dữ liệu scan; provisioned capacity, Glue catalog, S3 storage/request và query results có chi phí riêng.",
+  "examSignals": ["SQL ad hoc trực tiếp trên S3, không quản lý cluster: Athena", "Warehouse SQL BI cho workload lặp ổn định: Redshift", "ETL/catalog tích hợp data lake: Glue"],
+  "compareWith": [{ "service": "Amazon Redshift", "diff": "Athena truy vấn serverless dữ liệu tại S3 theo mức scan; Redshift là data warehouse cho workload phân tích/BI lặp lại." }, { "service": "AWS Glue", "diff": "Athena chạy truy vấn SQL; Glue catalog/ETL khám phá và chuẩn bị dữ liệu." }],
+  "facts": ["Query results được lưu trong S3 và cần quyền/retention phù hợp.", "Partitioning, compression và columnar formats giảm bytes scanned.", "Workgroup query limits/budgets giúp giảm rủi ro truy vấn đắt."],
+  "practice": { "steps": ["Dùng sample dataset public hoặc tệp giả nhỏ trong bucket thử; cấu hình output riêng.", "Chạy SELECT giới hạn dữ liệu, xem scanned bytes và thử partition-aware predicate.", "Không truy vấn bucket production hay tạo query không giới hạn."], "freeTier": "Athena scan, S3 request/storage/results, Glue Catalog និង transfer có thể phát sinh phí; kiểm tra giá và đặt workgroup data-scan limit.", "cleanup": ["Xóa query results/output objects và bucket thử nếu không cần.", "Xóa workgroup/catalog database/table chỉ tạo cho lab.", "Kiểm tra S3 lifecycle/logging để không giữ dữ liệu thử ngoài dự kiến."] }
+}

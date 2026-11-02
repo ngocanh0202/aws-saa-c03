@@ -1,0 +1,6 @@
+{
+  "id": "iam-identity-center", "name": "AWS IAM Identity Center", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS IAM Identity Center centrally manages workforce single sign-on and permission-set access to AWS accounts and supported applications.",
+  "examSignals": ["Workforce SSO to multiple AWS accounts using permission sets: IAM Identity Center", "Customer/end-user identity for an application: Cognito"],
+  "compareWith": [{ "service": "AWS IAM", "diff": "Identity Center orchestrates workforce access and account assignments; IAM policies/roles enforce permissions within AWS accounts." }]
+}

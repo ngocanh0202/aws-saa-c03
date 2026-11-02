@@ -1,0 +1,6 @@
+{
+  "id": "directory-service", "name": "AWS Directory Service", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS Directory Service cung cấp managed directory options và kết nối Microsoft Active Directory workloads với AWS.",
+  "examSignals": ["Managed Microsoft AD/domain join for AWS workloads: AWS Directory Service", "Workforce SSO to multiple AWS accounts/apps: IAM Identity Center"],
+  "compareWith": [{ "service": "AWS IAM Identity Center", "diff": "Directory Service cung cấp managed directory/AD connectivity; Identity Center cung cấp workforce SSO and permission sets." }]
+}

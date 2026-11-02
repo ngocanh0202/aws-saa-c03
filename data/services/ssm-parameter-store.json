@@ -1,0 +1,6 @@
+{
+  "id": "ssm-parameter-store", "name": "AWS Systems Manager Parameter Store", "category": "Management and Governance", "tier": "minor",
+  "overview": "Systems Manager Parameter Store provides hierarchical storage and retrieval for configuration values and SecureString parameters.",
+  "examSignals": ["Store application configuration and parameters by path: Parameter Store", "Secrets rotation/lifecycle integration: Secrets Manager", "Runtime config rollout/feature flags: AppConfig"],
+  "compareWith": [{ "service": "AWS Secrets Manager", "diff": "Parameter Store is suited to configuration and parameter hierarchy; Secrets Manager specializes in secret lifecycle and rotation." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "network-firewall", "name": "AWS Network Firewall", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS Network Firewall provides managed stateful/stateless network traffic inspection and filtering for VPC boundaries and paths.",
+  "examSignals": ["Centralized VPC network traffic inspection/firewall rules: Network Firewall", "HTTP application-layer filtering at supported edge/resource: WAF", "Account-wide firewall policy deployment: Firewall Manager"],
+  "compareWith": [{ "service": "AWS WAF", "diff": "Network Firewall inspects network flows in VPC traffic paths; WAF evaluates HTTP(S) web requests at supported application resources." }]
+}

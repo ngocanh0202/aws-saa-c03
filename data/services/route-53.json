@@ -1,0 +1,12 @@
+{
+  "id": "route-53", "name": "Amazon Route 53", "category": "Networking and Content Delivery", "tier": "core",
+  "overview": "Amazon Route 53 là dịch vụ DNS có tính sẵn sàng cao để đăng ký/quản lý domain, phân giải truy vấn và định tuyến traffic theo health/routing policy.",
+  "concepts": [{ "term": "Hosted zone/record", "desc": "Hosted zone chứa DNS records cho domain; record chỉ tới endpoint hoặc giá trị định tuyến." }, { "term": "Routing policy", "desc": "Simple, weighted, latency, failover, geolocation/geoproximity và multivalue answer đáp ứng mục tiêu khác nhau." }, { "term": "Health check", "desc": "Giám sát endpoint để failover/routing; không thay thế health check nội bộ của ứng dụng." }],
+  "howItWorks": "Resolver truy vấn authoritative name server của hosted zone; Route 53 trả record theo policy, health status và TTL.",
+  "useCases": ["Quản lý DNS public/private", "Failover DNS hoặc weighted rollout", "Định tuyến theo latency/địa lý"],
+  "pricing": "Hosted zone, truy vấn DNS, health checks, domain registration và policy/tính năng có mức phí khác nhau.",
+  "examSignals": ["DNS latency-based routing: Route 53 latency policy", "Active-passive DNS failover: failover policy cùng health check", "Private DNS trong VPC: private hosted zone"],
+  "compareWith": [{ "service": "Amazon CloudFront", "diff": "Route 53 phân giải domain/định tuyến DNS; CloudFront phân phối nội dung và cache tại edge." }, { "service": "AWS Global Accelerator", "diff": "Route 53 trả lời DNS theo policy; Global Accelerator cung cấp IP anycast tĩnh và định tuyến network traffic tới endpoints." }],
+  "facts": ["DNS failover phụ thuộc TTL/cache resolver nên không phải chuyển đổi tức thời tuyệt đối.", "Private hosted zone cần association với VPC phù hợp.", "Health check tới private endpoint có giới hạn topology và cần thiết kế phù hợp."],
+  "practice": { "steps": ["Tạo hosted zone thử chỉ khi sở hữu domain/sandbox phù hợp; nếu không, học qua hosted zone private trong VPC lab.", "Dùng records giả hoặc endpoint do bạn kiểm soát; không thay nameserver domain production.", "Quan sát record, TTL và policy mà không gửi traffic người dùng thật."], "freeTier": "Hosted zone, query, health checks và domain registration có thể tính phí; kiểm tra giá và phí renew trước khi tạo.", "cleanup": ["Xóa record health check/policy thử và hosted zone không còn cần.", "Nếu đăng ký domain, hủy auto-renew theo nhu cầu và lưu ý phí đăng ký/renew thường không hoàn lại.", "Khôi phục DNS production nếu lab từng thay đổi delegation; kiểm tra nameserver trước khi thoát."] }
+}

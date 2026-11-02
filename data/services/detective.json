@@ -1,0 +1,6 @@
+{
+  "id": "detective", "name": "Amazon Detective", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "Amazon Detective phân tích security findings/log data để điều tra và trực quan hóa quan hệ hoạt động đáng ngờ trong AWS environment.",
+  "examSignals": ["Investigate/correlate security findings and activity: Detective", "Detect threats continuously: GuardDuty", "Find vulnerabilities/misconfigurations: Inspector"],
+  "compareWith": [{ "service": "Amazon GuardDuty", "diff": "GuardDuty phát hiện threats; Detective hỗ trợ điều tra findings bằng cách tương quan dữ liệu." }]
+}

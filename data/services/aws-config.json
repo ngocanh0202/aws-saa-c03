@@ -1,0 +1,6 @@
+{
+  "id": "aws-config", "name": "AWS Config", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS Config ghi lịch sử cấu hình AWS resources, đánh giá compliance rules và phát hiện configuration changes.",
+  "examSignals": ["Resource inventory/configuration history and drift/compliance rules: AWS Config", "Who made API call: CloudTrail", "Collect operational metrics: CloudWatch"],
+  "compareWith": [{ "service": "AWS CloudTrail", "diff": "Config theo dõi resource state/compliance; CloudTrail ghi lại API activity tạo thay đổi." }]
+}

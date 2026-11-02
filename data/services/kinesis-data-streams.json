@@ -1,0 +1,12 @@
+{
+  "id": "kinesis-data-streams", "name": "Amazon Kinesis Data Streams", "category": "Analytics", "tier": "core",
+  "overview": "Kinesis Data Streams thu nhận records theo thứ tự trong shards để nhiều consumer có thể xử lý streaming data gần real-time.",
+  "concepts": [{ "term": "Shard/partition key", "desc": "Shard xác định capacity/order scope; partition key map record tới shard." }, { "term": "Retention", "desc": "Stream giữ records trong khoảng retention cấu hình để consumer đọc lại." }, { "term": "Consumer", "desc": "Shared-throughput consumer poll hoặc enhanced fan-out consumer nhận dedicated throughput." }],
+  "howItWorks": "Producer ghi records theo partition key vào shards; consumer đọc theo sequence/checkpoint và thực hiện processing/retry riêng.",
+  "useCases": ["Custom real-time stream processing", "Nhiều consumers cần cùng stream", "Telemetry/clickstream cần ordering per key và replay"],
+  "pricing": "On-demand/provisioned stream capacity, shards, enhanced fan-out, extended retention, PUT payload units và data transfer có thể ảnh hưởng giá.",
+  "examSignals": ["Cần custom consumer xử lý record và replay: Data Streams", "Managed buffer-to-destination với ít vận hành: Data Firehose", "Kafka ecosystem/compatibility: Amazon MSK"],
+  "compareWith": [{ "service": "Amazon Kinesis Data Firehose", "diff": "Data Streams cho phép consumer xử lý stream/checkpoint; Firehose managed delivery tới destination." }, { "service": "Amazon Managed Streaming for Apache Kafka", "diff": "Kinesis Data Streams là managed AWS stream service với shard model; MSK chạy Kafka-compatible clusters." }],
+  "facts": ["Ordering bảo đảm theo shard/partition-key scope, không phải toàn stream.", "Hot partition keys tạo shard imbalance.", "Consumer cần checkpoint/idempotency để xử lý retries và duplicate records."],
+  "practice": { "steps": ["Tạo stream nhỏ trong sandbox và gửi records giả với partition keys có phân bố hợp lý.", "Đọc records bằng consumer lab, theo dõi iterator age/throttling metrics.", "Đặt retention/throughput tốiối thiểu phù hợp và không stream production."], "freeTier": "Stream capacity, shards, PUT payloads, enhanced fan-out, retention và transfer có thể tính phí; so sánh on-demand/provisioned price trước.", "cleanup": ["Dừng producer/consumer rồi xóa stream thử.", "Xóa consumer registrations/event source mappings và log groups lab.", "Gỡ IAM policies/roles chỉ cấp cho producer/consumer test."] }
+}

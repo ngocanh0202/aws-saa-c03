@@ -1,0 +1,6 @@
+{
+  "id": "elastic-transcoder", "name": "Amazon Elastic Transcoder", "category": "Media Services", "tier": "minor",
+  "overview": "Amazon Elastic Transcoder historically provided cloud media transcoding; AWS announced end of support in November 2025 and points customers to AWS Elemental MediaConvert.",
+  "examSignals": ["For current AWS media transcoding, evaluate AWS Elemental MediaConvert rather than launching new Elastic Transcoder workflows", "Managed file-based video processing/transcoding: MediaConvert"],
+  "compareWith": [{ "service": "AWS Elemental MediaConvert", "diff": "MediaConvert is the current AWS managed file-based video processing service and migration destination for Elastic Transcoder workloads." }]
+}

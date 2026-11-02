@@ -1,0 +1,12 @@
+{
+  "id": "glue", "name": "AWS Glue", "category": "Analytics", "tier": "core",
+  "overview": "AWS Glue là dịch vụ tích hợp dữ liệu serverless để khám phá schema/catalog, ETL và điều phối công việc data pipeline.",
+  "concepts": [{ "term": "Data Catalog", "desc": "Metadata repository cho database/table dùng bởi Glue jobs, Athena và dịch vụ analytics khác." }, { "term": "Crawler", "desc": "Quét nguồn dữ liệu để suy luận schema và cập nhật catalog." }, { "term": "ETL job", "desc": "Chuyển đổi, làm sạch và nạp dữ liệu bằng Spark hoặc Glue job type phù hợp." }],
+  "howItWorks": "Crawler/catalog mô tả dữ liệu; Glue job đọc source, transform và ghi target; workflow/trigger có thể phối hợp các bước.",
+  "useCases": ["ETL giữa data sources và S3 data lake", "Khám phá schema/catalog dùng với Athena", "Chuẩn bị dữ liệu phân tích theo lịch/sự kiện"],
+  "pricing": "Chi phí tùy loại job, worker/DPU hoặc capacity, thời gian chạy, crawler/catalog, data quality và các connector/features.",
+  "examSignals": ["Serverless ETL và Data Catalog cho data lake: Glue", "SQL ad hoc trực tiếp trên S3: Athena", "Orchestration ứng dụng nhiều bước: Step Functions có thể bổ trợ Glue"],
+  "compareWith": [{ "service": "Amazon Athena", "diff": "Glue catalog/ETL khám phá và chuyển đổi dữ liệu; Athena truy vấn dữ liệu bằng SQL." }, { "service": "Amazon EMR", "diff": "Glue là ETL managed/serverless; EMR cung cấp cluster/framework control cao hơn cho big data processing." }],
+  "facts": ["Glue Data Catalog metadata không tự lưu bản thân dữ liệu nguồn.", "Crawler schema inference cần review trước khi áp dụng với dữ liệu production.", "Bookmark có thể theo dõi dữ liệu đã xử lý cho một số job sources."],
+  "practice": { "steps": ["Dùng CSV giả nhỏ trong S3 bucket thử; tạo database/crawler hoặc catalog table cho sample.", "Chạy job đơn giản chuyển đổi sang Parquet trong prefix output riêng.", "Giới hạn worker/time, bật logs cần thiết và tránh dùng dữ liệu nhạy cảm."], "freeTier": "Crawler, job worker-time, catalog objects, data quality và S3 resources có thể tính phí; kiểm tra giá Glue theo loại/Region trước khi chạy.", "cleanup": ["Dừng/xóa Glue jobs, triggers, workflows và crawler thử.", "Xóa catalog database/table lab khi không còn consumer.", "Xóa S3 source/output objects, log groups và IAM roles chỉ dùng cho lab."] }
+}

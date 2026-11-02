@@ -1,0 +1,6 @@
+{
+  "id": "snowmobile", "name": "AWS Snowmobile", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Snowmobile was a specialized large-scale physical data-transfer service; verify whether the offering remains available before considering it for current projects.",
+  "examSignals": ["Exabyte-scale offline transfer is the historical Snowmobile use case; confirm current Snow Family alternatives", "Very large offline transfers more generally: evaluate current Snowball-family offerings"],
+  "compareWith": [{ "service": "AWS Snowball", "diff": "Snowmobile historically targeted exabyte-scale truck-based transfer; Snowball devices handle smaller offline transfer use cases." }]
+}

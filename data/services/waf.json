@@ -1,0 +1,12 @@
+{
+  "id": "waf", "name": "AWS WAF", "category": "Security, Identity, and Compliance", "tier": "core",
+  "overview": "AWS WAF là web application firewall kiểm tra HTTP(S) requests và cho phép, chặn hoặc đếm chúng theo web ACL rules.",
+  "concepts": [{ "term": "Web ACL", "desc": "Tập hợp rules/rule groups gắn với supported resource như CloudFront, ALB hoặc API Gateway." }, { "term": "Rule/managed rule group", "desc": "So khớp IP, headers, URI, rate hoặc pattern; managed groups cung cấp rules được duy trì." }, { "term": "Default action/logging", "desc": "Action allow/block/captcha/challenge và logging/sampling giúp quan sát tác động." }],
+  "howItWorks": "Request đi qua web ACL; rules được đánh giá theo priority, action dừng/tiếp tục theo loại, rồi default action áp dụng nếu không match.",
+  "useCases": ["Giảm common web exploit requests", "Rate-based throttling/chặn abuse", "Allow/block theo IP, geo, header hoặc URI"],
+  "pricing": "Tính theo web ACL, rule/rule group và số request; managed rule groups/captcha/bot features có thể có mức phí riêng.",
+  "examSignals": ["Lọc HTTP request theo rule/IP/rate: AWS WAF", "DDoS protection ở network/application với managed response: AWS Shield", "Firewall tập trung nhiều accounts: Firewall Manager phối hợp WAF/Shield"],
+  "compareWith": [{ "service": "AWS Shield", "diff": "WAF lọc web requests theo rule; Shield bảo vệ DDoS ở các lớp và có Standard/Advanced offerings." }, { "service": "AWS Network Firewall", "diff": "WAF bảo vệ HTTP(S) app trước web exploits; Network Firewall lọc network traffic trong VPC." }],
+  "facts": ["Rule priority và default action có thể gây block hợp lệ nếu cấu hình sai.", "Count mode/logging trước khi enforce giúp đánh giá false positives.", "Web ACL association và scope khác nhau giữa CloudFront/global và regional resources."],
+  "practice": { "steps": ["Tạo web ACL sandbox cho resource test không production hoặc thử rule ở Count mode.", "Dùng request vô hại để kiểm tra match/metrics/logs; review false positives trước khi block.", "Giới hạn log destination quyền truy cập và tránh ghi dữ liệu nhạy cảm không cần thiết."], "freeTier": "Web ACL, rules, requests, managed rule groups và logging có thể tính phí; xem bảng giá hiện tại theo scope/Region.", "cleanup": ["Disassociate web ACL khỏi test resource rồi xóa web ACL/rules.", "Xóa log destination và permissions chỉ tạo cho WAF lab.", "Xác nhận production ACL không bị chỉnh sửa; giữ managed protections đang dùng."] }
+}

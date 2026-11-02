@@ -1,0 +1,6 @@
+{
+  "id": "ses", "name": "Amazon Simple Email Service", "category": "Application Integration", "tier": "minor",
+  "overview": "Amazon SES is an email sending/receiving service for transactional, notification and marketing email workloads.",
+  "examSignals": ["Application sends/receives email at scale: SES", "SMS/push/pub-sub notifications: SNS or AWS End User Messaging options"],
+  "compareWith": [{ "service": "Amazon SNS", "diff": "SES handles email delivery and email reputation; SNS publishes notifications across supported subscriber protocols." }]
+}

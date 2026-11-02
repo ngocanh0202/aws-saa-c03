@@ -1,0 +1,6 @@
+{
+  "id": "service-catalog", "name": "AWS Service Catalog", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS Service Catalog enables organizations to publish, govern and provision approved cloud products/templates for users.",
+  "examSignals": ["Self-service provisioning from approved product portfolio: Service Catalog", "Define reusable infrastructure deployment templates: CloudFormation"],
+  "compareWith": [{ "service": "AWS CloudFormation", "diff": "Service Catalog governs distribution/access to approved products; CloudFormation defines and deploys infrastructure stacks." }]
+}

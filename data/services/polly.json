@@ -1,0 +1,6 @@
+{
+  "id": "polly", "name": "Amazon Polly", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Polly converts text into lifelike speech audio using managed text-to-speech voices and synthesis features.",
+  "examSignals": ["Text-to-speech audio generation: Polly", "Speech audio-to-text transcription: Transcribe", "Conversational intent/slot recognition: Lex"],
+  "compareWith": [{ "service": "Amazon Transcribe", "diff": "Polly synthesizes speech from text; Transcribe recognizes speech and returns text." }]
+}

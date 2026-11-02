@@ -1,0 +1,6 @@
+{
+  "id": "inspector", "name": "Amazon Inspector", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "Amazon Inspector discovers supported compute/container resources and assesses software vulnerabilities and network exposure.",
+  "examSignals": ["Automated vulnerability findings for EC2/ECR/Lambda supported resources: Inspector", "Threat detection from account activity: GuardDuty", "Sensitive data discovery in S3: Macie"],
+  "compareWith": [{ "service": "Amazon GuardDuty", "diff": "Inspector identifies vulnerabilities/exposure; GuardDuty detects suspicious activity and threats." }]
+}

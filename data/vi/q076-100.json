@@ -1,0 +1,333 @@
+[
+  {
+    "id": 76,
+    "stemVi": "Trong khuôn khổ lập kế hoạch ngân sách, ban quản lý muốn có một báo cáo các khoản bị tính phí trên AWS, liệt kê theo từng user. Dữ liệu sẽ được dùng để lập ngân sách cho các phòng ban. Solutions architect cần xác định cách hiệu quả nhất để lấy thông tin cho báo cáo này.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Chạy một truy vấn bằng Amazon Athena để tạo báo cáo.", "reason": "Muốn dùng Athena thì phải bật Cost and Usage Report ra S3, dựng bảng (Glue) rồi tự viết truy vấn — nhiều bước hơn hẳn so với dùng công cụ báo cáo chi phí có sẵn, nên không phải cách hiệu quả nhất." },
+      { "key": "B", "textVi": "Tạo một báo cáo trong Cost Explorer và tải báo cáo xuống.", "reason": "Cost Explorer có sẵn giao diện lọc và nhóm chi phí (ví dụ theo cost allocation tag gắn cho user hoặc theo linked account), lưu thành báo cáo và tải xuống CSV — nhanh và trực tiếp nhất cho nhu cầu lập ngân sách." },
+      { "key": "C", "textVi": "Truy cập chi tiết hóa đơn từ billing dashboard và tải hóa đơn xuống.", "reason": "Hóa đơn trên billing dashboard tổng hợp theo service và Region, không có cách lọc, nhóm theo user để chia ngân sách cho phòng ban." },
+      { "key": "D", "textVi": "Sửa một cost budget trong AWS Budgets để cảnh báo qua Amazon Simple Email Service (Amazon SES).", "reason": "AWS Budgets dùng để đặt ngưỡng và cảnh báo khi chi phí vượt mức, không tạo báo cáo các khoản bị tính phí theo user; nó cũng gửi cảnh báo qua email hoặc SNS chứ không cần SES." }
+    ],
+    "explanationVi": "Nhu cầu là một báo cáo chi phí có thể lọc, nhóm theo user và tải xuống, với cách làm hiệu quả nhất. Cost Explorer là công cụ có sẵn làm đúng việc này mà không cần dựng thêm hạ tầng. Bẫy: Athena làm được nhưng tốn nhiều bước chuẩn bị, hóa đơn không chi tiết theo user, còn AWS Budgets là công cụ cảnh báo chứ không phải báo cáo.",
+    "keyHint": "\"report of AWS billed items listed by user\" + \"most efficient way\" → Cost Explorer (lọc/nhóm theo tag) và tải báo cáo."
+  },
+  {
+    "id": 77,
+    "stemVi": "Một công ty host ứng dụng web trên AWS bằng bảy Amazon EC2 instance. Công ty yêu cầu địa chỉ IP của tất cả các EC2 instance còn khỏe (healthy) phải được trả về trong phản hồi truy vấn DNS.",
+    "promptVi": "Nên dùng routing policy nào để đáp ứng yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Simple routing policy", "reason": "Simple routing có thể trả nhiều IP trong một record nhưng không hỗ trợ health check, nên vẫn trả cả IP của instance không khỏe." },
+      { "key": "B", "textVi": "Latency routing policy", "reason": "Latency routing chọn một record ứng với Region có độ trễ thấp nhất cho người dùng, không trả về đồng thời IP của mọi instance khỏe." },
+      { "key": "C", "textVi": "Multivalue routing policy", "reason": "Multivalue answer routing trả về tối đa tám record khỏe cho mỗi truy vấn, mỗi record gắn một health check riêng — với bảy instance, phản hồi chứa IP của tất cả instance đang khỏe." },
+      { "key": "D", "textVi": "Geolocation routing policy", "reason": "Geolocation routing chọn record theo vị trí của người dùng, nhằm phục vụ nội dung theo khu vực, không trả về toàn bộ IP của các instance khỏe." }
+    ],
+    "explanationVi": "Yêu cầu có hai ý: trả về nhiều IP cùng lúc và chỉ trả IP của instance khỏe. Multivalue answer routing kết hợp cả hai nhờ health check trên từng record, trả tối đa tám record — đủ cho bảy instance. Bẫy: simple routing trả nhiều IP nhưng không kiểm tra sức khỏe, còn latency và geolocation chỉ chọn một đích.",
+    "keyHint": "\"IP addresses of all healthy EC2 instances be returned\" → Route 53 multivalue answer routing với health check."
+  },
+  {
+    "id": 78,
+    "stemVi": "Một công ty chạy phần mềm phân tích trên các Amazon EC2 instance. Phần mềm nhận yêu cầu job từ người dùng để xử lý dữ liệu đã tải lên Amazon S3. Người dùng báo rằng một số dữ liệu đã gửi không được xử lý. Amazon CloudWatch cho thấy CPU utilization của các EC2 instance luôn ở mức 100% hoặc gần 100%. Công ty muốn cải thiện hiệu năng hệ thống và mở rộng hệ thống theo tải người dùng.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một bản sao của instance. Đặt tất cả instance phía sau một Application Load Balancer.", "reason": "Thêm một instance cố định chỉ tăng capacity một lần, không tự mở rộng theo tải; request vẫn có thể bị mất khi các instance quá tải vì không có chỗ đệm job." },
+      { "key": "B", "textVi": "Tạo một S3 VPC endpoint cho Amazon S3. Cập nhật phần mềm để trỏ tới endpoint.", "reason": "VPC endpoint chỉ thay đổi đường mạng tới S3; nút thắt là CPU của instance đang ở 100%, nên endpoint không giải quyết được việc job bị bỏ sót." },
+      { "key": "C", "textVi": "Dừng các EC2 instance. Đổi sang instance type có CPU mạnh hơn và nhiều bộ nhớ hơn. Khởi động lại các instance.", "reason": "Scale dọc gây downtime khi dừng máy và vẫn là capacity cố định, không co giãn theo tải người dùng; tải tăng tiếp thì lại quá tải." },
+      { "key": "D", "textVi": "Chuyển các request đến vào Amazon Simple Queue Service (Amazon SQS). Cấu hình một EC2 Auto Scaling group dựa trên kích thước queue. Cập nhật phần mềm để đọc từ queue.", "reason": "SQS giữ lại mọi job một cách bền vững nên không còn job bị bỏ sót khi instance bận; Auto Scaling group tăng, giảm số instance theo độ dài queue, nên hệ thống mở rộng đúng theo tải người dùng." }
+    ],
+    "explanationVi": "Job bị mất vì instance quá tải mà không có nơi đệm request. Đưa request vào SQS để tách rời (decouple) phía nhận và phía xử lý, rồi scale nhóm xử lý theo số message trong queue — vừa không mất job vừa co giãn theo tải. Bẫy: thêm một bản sao hay nâng cỡ instance không co giãn theo tải, còn VPC endpoint không liên quan tới nút thắt CPU.",
+    "keyHint": "\"submitted data is not being processed\" + CPU ~100% + \"scale ... based on user load\" → SQS + Auto Scaling group theo độ dài queue."
+  },
+  {
+    "id": 79,
+    "stemVi": "Solutions architect cần thiết kế một ứng dụng có tính sẵn sàng cao (highly available) gồm các tầng web, ứng dụng và cơ sở dữ liệu. Việc phân phối nội dung HTTPS phải gần edge nhất có thể, với thời gian phân phối ngắn nhất.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này và an toàn nhất (MOST secure)?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình một Application Load Balancer (ALB) public với nhiều Amazon EC2 instance dự phòng trong các public subnet. Cấu hình Amazon CloudFront phân phối nội dung HTTPS dùng ALB public làm origin.", "reason": "CloudFront với ALB làm origin là đúng, nhưng EC2 nằm trong public subnet có thể bị truy cập trực tiếp từ internet — kém an toàn hơn đặt ở private subnet." },
+      { "key": "B", "textVi": "Cấu hình một Application Load Balancer public với nhiều Amazon EC2 instance dự phòng trong các private subnet. Cấu hình Amazon CloudFront phân phối nội dung HTTPS dùng các EC2 instance làm origin.", "reason": "Instance trong private subnet không có địa chỉ public nên CloudFront không kết nối tới được làm origin; dùng từng instance làm origin còn bỏ qua ALB và mất cân bằng tải, tính sẵn sàng." },
+      { "key": "C", "textVi": "Cấu hình một Application Load Balancer (ALB) public với nhiều Amazon EC2 instance dự phòng trong các private subnet. Cấu hình Amazon CloudFront phân phối nội dung HTTPS dùng ALB public làm origin.", "reason": "EC2 ở private subnet không lộ ra internet, chỉ nhận traffic qua ALB; nhiều instance sau ALB bảo đảm tính sẵn sàng; CloudFront dùng ALB làm origin phân phối HTTPS từ edge gần người dùng nhất — vừa nhanh vừa an toàn nhất." },
+      { "key": "D", "textVi": "Cấu hình một Application Load Balancer public với nhiều Amazon EC2 instance dự phòng trong các public subnet. Cấu hình Amazon CloudFront phân phối nội dung HTTPS dùng các EC2 instance làm origin.", "reason": "EC2 ở public subnet bị lộ ra internet, và dùng từng instance làm origin bỏ qua ALB nên mất cân bằng tải và chuyển đổi khi instance lỗi — vừa kém an toàn vừa kém sẵn sàng." }
+    ],
+    "explanationVi": "Mẫu chuẩn là CloudFront → ALB public → EC2 trong private subnet. CloudFront lo phân phối HTTPS tại edge với độ trễ thấp nhất, ALB phân phối tải tới nhiều instance, còn private subnet giữ EC2 không bị truy cập trực tiếp. Bẫy: đặt EC2 ở public subnet kém an toàn, và dùng EC2 làm origin trực tiếp là bỏ qua lớp cân bằng tải.",
+    "keyHint": "\"as close to the edge as possible\" + \"MOST secure\" → CloudFront với ALB public làm origin, EC2 trong private subnet."
+  },
+  {
+    "id": 80,
+    "stemVi": "Một công ty có ứng dụng nhiều tầng (multi-tier) chạy sáu web server front-end trong một Amazon EC2 Auto Scaling group ở một Availability Zone duy nhất, phía sau một Application Load Balancer (ALB). Solutions architect cần sửa hạ tầng để có tính sẵn sàng cao (highly available) mà không sửa ứng dụng.",
+    "promptVi": "Solutions architect nên chọn kiến trúc nào để có tính sẵn sàng cao?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Auto Scaling group dùng ba instance ở mỗi Region trong hai Region.", "reason": "Một Auto Scaling group chỉ hoạt động trong một Region, không trải qua hai Region được; muốn đa Region phải dựng lại toàn bộ stack và định tuyến DNS — vượt quá nhu cầu và có thể phải sửa ứng dụng." },
+      { "key": "B", "textVi": "Sửa Auto Scaling group để dùng ba instance ở mỗi Availability Zone trong hai Availability Zone.", "reason": "Trải instance qua hai AZ trong cùng Region (ALB cũng bật cho cả hai AZ) nghĩa là một AZ gặp sự cố thì AZ còn lại vẫn phục vụ, Auto Scaling bù instance — đạt tính sẵn sàng cao mà không đụng tới ứng dụng." },
+      { "key": "C", "textVi": "Tạo một Auto Scaling template có thể dùng để nhanh chóng tạo thêm instance ở một Region khác.", "reason": "Một template chỉ giúp tạo instance khi cần, không tự chuyển đổi khi sự cố; hạ tầng vẫn nằm trong một AZ cho đến khi có người thao tác — không phải sẵn sàng cao." },
+      { "key": "D", "textVi": "Đổi ALB phía trước các Amazon EC2 instance sang cấu hình round-robin để cân bằng traffic tới tầng web.", "reason": "Thuật toán cân bằng tải chỉ đổi cách chia request giữa các instance; mọi instance vẫn ở một AZ nên sự cố AZ vẫn làm sập toàn bộ ứng dụng." }
+    ],
+    "explanationVi": "Điểm yếu là mọi instance nằm trong một AZ. Cách chuẩn để đạt tính sẵn sàng cao là trải Auto Scaling group qua nhiều AZ trong cùng Region, sau ALB bật cho các AZ đó. Bẫy: Auto Scaling group không trải qua nhiều Region, template không tự chuyển đổi khi lỗi, còn đổi thuật toán cân bằng tải không giải quyết rủi ro AZ.",
+    "keyHint": "\"single Availability Zone\" + \"highly available without modifying the application\" → Auto Scaling group trải qua nhiều AZ."
+  },
+  {
+    "id": 81,
+    "stemVi": "Website của một công ty cung cấp cho người dùng các báo cáo hiệu suất lịch sử có thể tải xuống. Website cần một giải pháp có thể mở rộng để đáp ứng nhu cầu truy cập toàn cầu. Giải pháp phải tiết kiệm chi phí, hạn chế việc cấp phát tài nguyên hạ tầng, và cho thời gian phản hồi nhanh nhất có thể.",
+    "promptVi": "Solutions architect nên đề xuất tổ hợp nào để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Amazon CloudFront và Amazon S3", "reason": "Báo cáo lịch sử là file tĩnh: lưu trên S3 rẻ và tự mở rộng, CloudFront cache tại edge toàn cầu cho phản hồi nhanh nhất; cả hai được quản lý hoàn toàn nên không phải cấp phát hạ tầng." },
+      { "key": "B", "textVi": "AWS Lambda và Amazon DynamoDB", "reason": "Lambda và DynamoDB dành cho xử lý và dữ liệu động; phục vụ file tải xuống qua đó vừa thừa vừa tốn chi phí, lại không có cache tại edge cho người dùng toàn cầu." },
+      { "key": "C", "textVi": "Application Load Balancer với Amazon EC2 Auto Scaling", "reason": "Phải cấp phát và vận hành EC2, ALB — trái với yêu cầu hạn chế cấp phát hạ tầng; phục vụ từ một Region cũng chậm hơn cache tại edge cho người dùng toàn cầu." },
+      { "key": "D", "textVi": "Amazon Route 53 với các Application Load Balancer nội bộ (internal)", "reason": "Internal ALB chỉ truy cập được từ bên trong VPC, người dùng internet không tới được; Route 53 chỉ định tuyến DNS chứ không phục vụ hay cache nội dung." }
+    ],
+    "explanationVi": "File báo cáo tĩnh, người dùng toàn cầu, cần rẻ, ít hạ tầng và nhanh nhất → S3 làm nơi lưu và CloudFront phân phối từ edge. Cả hai là dịch vụ được quản lý, tự mở rộng. Bẫy: Lambda/DynamoDB và EC2 đều thừa cho nội dung tĩnh, còn internal ALB không truy cập được từ internet.",
+    "keyHint": "\"downloadable historical ... reports\" + \"globally\" + \"limit the provisioning of infrastructure\" → Amazon S3 + CloudFront."
+  },
+  {
+    "id": 82,
+    "stemVi": "Một công ty dùng 50 TB dữ liệu cho báo cáo. Công ty muốn chuyển dữ liệu này từ on-premises lên AWS. Một ứng dụng tự viết trong data center của công ty chạy một job biến đổi dữ liệu hằng tuần. Công ty dự định tạm dừng ứng dụng cho đến khi việc chuyển dữ liệu hoàn tất và cần bắt đầu quá trình chuyển càng sớm càng tốt.\n\nData center không còn băng thông mạng trống cho workload bổ sung. Solutions architect phải chuyển dữ liệu và phải cấu hình để job biến đổi tiếp tục chạy trên AWS Cloud.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS DataSync để chuyển dữ liệu. Tạo một job biến đổi tự viết bằng AWS Glue.", "reason": "DataSync truyền dữ liệu qua mạng, trong khi data center không còn băng thông trống cho workload thêm — phần chuyển dữ liệu không khả thi." },
+      { "key": "B", "textVi": "Đặt một thiết bị AWS Snowcone để chuyển dữ liệu. Triển khai ứng dụng biến đổi lên thiết bị.", "reason": "Snowcone chỉ có vài TB dung lượng (8 TB HDD hoặc 14 TB SSD), không chứa nổi 50 TB trong một thiết bị; chạy ứng dụng biến đổi trên thiết bị cũng không giúp job tiếp tục chạy trên AWS Cloud." },
+      { "key": "C", "textVi": "Đặt một thiết bị AWS Snowball Edge Storage Optimized. Sao chép dữ liệu vào thiết bị. Tạo một job biến đổi tự viết bằng AWS Glue.", "reason": "Snowball Edge Storage Optimized đủ dung lượng cho 50 TB và chuyển offline nên không cần băng thông mạng; khi dữ liệu vào S3, job biến đổi chạy bằng AWS Glue serverless nên không phải quản lý máy chủ — ít công vận hành nhất." },
+      { "key": "D", "textVi": "Đặt một thiết bị AWS Snowball Edge Storage Optimized có kèm Amazon EC2 compute. Sao chép dữ liệu vào thiết bị. Tạo một EC2 instance mới trên AWS để chạy ứng dụng biến đổi.", "reason": "Phần chuyển dữ liệu dùng được, nhưng tính năng EC2 trên thiết bị là thừa, và chạy job trên EC2 tự quản lý thì phải vá, vận hành máy chủ — tốn công hơn Glue serverless." }
+    ],
+    "explanationVi": "Không có băng thông mạng nên phải chuyển offline; 50 TB hợp với Snowball Edge Storage Optimized. Phần job biến đổi trên cloud thì AWS Glue (ETL serverless) ít công vận hành hơn tự chạy trên EC2. Bẫy: DataSync cần mạng, Snowcone quá nhỏ, còn EC2 thêm việc quản lý máy chủ.",
+    "keyHint": "\"does not have any available network bandwidth\" + 50 TB → Snowball Edge Storage Optimized; \"LEAST operational overhead\" cho job biến đổi → AWS Glue.",
+    "review": { "reason": "Đáp án có thể sai: từ 07/11/2025 AWS Snowball Edge chỉ còn dành cho khách hàng hiện hữu (khách hàng mới không đặt được), Snowcone cũng đã ngừng; tài liệu Snowball Edge hướng khách hàng mới sang AWS DataSync, AWS Data Transfer Terminal hoặc giải pháp của AWS Partner. Đề không nói công ty đã là khách hàng Snowball hay chưa, nên với tài khoản mới phương án Snowball Edge không thực hiện được; cũng không có lựa chọn nào khác đúng hơn (DataSync cần băng thông mạng mà đề nói không còn), nên câu hỏi cần cập nhật." }
+  },
+  {
+    "id": 83,
+    "stemVi": "Một công ty đang chuẩn bị một nền tảng dữ liệu mới sẽ nhận dữ liệu streaming thời gian thực từ nhiều nguồn. Công ty cần biến đổi dữ liệu trước khi ghi vào Amazon S3. Công ty cần có khả năng dùng SQL để truy vấn dữ liệu đã biến đổi.",
+    "promptVi": "Những giải pháp nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon Kinesis Data Streams để stream dữ liệu. Dùng Amazon Kinesis Data Analytics để biến đổi dữ liệu. Dùng Amazon Kinesis Data Firehose để ghi dữ liệu vào Amazon S3. Dùng Amazon Athena để truy vấn dữ liệu đã biến đổi từ Amazon S3.", "reason": "Pipeline đầy đủ: Kinesis Data Streams nhận dữ liệu thời gian thực, Kinesis Data Analytics (bản for Apache Flink nay là Amazon Managed Service for Apache Flink; bản for SQL đã ngừng từ 27/01/2026) biến đổi luồng, Firehose ghi vào S3, và Athena truy vấn S3 bằng SQL." },
+      { "key": "B", "textVi": "Dùng Amazon Managed Streaming for Apache Kafka (Amazon MSK) để stream dữ liệu. Dùng AWS Glue để biến đổi dữ liệu và ghi dữ liệu vào Amazon S3. Dùng Amazon Athena để truy vấn dữ liệu đã biến đổi từ Amazon S3.", "reason": "MSK nhận dữ liệu streaming từ nhiều nguồn, AWS Glue streaming ETL đọc từ Kafka, biến đổi rồi ghi vào S3, và Athena truy vấn kết quả bằng SQL — đáp ứng đủ các yêu cầu." },
+      { "key": "C", "textVi": "Dùng AWS Database Migration Service (AWS DMS) để nhận dữ liệu. Dùng Amazon EMR để biến đổi dữ liệu và ghi dữ liệu vào Amazon S3. Dùng Amazon Athena để truy vấn dữ liệu đã biến đổi từ Amazon S3.", "reason": "AWS DMS dùng để di chuyển và sao chép cơ sở dữ liệu, không phải dịch vụ nhận dữ liệu streaming thời gian thực từ nhiều nguồn tùy ý." },
+      { "key": "D", "textVi": "Dùng Amazon Managed Streaming for Apache Kafka (Amazon MSK) để stream dữ liệu. Dùng Amazon Kinesis Data Analytics để biến đổi dữ liệu và ghi dữ liệu vào Amazon S3. Dùng Amazon RDS query editor để truy vấn dữ liệu đã biến đổi từ Amazon S3.", "reason": "Phần stream và biến đổi có thể chạy, nhưng RDS query editor chỉ truy vấn cơ sở dữ liệu RDS/Aurora, không truy vấn được dữ liệu nằm trong S3." },
+      { "key": "E", "textVi": "Dùng Amazon Kinesis Data Streams để stream dữ liệu. Dùng AWS Glue để biến đổi dữ liệu. Dùng Amazon Kinesis Data Firehose để ghi dữ liệu vào Amazon S3. Dùng Amazon RDS query editor để truy vấn dữ liệu đã biến đổi từ Amazon S3.", "reason": "Bước cuối sai: RDS query editor không truy vấn được dữ liệu trong S3, nên không đáp ứng yêu cầu truy vấn SQL trên dữ liệu đã biến đổi." }
+    ],
+    "explanationVi": "Cần pipeline ba bước: nhận streaming → biến đổi → ghi S3, cộng với truy vấn SQL trên S3. Hai phương án đúng là Kinesis Data Streams + Kinesis Data Analytics + Firehose + Athena, và MSK + Glue + Athena. Bẫy: DMS dành cho di chuyển cơ sở dữ liệu, còn RDS query editor không truy vấn được S3 — muốn SQL trên S3 thì nghĩ tới Athena.",
+    "keyHint": "\"real-time streaming data\" + \"transform ... before writing to Amazon S3\" + \"use SQL to query\" → Kinesis/MSK → Kinesis Data Analytics/Glue → S3 → Athena."
+  },
+  {
+    "id": 84,
+    "stemVi": "Một công ty cần rà soát việc triển khai trên AWS Cloud để đảm bảo các Amazon S3 bucket không có thay đổi cấu hình trái phép.",
+    "promptVi": "Solutions architect nên làm gì để đạt mục tiêu này?",
+    "options": [
+      { "key": "A", "textVi": "Bật AWS Config với các rule phù hợp.", "reason": "AWS Config liên tục ghi lại lịch sử cấu hình của S3 bucket và đánh giá theo rule (ví dụ cấm public read, bắt buộc mã hóa); thay đổi trái phép sẽ bị đánh dấu non-compliant và có thể tự động khắc phục." },
+      { "key": "B", "textVi": "Bật AWS Trusted Advisor với các check phù hợp.", "reason": "Trusted Advisor chỉ kiểm tra định kỳ một số best practice (như bucket mở quyền), không ghi lại lịch sử thay đổi cấu hình hay đánh giá theo rule tùy chỉnh cho từng lần thay đổi." },
+      { "key": "C", "textVi": "Bật Amazon Inspector với assessment template phù hợp.", "reason": "Inspector quét lỗ hổng phần mềm và mạng trên EC2, container image và Lambda, không theo dõi thay đổi cấu hình của S3 bucket." },
+      { "key": "D", "textVi": "Bật Amazon S3 server access logging. Cấu hình Amazon EventBridge (Amazon CloudWatch Events).", "reason": "Server access log ghi các request truy cập object, không đánh giá cấu hình bucket có hợp lệ không; ghép với EventBridge vẫn phải tự xây logic kiểm tra." }
+    ],
+    "explanationVi": "Theo dõi và đánh giá thay đổi cấu hình tài nguyên là chức năng cốt lõi của AWS Config. Config rule cho biết bucket nào lệch khỏi cấu hình cho phép và khi nào nó bị đổi. Bẫy: Trusted Advisor chỉ là kiểm tra best practice, Inspector quét lỗ hổng compute, còn access log ghi request chứ không đánh giá cấu hình.",
+    "keyHint": "\"unauthorized configuration changes\" → AWS Config với các Config rule."
+  },
+  {
+    "id": 85,
+    "stemVi": "Một công ty đang thiết kế một nền tảng truyền thông trên cloud vận hành bằng API. Ứng dụng host trên các Amazon EC2 instance phía sau một Network Load Balancer (NLB). Công ty dùng Amazon API Gateway để cung cấp cho người dùng bên ngoài quyền truy cập ứng dụng qua API. Công ty muốn bảo vệ nền tảng trước các kiểu khai thác web như SQL injection, đồng thời muốn phát hiện và giảm thiểu các cuộc tấn công DDoS lớn, tinh vi.",
+    "promptVi": "Tổ hợp giải pháp nào mang lại mức bảo vệ cao nhất (MOST protection)? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS WAF để bảo vệ NLB.", "reason": "AWS WAF không gắn được vào NLB (NLB hoạt động ở layer 4); WAF chỉ gắn vào CloudFront, ALB, API Gateway, AppSync và một số dịch vụ khác." },
+      { "key": "B", "textVi": "Dùng AWS Shield Advanced với NLB.", "reason": "Shield Advanced hỗ trợ bảo vệ NLB (qua Elastic IP), phát hiện và giảm thiểu các cuộc DDoS lớn, tinh vi, có đội ứng cứu DDoS và báo cáo chi tiết — đúng yêu cầu chống DDoS." },
+      { "key": "C", "textVi": "Dùng AWS WAF để bảo vệ Amazon API Gateway.", "reason": "API Gateway là cửa vào của người dùng bên ngoài; gắn AWS WAF web ACL vào đó chặn được SQL injection và các khai thác web layer 7 khác trước khi request tới ứng dụng." },
+      { "key": "D", "textVi": "Dùng Amazon GuardDuty với AWS Shield Standard.", "reason": "GuardDuty chỉ phát hiện mối đe dọa, không chặn SQL injection; Shield Standard chỉ bảo vệ cơ bản trước các tấn công phổ biến, không đủ cho DDoS lớn, tinh vi." },
+      { "key": "E", "textVi": "Dùng AWS Shield Standard với Amazon API Gateway.", "reason": "Shield Standard vốn được bật tự động và chỉ bảo vệ cơ bản ở layer 3/4; nó không có phát hiện, giảm thiểu nâng cao như Shield Advanced và không chặn SQL injection." }
+    ],
+    "explanationVi": "Có hai mối đe dọa: khai thác web layer 7 (SQL injection) và DDoS lớn, tinh vi. AWS WAF trên API Gateway xử lý phần đầu, Shield Advanced trên NLB xử lý phần sau. Bẫy: WAF không gắn được vào NLB, GuardDuty chỉ phát hiện, còn Shield Standard là mức bảo vệ cơ bản mặc định.",
+    "keyHint": "\"SQL injection\" → AWS WAF trên API Gateway; \"large, sophisticated DDoS attacks\" → AWS Shield Advanced."
+  },
+  {
+    "id": 86,
+    "stemVi": "Một công ty có một website serverless với hàng triệu object trong một Amazon S3 bucket. Công ty dùng S3 bucket làm origin cho một Amazon CloudFront distribution. Công ty chưa đặt mã hóa cho S3 bucket trước khi nạp các object. Solutions architect cần bật mã hóa cho mọi object hiện có và mọi object được thêm vào S3 bucket sau này.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công sức nhất (LEAST amount of effort)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một S3 bucket mới. Bật default encryption cho bucket mới. Tải toàn bộ object hiện có xuống bộ nhớ cục bộ tạm thời. Tải các object lên S3 bucket mới.", "reason": "Tải xuống rồi tải lên lại hàng triệu object tốn nhiều thời gian, băng thông và công sức, lại phải đổi origin của CloudFront sang bucket mới." },
+      { "key": "B", "textVi": "Bật default encryption cho S3 bucket. Dùng tính năng S3 Inventory để tạo file .csv liệt kê các object chưa mã hóa. Chạy một S3 Batch Operations job dùng lệnh copy để mã hóa các object đó.", "reason": "Default encryption lo cho mọi object mới; S3 Inventory liệt kê object chưa mã hóa, và S3 Batch Operations copy đè các object đó tại chỗ để mã hóa hàng loạt — xử lý hàng triệu object mà không phải viết script hay đổi bucket." },
+      { "key": "C", "textVi": "Tạo một encryption key mới bằng AWS Key Management Service (AWS KMS). Đổi cài đặt S3 bucket sang mã hóa phía server với khóa do AWS KMS quản lý (SSE-KMS). Bật versioning cho S3 bucket.", "reason": "Đổi cài đặt mã hóa mặc định chỉ áp dụng cho object ghi mới, không mã hóa lại các object đã có; bật versioning cũng không mã hóa gì." },
+      { "key": "D", "textVi": "Vào Amazon S3 trên AWS Management Console. Duyệt các object của S3 bucket. Sắp xếp theo trường encryption. Chọn từng object chưa mã hóa. Dùng nút Modify để áp cài đặt mã hóa mặc định cho mọi object chưa mã hóa trong S3 bucket.", "reason": "Thao tác thủ công trên console với hàng triệu object là không thực tế và tốn công nhất." }
+    ],
+    "explanationVi": "Có hai phần: object mới và object cũ. Default encryption lo object mới (hiện nay S3 còn tự mã hóa mọi object mới bằng SSE-S3), còn object cũ phải được copy đè để mã hóa — S3 Inventory + S3 Batch Operations làm việc này hàng loạt với ít công nhất. Bẫy: nghĩ rằng đổi cài đặt bucket sẽ tự mã hóa lại object đã có.",
+    "keyHint": "\"millions of objects\" + \"all existing objects\" + \"LEAST amount of effort\" → default encryption + S3 Inventory + S3 Batch Operations copy."
+  },
+  {
+    "id": 87,
+    "stemVi": "Một công ty chạy một cổng thông tin web cung cấp cho người dùng tin nóng toàn cầu, cảnh báo địa phương và cập nhật thời tiết. Cổng thông tin đưa cho mỗi người dùng một giao diện cá nhân hóa, kết hợp nội dung tĩnh và động. Nội dung được phục vụ qua HTTPS bởi một API server chạy trên một Amazon EC2 instance phía sau một Application Load Balancer (ALB). Công ty muốn cổng thông tin cung cấp nội dung này cho người dùng khắp thế giới nhanh nhất có thể.",
+    "promptVi": "Solutions architect nên thiết kế ứng dụng như thế nào để đảm bảo độ trễ thấp nhất (LEAST amount of latency) cho mọi người dùng?",
+    "options": [
+      { "key": "A", "textVi": "Triển khai stack ứng dụng ở một AWS Region. Dùng Amazon CloudFront để phục vụ mọi nội dung tĩnh và động, chỉ định ALB làm origin.", "reason": "CloudFront cache nội dung tĩnh tại edge, còn nội dung động được chuyển về ALB qua mạng backbone tối ưu của AWS với kết nối được giữ sẵn, nên người dùng ở mọi nơi đều được phục vụ từ edge gần nhất với độ trễ thấp nhất." },
+      { "key": "B", "textVi": "Triển khai stack ứng dụng ở hai AWS Region. Dùng Amazon Route 53 latency routing policy để phục vụ mọi nội dung từ ALB ở Region gần nhất.", "reason": "Hai Region giúp một phần, nhưng người dùng xa cả hai Region vẫn phải đi qua internet công cộng tới ALB, không có cache tại edge — độ trễ cao hơn CloudFront và chi phí vận hành gấp đôi stack." },
+      { "key": "C", "textVi": "Triển khai stack ứng dụng ở một AWS Region. Dùng Amazon CloudFront để phục vụ nội dung tĩnh. Phục vụ nội dung động trực tiếp từ ALB.", "reason": "Nội dung động đi thẳng từ ALB qua internet tới người dùng ở xa nên chậm hơn so với đi qua CloudFront; CloudFront tăng tốc được cả nội dung động." },
+      { "key": "D", "textVi": "Triển khai stack ứng dụng ở hai AWS Region. Dùng Amazon Route 53 geolocation routing policy để phục vụ mọi nội dung từ ALB ở Region gần nhất.", "reason": "Geolocation routing chọn Region theo vị trí địa lý chứ không theo độ trễ thực tế, và vẫn không có edge cache — người dùng ở xa vẫn chịu độ trễ cao." }
+    ],
+    "explanationVi": "CloudFront phục vụ được cả nội dung tĩnh (qua cache) lẫn động (qua mạng tối ưu của AWS về origin), nên đặt CloudFront trước ALB cho mọi nội dung là cách có độ trễ thấp nhất cho người dùng toàn cầu. Route 53 chỉ định tuyến ở tầng DNS, nội dung vẫn đi từ Region. Bẫy: nghĩ rằng CloudFront chỉ dành cho nội dung tĩnh.",
+    "keyHint": "\"mixture of static and dynamic content\" + \"users across the world\" + \"LEAST amount of latency\" → CloudFront trước ALB cho cả nội dung tĩnh và động."
+  },
+  {
+    "id": 88,
+    "stemVi": "Solutions architect đang thiết kế một VPC có public subnet và private subnet. VPC và các subnet dùng IPv4 CIDR block. Có một public subnet và một private subnet ở mỗi Availability Zone (AZ) trong ba AZ để đạt tính sẵn sàng cao. Một internet gateway được dùng để cấp truy cập internet cho các public subnet. Các private subnet cần truy cập internet để các Amazon EC2 instance tải bản cập nhật phần mềm.",
+    "promptVi": "Solutions architect nên làm gì để cho phép các private subnet truy cập internet?",
+    "options": [
+      { "key": "A", "textVi": "Tạo ba NAT gateway, mỗi NAT gateway trong public subnet của một AZ. Tạo một private route table cho mỗi AZ, chuyển traffic ngoài VPC tới NAT gateway trong AZ đó.", "reason": "NAT gateway đặt trong public subnet cho instance ở private subnet đi ra internet qua IPv4; mỗi AZ có NAT gateway và route table riêng nên sự cố một AZ không làm mất truy cập internet của các AZ còn lại, và NAT gateway được AWS quản lý." },
+      { "key": "B", "textVi": "Tạo ba NAT instance, mỗi NAT instance cho một private subnet ở mỗi AZ. Tạo một private route table cho mỗi AZ, chuyển traffic ngoài VPC tới NAT instance trong AZ đó.", "reason": "NAT instance phải đặt trong public subnet mới ra được internet, và công ty phải tự vá, mở rộng, tắt source/destination check, xử lý khi instance lỗi — tốn công và kém sẵn sàng hơn NAT gateway." },
+      { "key": "C", "textVi": "Tạo một internet gateway thứ hai trên một private subnet. Cập nhật route table của các private subnet để chuyển traffic ngoài VPC tới internet gateway private đó.", "reason": "Mỗi VPC chỉ gắn được một internet gateway, và internet gateway gắn vào VPC chứ không gắn vào subnet; route thẳng tới internet gateway sẽ biến subnet thành public subnet." },
+      { "key": "D", "textVi": "Tạo một egress-only internet gateway trên một public subnet. Cập nhật route table của các private subnet để chuyển traffic ngoài VPC tới egress-only internet gateway.", "reason": "Egress-only internet gateway chỉ dành cho traffic IPv6, trong khi VPC này dùng IPv4; nó cũng gắn vào VPC chứ không gắn vào subnet." }
+    ],
+    "explanationVi": "Instance IPv4 trong private subnet cần đi ra internet thì dùng NAT gateway đặt trong public subnet. Để có tính sẵn sàng cao, mỗi AZ có một NAT gateway và route table riêng trỏ tới NAT gateway cùng AZ. Bẫy: NAT instance tốn công vận hành, VPC chỉ có một internet gateway, còn egress-only internet gateway chỉ dành cho IPv6.",
+    "keyHint": "\"private subnets require access to the internet\" + IPv4 + ba AZ → một NAT gateway mỗi AZ trong public subnet + route table theo AZ."
+  },
+  {
+    "id": 89,
+    "stemVi": "Một công ty có ứng dụng chạy trên các Amazon EC2 instance và dùng một cơ sở dữ liệu Amazon Aurora. Các EC2 instance kết nối tới cơ sở dữ liệu bằng tên đăng nhập và mật khẩu lưu cục bộ trong một file. Công ty muốn giảm tối thiểu công vận hành cho việc quản lý credential.",
+    "promptVi": "Solutions architect nên làm gì để đạt mục tiêu này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Secrets Manager. Bật tự động xoay vòng (automatic rotation).", "reason": "Secrets Manager lưu credential tập trung, có mã hóa, và có sẵn hàm xoay vòng cho Aurora; ứng dụng lấy secret qua API thay vì đọc file cục bộ, nên việc đổi mật khẩu diễn ra tự động — ít công vận hành nhất." },
+      { "key": "B", "textVi": "Dùng AWS Systems Manager Parameter Store. Bật tự động xoay vòng.", "reason": "Parameter Store lưu được SecureString nhưng không có tính năng tự động xoay vòng tích hợp sẵn; muốn xoay vòng phải tự viết Lambda và lên lịch." },
+      { "key": "C", "textVi": "Tạo một Amazon S3 bucket để lưu các object được mã hóa bằng khóa AWS Key Management Service (AWS KMS). Chuyển file credential sang S3 bucket. Trỏ ứng dụng tới S3 bucket.", "reason": "Chỉ đổi chỗ để file credential sang S3; mật khẩu vẫn phải đổi thủ công và cập nhật file, không giảm công quản lý credential." },
+      { "key": "D", "textVi": "Tạo một Amazon Elastic Block Store (Amazon EBS) volume được mã hóa cho mỗi EC2 instance. Gắn EBS volume mới vào mỗi EC2 instance. Chuyển file credential sang EBS volume mới. Trỏ ứng dụng tới EBS volume mới.", "reason": "Mã hóa volume chỉ bảo vệ dữ liệu lưu trên đĩa; credential vẫn nằm trong file trên từng instance, phải cập nhật thủ công từng máy — còn tốn công hơn." }
+    ],
+    "explanationVi": "Giảm công quản lý credential nghĩa là lưu tập trung và tự động xoay vòng. AWS Secrets Manager làm cả hai và tích hợp sẵn với Aurora. Bẫy: Parameter Store không có xoay vòng tích hợp, còn chuyển file sang S3 hay EBS mã hóa chỉ đổi chỗ lưu, không tự động hóa gì.",
+    "keyHint": "\"user names and passwords ... stored locally in a file\" + \"minimize the operational overhead of credential management\" → AWS Secrets Manager với automatic rotation."
+  },
+  {
+    "id": 90,
+    "stemVi": "Solutions architect đang dùng Amazon S3 để thiết kế kiến trúc lưu trữ cho một ứng dụng media số mới. Các file media phải chịu được việc mất một Availability Zone. Một số file được truy cập thường xuyên, trong khi các file khác hiếm khi được truy cập theo một mẫu không đoán trước được. Solutions architect phải giảm tối thiểu chi phí lưu trữ và truy xuất các file media.",
+    "promptVi": "Tùy chọn lưu trữ nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "S3 Standard", "reason": "S3 Standard chịu được mất một AZ, nhưng tính giá lưu trữ cao cho cả những file hiếm khi được truy cập — không giảm tối thiểu chi phí." },
+      { "key": "B", "textVi": "S3 Intelligent-Tiering", "reason": "Intelligent-Tiering lưu trên nhiều AZ và tự chuyển từng object giữa tier truy cập thường xuyên và tier ít truy cập theo mẫu truy cập thực tế, không có phí truy xuất (retrieval fee) — hợp nhất khi mẫu truy cập không đoán trước được." },
+      { "key": "C", "textVi": "S3 Standard-Infrequent Access (S3 Standard-IA)", "reason": "Standard-IA rẻ cho file ít dùng nhưng có phí truy xuất theo GB, nên các file được truy cập thường xuyên sẽ tốn phí truy xuất cao; phải tự đoán file nào đặt ở đâu." },
+      { "key": "D", "textVi": "S3 One Zone-Infrequent Access (S3 One Zone-IA)", "reason": "One Zone-IA chỉ lưu trong một AZ, nên mất AZ đó là mất dữ liệu — vi phạm yêu cầu chịu được mất một Availability Zone." }
+    ],
+    "explanationVi": "Mẫu truy cập hỗn hợp và không đoán trước được, lại cần chịu mất một AZ và rẻ cả lưu trữ lẫn truy xuất → S3 Intelligent-Tiering. Nó tự tối ưu tier cho từng object, chỉ tính một khoản phí giám sát nhỏ theo object và không có phí truy xuất. Bẫy: Standard-IA có phí truy xuất, còn One Zone-IA không chịu được mất AZ.",
+    "keyHint": "\"rarely accessed in an unpredictable pattern\" + \"resilient to the loss of an Availability Zone\" → S3 Intelligent-Tiering."
+  },
+  {
+    "id": 91,
+    "stemVi": "Một công ty có quy trình thanh toán thương mại điện tử (checkout) ghi đơn hàng vào cơ sở dữ liệu và gọi một service để xử lý thanh toán. Người dùng gặp tình trạng timeout trong quá trình checkout. Khi người dùng gửi lại form checkout, nhiều đơn hàng khác nhau được tạo ra cho cùng một giao dịch mong muốn.",
+    "promptVi": "Solutions architect nên tái cấu trúc (refactor) quy trình này thế nào để ngăn việc tạo nhiều đơn hàng?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình ứng dụng web gửi message đơn hàng tới Amazon Kinesis Data Firehose. Đặt payment service lấy message từ Kinesis Data Firehose và xử lý đơn hàng.", "reason": "Kinesis Data Firehose chỉ đẩy dữ liệu tới các đích như S3, Redshift, OpenSearch; consumer không thể lấy message từ Firehose, và nó không có cơ chế chống trùng lặp đơn hàng." },
+      { "key": "B", "textVi": "Tạo một rule trong AWS CloudTrail để gọi một hàm AWS Lambda dựa trên request đường dẫn ứng dụng được ghi log. Dùng Lambda truy vấn cơ sở dữ liệu, gọi payment service và truyền thông tin đơn hàng.", "reason": "CloudTrail ghi lại lệnh gọi AWS API để kiểm toán, không ghi request của ứng dụng và không có rule gọi Lambda; kiến trúc này vẫn gọi thanh toán đồng bộ, không ngăn đơn trùng." },
+      { "key": "C", "textVi": "Lưu đơn hàng vào cơ sở dữ liệu. Gửi một message chứa số đơn hàng tới Amazon Simple Notification Service (Amazon SNS). Đặt payment service poll Amazon SNS, lấy message và xử lý đơn hàng.", "reason": "SNS là dịch vụ pub/sub đẩy (push) message tới subscriber, không cho phép poll để lấy message; SNS topic chuẩn cũng không loại bỏ message trùng lặp." },
+      { "key": "D", "textVi": "Lưu đơn hàng vào cơ sở dữ liệu. Gửi một message chứa số đơn hàng tới một Amazon Simple Queue Service (Amazon SQS) FIFO queue. Đặt payment service lấy message và xử lý đơn hàng. Xóa message khỏi queue.", "reason": "Ghi đơn hàng rồi xử lý thanh toán bất đồng bộ giúp checkout trả lời nhanh, không còn timeout; FIFO queue có exactly-once processing và loại bỏ trùng lặp (deduplication), nên cùng một số đơn hàng chỉ được thanh toán một lần." }
+    ],
+    "explanationVi": "Timeout xảy ra vì checkout chờ gọi thanh toán đồng bộ, và người dùng gửi lại làm phát sinh đơn trùng. Tách phần thanh toán qua SQS FIFO queue vừa làm checkout nhanh hơn vừa loại bỏ message trùng nhờ deduplication và xử lý exactly-once. Bẫy: Firehose và SNS đều là dịch vụ đẩy, không cho consumer poll, còn CloudTrail là dịch vụ kiểm toán.",
+    "keyHint": "\"multiple unique orders are created for the same ... transaction\" → SQS FIFO queue (deduplication, exactly-once) để xử lý thanh toán bất đồng bộ."
+  },
+  {
+    "id": 92,
+    "stemVi": "Một phòng thí nghiệm nghiên cứu cần xử lý khoảng 8 TB dữ liệu. Phòng thí nghiệm yêu cầu độ trễ dưới một mili giây (sub-millisecond) và thông lượng tối thiểu 6 GBps cho hệ thống lưu trữ. Hàng trăm Amazon EC2 instance chạy Amazon Linux sẽ phân phối và xử lý dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu hiệu năng?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một hệ thống file Amazon FSx for NetApp ONTAP. Đặt tiering policy của mỗi volume là ALL. Nhập dữ liệu thô vào hệ thống file. Mount hệ thống file trên các EC2 instance.", "reason": "Tiering policy ALL đẩy dữ liệu xuống capacity pool tier, vốn có độ trễ cỡ hàng chục mili giây — không đạt yêu cầu độ trễ dưới một mili giây." },
+      { "key": "B", "textVi": "Tạo một Amazon S3 bucket để lưu dữ liệu thô. Tạo một hệ thống file Amazon FSx for Lustre dùng lưu trữ persistent SSD. Chọn tùy chọn nhập dữ liệu từ và xuất dữ liệu ra Amazon S3. Mount hệ thống file trên các EC2 instance.", "reason": "FSx for Lustre là hệ thống file song song dành cho HPC trên Linux; lưu trữ SSD cho độ trễ dưới một mili giây và thông lượng tăng theo dung lượng tới hàng trăm GBps, đủ 6 GBps cho hàng trăm instance; liên kết với S3 để nhập và xuất dữ liệu." },
+      { "key": "C", "textVi": "Tạo một Amazon S3 bucket để lưu dữ liệu thô. Tạo một hệ thống file Amazon FSx for Lustre dùng lưu trữ persistent HDD. Chọn tùy chọn nhập dữ liệu từ và xuất dữ liệu ra Amazon S3. Mount hệ thống file trên các EC2 instance.", "reason": "Lưu trữ HDD của FSx for Lustre dành cho workload tuần tự, thông lượng trên mỗi TB thấp và độ trễ cỡ vài mili giây — không đạt độ trễ dưới một mili giây, và với khoảng 8 TB thì thông lượng thấp hơn nhiều so với 6 GBps." },
+      { "key": "D", "textVi": "Tạo một hệ thống file Amazon FSx for NetApp ONTAP. Đặt tiering policy của mỗi volume là NONE. Nhập dữ liệu thô vào hệ thống file. Mount hệ thống file trên các EC2 instance.", "reason": "Giữ dữ liệu trên SSD thì độ trễ thấp, nhưng FSx for NetApp ONTAP hướng tới workload doanh nghiệp đa giao thức (NFS/SMB/iSCSI), không phải hệ thống file song song cho hàng trăm client HPC; nó cũng không có liên kết nhập/xuất S3 sẵn như Lustre." }
+    ],
+    "explanationVi": "Hàng trăm instance Linux xử lý song song, cần độ trễ dưới mili giây và thông lượng lớn → FSx for Lustre trên SSD, liên kết với S3 để nạp dữ liệu thô. Đây là mẫu chuẩn cho HPC trên AWS. Bẫy: HDD không đạt độ trễ, còn tiering ALL của ONTAP đẩy dữ liệu xuống tier chậm.",
+    "keyHint": "\"sub-millisecond latencies\" + \"6 GBps\" + \"hundreds of ... Amazon Linux\" instance → FSx for Lustre persistent SSD, liên kết S3."
+  },
+  {
+    "id": 93,
+    "stemVi": "Một công ty đang xây dựng một ứng dụng web chạy trên các Amazon EC2 instance ở nhiều Availability Zone. Ứng dụng web sẽ cho truy cập một kho tài liệu văn bản tổng dung lượng khoảng 900 TB. Công ty dự kiến ứng dụng web sẽ có những giai đoạn nhu cầu cao. Solutions architect phải đảm bảo thành phần lưu trữ tài liệu văn bản có thể mở rộng để đáp ứng nhu cầu của ứng dụng mọi lúc. Công ty lo ngại về tổng chi phí của giải pháp.",
+    "promptVi": "Giải pháp lưu trữ nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Amazon Elastic Block Store (Amazon EBS)", "reason": "EBS volume gắn với một AZ và thường với một instance, có giới hạn dung lượng mỗi volume; chia sẻ 900 TB cho instance ở nhiều AZ là không thực tế và đắt." },
+      { "key": "B", "textVi": "Amazon Elastic File System (Amazon EFS)", "reason": "EFS truy cập được từ nhiều AZ và tự mở rộng, nhưng giá mỗi GB cao hơn S3 nhiều lần; với 900 TB tổng chi phí sẽ cao hơn đáng kể." },
+      { "key": "C", "textVi": "Amazon OpenSearch Service (Amazon Elasticsearch Service)", "reason": "OpenSearch là dịch vụ tìm kiếm, phân tích chạy trên cluster; dùng nó làm kho lưu 900 TB tài liệu đòi hỏi rất nhiều node và storage — tốn kém nhất." },
+      { "key": "D", "textVi": "Amazon S3", "reason": "S3 mở rộng gần như không giới hạn cả dung lượng lẫn số request, truy cập được từ instance ở mọi AZ, và có giá mỗi GB thấp nhất trong các lựa chọn — tiết kiệm chi phí nhất cho kho tài liệu 900 TB." }
+    ],
+    "explanationVi": "Kho tài liệu rất lớn (900 TB), truy cập từ nhiều AZ, có lúc tải cao và cần rẻ → Amazon S3. S3 tự mở rộng theo nhu cầu và có chi phí lưu trữ thấp nhất. Bẫy: EFS cũng mở rộng và dùng chung được nhưng đắt hơn nhiều, còn EBS gắn với một AZ.",
+    "keyHint": "\"900 TB\" + \"scale to meet the demand ... at all times\" + \"MOST cost-effectively\" → Amazon S3."
+  },
+  {
+    "id": 94,
+    "stemVi": "Solutions architect vừa tạo một AWS account mới và phải bảo mật quyền truy cập của root user.",
+    "promptVi": "Tổ hợp hành động nào đạt được điều này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Đảm bảo root user dùng mật khẩu mạnh.", "reason": "Root user có toàn quyền trên account; mật khẩu mạnh, duy nhất là lớp bảo vệ nền tảng chống đoán hoặc dò mật khẩu." },
+      { "key": "B", "textVi": "Bật xác thực đa yếu tố (multi-factor authentication) cho root user.", "reason": "MFA thêm một yếu tố xác thực, nên dù lộ mật khẩu kẻ tấn công vẫn không đăng nhập được root user — best practice bắt buộc của AWS." },
+      { "key": "C", "textVi": "Lưu access key của root user trong một Amazon S3 bucket được mã hóa.", "reason": "Best practice là không tạo access key cho root user (xóa nếu đã có); lưu chúng ở bất kỳ đâu, kể cả bucket mã hóa, vẫn tạo ra rủi ro lộ credential toàn quyền." },
+      { "key": "D", "textVi": "Thêm root user vào một group có quyền quản trị.", "reason": "Root user không phải IAM user nên không thêm được vào IAM group; nó vốn đã có toàn quyền, việc này không bảo mật thêm gì." },
+      { "key": "E", "textVi": "Áp các quyền cần thiết cho root user bằng một inline policy document.", "reason": "Không gắn được IAM policy cho root user, và IAM policy không giới hạn được quyền của root (chỉ SCP trong AWS Organizations mới giới hạn được)." }
+    ],
+    "explanationVi": "Bảo mật root user dựa trên hai biện pháp nền tảng: mật khẩu mạnh và MFA; sau đó dùng IAM user/role cho công việc hằng ngày. Bẫy: root user không có trong IAM group hay nhận IAM policy, và không nên có access key.",
+    "keyHint": "\"secure AWS account root user access\" → mật khẩu mạnh + MFA, không tạo access key cho root."
+  },
+  {
+    "id": 95,
+    "stemVi": "Một công ty đang xây dựng một website đặt hàng động (dynamic) mới. Công ty muốn giảm tối thiểu việc bảo trì và vá máy chủ. Website phải có tính sẵn sàng cao (highly available) và phải mở rộng capacity đọc và ghi nhanh nhất có thể để đáp ứng thay đổi của nhu cầu người dùng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Host nội dung tĩnh trên Amazon S3. Host nội dung động bằng Amazon API Gateway và AWS Lambda. Dùng Amazon DynamoDB với on-demand capacity cho cơ sở dữ liệu. Cấu hình Amazon CloudFront để phân phối nội dung website.", "reason": "Mọi thành phần đều serverless và sẵn sàng cao trên nhiều AZ, không có máy chủ phải vá; DynamoDB on-demand tự đáp ứng tức thì cả lượng đọc lẫn ghi thay đổi mà không cần lên kế hoạch capacity." },
+      { "key": "B", "textVi": "Host nội dung tĩnh trên Amazon S3. Host nội dung động bằng Amazon API Gateway và AWS Lambda. Dùng Amazon Aurora với Aurora Auto Scaling cho cơ sở dữ liệu. Cấu hình Amazon CloudFront để phân phối nội dung website.", "reason": "Aurora Auto Scaling chỉ thêm, bớt Aurora Replica để mở rộng đọc; capacity ghi vẫn nằm trên một writer instance, và thêm replica mất vài phút — không mở rộng ghi nhanh như yêu cầu." },
+      { "key": "C", "textVi": "Host toàn bộ nội dung website trên các Amazon EC2 instance. Tạo một Auto Scaling group để mở rộng các EC2 instance. Dùng một Application Load Balancer để phân phối traffic. Dùng Amazon DynamoDB với provisioned write capacity cho cơ sở dữ liệu.", "reason": "EC2 vẫn phải bảo trì và vá hệ điều hành, trái yêu cầu; provisioned write capacity phải tính trước và auto scaling của nó phản ứng chậm hơn on-demand khi tải thay đổi đột ngột." },
+      { "key": "D", "textVi": "Host toàn bộ nội dung website trên các Amazon EC2 instance. Tạo một Auto Scaling group để mở rộng các EC2 instance. Dùng một Application Load Balancer để phân phối traffic. Dùng Amazon Aurora với Aurora Auto Scaling cho cơ sở dữ liệu.", "reason": "Vừa phải vá EC2, vừa chỉ mở rộng được phần đọc của Aurora — không đáp ứng yêu cầu ít bảo trì máy chủ và mở rộng ghi nhanh." }
+    ],
+    "explanationVi": "Có ba yêu cầu: không muốn vá máy chủ, sẵn sàng cao, và mở rộng cả đọc lẫn ghi nhanh nhất. Kiến trúc serverless S3 + CloudFront + API Gateway + Lambda loại bỏ máy chủ, còn DynamoDB on-demand co giãn tức thì cả đọc và ghi. Bẫy: Aurora Auto Scaling chỉ mở rộng read replica, còn EC2 vẫn phải vá.",
+    "keyHint": "\"minimize server maintenance and patching\" + \"scale read and write capacity as quickly as possible\" → serverless + DynamoDB on-demand."
+  },
+  {
+    "id": 96,
+    "stemVi": "Một nhóm báo cáo nhận file mỗi ngày trong một Amazon S3 bucket. Hằng ngày vào cùng một giờ, nhóm báo cáo xem thủ công rồi sao chép các file từ S3 bucket ban đầu này sang một S3 bucket phân tích để dùng với Amazon QuickSight. Các nhóm khác đang bắt đầu gửi thêm nhiều file hơn, kích thước lớn hơn vào S3 bucket ban đầu.\n\nNhóm báo cáo muốn tự động chuyển file sang S3 bucket phân tích ngay khi file vào S3 bucket ban đầu. Nhóm báo cáo cũng muốn dùng các hàm AWS Lambda để chạy code so khớp mẫu (pattern-matching) trên dữ liệu đã sao chép. Ngoài ra, nhóm báo cáo muốn gửi các file dữ liệu tới một pipeline trong Amazon SageMaker Pipelines.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một hàm Lambda để sao chép file sang S3 bucket phân tích. Tạo một S3 event notification cho S3 bucket phân tích. Cấu hình Lambda và SageMaker Pipelines làm đích (destination) của event notification. Cấu hình s3:ObjectCreated:Put làm loại sự kiện.", "reason": "S3 event notification chỉ gửi tới Lambda, SQS, SNS (hoặc EventBridge), không gửi trực tiếp tới SageMaker Pipelines; tự viết Lambda sao chép file lớn cũng tốn công hơn dùng S3 replication." },
+      { "key": "B", "textVi": "Tạo một hàm Lambda để sao chép file sang S3 bucket phân tích. Cấu hình S3 bucket phân tích gửi event notification tới Amazon EventBridge (Amazon CloudWatch Events). Cấu hình một ObjectCreated rule trong EventBridge (CloudWatch Events). Cấu hình Lambda và SageMaker Pipelines làm target cho rule.", "reason": "Phần EventBridge đúng, nhưng tự viết và bảo trì Lambda để sao chép file (ngày càng nhiều, kích thước lớn) tốn công vận hành hơn tính năng S3 replication có sẵn." },
+      { "key": "C", "textVi": "Cấu hình S3 replication giữa hai S3 bucket. Tạo một S3 event notification cho S3 bucket phân tích. Cấu hình Lambda và SageMaker Pipelines làm đích của event notification. Cấu hình s3:ObjectCreated:Put làm loại sự kiện.", "reason": "S3 replication lo phần sao chép, nhưng S3 event notification không có SageMaker Pipelines làm đích." },
+      { "key": "D", "textVi": "Cấu hình S3 replication giữa hai S3 bucket. Cấu hình S3 bucket phân tích gửi event notification tới Amazon EventBridge (Amazon CloudWatch Events). Cấu hình một ObjectCreated rule trong EventBridge (CloudWatch Events). Cấu hình Lambda và SageMaker Pipelines làm target cho rule.", "reason": "S3 replication tự sao chép file mới sang bucket phân tích mà không cần code; bucket phân tích gửi sự kiện tới EventBridge, và một ObjectCreated rule chuyển tới cả Lambda lẫn SageMaker Pipelines (target được EventBridge hỗ trợ) — ít công vận hành nhất." }
+    ],
+    "explanationVi": "Có ba việc: tự động sao chép giữa hai bucket, gọi Lambda, và gửi tới SageMaker Pipelines. S3 replication lo sao chép mà không cần code; EventBridge nhận sự kiện ObjectCreated và phân phối tới nhiều target, trong đó có SageMaker Pipelines. Bẫy: S3 event notification không gửi trực tiếp tới SageMaker Pipelines, còn tự viết Lambda sao chép thì tốn công hơn.",
+    "keyHint": "\"move the files automatically\" giữa hai bucket → S3 replication; nhiều đích gồm \"SageMaker Pipelines\" → S3 → EventBridge rule."
+  },
+  {
+    "id": 97,
+    "stemVi": "Một công ty mạng xã hội cho phép người dùng tải ảnh lên website. Website chạy trên các Amazon EC2 instance. Trong lúc xử lý request tải lên, website đổi kích thước ảnh về kích thước chuẩn và lưu ảnh đã đổi kích thước vào Amazon S3. Người dùng gặp tình trạng request tải lên website bị chậm.\n\nCông ty cần giảm sự phụ thuộc chặt (coupling) trong ứng dụng và cải thiện hiệu năng website. Solutions architect phải thiết kế quy trình tải ảnh lên hiệu quả vận hành nhất.",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp hành động nào để đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình ứng dụng tải ảnh lên S3 Glacier.", "reason": "S3 Glacier dành cho lưu trữ lâu dài, truy xuất chậm; ảnh mạng xã hội cần hiển thị ngay nên không hợp, và việc này không giảm tải cho web server." },
+      { "key": "B", "textVi": "Cấu hình web server tải ảnh gốc lên Amazon S3.", "reason": "Ảnh vẫn đi qua web server trước khi tới S3, nên web server vẫn gánh việc nhận file và request tải lên vẫn chậm; mức tách rời không cải thiện nhiều." },
+      { "key": "C", "textVi": "Cấu hình ứng dụng cho phép tải ảnh trực tiếp từ trình duyệt của mỗi người dùng lên Amazon S3 bằng presigned URL.", "reason": "Presigned URL cho trình duyệt tải ảnh thẳng lên S3 với quyền tạm thời, bỏ web server khỏi đường truyền file — giảm tải cho EC2 và tăng tốc tải lên." },
+      { "key": "D", "textVi": "Cấu hình S3 Event Notifications để gọi một hàm AWS Lambda khi có ảnh được tải lên. Dùng hàm để đổi kích thước ảnh.", "reason": "Việc đổi kích thước chạy bất đồng bộ trên Lambda ngay khi ảnh vào S3, tách hẳn khỏi web server; serverless nên không phải quản lý máy chủ — tách rời (decouple) và hiệu quả vận hành." },
+      { "key": "E", "textVi": "Tạo một Amazon EventBridge (Amazon CloudWatch Events) rule gọi một hàm AWS Lambda theo lịch để đổi kích thước các ảnh đã tải lên.", "reason": "Chạy theo lịch làm ảnh phải chờ tới lần chạy tiếp theo mới được xử lý và phải tự tìm ảnh nào chưa xử lý; kích hoạt theo sự kiện khi tải lên hiệu quả hơn." }
+    ],
+    "explanationVi": "Upload chậm vì web server vừa nhận file vừa đổi kích thước ngay trong request. Cho trình duyệt tải thẳng lên S3 bằng presigned URL, rồi để S3 Event Notifications gọi Lambda đổi kích thước — web server không còn nằm trên đường xử lý ảnh, các thành phần được tách rời (decouple). Bẫy: Glacier dành cho lưu trữ lâu dài, còn chạy Lambda theo lịch gây trễ.",
+    "keyHint": "\"reduce coupling\" + \"slow upload requests\" → presigned URL tải thẳng lên S3 + S3 Event Notifications gọi Lambda đổi kích thước."
+  },
+  {
+    "id": 98,
+    "stemVi": "Một công ty đang phát triển một ứng dụng trên AWS Cloud. HTTP API của ứng dụng chứa thông tin quan trọng và được publish trong Amazon API Gateway. Thông tin quan trọng này chỉ được phép truy cập từ một tập giới hạn các địa chỉ IP tin cậy thuộc mạng nội bộ của công ty.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Thiết lập một API Gateway private integration để giới hạn truy cập cho một tập địa chỉ IP định trước.", "reason": "Private integration dùng để API Gateway kết nối tới backend trong VPC (qua VPC link), không kiểm soát việc client nào được gọi API theo IP nguồn." },
+      { "key": "B", "textVi": "Tạo một resource policy cho API, từ chối truy cập với mọi địa chỉ IP không được cho phép cụ thể.", "reason": "Resource policy của API Gateway dùng điều kiện aws:SourceIp để chỉ cho phép dải IP tin cậy và Deny mọi IP khác — giới hạn truy cập đúng như yêu cầu mà không cần thay đổi hạ tầng mạng." },
+      { "key": "C", "textVi": "Triển khai trực tiếp API vào một private subnet. Tạo một network ACL. Thiết lập rule cho phép traffic từ các địa chỉ IP cụ thể.", "reason": "API Gateway là dịch vụ được quản lý, không triển khai vào subnet của khách hàng nên không áp network ACL lên nó được." },
+      { "key": "D", "textVi": "Sửa security group gắn với API Gateway để chỉ cho phép traffic vào từ các địa chỉ IP tin cậy.", "reason": "API Gateway không gắn security group (endpoint của nó do AWS quản lý), nên không có security group nào để sửa." }
+    ],
+    "explanationVi": "Giới hạn ai được gọi API theo IP nguồn là việc của API Gateway resource policy với điều kiện aws:SourceIp (resource policy áp dụng cho REST API của API Gateway). Private integration là để kết nối tới backend, còn API Gateway không nằm trong subnet và không có security group. Bẫy: áp tư duy EC2 (security group, network ACL) lên dịch vụ được quản lý.",
+    "keyHint": "\"accessible from only a limited set of trusted IP addresses\" + API Gateway → resource policy với điều kiện aws:SourceIp.",
+    "review": { "reason": "Chưa chắc chắn: đề nói \"HTTP API\" trên API Gateway; nếu hiểu là loại HTTP API của API Gateway thì loại này không hỗ trợ resource policy (theo bảng so sánh REST API và HTTP API, chỉ REST API có resource policy và AWS WAF), nên phương án resource policy chỉ đúng khi API là REST API. Với HTTP API, muốn giới hạn theo IP phải dùng Lambda authorizer kiểm tra địa chỉ nguồn hoặc chuyển sang REST API." }
+  },
+  {
+    "id": 99,
+    "stemVi": "Một công ty cần di chuyển một ứng dụng legacy từ data center on-premises lên AWS Cloud vì giới hạn capacity phần cứng. Ứng dụng chạy 24 giờ mỗi ngày, 7 ngày mỗi tuần. Dung lượng lưu trữ cơ sở dữ liệu của ứng dụng tiếp tục tăng theo thời gian.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Di chuyển tầng ứng dụng sang Amazon EC2 Spot Instance. Di chuyển tầng lưu trữ dữ liệu sang Amazon S3.", "reason": "Spot có thể bị thu hồi, không hợp với ứng dụng legacy phải chạy 24/7; S3 là object storage, không thay thế được cơ sở dữ liệu của ứng dụng." },
+      { "key": "B", "textVi": "Di chuyển tầng ứng dụng sang Amazon EC2 Reserved Instance. Di chuyển tầng lưu trữ dữ liệu sang Amazon RDS On-Demand Instance.", "reason": "Tầng ứng dụng dùng Reserved Instance là hợp lý, nhưng database chạy 24/7 mà trả giá On-Demand thì đắt hơn đáng kể so với reserved." },
+      { "key": "C", "textVi": "Di chuyển tầng ứng dụng sang Amazon EC2 Reserved Instance. Di chuyển tầng lưu trữ dữ liệu sang Amazon Aurora Reserved Instance.", "reason": "Cả hai tầng chạy 24/7 nên đặt trước (Reserved Instance) cho giá thấp nhất; Aurora tự tăng dung lượng storage theo dữ liệu và chỉ tính tiền phần đã dùng, hợp với database tiếp tục phình ra." },
+      { "key": "D", "textVi": "Di chuyển tầng ứng dụng sang Amazon EC2 On-Demand Instance. Di chuyển tầng lưu trữ dữ liệu sang Amazon RDS Reserved Instance.", "reason": "Tầng ứng dụng chạy 24/7 mà dùng On-Demand thì đắt hơn Reserved Instance, nên không phải tiết kiệm chi phí nhất." }
+    ],
+    "explanationVi": "Workload chạy liên tục 24/7 là trường hợp điển hình để đặt trước capacity cho cả tầng ứng dụng lẫn database. Aurora còn tự mở rộng storage khi dữ liệu tăng, không phải cấp phát trước. Bẫy: Spot không hợp workload phải chạy liên tục, S3 không phải cơ sở dữ liệu, và bất kỳ tầng nào dùng On-Demand đều đắt hơn.",
+    "keyHint": "\"24 hours a day, 7 days a week\" + \"database storage continues to grow\" + \"MOST cost-effectively\" → EC2 Reserved Instance + Aurora Reserved Instance."
+  },
+  {
+    "id": 100,
+    "stemVi": "Một công ty có ứng dụng đưa hàng trăm file .csv vào một Amazon S3 bucket mỗi giờ. Mỗi file có kích thước 1 GB. Mỗi khi một file được tải lên, công ty cần chuyển file sang định dạng Apache Parquet và đặt file kết quả vào một S3 bucket.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một hàm AWS Lambda để tải các file .csv xuống, chuyển sang định dạng Parquet và đặt file kết quả vào một S3 bucket. Gọi hàm Lambda cho mỗi sự kiện S3 PUT.", "reason": "Chuyển đổi file 1 GB trong Lambda dễ chạm giới hạn bộ nhớ, bộ nhớ tạm và 15 phút chạy, lại phải tự viết và tối ưu code chuyển đổi — kém tin cậy và tốn công hơn một ETL job được quản lý." },
+      { "key": "B", "textVi": "Tạo một Apache Spark job để đọc các file .csv, chuyển sang định dạng Parquet và đặt file kết quả vào một S3 bucket. Tạo một hàm AWS Lambda cho mỗi sự kiện S3 PUT để gọi Spark job.", "reason": "Spark xử lý tốt, nhưng phải tự dựng và vận hành cluster để chạy Spark job (ví dụ trên EC2 hoặc EMR) — nhiều công vận hành hơn Glue serverless." },
+      { "key": "C", "textVi": "Tạo một AWS Glue table và một AWS Glue crawler cho S3 bucket nơi ứng dụng đặt các file .csv. Lên lịch một hàm AWS Lambda định kỳ dùng Amazon Athena truy vấn AWS Glue table, chuyển kết quả truy vấn sang định dạng Parquet và đặt file kết quả vào một S3 bucket.", "reason": "Chạy theo lịch không đáp ứng yêu cầu chuyển đổi mỗi khi có file tải lên; ghép crawler, Athena và Lambda để chuyển đổi cũng phức tạp và phải tự theo dõi file nào đã xử lý." },
+      { "key": "D", "textVi": "Tạo một AWS Glue extract, transform, and load (ETL) job để chuyển các file .csv sang định dạng Parquet và đặt file kết quả vào một S3 bucket. Tạo một hàm AWS Lambda cho mỗi sự kiện S3 PUT để gọi ETL job.", "reason": "Glue ETL là Spark serverless được quản lý, chuyển CSV sang Parquet chỉ với vài dòng cấu hình và xử lý tốt file 1 GB; Lambda nhỏ chỉ việc khởi chạy job khi có sự kiện S3 PUT — xử lý từng file ngay khi tải lên với ít công vận hành nhất." }
+    ],
+    "explanationVi": "Mỗi file 1 GB tải lên phải được chuyển sang Parquet ngay, với ít công vận hành nhất. AWS Glue ETL job (serverless) làm phần chuyển đổi nặng, còn Lambda chỉ làm cầu nối từ sự kiện S3 PUT tới Glue. Bẫy: để Lambda tự chuyển đổi file lớn dễ chạm giới hạn, tự vận hành Spark tốn công, còn chạy Athena theo lịch thì không xử lý ngay khi có file.",
+    "keyHint": "\"Each time a file is uploaded\" + \"convert ... to Apache Parquet\" + \"LEAST operational overhead\" → S3 PUT event → Lambda → AWS Glue ETL job."
+  }
+]

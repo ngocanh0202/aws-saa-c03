@@ -1,0 +1,6 @@
+{
+  "id": "dlm", "name": "Amazon Data Lifecycle Manager", "category": "Storage", "tier": "minor",
+  "overview": "Amazon Data Lifecycle Manager tự động tạo, retain và xóa EBS snapshots hoặc EBS-backed AMIs theo lifecycle policies.",
+  "examSignals": ["Schedule/retain EBS snapshots and AMIs automatically: DLM", "Centralized backups across multiple AWS resource types: AWS Backup"],
+  "compareWith": [{ "service": "AWS Backup", "diff": "DLM tập trung EBS snapshots/AMIs; AWS Backup quản lý recovery points/policies rộng hơn cho nhiều services." }]
+}

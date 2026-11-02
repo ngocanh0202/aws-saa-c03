@@ -1,0 +1,762 @@
+[
+  {
+    "id": 426,
+    "stemVi": "Một công ty game có ứng dụng web hiển thị điểm số. Ứng dụng chạy trên các Amazon EC2 instance phía sau một Application Load Balancer. Ứng dụng lưu dữ liệu trong một database Amazon RDS for MySQL. Người dùng bắt đầu gặp tình trạng chậm kéo dài và gián đoạn do hiệu năng đọc của database. Công ty muốn cải thiện trải nghiệm người dùng đồng thời hạn chế tối đa thay đổi kiến trúc của ứng dụng.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon ElastiCache phía trước database.",
+        "reason": "ElastiCache cache dữ liệu được đọc nhiều như bảng điểm, trả về với độ trễ dưới mili giây và giảm mạnh tải đọc cho RDS; chỉ thêm một lớp cache mà giữ nguyên kiến trúc EC2, ALB và RDS (Redis sorted set còn rất hợp cho leaderboard)."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng RDS Proxy giữa ứng dụng và database.",
+        "reason": "RDS Proxy quản lý và tái sử dụng kết nối, không giảm số truy vấn đọc tới database nên không cải thiện được hiệu năng đọc."
+      },
+      {
+        "key": "C",
+        "textVi": "Migrate ứng dụng từ các EC2 instance sang AWS Lambda.",
+        "reason": "Đổi tầng compute là thay đổi kiến trúc lớn và không giải quyết nút thắt nằm ở hiệu năng đọc của database."
+      },
+      {
+        "key": "D",
+        "textVi": "Migrate database từ Amazon RDS for MySQL sang Amazon DynamoDB.",
+        "reason": "Chuyển từ MySQL sang NoSQL đòi hỏi thiết kế lại mô hình dữ liệu và viết lại ứng dụng, trái yêu cầu hạn chế thay đổi kiến trúc."
+      }
+    ],
+    "explanationVi": "Nút thắt là hiệu năng đọc của RDS, và công ty muốn thay đổi kiến trúc ít nhất. Đặt ElastiCache làm cache phía trước database giảm tải đọc và tăng tốc phản hồi mà không đổi các tầng hiện có. Bẫy: RDS Proxy chỉ xử lý vấn đề kết nối, không phải tải đọc; Lambda hay DynamoDB là thay đổi lớn.",
+    "keyHint": "\"database read performance\" + \"minimizing changes to the application's architecture\" → thêm Amazon ElastiCache làm cache trước RDS."
+  },
+  {
+    "id": 427,
+    "stemVi": "Solutions architect phải bảo mật một mạng VPC chứa các Amazon EC2 instance. Các EC2 instance chứa dữ liệu rất nhạy cảm và chạy trong private subnet. Theo chính sách công ty, các EC2 instance chạy trong VPC chỉ được truy cập các kho phần mềm (software repository) của bên thứ ba đã được phê duyệt trên Internet để cập nhật sản phẩm phần mềm, thông qua URL của bên thứ ba. Mọi traffic Internet khác phải bị chặn.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cập nhật route table của private subnet để định tuyến traffic đi ra tới một firewall của AWS Network Firewall. Cấu hình các domain list rule group.",
+        "reason": "Network Firewall kiểm tra traffic đi ra và domain list rule group cho phép lọc theo tên miền (allowlist các kho phần mềm được duyệt), chặn mọi traffic Internet khác — đúng chính sách lọc theo URL."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một AWS WAF web ACL. Tạo bộ rule tùy chỉnh lọc request dựa trên các tập dải địa chỉ IP nguồn và đích.",
+        "reason": "AWS WAF bảo vệ traffic HTTP đi vào các tài nguyên như ALB, CloudFront hay API Gateway, không lọc traffic đi ra từ EC2; lọc theo IP cũng không khớp yêu cầu lọc theo URL."
+      },
+      {
+        "key": "C",
+        "textVi": "Áp dụng các rule inbound nghiêm ngặt cho security group. Cấu hình rule outbound chỉ cho phép traffic tới các kho phần mềm được phép trên Internet bằng cách chỉ định URL.",
+        "reason": "Rule của security group chỉ nhận IP/CIDR, port, protocol hoặc security group khác; không thể chỉ định URL hay tên miền."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình một Application Load Balancer (ALB) phía trước các EC2 instance. Hướng toàn bộ traffic đi ra tới ALB. Dùng listener rule dựa trên URL trong target group của ALB để truy cập Internet chiều đi ra.",
+        "reason": "ALB chỉ nhận và phân phối traffic đi vào tới các target; nó không làm proxy cho traffic đi ra Internet từ EC2."
+      }
+    ],
+    "explanationVi": "Yêu cầu là lọc traffic đi ra (egress) theo tên miền/URL và chặn mọi thứ khác. AWS Network Firewall với domain list rule group làm đúng việc này khi route table của private subnet đưa traffic đi qua firewall endpoint. Bẫy: security group không hiểu tên miền; WAF và ALB chỉ xử lý traffic đi vào.",
+    "keyHint": "\"only approved third-party software repositories\" + \"third party's URL\" + \"Other internet traffic must be blocked\" → AWS Network Firewall với domain list rule group."
+  },
+  {
+    "id": 428,
+    "stemVi": "Một công ty chạy website dùng hệ thống quản lý nội dung (content management system – CMS) trên Amazon EC2. CMS chạy trên một EC2 instance duy nhất và dùng một Amazon Aurora MySQL Multi-AZ DB instance cho tầng dữ liệu. Hình ảnh của website được lưu trên một Amazon Elastic Block Store (Amazon EBS) volume được mount bên trong EC2 instance.",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp hành động nào để cải thiện hiệu năng và khả năng phục hồi (resilience) của website? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển hình ảnh của website vào một Amazon S3 bucket được mount trên mọi EC2 instance",
+        "reason": "S3 là object storage, không mount native như file system cho CMS dùng đường dẫn file; muốn dùng S3 thì phải sửa ứng dụng để gọi S3 API."
+      },
+      {
+        "key": "B",
+        "textVi": "Chia sẻ hình ảnh của website bằng một NFS share từ EC2 instance chính. Mount share này trên các EC2 instance khác.",
+        "reason": "NFS share đặt trên một instance chính tạo ra điểm lỗi đơn (single point of failure): instance đó hỏng thì mọi instance khác mất hình ảnh — giảm chứ không tăng khả năng phục hồi."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển hình ảnh của website sang một Amazon Elastic File System (Amazon EFS) file system được mount trên mọi EC2 instance.",
+        "reason": "EFS là file system dùng chung, lưu trên nhiều AZ và mount được đồng thời từ nhiều instance, thay cho EBS chỉ gắn vào một máy, nên các instance phía sau load balancer đều thấy cùng bộ hình ảnh."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon Machine Image (AMI) từ EC2 instance hiện có. Dùng AMI để tạo các instance mới phía sau một Application Load Balancer trong một Auto Scaling group. Cấu hình Auto Scaling group duy trì tối thiểu hai instance. Cấu hình một accelerator trong AWS Global Accelerator cho website",
+        "reason": "Phần Auto Scaling group sau ALB tăng khả năng phục hồi, nhưng Global Accelerator không cache nội dung; với website nhiều hình ảnh, CloudFront cải thiện hiệu năng tốt hơn nhờ cache ở edge."
+      },
+      {
+        "key": "E",
+        "textVi": "Tạo một Amazon Machine Image (AMI) từ EC2 instance hiện có. Dùng AMI để tạo các instance mới phía sau một Application Load Balancer trong một Auto Scaling group. Cấu hình Auto Scaling group duy trì tối thiểu hai instance. Cấu hình một Amazon CloudFront distribution cho website.",
+        "reason": "AMI + Auto Scaling group tối thiểu hai instance sau ALB loại bỏ điểm lỗi đơn ở tầng web; CloudFront cache nội dung và hình ảnh ở edge location, giảm độ trễ và tải cho EC2 — tăng cả hiệu năng lẫn khả năng phục hồi."
+      }
+    ],
+    "explanationVi": "Website đang có hai điểm yếu: chỉ một EC2 instance và hình ảnh nằm trên EBS gắn với instance đó. Chuyển hình ảnh sang EFS để nhiều instance dùng chung, rồi chạy nhiều instance trong Auto Scaling group sau ALB và thêm CloudFront để cache nội dung. Bẫy: S3 không mount như file system, NFS share từ một instance lại là điểm lỗi đơn, còn Global Accelerator không cache nội dung web.",
+    "keyHint": "\"single EC2 instance\" + hình ảnh trên \"EBS volume\" + \"performance and resilience\" → EFS dùng chung + Auto Scaling group sau ALB + CloudFront."
+  },
+  {
+    "id": 429,
+    "stemVi": "Một công ty có ứng dụng web ba tầng, stateless. Ứng dụng web chạy trên các Amazon EC2 instance trong một Auto Scaling group với dynamic scaling policy được cấu hình để phản ứng với các sự kiện scaling. Tầng database chạy trên Amazon RDS for PostgreSQL. Ứng dụng web không cần storage tạm cục bộ trên các EC2 instance. Recovery point objective (RPO) của công ty là 2 giờ.\n\nChiến lược sao lưu phải tối đa hóa khả năng mở rộng và tối ưu việc sử dụng tài nguyên cho môi trường này.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chụp snapshot các Amazon Elastic Block Store (Amazon EBS) volume của các EC2 instance và database mỗi 2 giờ để đáp ứng RPO.",
+        "reason": "RDS không cho truy cập EBS volume bên dưới để chụp snapshot; còn snapshot EBS của các instance stateless là lãng phí vì chúng không chứa dữ liệu cần khôi phục."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình snapshot lifecycle policy để chụp Amazon Elastic Block Store (Amazon EBS) snapshot. Bật automated backup trong Amazon RDS để đáp ứng RPO.",
+        "reason": "Automated backup của RDS là hợp lý, nhưng chụp snapshot EBS định kỳ cho các instance stateless (liên tục được tạo và hủy bởi Auto Scaling) tốn storage mà không có dữ liệu gì để bảo vệ."
+      },
+      {
+        "key": "C",
+        "textVi": "Giữ các Amazon Machine Image (AMI) mới nhất của tầng web và tầng ứng dụng. Bật automated backup trong Amazon RDS và dùng point-in-time recovery để đáp ứng RPO.",
+        "reason": "Tầng web/ứng dụng stateless chỉ cần AMI mới nhất để Auto Scaling khởi tạo lại instance; dữ liệu nằm ở RDS, nơi automated backup kèm point-in-time recovery khôi phục tới vài phút gần nhất, dư sức đáp ứng RPO 2 giờ mà không tốn tài nguyên thừa."
+      },
+      {
+        "key": "D",
+        "textVi": "Chụp snapshot các Amazon Elastic Block Store (Amazon EBS) volume của các EC2 instance mỗi 2 giờ. Bật automated backup trong Amazon RDS và dùng point-in-time recovery để đáp ứng RPO.",
+        "reason": "Phần RDS đúng, nhưng snapshot EBS mỗi 2 giờ cho instance stateless là lãng phí storage và công quản lý, trái yêu cầu tối ưu sử dụng tài nguyên."
+      }
+    ],
+    "explanationVi": "Ứng dụng stateless và không có dữ liệu cục bộ, nên thứ duy nhất cần giữ cho tầng EC2 là AMI để tái tạo instance. Dữ liệu cần bảo vệ nằm ở RDS: automated backup + point-in-time recovery cho RPO tính bằng phút. Bẫy: snapshot EBS định kỳ cho instance stateless là thừa, và không thể snapshot EBS của RDS trực tiếp.",
+    "keyHint": "\"stateless\" + \"does not require temporary local storage\" + \"RPO is 2 hours\" → giữ AMI mới nhất + RDS automated backup với point-in-time recovery."
+  },
+  {
+    "id": 430,
+    "stemVi": "Một công ty lưu dữ liệu định dạng PDF trong một Amazon S3 bucket. Công ty phải tuân theo một yêu cầu pháp lý là giữ toàn bộ dữ liệu mới và dữ liệu hiện có trong Amazon S3 trong 7 năm.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật tính năng S3 Versioning cho S3 bucket. Cấu hình S3 Lifecycle để xóa dữ liệu sau 7 năm. Cấu hình xóa bằng xác thực đa yếu tố (MFA delete) cho mọi S3 object.",
+        "reason": "Versioning và MFA delete chỉ làm việc xóa khó hơn, không ngăn được người có quyền (kể cả root với MFA) xóa dữ liệu trước 7 năm; lifecycle xóa sau 7 năm không bảo đảm giữ đủ 7 năm."
+      },
+      {
+        "key": "B",
+        "textVi": "Bật S3 Object Lock với chế độ retention governance cho S3 bucket. Đặt retention period hết hạn sau 7 năm. Copy lại toàn bộ object hiện có để đưa dữ liệu hiện có vào trạng thái tuân thủ.",
+        "reason": "Governance mode vẫn cho user có quyền s3:BypassGovernanceRetention xóa hoặc rút ngắn retention, không đủ cho yêu cầu pháp lý; copy lại thủ công toàn bộ object cũng tốn công."
+      },
+      {
+        "key": "C",
+        "textVi": "Bật S3 Object Lock với chế độ retention compliance cho S3 bucket. Đặt retention period hết hạn sau 7 năm. Copy lại toàn bộ object hiện có để đưa dữ liệu hiện có vào trạng thái tuân thủ.",
+        "reason": "Compliance mode đúng cho yêu cầu pháp lý, nhưng tự copy lại toàn bộ object hiện có tốn công vận hành hơn so với dùng S3 Batch Operations."
+      },
+      {
+        "key": "D",
+        "textVi": "Bật S3 Object Lock với chế độ retention compliance cho S3 bucket. Đặt retention period hết hạn sau 7 năm. Dùng S3 Batch Operations để đưa dữ liệu hiện có vào trạng thái tuân thủ.",
+        "reason": "Compliance mode bảo đảm không ai (kể cả root) xóa hay rút ngắn retention trong 7 năm; default retention áp dụng cho object mới, còn S3 Batch Operations đặt retention hàng loạt cho object hiện có chỉ bằng một job được quản lý."
+      }
+    ],
+    "explanationVi": "Yêu cầu pháp lý cần WORM thật sự, tức S3 Object Lock ở compliance mode. Default retention của bucket chỉ áp dụng cho object mới, nên object hiện có phải được đặt retention riêng; S3 Batch Operations làm việc này hàng loạt với ít công nhất. Bẫy: governance mode có thể bị ghi đè; versioning + MFA delete không phải cơ chế giữ dữ liệu bắt buộc.",
+    "keyHint": "\"legal requirement to retain all new and existing data\" + \"7 years\" → S3 Object Lock compliance mode + S3 Batch Operations cho object hiện có."
+  },
+  {
+    "id": 431,
+    "stemVi": "Một công ty có tài nguyên trên nhiều AWS Region và account. Một solutions architect mới được tuyển phát hiện rằng nhân viên trước đó đã không để lại thông tin chi tiết về danh mục tài nguyên (resources inventory). Solutions architect cần xây dựng và lập bản đồ thông tin chi tiết về mối quan hệ giữa các workload trên tất cả account.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này theo cách hiệu quả vận hành nhất (MOST operationally efficient)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Systems Manager Inventory để tạo map view từ báo cáo chi tiết (detailed view report).",
+        "reason": "Systems Manager Inventory chỉ thu thập thông tin phần mềm và cấu hình trên các managed instance, không vẽ được bản đồ quan hệ giữa các tài nguyên của workload trên nhiều account."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Step Functions để thu thập thông tin chi tiết về workload. Tự vẽ sơ đồ kiến trúc của các workload một cách thủ công.",
+        "reason": "Phải tự xây workflow thu thập dữ liệu rồi vẽ sơ đồ bằng tay trên nhiều account và Region — tốn công, không phải cách hiệu quả vận hành."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Workload Discovery on AWS để tạo sơ đồ kiến trúc của các workload.",
+        "reason": "Workload Discovery on AWS tự quét tài nguyên trên nhiều account và Region, rồi dựng sơ đồ kiến trúc kèm mối quan hệ giữa các tài nguyên mà không phải làm thủ công."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS X-Ray để xem thông tin chi tiết về workload. Vẽ sơ đồ kiến trúc kèm mối quan hệ.",
+        "reason": "X-Ray chỉ trace request của các ứng dụng đã được gắn instrumentation, không cho danh mục đầy đủ tài nguyên; sơ đồ vẫn phải vẽ thủ công."
+      }
+    ],
+    "explanationVi": "Cần tự động khám phá tài nguyên và mối quan hệ giữa chúng trên nhiều account và Region. Workload Discovery on AWS (một AWS Solution) được thiết kế đúng cho việc này: quét tài nguyên và sinh sơ đồ kiến trúc. Bẫy: Systems Manager Inventory chỉ nhìn phần mềm trên instance; X-Ray chỉ trace request; Step Functions thì vẫn phải vẽ tay.",
+    "keyHint": "\"across multiple AWS Regions and accounts\" + \"map the relationship details of the various workloads\" → Workload Discovery on AWS.",
+    "review": {
+      "reason": "Đáp án có thể sai: Workload Discovery on AWS đã ngừng cung cấp (GitHub repository của solution ghi 'Notice of discontinuation: Workload Discovery on AWS is no longer available' và được archive ngày 14/08/2026), nên phương án dùng Workload Discovery không còn triển khai được. AWS gợi ý thay bằng Amazon CloudWatch Application Map và AWS DevOps Agent; các lựa chọn còn lại (Systems Manager Inventory, Step Functions, X-Ray) cũng không tự vẽ được sơ đồ quan hệ tài nguyên trên nhiều account, nên câu này cần cập nhật lại lựa chọn."
+    }
+  },
+  {
+    "id": 432,
+    "stemVi": "Một công ty có một tập dữ liệu lớn cho mảng quảng cáo trực tuyến, được lưu trong một Amazon RDS for MySQL DB instance ở một Availability Zone duy nhất. Công ty muốn các truy vấn báo cáo nghiệp vụ chạy mà không ảnh hưởng tới các thao tác ghi vào DB instance production.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai các RDS read replica để xử lý các truy vấn báo cáo nghiệp vụ.",
+        "reason": "Read replica nhận bản sao dữ liệu qua replication bất đồng bộ và phục vụ các truy vấn báo cáo chỉ đọc, nên tải báo cáo không còn tranh tài nguyên với thao tác ghi trên instance chính."
+      },
+      {
+        "key": "B",
+        "textVi": "Scale out DB instance theo chiều ngang bằng cách đặt nó phía sau một Elastic Load Balancer.",
+        "reason": "Elastic Load Balancer không dùng để phân phối kết nối tới RDS, và một DB instance không thể scale ngang chỉ bằng cách đặt sau load balancer."
+      },
+      {
+        "key": "C",
+        "textVi": "Scale up DB instance lên loại instance lớn hơn để xử lý các thao tác ghi và truy vấn.",
+        "reason": "Instance lớn hơn vẫn dùng chung CPU, bộ nhớ và I/O cho cả báo cáo và thao tác ghi, nên báo cáo nặng vẫn có thể ảnh hưởng tới ghi."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai DB instance trên nhiều Availability Zone để xử lý các truy vấn báo cáo nghiệp vụ.",
+        "reason": "Standby của Multi-AZ DB instance chỉ dùng để failover, không nhận truy vấn đọc, nên không giảm tải báo cáo cho instance chính."
+      }
+    ],
+    "explanationVi": "Mục tiêu là tách tải đọc (báo cáo) khỏi tải ghi trên instance production. Read replica là cách chuẩn: báo cáo chạy trên replica, instance chính chỉ lo ghi. Bẫy: standby của Multi-AZ không phục vụ đọc; scale up vẫn dùng chung tài nguyên; ELB không đặt trước RDS.",
+    "keyHint": "\"reporting queries to run without impacting the write operations\" → RDS read replica."
+  },
+  {
+    "id": 433,
+    "stemVi": "Một công ty vừa triển khai một hệ thống kiểm toán (auditing system) mới để tập trung thông tin về phiên bản hệ điều hành, việc vá lỗi (patching) và phần mềm đã cài trên các Amazon EC2 instance. Solutions architect phải bảo đảm mọi instance được tạo qua các EC2 Auto Scaling group đều gửi báo cáo thành công tới hệ thống kiểm toán ngay khi chúng được khởi chạy và khi bị hủy (terminate).",
+    "promptVi": "Giải pháp nào đạt được các mục tiêu này một cách hiệu quả nhất (MOST efficiently)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng một AWS Lambda function chạy theo lịch và chạy script từ xa trên mọi EC2 instance để gửi dữ liệu tới hệ thống kiểm toán.",
+        "reason": "Chạy theo lịch nên không gửi báo cáo đúng lúc instance khởi chạy hay bị hủy; instance bị hủy giữa hai lần chạy sẽ không bao giờ được báo cáo."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng EC2 Auto Scaling lifecycle hook để chạy một script tùy chỉnh gửi dữ liệu tới hệ thống kiểm toán khi instance được khởi chạy và bị hủy.",
+        "reason": "Lifecycle hook tạm giữ instance ở trạng thái Pending:Wait khi khởi chạy và Terminating:Wait khi hủy, cho script đủ thời gian gửi báo cáo trước khi tiếp tục — bảo đảm báo cáo ở cả hai thời điểm."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng một EC2 Auto Scaling launch configuration để chạy script tùy chỉnh qua user data, gửi dữ liệu tới hệ thống kiểm toán khi instance được khởi chạy và bị hủy.",
+        "reason": "User data chỉ chạy lúc instance khởi động, không có cơ chế chạy khi instance bị terminate, nên thiếu báo cáo lúc hủy."
+      },
+      {
+        "key": "D",
+        "textVi": "Chạy một script tùy chỉnh trên hệ điều hành của instance để gửi dữ liệu tới hệ thống kiểm toán. Cấu hình để script được EC2 Auto Scaling group gọi khi instance khởi động và khi bị hủy.",
+        "reason": "Auto Scaling group không có tính năng trực tiếp gọi script trong hệ điều hành của instance; cơ chế dành cho việc này chính là lifecycle hook."
+      }
+    ],
+    "explanationVi": "Cần chạy hành động tại đúng hai thời điểm trong vòng đời instance: khởi chạy và hủy. Lifecycle hook của EC2 Auto Scaling tạm dừng instance ở hai thời điểm này để script hoàn tất việc gửi báo cáo. Bẫy: user data không chạy khi terminate; Lambda chạy theo lịch thì không kịp thời.",
+    "keyHint": "\"as soon as they are launched and terminated\" + EC2 Auto Scaling → lifecycle hook."
+  },
+  {
+    "id": 434,
+    "stemVi": "Một công ty host một ứng dụng mua sắm trực tuyến lưu toàn bộ đơn hàng trong một Amazon RDS for PostgreSQL Single-AZ DB instance. Ban quản lý muốn loại bỏ các điểm lỗi đơn (single point of failure) và đã yêu cầu solutions architect đề xuất cách giảm thiểu thời gian ngừng hoạt động của database mà không đòi hỏi bất kỳ thay đổi nào trong code ứng dụng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển DB instance hiện có sang triển khai Multi-AZ bằng cách sửa (modify) DB instance và chọn tùy chọn Multi-AZ.",
+        "reason": "Bật Multi-AZ bằng cách modify instance giữ nguyên endpoint nên không phải sửa code; RDS tạo standby đồng bộ ở AZ khác và tự failover khi có sự cố, loại bỏ điểm lỗi đơn của database."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một RDS Multi-AZ deployment mới. Chụp snapshot của RDS instance hiện tại và khôi phục vào Multi-AZ deployment mới từ snapshot đó.",
+        "reason": "Instance khôi phục từ snapshot có endpoint mới nên phải đổi cấu hình kết nối của ứng dụng, và dữ liệu ghi sau thời điểm snapshot sẽ bị thiếu hoặc phải ngừng ghi trong lúc chuyển."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một read-only replica của database PostgreSQL ở một Availability Zone khác. Dùng weighted record set của Amazon Route 53 để phân phối request giữa các database.",
+        "reason": "Read replica chỉ nhận đọc; phân phối request theo trọng số sẽ gửi cả thao tác ghi đơn hàng tới replica và gây lỗi, đồng thời không có failover tự động."
+      },
+      {
+        "key": "D",
+        "textVi": "Đặt database RDS for PostgreSQL trong một Amazon EC2 Auto Scaling group với kích thước nhóm tối thiểu là hai. Dùng weighted record set của Amazon Route 53 để phân phối request giữa các instance.",
+        "reason": "RDS là dịch vụ được quản lý, không đặt được vào EC2 Auto Scaling group; hai database độc lập cũng không tự đồng bộ dữ liệu với nhau."
+      }
+    ],
+    "explanationVi": "Muốn loại bỏ điểm lỗi đơn của RDS mà không sửa code, cách chuẩn là bật Multi-AZ trên chính instance hiện có: endpoint giữ nguyên, standby đồng bộ ở AZ khác và failover tự động. Bẫy: khôi phục snapshot sang instance mới làm đổi endpoint; read replica không nhận ghi; RDS không chạy trong Auto Scaling group.",
+    "keyHint": "\"eliminate single points of failure\" + \"without requiring any changes to the application code\" → modify RDS instance bật Multi-AZ."
+  },
+  {
+    "id": 435,
+    "stemVi": "Một công ty có hàng nghìn thiết bị edge cùng tạo ra 1 TB cảnh báo trạng thái mỗi ngày. Mỗi cảnh báo có kích thước khoảng 2 KB. Solutions architect cần triển khai giải pháp để thu nhận (ingest) và lưu trữ các cảnh báo cho việc phân tích về sau.\n\nCông ty muốn một giải pháp có tính sẵn sàng cao (highly available). Tuy nhiên, công ty cần giảm thiểu chi phí và không muốn quản lý thêm hạ tầng. Ngoài ra, công ty muốn giữ 14 ngày dữ liệu sẵn sàng cho phân tích ngay lập tức và lưu trữ lâu dài (archive) mọi dữ liệu cũ hơn 14 ngày.",
+    "promptVi": "Giải pháp nào hiệu quả vận hành nhất (MOST operationally efficient) đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Kinesis Data Firehose delivery stream để thu nhận cảnh báo. Cấu hình Kinesis Data Firehose stream chuyển cảnh báo vào một Amazon S3 bucket. Thiết lập cấu hình S3 Lifecycle để chuyển dữ liệu sang Amazon S3 Glacier sau 14 ngày.",
+        "reason": "Firehose là dịch vụ serverless, tự co giãn và có tính sẵn sàng cao, tự gom và ghi cảnh báo vào S3; S3 Lifecycle chuyển dữ liệu sang Glacier sau 14 ngày — chi phí thấp, không phải quản lý hạ tầng."
+      },
+      {
+        "key": "B",
+        "textVi": "Chạy các Amazon EC2 instance trên hai Availability Zone và đặt chúng sau một Elastic Load Balancer để thu nhận cảnh báo. Tạo script trên các EC2 instance để lưu cảnh báo vào một Amazon S3 bucket. Thiết lập cấu hình S3 Lifecycle để chuyển dữ liệu sang Amazon S3 Glacier sau 14 ngày.",
+        "reason": "Phải tự vận hành EC2, load balancer và script thu nhận — trái yêu cầu không quản lý thêm hạ tầng và tốn chi phí hơn dịch vụ serverless."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon Kinesis Data Firehose delivery stream để thu nhận cảnh báo. Cấu hình Kinesis Data Firehose stream chuyển cảnh báo vào một cluster Amazon OpenSearch Service (Amazon Elasticsearch Service). Thiết lập cluster Amazon OpenSearch Service (Amazon Elasticsearch Service) chụp snapshot thủ công mỗi ngày và xóa dữ liệu cũ hơn 14 ngày khỏi cluster.",
+        "reason": "Cluster OpenSearch phải chạy liên tục và đủ lớn cho 14 TB dữ liệu, tốn chi phí cao; việc chụp snapshot thủ công và xóa dữ liệu cũ thêm công vận hành."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon Simple Queue Service (Amazon SQS) standard queue để thu nhận cảnh báo, và đặt message retention period là 14 ngày. Cấu hình consumer poll SQS queue, kiểm tra tuổi của message và phân tích dữ liệu message khi cần. Nếu message đã 14 ngày tuổi, consumer copy message vào một Amazon S3 bucket và xóa message khỏi SQS queue.",
+        "reason": "SQS là hàng đợi, không phải nơi lưu trữ để phân tích; phải tự viết và vận hành consumer, và message đã đọc khó phân tích lặp lại — kém hiệu quả vận hành."
+      }
+    ],
+    "explanationVi": "Yêu cầu: thu nhận lượng lớn bản ghi nhỏ, sẵn sàng cao, rẻ, không quản lý hạ tầng, giữ 14 ngày để phân tích rồi archive. Kinesis Data Firehose (nay gọi là Amazon Data Firehose) đưa dữ liệu thẳng vào S3, còn S3 Lifecycle chuyển sang Glacier sau 14 ngày — toàn bộ là dịch vụ được quản lý. Bẫy: EC2 và OpenSearch đều tốn công vận hành; SQS không phải kho lưu trữ.",
+    "keyHint": "\"does not want to manage additional infrastructure\" + \"archive any data older than 14 days\" → Kinesis Data Firehose vào S3 + S3 Lifecycle sang Glacier."
+  },
+  {
+    "id": 436,
+    "stemVi": "Một công ty host một ứng dụng web nhiều tầng trên các Amazon EC2 instance chạy Amazon Linux phía sau một Application Load Balancer. Các instance chạy trong một Auto Scaling group trải trên nhiều Availability Zone. Công ty nhận thấy Auto Scaling group khởi chạy thêm On-Demand Instance khi người dùng cuối truy cập khối lượng lớn nội dung web tĩnh. Công ty muốn tối ưu chi phí.",
+    "promptVi": "Solutions architect nên làm gì để thiết kế lại ứng dụng một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cập nhật Auto Scaling group để dùng Reserved Instance thay cho On-Demand Instance.",
+        "reason": "Reserved Instance chỉ giảm đơn giá cho capacity ổn định, không phù hợp với phần capacity tăng thêm theo đợt; EC2 vẫn phải phục vụ nội dung tĩnh nên gốc vấn đề không được xử lý."
+      },
+      {
+        "key": "B",
+        "textVi": "Cập nhật Auto Scaling group để scale bằng cách khởi chạy Spot Instance thay cho On-Demand Instance.",
+        "reason": "Spot rẻ hơn nhưng có thể bị thu hồi, và vẫn phải chạy thêm instance chỉ để phục vụ nội dung tĩnh; đây không phải là thiết kế lại để loại bỏ tải đó."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon CloudFront distribution để phân phối nội dung web tĩnh từ một Amazon S3 bucket.",
+        "reason": "Đưa nội dung tĩnh lên S3 và phân phối qua CloudFront (cache ở edge) khiến request nội dung tĩnh không còn tới EC2, nên Auto Scaling group không phải chạy thêm instance — giảm chi phí tận gốc."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một AWS Lambda function phía sau một Amazon API Gateway API để phục vụ nội dung website tĩnh.",
+        "reason": "Phục vụ file tĩnh qua API Gateway và Lambda tốn phí theo từng request và thời gian chạy, đắt và phức tạp hơn nhiều so với S3 + CloudFront."
+      }
+    ],
+    "explanationVi": "Nguyên nhân tốn chi phí là EC2 phải scale chỉ để phục vụ nội dung tĩnh. Thiết kế lại đúng là tách nội dung tĩnh ra S3 và phân phối qua CloudFront, để EC2 chỉ xử lý nội dung động. Bẫy: Reserved Instance và Spot chỉ giảm đơn giá mà không bỏ được phần tải không cần thiết; Lambda + API Gateway không dành cho việc phục vụ file tĩnh.",
+    "keyHint": "\"launches more On-Demand Instances\" do \"high volumes of static web content\" → S3 + Amazon CloudFront cho nội dung tĩnh."
+  },
+  {
+    "id": 437,
+    "stemVi": "Một công ty muốn đưa dữ liệu thanh toán của khách hàng vào data lake của công ty trên Amazon S3. Trung bình mỗi phút công ty nhận dữ liệu thanh toán một lần. Công ty muốn phân tích dữ liệu thanh toán theo thời gian thực. Sau đó công ty muốn đưa dữ liệu vào data lake.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với hiệu quả vận hành cao nhất (MOST operational efficiency)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon Kinesis Data Streams để thu nhận dữ liệu. Dùng AWS Lambda để phân tích dữ liệu theo thời gian thực.",
+        "reason": "Kinesis Data Streams không tự ghi vào S3 và phải quản lý shard; còn phải tự viết code Lambda để phân tích và để đưa dữ liệu vào data lake — tốn công hơn."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Glue để thu nhận dữ liệu. Dùng Amazon Kinesis Data Analytics để phân tích dữ liệu theo thời gian thực.",
+        "reason": "Glue là dịch vụ ETL, không phải dịch vụ thu nhận dữ liệu streaming làm nguồn cho Kinesis Data Analytics phân tích theo thời gian thực."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Kinesis Data Firehose để thu nhận dữ liệu. Dùng Amazon Kinesis Data Analytics để phân tích dữ liệu theo thời gian thực.",
+        "reason": "Firehose thu nhận dữ liệu và tự ghi vào data lake S3 mà không cần quản lý capacity; Kinesis Data Analytics phân tích luồng theo thời gian thực bằng SQL/Flink — cả hai đều được quản lý hoàn toàn."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon API Gateway để thu nhận dữ liệu. Dùng AWS Lambda để phân tích dữ liệu theo thời gian thực.",
+        "reason": "Phải tự viết Lambda để phân tích và tự ghi dữ liệu vào S3; API Gateway không có cơ chế đưa dữ liệu vào data lake hay phân tích luồng."
+      }
+    ],
+    "explanationVi": "Cần hai việc: phân tích theo thời gian thực và đưa dữ liệu vào data lake S3, với ít công vận hành nhất. Kinesis Data Firehose lo thu nhận và ghi vào S3; Kinesis Data Analytics (bản for Apache Flink nay là Amazon Managed Service for Apache Flink; bản for SQL đã ngừng từ 27/01/2026) lo phân tích thời gian thực. Bẫy: các cách dùng Lambda đều phải tự viết code phân tích và ghi dữ liệu; Glue là công cụ ETL.",
+    "keyHint": "\"analyze the payment data in real time\" + \"ingest the data into the data lake\" + \"MOST operational efficiency\" → Kinesis Data Firehose + Kinesis Data Analytics.",
+    "review": {
+      "reason": "Chưa chắc chắn: đáp án dựa trên Kinesis Data Analytics for SQL, vốn nhận Kinesis Data Firehose làm nguồn streaming. AWS đã chặn tạo mới ứng dụng SQL từ 15/10/2025 và xóa toàn bộ ứng dụng còn lại ngày 27/01/2026. Dịch vụ thay thế là Amazon Managed Service for Apache Flink, nhưng Flink đọc luồng từ Kinesis Data Streams hoặc Amazon MSK chứ không đọc trực tiếp từ Firehose, nên kiến trúc 'Firehose thu nhận + Kinesis Data Analytics phân tích' như đề mô tả không còn dựng đúng được; theo kiến thức hiện hành nên dùng Kinesis Data Streams làm nguồn cho Managed Service for Apache Flink và Firehose để ghi vào S3."
+    }
+  },
+  {
+    "id": 438,
+    "stemVi": "Ứng dụng của một công ty tích hợp với nhiều nguồn software-as-a-service (SaaS) để thu thập dữ liệu. Công ty chạy các Amazon EC2 instance để nhận dữ liệu và upload dữ liệu lên một Amazon S3 bucket để phân tích. Chính EC2 instance nhận và upload dữ liệu cũng gửi thông báo cho người dùng khi upload hoàn tất. Công ty nhận thấy ứng dụng chạy chậm và muốn cải thiện hiệu năng nhiều nhất có thể.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Auto Scaling group để các EC2 instance có thể scale out. Cấu hình S3 event notification gửi sự kiện tới một Amazon Simple Notification Service (Amazon SNS) topic khi việc upload lên S3 bucket hoàn tất.",
+        "reason": "Theo đáp án gốc, Auto Scaling group cho tầng nhận dữ liệu scale ngang theo tải, còn S3 event notification gửi qua SNS tách việc thông báo khỏi EC2 — giữ nguyên luồng tích hợp hiện có với các nguồn SaaS."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon AppFlow flow để chuyển dữ liệu giữa từng nguồn SaaS và S3 bucket. Cấu hình S3 event notification gửi sự kiện tới một Amazon Simple Notification Service (Amazon SNS) topic khi việc upload lên S3 bucket hoàn tất.",
+        "reason": "Theo đáp án gốc, lựa chọn này không được chọn với lập luận AppFlow kéo dữ liệu từ SaaS theo flow, thay đổi cách tích hợp hiện có; tuy vậy AppFlow là dịch vụ được quản lý dành riêng cho chuyển dữ liệu SaaS vào S3 (xem ghi chú review)."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon EventBridge (Amazon CloudWatch Events) rule cho từng nguồn SaaS để gửi dữ liệu đầu ra. Cấu hình S3 bucket làm target của rule. Tạo một EventBridge (CloudWatch Events) rule thứ hai để gửi sự kiện khi việc upload lên S3 bucket hoàn tất. Cấu hình một Amazon Simple Notification Service (Amazon SNS) topic làm target của rule thứ hai.",
+        "reason": "S3 bucket không phải là target trực tiếp của EventBridge rule, và EventBridge chuyển sự kiện chứ không phải công cụ thu thập khối dữ liệu từ nguồn SaaS vào S3."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Docker container để dùng thay cho EC2 instance. Host ứng dụng container trên Amazon Elastic Container Service (Amazon ECS). Cấu hình Amazon CloudWatch Container Insights gửi sự kiện tới một Amazon Simple Notification Service (Amazon SNS) topic khi việc upload lên S3 bucket hoàn tất.",
+        "reason": "Container hóa ứng dụng tốn công mà không tự giải quyết vấn đề hiệu năng; Container Insights thu thập metric của container, không phát sinh sự kiện khi upload lên S3 hoàn tất."
+      }
+    ],
+    "explanationVi": "EC2 đang gánh cả nhận dữ liệu, upload và gửi thông báo nên chậm. Đáp án gốc chọn cho EC2 scale out bằng Auto Scaling group và chuyển việc thông báo sang S3 event notification + SNS. Lưu ý: nhiều nguồn chọn Amazon AppFlow thay cho EC2 (xem ghi chú review). Bẫy: EventBridge không ghi dữ liệu thẳng vào S3, còn Container Insights không phát sự kiện upload.",
+    "keyHint": "\"multiple software-as-a-service (SaaS) sources\" → S3 + \"notification ... when an upload is complete\" → S3 event notification tới SNS; cân nhắc Amazon AppFlow cho phần thu thập SaaS.",
+    "review": {
+      "reason": "Đáp án có thể sai: Amazon AppFlow là dịch vụ được quản lý hoàn toàn, chuyên chuyển dữ liệu từ các nguồn SaaS vào S3; phương án dùng AppFlow kèm S3 event notification tới SNS bỏ hẳn tầng EC2 nhận/upload dữ liệu, nên vừa cải thiện hiệu năng nhiều nhất vừa có ít công vận hành nhất. Phương án Auto Scaling group vẫn phải vận hành EC2 và code tích hợp với từng nguồn SaaS; phần lớn nguồn tham khảo chọn phương án AppFlow."
+    }
+  },
+  {
+    "id": 439,
+    "stemVi": "Một công ty đang migrate workload on-premises lên AWS Cloud. Công ty đã dùng một số Amazon EC2 instance và Amazon RDS DB instance. Công ty muốn một giải pháp tự động khởi động và dừng các EC2 instance và DB instance ngoài giờ làm việc. Giải pháp phải giảm thiểu chi phí và công bảo trì hạ tầng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Scale các EC2 instance bằng elastic resize. Scale các DB instance về 0 ngoài giờ làm việc.",
+        "reason": "Elastic resize là tính năng của Amazon Redshift, không phải của EC2; RDS DB instance không scale về 0 được mà chỉ có thể stop."
+      },
+      {
+        "key": "B",
+        "textVi": "Tìm trên AWS Marketplace các giải pháp của đối tác tự động khởi động và dừng EC2 instance và DB instance theo lịch.",
+        "reason": "Giải pháp bên thứ ba thường tốn thêm phí license và phải tích hợp, bảo trì, trong khi có thể làm được bằng dịch vụ serverless có sẵn với chi phí gần như bằng 0."
+      },
+      {
+        "key": "C",
+        "textVi": "Chạy thêm một EC2 instance. Cấu hình lịch crontab chạy shell script để khởi động và dừng các EC2 instance và DB instance hiện có theo lịch.",
+        "reason": "Một EC2 instance chạy 24/7 chỉ để chạy cron tốn chi phí, phải vá lỗi và bảo trì, và là điểm lỗi đơn — trái yêu cầu giảm chi phí và công bảo trì."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một AWS Lambda function để khởi động và dừng các EC2 instance và DB instance. Cấu hình Amazon EventBridge gọi Lambda function theo lịch.",
+        "reason": "EventBridge (scheduled rule hoặc Scheduler) gọi Lambda theo lịch, Lambda dùng API để start/stop EC2 và RDS; giải pháp serverless, chỉ trả tiền cho vài lần chạy mỗi ngày và không có hạ tầng cần bảo trì."
+      }
+    ],
+    "explanationVi": "Cần tự động start/stop EC2 và RDS theo lịch với chi phí và công bảo trì thấp nhất. EventBridge theo lịch gọi Lambda là cách serverless, gần như miễn phí và không có máy chủ phải quản lý. Bẫy: elastic resize thuộc Redshift; RDS không scale về 0; một EC2 chạy cron thì tốn tiền và công bảo trì.",
+    "keyHint": "\"automatically starts and stops\" + \"outside of business hours\" + \"minimize cost and infrastructure maintenance\" → EventBridge schedule gọi Lambda."
+  },
+  {
+    "id": 440,
+    "stemVi": "Một công ty có 1 triệu người dùng ứng dụng di động. Công ty phải phân tích dữ liệu sử dụng gần thời gian thực (near-real time). Công ty cũng phải mã hóa dữ liệu gần thời gian thực và phải lưu dữ liệu ở một vị trí tập trung theo định dạng Apache Parquet để xử lý tiếp.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Kinesis data stream để lưu dữ liệu vào Amazon S3. Tạo một ứng dụng Amazon Kinesis Data Analytics để phân tích dữ liệu. Gọi một AWS Lambda function để gửi dữ liệu tới ứng dụng Kinesis Data Analytics.",
+        "reason": "Kinesis Data Streams không tự ghi dữ liệu vào S3 hay chuyển sang Parquet; thêm Lambda chỉ để chuyển dữ liệu là thừa vì Kinesis Data Analytics đọc trực tiếp từ stream — nhiều thành phần phải tự vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon Kinesis data stream để lưu dữ liệu vào Amazon S3. Tạo một Amazon EMR cluster để phân tích dữ liệu. Gọi một AWS Lambda function để gửi dữ liệu tới EMR cluster.",
+        "reason": "Kinesis Data Streams không tự lưu vào S3, còn EMR cluster phải tự cấu hình, scale và vận hành — công vận hành cao nhất."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon Kinesis Data Firehose delivery stream để lưu dữ liệu vào Amazon S3. Tạo một Amazon EMR cluster để phân tích dữ liệu.",
+        "reason": "Firehose lo đúng phần lưu trữ, nhưng EMR cluster phải tự quản lý và không phải lựa chọn ít công nhất cho phân tích gần thời gian thực."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon Kinesis Data Firehose delivery stream để lưu dữ liệu vào Amazon S3. Tạo một ứng dụng Amazon Kinesis Data Analytics để phân tích dữ liệu.",
+        "reason": "Firehose tự chuyển đổi định dạng sang Apache Parquet, mã hóa và ghi vào S3 (vị trí tập trung); Kinesis Data Analytics phân tích luồng gần thời gian thực — cả hai đều được quản lý hoàn toàn."
+      }
+    ],
+    "explanationVi": "Yêu cầu gồm phân tích gần thời gian thực, mã hóa, và lưu tập trung dạng Parquet, với ít công vận hành nhất. Kinesis Data Firehose có sẵn record format conversion sang Parquet và mã hóa khi ghi vào S3; Kinesis Data Analytics lo phân tích streaming. Bẫy: Kinesis Data Streams không tự ghi vào S3; EMR cluster tốn công vận hành.",
+    "keyHint": "\"near-real time\" + \"encrypt\" + \"Apache Parquet format\" + \"LEAST operational overhead\" → Kinesis Data Firehose (chuyển sang Parquet vào S3) + Kinesis Data Analytics.",
+    "review": {
+      "reason": "Chưa chắc chắn: đáp án ghép Kinesis Data Firehose với Kinesis Data Analytics, tức dùng Firehose làm nguồn cho ứng dụng Kinesis Data Analytics for SQL. Dịch vụ này đã ngừng tạo mới từ 15/10/2025 và bị xóa hẳn ngày 27/01/2026; dịch vụ thay thế Amazon Managed Service for Apache Flink chỉ đọc luồng từ Kinesis Data Streams hoặc Amazon MSK, không đọc trực tiếp từ Firehose. Ý tưởng 'Firehose chuyển sang Parquet và mã hóa khi ghi S3 + phân tích bằng dịch vụ streaming được quản lý' vẫn đúng, nhưng triển khai hiện nay cần thêm Kinesis Data Streams làm nguồn chung."
+    }
+  },
+  {
+    "id": 441,
+    "stemVi": "Một công ty đang host một ứng dụng thương mại điện tử ba tầng trên AWS Cloud. Công ty host website trên Amazon S3 và tích hợp website với một API xử lý các request bán hàng. Công ty host API trên ba Amazon EC2 instance phía sau một Application Load Balancer (ALB). API gồm nội dung front-end tĩnh và động cùng các backend worker xử lý request bán hàng một cách bất đồng bộ.\n\nCông ty dự kiến số lượng request bán hàng sẽ tăng đáng kể và đột ngột trong các sự kiện ra mắt sản phẩm mới.",
+    "promptVi": "Solutions architect nên đề xuất gì để bảo đảm mọi request đều được xử lý thành công?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thêm một Amazon CloudFront distribution cho nội dung động. Tăng số lượng EC2 instance để xử lý lưu lượng tăng.",
+        "reason": "Nội dung động khó cache nên CloudFront giảm tải ít; tăng cố định số instance vẫn có thể không đủ khi lưu lượng tăng đột ngột vượt mức dự tính, và request vượt khả năng xử lý sẽ bị mất."
+      },
+      {
+        "key": "B",
+        "textVi": "Thêm một Amazon CloudFront distribution cho nội dung tĩnh. Đặt các EC2 instance trong một Auto Scaling group để khởi chạy instance mới dựa trên network traffic.",
+        "reason": "Auto Scaling cần thời gian để khởi chạy instance mới, nên trong lúc lưu lượng tăng đột ngột một số request có thể bị lỗi trước khi capacity kịp tăng; không có bộ đệm để giữ request."
+      },
+      {
+        "key": "C",
+        "textVi": "Thêm một Amazon CloudFront distribution cho nội dung động. Thêm một Amazon ElastiCache instance phía trước ALB để giảm lưu lượng API phải xử lý.",
+        "reason": "ElastiCache là kho cache mà ứng dụng gọi tới, không đặt phía trước ALB để nhận request được; request bán hàng là thao tác ghi nên cũng không thể trả từ cache."
+      },
+      {
+        "key": "D",
+        "textVi": "Thêm một Amazon CloudFront distribution cho nội dung tĩnh. Thêm một Amazon Simple Queue Service (Amazon SQS) queue để nhận request từ website, để các EC2 instance xử lý sau.",
+        "reason": "CloudFront cache nội dung tĩnh giảm tải cho API; SQS nhận và lưu bền vững mọi request bán hàng, để backend worker xử lý bất đồng bộ theo tốc độ của mình, nên không request nào bị mất khi lưu lượng tăng đột biến."
+      }
+    ],
+    "explanationVi": "Yêu cầu then chốt là mọi request đều được xử lý thành công khi lưu lượng tăng đột ngột. Đặt SQS làm bộ đệm tách rời (decouple) phía nhận request với worker xử lý bất đồng bộ, kết hợp CloudFront cho nội dung tĩnh. Bẫy: Auto Scaling phản ứng chậm hơn đỉnh tải đột ngột; ElastiCache không đặt trước ALB; nội dung động ít hưởng lợi từ cache.",
+    "keyHint": "\"significant and sudden increase\" + \"all the requests are processed successfully\" + xử lý \"asynchronously\" → Amazon SQS làm bộ đệm + CloudFront cho nội dung tĩnh."
+  },
+  {
+    "id": 442,
+    "stemVi": "Một công ty đã thiết kế một ứng dụng hai tầng, stateless, dùng Amazon EC2 trong một Availability Zone duy nhất và một Amazon RDS Multi-AZ DB instance. Ban quản lý mới của công ty muốn bảo đảm ứng dụng có tính sẵn sàng cao (highly available).",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình ứng dụng dùng EC2 Auto Scaling trên nhiều AZ (Multi-AZ) và tạo một Application Load Balancer",
+        "reason": "Auto Scaling group trải trên nhiều AZ giữ đủ số instance và thay instance hỏng, còn ALB phân phối traffic tới các instance khỏe mạnh ở mọi AZ, nên tầng EC2 stateless vẫn chạy khi một AZ gặp sự cố; tầng database đã là Multi-AZ."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình ứng dụng chụp snapshot các EC2 instance và gửi chúng sang một AWS Region khác",
+        "reason": "Snapshot chỉ là bản sao lưu để khôi phục sau sự cố, không giữ ứng dụng hoạt động liên tục; tầng EC2 vẫn nằm trong một AZ."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình ứng dụng dùng latency-based routing của Amazon Route 53 để đưa request tới ứng dụng",
+        "reason": "Latency-based routing chọn endpoint có độ trễ thấp giữa các Region; khi chỉ có instance trong một AZ thì Route 53 không tạo thêm tính sẵn sàng nào."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình các rule của Amazon Route 53 để xử lý request đến và tạo một Application Load Balancer Multi-AZ",
+        "reason": "ALB đa AZ vô ích nếu các EC2 instance vẫn chỉ nằm trong một AZ và không có Auto Scaling để thay thế instance hỏng."
+      }
+    ],
+    "explanationVi": "Tầng database đã Multi-AZ; điểm yếu còn lại là tầng EC2 chỉ nằm trong một AZ. Với ứng dụng stateless, cách chuẩn là Auto Scaling group trải nhiều AZ phía sau ALB. Bẫy: snapshot là sao lưu chứ không phải tính sẵn sàng cao; Route 53 hay ALB đa AZ không giúp gì nếu instance vẫn dồn trong một AZ.",
+    "keyHint": "\"stateless\" + \"EC2 in a single Availability Zone\" + \"highly available\" → EC2 Auto Scaling trên nhiều AZ + Application Load Balancer."
+  },
+  {
+    "id": 443,
+    "stemVi": "Một công ty dự định dùng Amazon ElastiCache cho ứng dụng web nhiều tầng. Solutions architect tạo một Cache VPC cho ElastiCache cluster và một App VPC cho các Amazon EC2 instance của ứng dụng. Cả hai VPC đều ở Region us-east-1.\n\nSolutions architect phải triển khai giải pháp để các EC2 instance của ứng dụng truy cập được ElastiCache cluster.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một peering connection giữa hai VPC. Thêm route cho peering connection vào route table ở cả hai VPC. Cấu hình inbound rule cho security group của ElastiCache cluster cho phép kết nối đến từ security group của ứng dụng.",
+        "reason": "VPC peering không tính phí tạo kết nối, chỉ tính phí truyền dữ liệu; route ở cả hai phía cho traffic đi qua, và trong cùng Region security group của ElastiCache được phép tham chiếu security group của ứng dụng ở VPC peer — rẻ và đơn giản nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Transit VPC. Cập nhật route table của Cache VPC và App VPC để định tuyến traffic qua Transit VPC. Cấu hình inbound rule cho security group của ElastiCache cluster cho phép kết nối đến từ security group của ứng dụng.",
+        "reason": "Transit VPC cần các virtual appliance (thường trên EC2) phải trả tiền và vận hành, quá tốn kém và phức tạp khi chỉ cần nối hai VPC trong cùng Region."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một peering connection giữa hai VPC. Thêm route cho peering connection vào route table ở cả hai VPC. Cấu hình inbound rule cho security group của peering connection cho phép kết nối đến từ security group của ứng dụng.",
+        "reason": "Peering connection không có security group; rule phải đặt trên security group của ElastiCache cluster, nên cấu hình này không thực hiện được."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Transit VPC. Cập nhật route table của Cache VPC và App VPC để định tuyến traffic qua Transit VPC. Cấu hình inbound rule cho security group của Transit VPC cho phép kết nối đến từ security group của ứng dụng.",
+        "reason": "Vừa tốn kém như mọi giải pháp Transit VPC, vừa đặt rule sai chỗ: security group của ElastiCache cluster vẫn chưa cho phép kết nối từ ứng dụng."
+      }
+    ],
+    "explanationVi": "Chỉ có hai VPC trong cùng Region, nên VPC peering là cách nối rẻ và đơn giản nhất. Cần thêm route ở cả hai phía và mở security group của ElastiCache cho security group của ứng dụng (tham chiếu chéo được qua peering trong cùng Region). Bẫy: peering connection không có security group; Transit VPC tốn kém và phức tạp không cần thiết.",
+    "keyHint": "Hai VPC \"in the us-east-1 Region\" + \"MOST cost-effectively\" → VPC peering + security group của ElastiCache cho phép security group của ứng dụng."
+  },
+  {
+    "id": 444,
+    "stemVi": "Một công ty lưu trữ hình ảnh upload các tài sản (asset) dung lượng lớn lên các Amazon S3 Standard bucket. Công ty dùng multipart upload song song qua S3 API và ghi đè nếu cùng một object được upload lại. Trong 30 ngày đầu sau khi upload, các object sẽ được truy cập thường xuyên. Sau 30 ngày, object ít được dùng hơn, nhưng kiểu truy cập của từng object sẽ không đồng đều. Công ty phải tối ưu chi phí lưu trữ S3 đồng thời duy trì tính sẵn sàng cao và khả năng phục hồi (resiliency) của các tài sản được lưu.",
+    "promptVi": "Solutions architect nên đề xuất tổ hợp hành động nào để đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển các tài sản sang S3 Intelligent-Tiering sau 30 ngày.",
+        "reason": "Intelligent-Tiering tự chuyển từng object giữa các tier theo mức truy cập thực tế, không tính phí truy xuất, hợp với kiểu truy cập không đồng đều; dữ liệu vẫn lưu trên nhiều AZ nên giữ được tính sẵn sàng và khả năng phục hồi."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình một S3 Lifecycle policy để dọn dẹp các multipart upload chưa hoàn tất.",
+        "reason": "Multipart upload song song dễ để lại các part upload dở dang vẫn bị tính phí lưu trữ mà không hiện thành object; lifecycle rule AbortIncompleteMultipartUpload dọn chúng tự động để giảm chi phí."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình một S3 Lifecycle policy để dọn dẹp các delete marker của object đã hết hạn.",
+        "reason": "Delete marker chỉ xuất hiện khi bucket bật versioning; đề không nói tới versioning (object bị ghi đè), nên rule này không tiết kiệm được gì."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển các tài sản sang S3 Standard-Infrequent Access (S3 Standard-IA) sau 30 ngày.",
+        "reason": "Standard-IA tính phí cho mỗi GB truy xuất; với object có kiểu truy cập thất thường, một số object vẫn được truy cập nhiều sẽ làm chi phí cao hơn Intelligent-Tiering."
+      },
+      {
+        "key": "E",
+        "textVi": "Chuyển các tài sản sang S3 One Zone-Infrequent Access (S3 One Zone-IA) sau 30 ngày.",
+        "reason": "One Zone-IA chỉ lưu trong một AZ, giảm tính sẵn sàng và khả năng phục hồi — trái yêu cầu của đề."
+      }
+    ],
+    "explanationVi": "Có hai nguồn tối ưu chi phí: lớp lưu trữ sau 30 ngày và các phần multipart upload bị bỏ dở. Kiểu truy cập không đồng đều nên chọn S3 Intelligent-Tiering (đa AZ, không phí truy xuất); và lifecycle rule dọn incomplete multipart upload. Bẫy: Standard-IA tính phí truy xuất, One Zone-IA giảm resiliency, còn delete marker chỉ có khi bật versioning.",
+    "keyHint": "\"multipart upload in parallel\" + \"access patterns ... inconsistent\" + \"high availability and resiliency\" → S3 Intelligent-Tiering + lifecycle rule dọn incomplete multipart upload."
+  },
+  {
+    "id": 445,
+    "stemVi": "Một công ty dùng các server on-premises để host ứng dụng. Công ty đang hết dung lượng lưu trữ. Các ứng dụng dùng cả block storage và NFS storage. Công ty cần một giải pháp hiệu năng cao hỗ trợ cache tại chỗ (local caching) mà không phải thiết kế lại các ứng dụng hiện có.",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp hành động nào để đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mount Amazon S3 làm file system cho các server on-premises.",
+        "reason": "S3 là object storage, không mount native như file system NFS hay block device; muốn dùng phải sửa ứng dụng hoặc qua công cụ trung gian, và không có cache cục bộ được quản lý."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai một AWS Storage Gateway file gateway để thay thế NFS storage.",
+        "reason": "File gateway cung cấp share NFS cho server on-premises, lưu dữ liệu trên S3 và cache dữ liệu hay dùng tại chỗ, nên ứng dụng giữ nguyên giao thức NFS mà có thêm dung lượng."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai AWS Snowball Edge để cung cấp NFS mount cho các server on-premises.",
+        "reason": "Snowball Edge dùng để chuyển dữ liệu hoặc xử lý ở edge, có dung lượng giới hạn trên thiết bị; không phải giải pháp storage mở rộng lâu dài với cache tại chỗ."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai một AWS Storage Gateway volume gateway để thay thế block storage.",
+        "reason": "Volume gateway cung cấp block storage qua iSCSI cho server on-premises; ở chế độ cached volumes, dữ liệu chính nằm trên AWS và phần hay dùng được cache tại chỗ, ứng dụng không phải thay đổi."
+      },
+      {
+        "key": "E",
+        "textVi": "Triển khai các volume Amazon Elastic File System (Amazon EFS) và mount chúng vào các server on-premises.",
+        "reason": "EFS mount qua mạng (Direct Connect/VPN) từ on-premises nhưng không có cache tại chỗ, độ trễ cao hơn; và EFS chỉ thay được NFS, không thay được block storage."
+      }
+    ],
+    "explanationVi": "Ứng dụng dùng hai loại storage: NFS và block, cần cache tại chỗ và không phải thiết kế lại. Storage Gateway có đúng hai chế độ tương ứng: file gateway cho NFS và volume gateway (iSCSI) cho block, đều có cache cục bộ và lưu dữ liệu chính trên AWS. Bẫy: S3 không mount native; EFS không có cache on-premises; Snowball Edge là thiết bị chuyển dữ liệu.",
+    "keyHint": "\"block storage and NFS storage\" + \"local caching\" + \"without re-architecting\" → Storage Gateway file gateway (NFS) + volume gateway (block)."
+  },
+  {
+    "id": 446,
+    "stemVi": "Một công ty host một ứng dụng frontend dùng backend là một Amazon API Gateway API được tích hợp với AWS Lambda. Khi API nhận request, Lambda function nạp nhiều thư viện. Sau đó Lambda function kết nối tới một database Amazon RDS, xử lý dữ liệu và trả dữ liệu về cho ứng dụng frontend. Công ty muốn bảo đảm độ trễ phản hồi thấp nhất có thể cho mọi người dùng với ít thay đổi nhất đối với hoạt động vận hành của công ty.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thiết lập kết nối giữa ứng dụng frontend và database để truy vấn nhanh hơn bằng cách bỏ qua API.",
+        "reason": "Cho frontend kết nối thẳng tới database làm lộ database ra ngoài, là lỗi bảo mật nghiêm trọng, và phải thay đổi lớn kiến trúc lẫn vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình provisioned concurrency cho Lambda function xử lý các request.",
+        "reason": "Provisioned concurrency giữ sẵn các execution environment đã khởi tạo (đã nạp thư viện, có thể giữ kết nối), loại bỏ cold start nên mọi request đều phản hồi với độ trễ thấp; chỉ là một thay đổi cấu hình."
+      },
+      {
+        "key": "C",
+        "textVi": "Cache kết quả các truy vấn trong Amazon S3 để truy xuất nhanh hơn các tập dữ liệu tương tự.",
+        "reason": "S3 không phải cache độ trễ thấp cho kết quả truy vấn; phải sửa code để đọc/ghi cache và không giải quyết thời gian nạp thư viện khi khởi tạo."
+      },
+      {
+        "key": "D",
+        "textVi": "Tăng kích thước database để tăng số kết nối Lambda có thể thiết lập cùng lúc.",
+        "reason": "Độ trễ đến từ cold start của Lambda (nạp thư viện, mở kết nối), không phải giới hạn kết nối; tăng cỡ database tốn chi phí mà không giảm thời gian khởi tạo."
+      }
+    ],
+    "explanationVi": "Việc nạp nhiều thư viện mỗi khi có execution environment mới gây ra cold start, làm tăng độ trễ. Provisioned concurrency khởi tạo trước các environment nên request được xử lý ngay, chỉ cần đổi cấu hình. Bẫy: nối thẳng frontend vào database là sai bảo mật; S3 không phải lớp cache độ trễ thấp.",
+    "keyHint": "\"Lambda function loads many libraries\" + \"response latency is as low as possible\" → Lambda provisioned concurrency (loại bỏ cold start)."
+  },
+  {
+    "id": 447,
+    "stemVi": "Một công ty dùng AWS Organizations để chạy workload trong nhiều AWS account. Một member account đã mua một Compute Savings Plan. Do workload bên trong member account thay đổi, account này không còn nhận được toàn bộ lợi ích từ cam kết của Compute Savings Plan. Công ty đang dùng chưa tới 50% năng lực compute đã mua.",
+    "promptVi": "Giải pháp nào khắc phục được vấn đề này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật chia sẻ chiết khấu (discount sharing) từ mục Billing Preferences trên account console của member account đã mua Compute Savings Plan.",
+        "reason": "Việc chia sẻ Savings Plans và Reserved Instance giữa các account trong organization được bật hoặc tắt từ management account, không phải từ member account."
+      },
+      {
+        "key": "B",
+        "textVi": "Bật chia sẻ chiết khấu (discount sharing) từ mục Billing Preferences trên account console của management account trong Organizations của công ty.",
+        "reason": "Bật discount sharing từ management account cho phép phần cam kết Savings Plan chưa dùng tự động áp dụng cho mức sử dụng compute ở các account khác trong organization, tận dụng hết cam kết đã mua."
+      },
+      {
+        "key": "C",
+        "textVi": "Migrate thêm workload compute từ một AWS account khác sang account đang có Compute Savings Plan.",
+        "reason": "Di chuyển workload giữa các account tốn công, ảnh hưởng tới ranh giới bảo mật và tổ chức, trong khi chỉ cần bật chia sẻ chiết khấu là đạt cùng kết quả."
+      },
+      {
+        "key": "D",
+        "textVi": "Bán phần cam kết Savings Plan dư thừa trên Reserved Instance Marketplace.",
+        "reason": "Reserved Instance Marketplace chỉ cho bán EC2 Standard Reserved Instance; Savings Plans không thể bán lại."
+      }
+    ],
+    "explanationVi": "Trong AWS Organizations, Savings Plans và Reserved Instance có thể được chia sẻ cho mọi account khi bật discount sharing, và thiết lập này nằm ở Billing Preferences của management account. Khi bật, phần cam kết chưa dùng của member account sẽ áp dụng cho workload ở account khác. Bẫy: member account không tự bật được; Savings Plans không bán được trên RI Marketplace.",
+    "keyHint": "\"no longer receives the full benefit of the Compute Savings Plan\" trong AWS Organizations → bật discount sharing ở management account."
+  },
+  {
+    "id": 448,
+    "stemVi": "Một công ty có nhiều Windows file server ở on-premises. Công ty muốn migrate và hợp nhất các file của mình vào một file system Amazon FSx for Windows File Server. Quyền truy cập file (file permissions) phải được giữ nguyên để bảo đảm quyền truy cập không thay đổi.",
+    "promptVi": "Những giải pháp nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai các AWS DataSync agent ở on-premises. Lên lịch các DataSync task để chuyển dữ liệu tới file system FSx for Windows File Server.",
+        "reason": "DataSync đọc trực tiếp từ SMB share của các file server và ghi vào FSx for Windows File Server, giữ nguyên metadata gồm NTFS ACL, nên quyền truy cập không thay đổi."
+      },
+      {
+        "key": "B",
+        "textVi": "Copy các share trên từng file server vào các Amazon S3 bucket bằng AWS CLI. Lên lịch các AWS DataSync task để chuyển dữ liệu tới file system FSx for Windows File Server.",
+        "reason": "Khi copy qua S3, object không lưu được NTFS ACL của Windows, nên quyền truy cập bị mất trước khi tới FSx."
+      },
+      {
+        "key": "C",
+        "textVi": "Tháo các ổ đĩa khỏi từng file server. Gửi ổ đĩa tới AWS để import vào Amazon S3. Lên lịch các AWS DataSync task để chuyển dữ liệu tới file system FSx for Windows File Server.",
+        "reason": "Dữ liệu đi qua S3 nên mất NTFS ACL; tháo ổ đĩa khỏi server production cũng gây gián đoạn và không phải cách migrate được AWS hỗ trợ cho trường hợp này."
+      },
+      {
+        "key": "D",
+        "textVi": "Đặt mua một thiết bị AWS Snowcone. Kết nối thiết bị vào mạng on-premises. Chạy các AWS DataSync agent trên thiết bị. Lên lịch các DataSync task để chuyển dữ liệu tới file system FSx for Windows File Server.",
+        "reason": "Snowcone có sẵn DataSync agent; agent đọc trực tiếp từ SMB share và chuyển tới FSx for Windows File Server qua mạng, giữ nguyên NTFS ACL như khi chạy agent on-premises."
+      },
+      {
+        "key": "E",
+        "textVi": "Đặt mua một thiết bị AWS Snowball Edge Storage Optimized. Kết nối thiết bị vào mạng on-premises. Copy dữ liệu vào thiết bị bằng AWS CLI. Gửi thiết bị về AWS để import vào Amazon S3. Lên lịch các AWS DataSync task để chuyển dữ liệu tới file system FSx for Windows File Server.",
+        "reason": "Dữ liệu được import vào S3 trước, nên NTFS ACL của Windows bị mất trước khi tới FSx."
+      }
+    ],
+    "explanationVi": "Giữ nguyên quyền NTFS đòi hỏi chuyển dữ liệu trực tiếp từ SMB share sang FSx for Windows File Server bằng công cụ hiểu metadata Windows, tức AWS DataSync. DataSync agent có thể chạy on-premises hoặc trên thiết bị Snowcone. Bẫy: mọi phương án đi qua Amazon S3 đều làm mất ACL của Windows.",
+    "keyHint": "\"FSx for Windows File Server\" + \"File permissions must be preserved\" → AWS DataSync chuyển trực tiếp (agent on-premises hoặc trên Snowcone), không đi qua S3.",
+    "review": {
+      "reason": "Đáp án có thể sai: AWS đã ngừng dịch vụ AWS Snowcone từ 12/11/2024 (không đặt mua được nữa) và chỉ hỗ trợ thiết bị hiện có tới 12/11/2025, nên phương án đặt mua Snowcone để chạy DataSync agent không còn triển khai được. Trong các lựa chọn hiện có, chỉ cách cài DataSync agent on-premises và chuyển thẳng sang FSx for Windows File Server còn hợp lệ (giữ được NTFS ACL); các phương án đi qua S3 làm mất quyền truy cập, nên câu Chọn hai này cần cập nhật lại lựa chọn."
+    }
+  },
+  {
+    "id": 449,
+    "stemVi": "Solutions architect cần tối ưu chi phí lưu trữ. Solutions architect phải xác định mọi Amazon S3 bucket không còn được truy cập hoặc hiếm khi được truy cập.",
+    "promptVi": "Giải pháp nào đạt được mục tiêu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Phân tích kiểu truy cập bucket bằng dashboard S3 Storage Lens với advanced activity metrics.",
+        "reason": "S3 Storage Lens advanced metrics có sẵn các activity metric (số request GET/PUT, bytes downloaded…) cho mọi bucket trên dashboard, nên dễ thấy bucket ít hoặc không còn được truy cập mà không phải tự xây công cụ phân tích."
+      },
+      {
+        "key": "B",
+        "textVi": "Phân tích kiểu truy cập bucket bằng S3 dashboard trong AWS Management Console.",
+        "reason": "Trang S3 trên console chỉ liệt kê bucket và thuộc tính, không cung cấp số liệu hoạt động truy cập theo thời gian cho từng bucket."
+      },
+      {
+        "key": "C",
+        "textVi": "Bật metric BucketSizeBytes của Amazon CloudWatch cho các bucket. Phân tích kiểu truy cập bucket bằng dữ liệu metric với Amazon Athena.",
+        "reason": "BucketSizeBytes chỉ đo dung lượng lưu trữ, không cho biết bucket có được truy cập hay không; dùng Athena để phân tích metric cũng thêm công."
+      },
+      {
+        "key": "D",
+        "textVi": "Bật AWS CloudTrail để giám sát object S3. Phân tích kiểu truy cập bucket bằng CloudTrail log được tích hợp với Amazon CloudWatch Logs.",
+        "reason": "CloudTrail data event cho S3 tính phí theo từng sự kiện và tạo lượng log rất lớn; phải tự truy vấn và tổng hợp log để rút ra kiểu truy cập, tốn công vận hành."
+      }
+    ],
+    "explanationVi": "Cần biết bucket nào ít hoặc không còn được truy cập với ít công nhất. S3 Storage Lens advanced metrics cung cấp sẵn activity metric trên toàn bộ bucket và account trong một dashboard. Bẫy: BucketSizeBytes chỉ là dung lượng; CloudTrail data events tốn phí và phải tự phân tích.",
+    "keyHint": "\"no longer being accessed or are rarely accessed\" + \"LEAST operational overhead\" → S3 Storage Lens advanced activity metrics."
+  },
+  {
+    "id": 450,
+    "stemVi": "Một công ty muốn triển khai kế hoạch khôi phục thảm họa (disaster recovery) cho volume lưu trữ file chính ở on-premises. Volume lưu trữ file được mount từ một thiết bị Internet Small Computer Systems Interface (iSCSI) trên một storage server cục bộ. Volume chứa hàng trăm terabyte (TB) dữ liệu.\n\nCông ty muốn bảo đảm người dùng cuối vẫn truy cập ngay lập tức mọi loại file từ các hệ thống on-premises mà không bị độ trễ.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít thay đổi nhất đối với hạ tầng hiện có của công ty?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon S3 File Gateway dưới dạng máy ảo (VM) chạy ở on-premises. Đặt local cache là 10 TB. Sửa các ứng dụng hiện có để truy cập file qua giao thức NFS. Để khôi phục sau thảm họa, tạo một Amazon EC2 instance và mount S3 bucket chứa các file.",
+        "reason": "Phải chuyển ứng dụng từ iSCSI sang NFS (thay đổi hạ tầng), và cache 10 TB không chứa hết hàng trăm TB nên file ngoài cache sẽ bị trễ khi truy cập."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một AWS Storage Gateway tape gateway. Dùng một giải pháp sao lưu dữ liệu để sao lưu toàn bộ dữ liệu hiện có vào virtual tape library. Cấu hình giải pháp sao lưu chạy hằng đêm sau khi sao lưu lần đầu hoàn tất. Để khôi phục sau thảm họa, tạo một Amazon EC2 instance và khôi phục dữ liệu vào một Amazon Elastic Block Store (Amazon EBS) volume từ các volume trong virtual tape library.",
+        "reason": "Phải thêm phần mềm sao lưu và quy trình băng từ; sao lưu hằng đêm và khôi phục từ tape chậm, kém hơn hẳn về RPO/RTO so với snapshot volume."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS Storage Gateway Volume Gateway cached volume. Đặt local cache là 10 TB. Mount Volume Gateway cached volume vào file server hiện có bằng iSCSI và copy toàn bộ file vào storage volume. Cấu hình snapshot theo lịch cho storage volume. Để khôi phục sau thảm họa, khôi phục snapshot thành một Amazon Elastic Block Store (Amazon EBS) volume và gắn EBS volume vào một Amazon EC2 instance.",
+        "reason": "Giữ được iSCSI, nhưng cached volume chỉ giữ 10 TB dữ liệu tại chỗ; phần còn lại của hàng trăm TB phải lấy từ AWS khi truy cập nên bị độ trễ."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một AWS Storage Gateway Volume Gateway stored volume có dung lượng đĩa bằng volume lưu trữ file hiện có. Mount Volume Gateway stored volume vào file server hiện có bằng iSCSI và copy toàn bộ file vào storage volume. Cấu hình snapshot theo lịch cho storage volume. Để khôi phục sau thảm họa, khôi phục snapshot thành một Amazon Elastic Block Store (Amazon EBS) volume và gắn EBS volume vào một Amazon EC2 instance.",
+        "reason": "Stored volume giữ toàn bộ dữ liệu tại chỗ nên người dùng truy cập mọi file ngay, không có độ trễ; vẫn dùng iSCSI như hiện tại, và snapshot theo lịch lên AWS cho phép khôi phục thành EBS volume gắn vào EC2 khi có thảm họa."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu: truy cập tức thì toàn bộ dữ liệu tại chỗ và có DR trên AWS, với ít thay đổi hạ tầng nhất. Volume Gateway stored volume giữ toàn bộ dữ liệu on-premises qua iSCSI và đẩy snapshot lên AWS để khôi phục thành EBS. Bẫy: cached volume và S3 File Gateway chỉ cache một phần nên có độ trễ; File Gateway còn đổi giao thức sang NFS; Tape Gateway thì khôi phục chậm.",
+    "keyHint": "\"iSCSI\" + \"immediate access to all file types ... without experiencing latency\" + DR → Storage Gateway Volume Gateway stored volume + snapshot."
+  }
+]

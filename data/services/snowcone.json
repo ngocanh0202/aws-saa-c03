@@ -1,0 +1,6 @@
+{
+  "id": "snowcone", "name": "AWS Snowcone", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Snowcone was a compact Snow Family edge/data-transfer device. AWS discontinued Snowcone effective November 12, 2024, and support for existing devices ended November 12, 2025.",
+  "examSignals": ["Do not select Snowcone for a current deployment; its support has ended", "For online transfers evaluate DataSync; for physical transfer assess current AWS Data Transfer Terminal/partner options"],
+  "compareWith": [{ "service": "AWS Snowball", "diff": "Snowcone historically targeted smaller compact deployments; Snowball offered larger-capacity device options. Verify current product availability." }]
+}

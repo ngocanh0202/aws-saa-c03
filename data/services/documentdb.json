@@ -1,0 +1,6 @@
+{
+  "id": "documentdb", "name": "Amazon DocumentDB (with MongoDB compatibility)", "category": "Database", "tier": "minor",
+  "overview": "Amazon DocumentDB là managed document database với MongoDB compatibility cho ứng dụng document-model.",
+  "examSignals": ["Managed document database compatible with MongoDB workloads: DocumentDB", "Relational SQL/schema/joins: RDS or Aurora", "Key-value/document with AWS-native API at massive scale: DynamoDB"],
+  "compareWith": [{ "service": "Amazon DynamoDB", "diff": "DocumentDB cung cấp MongoDB-compatible document database; DynamoDB có key-value/document model và API riêng." }]
+}

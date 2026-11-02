@@ -1,0 +1,6 @@
+{
+  "id": "rds-proxy", "name": "Amazon RDS Proxy", "category": "Database", "tier": "minor",
+  "overview": "Amazon RDS Proxy pools and manages application database connections to supported RDS/Aurora engines.",
+  "examSignals": ["Lambda/serverless app creates many short-lived DB connections: RDS Proxy", "Read scaling via asynchronous copies: RDS read replicas", "Cache repeated reads: ElastiCache"],
+  "compareWith": [{ "service": "Amazon ElastiCache", "diff": "RDS Proxy manages/pools connections to a relational database; ElastiCache stores cached data in memory." }]
+}

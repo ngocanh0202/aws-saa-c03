@@ -1,0 +1,12 @@
+{
+  "id": "dynamodb", "name": "Amazon DynamoDB", "category": "Database", "tier": "core",
+  "overview": "DynamoDB là cơ sở dữ liệu NoSQL key-value/document được quản lý, thiết kế cho truy cập độ trễ thấp và quy mô lớn.",
+  "concepts": [{ "term": "Partition key", "desc": "Phân bố item giữa partition; cardinality và phân bố truy cập ảnh hưởng hot partition." }, { "term": "Sort key", "desc": "Tổ chức nhiều item cùng partition key và hỗ trợ truy vấn theo khoảng/sắp xếp." }, { "term": "Capacity mode", "desc": "On-demand tự điều chỉnh theo traffic; provisioned dùng read/write capacity units và có thể autoscale." }],
+  "howItWorks": "Thiết kế bảng quanh access pattern; partition key định vị item, secondary indexes hỗ trợ truy vấn bổ sung, capacity mode và consistency quyết định đặc tính truy cập.",
+  "useCases": ["Ứng dụng key-value/document quy mô lớn", "Session, metadata và trạng thái ứng dụng", "Workload cần global tables hoặc event stream"],
+  "pricing": "Chi phí có thể gồm request/capacity, storage, backup/PITR, stream, indexes, global tables và data transfer; chọn billing mode theo pattern.",
+  "examSignals": ["Key-value/document với truy cập nhanh và mở rộng: DynamoDB", "Đồng bộ đa Region active-active: Global Tables", "Cache đọc DynamoDB với độ trễ microsecond: DAX khi workload phù hợp"],
+  "compareWith": [{ "service": "Amazon RDS", "diff": "DynamoDB là NoSQL và thiết kế theo access pattern/key; RDS relational hỗ trợ SQL, joins và schema quan hệ." }, { "service": "Amazon ElastiCache", "diff": "DynamoDB là database bền vững được quản lý; ElastiCache là cache in-memory, thường bổ trợ database." }],
+  "facts": ["Query hiệu quả theo partition key; Scan đọc rộng và thường tốn kém hơn.", "GSI có thể truy vấn thuộc tính không phải key chính; LSI chia sẻ partition key.", "DAX là cache đọc, không thay đổi yêu cầu thiết kế khóa tốt."],
+  "practice": { "steps": ["Tạo bảng thử với access pattern đơn giản và partition key có phân bố hợp lý.", "Dùng On-demand cho bài lab không chắc traffic; tạo một số item giả và thử GetItem/Query.", "Đặt budget/alert và không bật replication hay PITR nếu không cần thử nghiệm."], "freeTier": "Request, storage, backup, PITR, stream/index và replication có thể tính phí; kiểm tra quyền lợi hiện hành của tài khoản và region.", "cleanup": ["Xóa bảng thử nếu dữ liệu không cần giữ.", "Kiểm tra xóa PITR/backup và global replica riêng nếu đã bật.", "Gỡ IAM policy chỉ phục vụ bài lab sau khi xác nhận không dùng nơi khác."] }
+}

@@ -1,0 +1,6 @@
+{
+  "id": "elastic-beanstalk", "name": "AWS Elastic Beanstalk", "category": "Compute", "tier": "minor",
+  "overview": "AWS Elastic Beanstalk deploys and manages web applications while provisioning supporting AWS resources; users retain access to underlying resources.",
+  "examSignals": ["Deploy web application with managed environment/platform and configurable underlying resources: Elastic Beanstalk", "Simplest managed web app deploy from source/image: App Runner"],
+  "compareWith": [{ "service": "AWS App Runner", "diff": "Beanstalk offers environment/resource configurability; App Runner provides a more streamlined managed web service deployment." }]
+}

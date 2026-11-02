@@ -1,0 +1,12 @@
+{
+  "id": "ssm", "name": "AWS Systems Manager", "category": "Management and Governance", "tier": "core",
+  "overview": "AWS Systems Manager cung cấp công cụ quản lý tập trung fleet AWS/hybrid như Session Manager, Run Command, Patch Manager và Automation.",
+  "concepts": [{ "term": "Managed node", "desc": "EC2/server cần SSM Agent, IAM instance profile và network connectivity cần thiết." }, { "term": "Session Manager", "desc": "Truy cập shell an toàn mà không cần mở inbound SSH/RDP khi prerequisites đáp ứng." }, { "term": "Automation/Run Command", "desc": "Chạy documents/commands trên một hoặc nhiều nodes với rate/error controls." }],
+  "howItWorks": "SSM Agent giao tiếp outbound với Systems Manager endpoints bằng IAM permissions; operator chạy session/commands qua console/API và có thể ghi audit/logs.",
+  "useCases": ["Quản lý EC2/hybrid fleet tập trung", "Remote shell không mở inbound ports", "Patch/automation/command execution quy mô lớn"],
+  "pricing": "Nhiều tính năng cơ bản miễn phí, nhưng advanced parameters, session logging destinations và một số operations/features có thể tính phí.",
+  "examSignals": ["SSH/RDP ingress không muốn mở: Session Manager", "Chạy command trên nhiều EC2 không cần SSH: Run Command", "Patch compliance/fleet automation: Systems Manager tools"],
+  "compareWith": [{ "service": "AWS IAM", "diff": "SSM cung cấp node management workflows; IAM roles/policies cấp quyền cho nodes và operators." }, { "service": "AWS Secrets Manager", "diff": "SSM Parameter Store lưu cấu hình/parameters; Secrets Manager tập trung secrets lifecycle và rotation." }],
+  "facts": ["SSM Agent và instance role permissions phải đúng.", "Private nodes cần connectivity tới SSM endpoints hoặc network path phù hợp.", "Session/command output có thể chứa sensitive data; kiểm soát CloudWatch/S3 destinations."],
+  "practice": { "steps": ["Chọn một EC2 lab, gắn instance role least privilege và xác nhận SSM Agent online.", "Mở Session Manager hoặc chạy lệnh read-only như kiểm tra OS version.", "Không chạy shell commands hàng loạt trên fleet thật trong bài thực hành."], "freeTier": "Giá tùy SSM capability, managed node tier, parameter tier, logging destination và region; xem feature-specific pricing hiện hành.", "cleanup": ["Đóng Session Manager sessions và dừng automation/commands test.", "Xóa instance role/policy hoặc log destination chỉ tạo cho lab nếu không dùng.", "Terminate EC2 lab nếu không còn cần; không deregister production managed nodes."] }
+}

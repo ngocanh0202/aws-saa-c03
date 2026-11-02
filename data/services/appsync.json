@@ -1,0 +1,6 @@
+{
+  "id": "appsync", "name": "AWS AppSync", "category": "Front-End Web and Mobile", "tier": "minor",
+  "overview": "AWS AppSync là managed GraphQL API service kết nối clients với nhiều data sources, hỗ trợ real-time subscriptions theo cấu hình.",
+  "examSignals": ["GraphQL API với resolver tới nhiều AWS data sources: AppSync", "REST/HTTP API routing: API Gateway", "Push real-time update qua GraphQL subscriptions: AppSync"],
+  "compareWith": [{ "service": "Amazon API Gateway", "diff": "AppSync cung cấp GraphQL schema/resolvers/subscriptions; API Gateway quản lý REST/HTTP/WebSocket APIs." }]
+}

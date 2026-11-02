@@ -1,0 +1,6 @@
+{
+  "id": "mgn", "name": "AWS Application Migration Service", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Application Migration Service (MGN) supports lift-and-shift migration of source servers to AWS using continuous block-level replication and test/cutover workflows.",
+  "examSignals": ["Rehost server workloads to AWS with minimal conversion: Application Migration Service", "Disaster recovery replication/failover: AWS DRS", "Convert/migrate database engines: DMS/SCT"],
+  "compareWith": [{ "service": "AWS Elastic Disaster Recovery", "diff": "MGN focuses on one-time migration/cutover to AWS; DRS focuses on ongoing disaster recovery readiness and recovery drills." }]
+}

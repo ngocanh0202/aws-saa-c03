@@ -1,0 +1,12 @@
+{
+  "id": "elasticache", "name": "Amazon ElastiCache", "category": "Database", "tier": "core",
+  "overview": "Amazon ElastiCache cung cấp cache in-memory được quản lý (Redis OSS/Valkey hoặc Memcached tùy lựa chọn hiện hành) để tăng tốc truy cập dữ liệu.",
+  "concepts": [{ "term": "Cache strategy", "desc": "Cache-aside, write-through và TTL quyết định cách giữ cache nhất quán với nguồn dữ liệu." }, { "term": "Cluster/sharding", "desc": "Phân phối dữ liệu/traffic và scale capacity theo engine/topology." }, { "term": "Replication/failover", "desc": "Replication group và Multi-AZ/failover tăng khả năng phục hồi tùy engine/configuration." }],
+  "howItWorks": "Ứng dụng đọc cache trước; cache miss sẽ truy vấn data store và có thể ghi kết quả vào cache; TTL/invalidations kiểm soát stale data.",
+  "useCases": ["Giảm latency và database read load", "Session/cache ứng dụng", "In-memory data structure hoặc pub/sub theo tính năng engine"],
+  "pricing": "Tính theo node/serverless capacity, thời gian chạy, storage, backup, transfer và engine option; node idle vẫn có thể tính phí.",
+  "examSignals": ["Giảm database reads lặp lại/latency: ElastiCache", "Cần cache Redis/Valkey có replication/failover: chọn engine/topology tương ứng", "Nguồn dữ liệu cần bền vững: cache không thay database"],
+  "compareWith": [{ "service": "Amazon DynamoDB Accelerator (DAX)", "diff": "ElastiCache là cache in-memory linh hoạt cho nhiều data source/protocol; DAX là cache đọc tương thích DynamoDB API." }, { "service": "Amazon RDS", "diff": "ElastiCache tăng tốc cache và có thể mất dữ liệu; RDS là relational system of record bền vững." }],
+  "facts": ["Cache invalidation/TTL và xử lý cache miss vẫn cần logic ứng dụng.", "Không lưu dữ liệu duy nhất trong cache nếu không có durability guarantee phù hợp.", "Network isolation/authentication/encryption phải được cấu hình theo yêu cầu."],
+  "practice": { "steps": ["Chỉ tạo cache nhỏ trong sandbox; chọn subnet private và security group giới hạn client lab.", "Lưu/đọc một khóa giả, đặt TTL ngắn và quan sát cache miss/hit.", "Không lưu credentials, PII hoặc dữ liệu production; không mở endpoint cache ra Internet."], "freeTier": "Node hours/serverless usage, backup, transfer và data tiering có thể tính phí; không giả định cache instance được miễn phí. Kiểm tra giá trước khi tạo.", "cleanup": ["Xóa replication group/cache cluster hoặc serverless cache lab.", "Xóa snapshots/backup còn lại nếu không cần.", "Xóa subnet group, security group và IAM resources chỉ dùng cho lab sau khi không còn phụ thuộc."] }
+}

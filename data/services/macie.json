@@ -1,0 +1,6 @@
+{
+  "id": "macie", "name": "Amazon Macie", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "Amazon Macie discovers and helps protect sensitive data in S3 by analyzing bucket exposure and detecting sensitive information patterns.",
+  "examSignals": ["Discover sensitive/PII data in S3: Macie", "Monitor API/account threats: GuardDuty", "Manage S3 access policies/encryption: IAM/KMS/S3 controls"],
+  "compareWith": [{ "service": "Amazon GuardDuty", "diff": "Macie focuses on sensitive data and S3 exposure; GuardDuty focuses on threat detection signals." }]
+}

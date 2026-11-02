@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.claude/worktrees/
+.superpowers/
+.env.local
+.env.*.local
+.env

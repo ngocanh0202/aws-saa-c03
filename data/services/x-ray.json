@@ -1,0 +1,6 @@
+{
+  "id": "x-ray", "name": "AWS X-Ray", "category": "Developer Tools", "tier": "minor",
+  "overview": "AWS X-Ray traces requests across distributed application components to identify latency, errors and service dependencies.",
+  "examSignals": ["Distributed request tracing and service map: X-Ray", "Metrics/logs/alarms and operational dashboards: CloudWatch", "API/account activity audit: CloudTrail"],
+  "compareWith": [{ "service": "Amazon CloudWatch", "diff": "X-Ray follows end-to-end request traces across services; CloudWatch aggregates metrics, logs and alarms." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "translate", "name": "Amazon Translate", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Translate provides neural machine translation between supported languages for text and document workflows.",
+  "examSignals": ["Machine translation of text between languages: Translate", "Speech-to-text: Transcribe", "Text-to-speech: Polly"],
+  "compareWith": [{ "service": "Amazon Comprehend", "diff": "Translate changes language; Comprehend analyzes language attributes such as entities and sentiment." }]
+}

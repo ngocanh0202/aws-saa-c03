@@ -1,0 +1,6 @@
+{
+  "id": "amplify", "name": "AWS Amplify", "category": "Front-End Web and Mobile", "tier": "minor",
+  "overview": "AWS Amplify cung cấp công cụ/framework để xây dựng, deploy và kết nối front-end/mobile apps với AWS backend capabilities.",
+  "examSignals": ["Front-end deployment/hosting với CI/CD tích hợp: Amplify Hosting", "React Native/web app cần managed auth/API/data integrations: Amplify libraries/backend tools"],
+  "compareWith": [{ "service": "Amazon S3", "diff": "Amplify hỗ trợ build/deploy front-end workflow; S3 lưu và phục vụ object/static files nhưng không tự cung cấp developer workflow." }]
+}

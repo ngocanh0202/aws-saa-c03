@@ -1,0 +1,6 @@
+{
+  "id": "eks", "name": "Amazon Elastic Kubernetes Service", "category": "Containers", "tier": "minor",
+  "overview": "Amazon EKS là managed Kubernetes service cung cấp Kubernetes control plane để chạy cluster workloads trên AWS.",
+  "examSignals": ["Kubernetes API/portable Kubernetes ecosystem required: EKS", "AWS-native orchestration with less Kubernetes overhead: ECS", "Containers without managing worker nodes: EKS Fargate or ECS Fargate when suitable"],
+  "compareWith": [{ "service": "Amazon ECS", "diff": "EKS vận hành Kubernetes-compatible clusters; ECS là AWS-native orchestrator không yêu cầu Kubernetes API." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "opensearch", "name": "Amazon OpenSearch Service", "category": "Analytics", "tier": "minor",
+  "overview": "Amazon OpenSearch Service runs managed OpenSearch clusters/serverless collections for search, log analytics and observability use cases.",
+  "examSignals": ["Full-text search/log analytics dashboards: OpenSearch", "Ad hoc SQL on S3 data: Athena", "Relational transactional database: RDS/Aurora"],
+  "compareWith": [{ "service": "Amazon Athena", "diff": "OpenSearch indexes data for search/near-real-time analytics; Athena runs SQL queries over data in S3." }]
+}

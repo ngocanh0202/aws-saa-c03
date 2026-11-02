@@ -1,0 +1,6 @@
+{
+  "id": "appflow", "name": "Amazon AppFlow", "category": "Application Integration", "tier": "minor",
+  "overview": "Amazon AppFlow chuyển dữ liệu giữa SaaS applications và AWS services bằng các flow có cấu hình, mapping và schedule/event triggers.",
+  "examSignals": ["No-code/low-code data transfer giữa SaaS như Salesforce và AWS: AppFlow", "Phức tạp custom streaming/integration logic: Lambda/EventBridge/Kinesis có thể phù hợp hơn"],
+  "compareWith": [{ "service": "AWS Glue", "diff": "AppFlow kết nối SaaS endpoints và chuyển dữ liệu; Glue tập trung catalog/ETL data pipeline." }]
+}

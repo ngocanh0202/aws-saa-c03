@@ -1,0 +1,6 @@
+{
+  "id": "fsx-openzfs", "name": "Amazon FSx for OpenZFS", "category": "Storage", "tier": "minor",
+  "overview": "Amazon FSx for OpenZFS provides managed shared file storage with OpenZFS capabilities for Linux workloads requiring low-latency file access.",
+  "examSignals": ["Managed OpenZFS filesystem and snapshots/clones: FSx for OpenZFS", "General-purpose NFS elastic shared file service: EFS"],
+  "compareWith": [{ "service": "Amazon EFS", "diff": "FSx for OpenZFS exposes OpenZFS features and performance choices; EFS is elastic managed NFS with AWS-managed filesystem semantics." }]
+}

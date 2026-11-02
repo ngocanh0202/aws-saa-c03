@@ -1,0 +1,20 @@
+{
+  "id": "elb", "name": "Elastic Load Balancing", "category": "Networking and Content Delivery", "tier": "core",
+  "overview": "Elastic Load Balancing phân phối lưu lượng đến các target theo loại load balancer, listener, rule và trạng thái health check.",
+  "concepts": [
+    { "term": "Application Load Balancer", "desc": "Lớp 7 cho HTTP/HTTPS, định tuyến theo host/path/header tới target group." },
+    { "term": "Network Load Balancer", "desc": "Lớp 4 cho TCP/UDP/TLS với khả năng xử lý kết nối hiệu năng cao." },
+    { "term": "Target group", "desc": "Nhóm đích và cấu hình health check; chỉ target đủ điều kiện nhận traffic." }
+  ],
+  "howItWorks": "Client kết nối listener; load balancer áp dụng listener rule rồi chọn target khỏe trong target group, đồng thời cập nhật trạng thái qua health checks.",
+  "useCases": ["Phân phối HTTP/HTTPS và định tuyến theo nội dung", "Cân bằng TCP/UDP/TLS ở lớp mạng", "Tăng khả dụng cho ứng dụng chạy trên nhiều target/AZ"],
+  "pricing": "Tính phí theo loại load balancer, thời gian chạy, đơn vị/công suất sử dụng và data transfer; mức đo khác nhau giữa các loại.",
+  "examSignals": ["Định tuyến HTTP theo host/path: ALB", "Lưu lượng TCP/UDP/TLS hoặc cần địa chỉ IP tĩnh: NLB", "Thiết bị mạng ảo bên thứ ba: Gateway Load Balancer"],
+  "compareWith": [{ "service": "Amazon CloudFront", "diff": "ELB phân phối traffic tới targets trong ứng dụng; CloudFront là CDN edge cho cache/phân phối nội dung toàn cầu." }, { "service": "Amazon Route 53", "diff": "Route 53 phân giải DNS/định tuyến DNS; ELB xử lý kết nối và phân phối tới targets." }],
+  "facts": ["Health check quyết định target có nhận traffic hay không.", "ALB hoạt động lớp ứng dụng; NLB lớp vận chuyển; GWLB cho virtual appliances.", "Load balancer không tự sửa lỗi của ứng dụng hoặc database."],
+  "practice": {
+    "steps": ["Trong môi trường thử có ngân sách, tạo target group với backend vô hại và health check endpoint rõ ràng.", "Tạo load balancer nội bộ nếu không cần truy cập Internet; kiểm tra trạng thái target và rule.", "Không đăng ký workload production hoặc mở listener rộng cho bài thực hành."],
+    "freeTier": "Load balancer tính phí khi chạy và có thể phát sinh phí theo mức sử dụng/transfer; xác minh bảng giá theo region và loại trước khi tạo.",
+    "cleanup": ["Xóa load balancer trước.", "Xóa listener/rule và target group còn lại sau khi không còn phụ thuộc.", "Xóa backend, security group và tài nguyên mạng chỉ tạo riêng cho thử nghiệm."]
+  }
+}

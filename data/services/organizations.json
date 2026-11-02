@@ -1,0 +1,12 @@
+{
+  "id": "organizations", "name": "AWS Organizations", "category": "Management and Governance", "tier": "core",
+  "overview": "AWS Organizations quản lý tập trung nhiều AWS accounts theo organization, organizational units và policy controls.",
+  "concepts": [{ "term": "Organization/OU", "desc": "Cây account hierarchy gom accounts theo chức năng hoặc môi trường." }, { "term": "Service control policy", "desc": "SCP đặt maximum available permissions cho accounts/OUs; không cấp quyền IAM trực tiếp." }, { "term": "Consolidated billing", "desc": "Gom billing/usage accounts và có thể chia sẻ một số benefits theo điều kiện." }],
+  "howItWorks": "Management account tạo organization/accounts/OUs; policies kế thừa theo cây và giới hạn quyền hiệu lực cùng IAM/resource policies.",
+  "useCases": ["Tổ chức account multi-account theo môi trường/team", "Áp dụng guardrails bằng SCP", "Consolidated billing và delegated administration"],
+  "pricing": "Organizations cốt lõi không có phí riêng; dịch vụ quản trị liên quan và account workloads tính phí theo usage.",
+  "examSignals": ["Tạo/quản lý nhiều AWS accounts tập trung: Organizations", "Giới hạn maximum permissions trên nhiều accounts: SCP", "Landing zone/account provisioning guardrails: Control Tower xây trên Organizations"],
+  "compareWith": [{ "service": "AWS Control Tower", "diff": "Organizations cung cấp account hierarchy/policy; Control Tower tự động hóa landing zone và controls." }, { "service": "AWS IAM Identity Center", "diff": "Organizations quản trị accounts/guardrails; Identity Center quản lý workforce sign-in và permission sets." }],
+  "facts": ["SCP không áp dụng permissions cho management account như member accounts.", "SCP explicit deny có thể ngăn quyền dù IAM policy allow.", "Account close/leave organization có hậu quả billing/data; không thử với production accounts."],
+  "practice": { "steps": ["Không tạo/xóa accounts hoặc thay SCP trong organization thật khi học.", "Dùng sandbox organization riêng hoặc review policy examples và kiểm tra bằng simulation.", "Thử deny một permission chỉ trên disposable member account với break-glass plan."], "freeTier": "Organizations core thường không tính phí riêng nhưng member-account resources tiếp tục tính phí; account creation/support có thể có yêu cầu riêng.", "cleanup": ["Gỡ thử nghiệm chỉ trên sandbox OU/member account theo quy trình organization.", "Revert test SCP/attachments sau khi xác minh không tác động accounts khác.", "Đóng account lab theo AWS process và dọn resource trước; không đóng account production."] }
+}

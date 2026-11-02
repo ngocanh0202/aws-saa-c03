@@ -1,0 +1,6 @@
+{
+  "id": "aws-batch", "name": "AWS Batch", "category": "Compute", "tier": "minor",
+  "overview": "AWS Batch lập lịch và chạy batch jobs trên compute resources được quản lý, co giãn theo queue, priority và yêu cầu job.",
+  "examSignals": ["Batch jobs cần queue/scheduling và compute scale tự động: AWS Batch", "Workflow điều phối nhiều bước có branching/retry: Step Functions"],
+  "compareWith": [{ "service": "AWS Step Functions", "diff": "Batch lập lịch job compute; Step Functions điều phối workflow/state transitions và có thể gọi Batch." }]
+}

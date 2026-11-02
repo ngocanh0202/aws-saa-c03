@@ -1,0 +1,12 @@
+{
+  "id": "sqs", "name": "Amazon SQS", "category": "Application Integration", "tier": "core",
+  "overview": "Amazon SQS là dịch vụ message queue được quản lý để tách rời producer và consumer, hấp thụ đột biến tải và xử lý bất đồng bộ.",
+  "concepts": [{ "term": "Visibility timeout", "desc": "Ẩn message tạm thời sau khi consumer nhận; consumer cần xóa message sau xử lý thành công." }, { "term": "Dead-letter queue", "desc": "Nhận message lỗi sau số lần thử cấu hình để cách ly và phân tích." }, { "term": "Standard/FIFO", "desc": "Standard tối ưu thông lượng, giao nhận ít nhất một lần; FIFO hỗ trợ thứ tự trong message group và deduplication theo tính năng." }],
+  "howItWorks": "Producer gửi message vào queue; consumer poll, xử lý trong visibility timeout rồi xóa; message không xóa được sẽ hiện lại và có thể chuyển DLQ.",
+  "useCases": ["Tách rời microservices", "Buffer công việc nền và làm phẳng burst", "Retry xử lý bất đồng bộ"],
+  "pricing": "Tính theo request/API operation, payload chunks và tùy chọn như SSE-KMS; mức giá và free allowances phụ thuộc region/tài khoản.",
+  "examSignals": ["Buffer work và giảm coupling: SQS", "Giữ thứ tự message: FIFO với cùng message group phù hợp", "Message lỗi lặp lại: redrive policy/DLQ"],
+  "compareWith": [{ "service": "Amazon SNS", "diff": "SQS là queue kéo/poll để consumer xử lý độc lập; SNS push fan-out tới nhiều subscriber." }, { "service": "Amazon EventBridge", "diff": "SQS lưu message chờ consumer; EventBridge định tuyến sự kiện theo rule tới targets." }],
+  "facts": ["Consumer phải delete message sau khi xử lý thành công.", "Visibility timeout quá ngắn có thể khiến xử lý trùng; ứng dụng nên idempotent.", "DLQ không tự xử lý hoặc xóa lỗi nghiệp vụ."],
+  "practice": { "steps": ["Tạo queue thử với retention ngắn hợp lý và gửi message giả không chứa dữ liệu nhạy cảm.", "Poll rồi xóa một message; quan sát message xuất hiện lại nếu không xóa trong visibility window.", "Không kết nối production producer/consumer hay gửi dữ liệu khách hàng."], "freeTier": "API request, payload, encryption và DLQ có thể tính phí; kiểm tra AWS pricing/ưu đãi hiện tại trước khi tạo traffic thử.", "cleanup": ["Purge hoặc xóa queue thử để loại bỏ message còn lưu.", "Xóa DLQ và KMS key/policy thử nếu có tạo riêng và sau thời gian chờ bắt buộc.", "Gỡ IAM policy chỉ tạo cho bài thực hành."] }
+}

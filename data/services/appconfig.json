@@ -1,0 +1,6 @@
+{
+  "id": "appconfig", "name": "AWS AppConfig", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS AppConfig quản lý và triển khai application configuration/feature flags theo kiểm tra và rollout có kiểm soát.",
+  "examSignals": ["Feature flag/config rollout có validation và gradual deployment: AppConfig", "Secrets/certificates cần rotation và secret lifecycle: Secrets Manager"],
+  "compareWith": [{ "service": "AWS Systems Manager Parameter Store", "diff": "AppConfig tập trung deployment/validation config changes; Parameter Store lưu và truy xuất parameter values." }]
+}

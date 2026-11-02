@@ -1,0 +1,6 @@
+{
+  "id": "sts", "name": "AWS Security Token Service (AWS STS)", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS STS issues temporary security credentials for users, applications and federated principals to access AWS resources.",
+  "examSignals": ["Assume role/federate and obtain temporary credentials: STS", "Define identity permissions and role trust: IAM", "Workforce account SSO/permission assignments: IAM Identity Center"],
+  "compareWith": [{ "service": "AWS IAM", "diff": "STS issues temporary session credentials; IAM defines roles, trust and permissions those sessions use." }]
+}

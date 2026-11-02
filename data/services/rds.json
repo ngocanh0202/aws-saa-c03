@@ -1,0 +1,20 @@
+{
+  "id": "rds", "name": "Amazon RDS", "category": "Database", "tier": "core",
+  "overview": "Amazon RDS quản lý các tác vụ vận hành cơ sở dữ liệu quan hệ như provisioning, backup, patching và giám sát.",
+  "concepts": [
+    { "term": "DB instance", "desc": "Môi trường database được quản lý, chạy engine và cấu hình compute/storage đã chọn." },
+    { "term": "Multi-AZ", "desc": "Tăng tính sẵn sàng bằng standby đồng bộ; standby DB instance truyền thống không phục vụ đọc." },
+    { "term": "Read replica", "desc": "Bản sao đọc bất đồng bộ để mở rộng đọc; không thay thế backup/HA và có chi phí riêng." }
+  ],
+  "howItWorks": "Chọn engine, cấu hình instance/storage, mạng và credentials; RDS quản lý hạ tầng database, backup tự động và cơ chế HA theo cấu hình.",
+  "useCases": ["Ứng dụng cần SQL và engine quan hệ quen thuộc", "Database vận hành cần backup/patch/monitoring được quản lý", "Đọc mở rộng bằng read replica"],
+  "pricing": "Chi phí gồm instance, storage, I/O tùy loại, backup vượt ngưỡng áp dụng, Multi-AZ, replica, data transfer và license tùy engine.",
+  "examSignals": ["Giảm tác vụ quản trị relational database", "HA cần Multi-AZ; đọc mở rộng cần read replica", "Khôi phục theo thời điểm qua automated backups/PITR"],
+  "compareWith": [{ "service": "Amazon Aurora", "diff": "Aurora là relational engine tương thích MySQL/PostgreSQL với kiến trúc lưu trữ riêng; RDS hỗ trợ nhiều engine quản lý." }, { "service": "Amazon DynamoDB", "diff": "RDS cung cấp relational SQL; DynamoDB là NoSQL key-value/document được quản lý." }],
+  "facts": ["Multi-AZ standby phục vụ failover, không phải read scaling.", "Read replica thường sao chép bất đồng bộ.", "Backup và snapshot có thể tồn tại sau khi xóa DB; kiểm tra retention trước cleanup."],
+  "practice": {
+    "steps": ["Trong sandbox được phép tính phí, tạo DB thử nhỏ, không public và giới hạn security group tới nguồn cần thiết.", "Kết nối bằng dữ liệu giả, kiểm tra backup/monitoring mà không nạp dữ liệu nhạy cảm.", "Không bật Multi-AZ/replica nếu mục tiêu chỉ là làm quen giao diện."],
+    "freeTier": "DB instance, storage, I/O, backup và transfer có thể tính phí; ưu đãi phụ thuộc engine/khu vực/tài khoản. Xác nhận giá trước khi tạo.",
+    "cleanup": ["Xóa DB instance thử và chọn snapshot cuối cùng chỉ khi thực sự cần.", "Kiểm tra rồi xóa snapshot, automated backup được giữ lại và read replica.", "Xóa security group/subnet group thử nếu không còn tài nguyên sử dụng."]
+  }
+}

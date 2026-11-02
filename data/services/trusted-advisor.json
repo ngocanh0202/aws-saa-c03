@@ -1,0 +1,6 @@
+{
+  "id": "trusted-advisor", "name": "AWS Trusted Advisor", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS Trusted Advisor provides checks/recommendations across cost optimization, performance, security, fault tolerance and service limits according to plan/features.",
+  "examSignals": ["AWS best-practice recommendations across account dimensions: Trusted Advisor", "Resource compliance/configuration history: AWS Config", "Cost trend exploration: Cost Explorer"],
+  "compareWith": [{ "service": "AWS Config", "diff": "Trusted Advisor offers AWS recommendations/checks; Config tracks resource configuration and evaluates configured rules." }]
+}

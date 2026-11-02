@@ -1,0 +1,6 @@
+{
+  "id": "lake-formation", "name": "AWS Lake Formation", "category": "Analytics", "tier": "minor",
+  "overview": "AWS Lake Formation helps build/govern data lakes on S3 and centrally manage fine-grained data access permissions integrated with the Glue Data Catalog.",
+  "examSignals": ["Centralized fine-grained permissions for S3 data lake tables/columns: Lake Formation", "Object-level access policy only: S3 IAM/bucket policies", "ETL/catalog transformation: Glue"],
+  "compareWith": [{ "service": "AWS Glue", "diff": "Lake Formation governs data lake access and administration; Glue catalogs metadata and runs data integration/ETL jobs." }]
+}

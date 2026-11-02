@@ -1,0 +1,305 @@
+[
+  {
+    "id": 1,
+    "stemVi": "Một tổ chức tài chính lớn vận hành trung tâm dữ liệu on-premises với hàng trăm petabyte dữ liệu được quản lý trên Distributed File System (DFS) của Microsoft. CTO muốn tổ chức chuyển sang môi trường hybrid cloud và chạy các workload phân tích dùng nhiều dữ liệu (data-intensive analytics) có hỗ trợ DFS.",
+    "promptVi": "AWS service nào sau đây có thể hỗ trợ việc di chuyển các workload này?",
+    "options": [
+      { "key": "A", "textVi": "Amazon FSx for Windows File Server", "reason": "FSx for Windows File Server là hệ thống file được quản lý hoàn toàn, chạy trên Windows Server, truy cập qua giao thức SMB và tích hợp Microsoft Active Directory. Nó hỗ trợ dùng Microsoft DFS để gom các share thành một cấu trúc thư mục duy nhất lên tới hàng trăm PB — khớp đúng quy mô và yêu cầu DFS của đề." },
+      { "key": "B", "textVi": "Amazon FSx for Lustre", "reason": "FSx for Lustre là hệ thống file hiệu năng cao cho machine learning, HPC, xử lý video, mô hình tài chính; nó không hỗ trợ Microsoft DFS nên không đáp ứng yêu cầu chạy workload có hỗ trợ DFS." },
+      { "key": "C", "textVi": "AWS Directory Service for Microsoft Active Directory (AWS Managed Microsoft AD)", "reason": "AWS Managed Microsoft AD cung cấp Active Directory được quản lý trên AWS cho các workload cần thư mục người dùng; nó là dịch vụ định danh, không phải nơi lưu trữ file và không hỗ trợ DFS." },
+      { "key": "D", "textVi": "Microsoft SQL Server trên AWS", "reason": "Chạy Microsoft SQL Server trên AWS chỉ giúp di chuyển cơ sở dữ liệu quan hệ; nó không phải hệ thống file và không hỗ trợ DFS." }
+    ],
+    "explanationVi": "Từ khóa then chốt là dữ liệu đang nằm trên Microsoft DFS với quy mô hàng trăm PB. Trong các dịch vụ AWS, chỉ FSx for Windows File Server hỗ trợ DFS Namespaces để gom nhiều file system thành một cây thư mục chung, đồng thời truy cập qua SMB và tích hợp Active Directory. Bẫy thường gặp: thấy chữ \"analytics\" và \"data-intensive\" thì nghĩ ngay tới FSx for Lustre, nhưng Lustre không hỗ trợ DFS; còn Managed Microsoft AD và SQL Server chỉ \"có mùi Microsoft\" chứ không phải dịch vụ lưu trữ file.",
+    "keyHint": "\"Microsoft’s Distributed File System (DFS)\" + \"hundreds of petabytes\" → Amazon FSx for Windows File Server (hỗ trợ DFS, SMB, AD)."
+  },
+  {
+    "id": 2,
+    "stemVi": "Nhóm tìm nguồn hàng (sourcing team) tại trụ sở Mỹ của một công ty thương mại điện tử toàn cầu đang soạn một bảng tính danh mục sản phẩm mới. Bảng tính được lưu trên một Amazon Elastic File System (Amazon EFS) tạo ở region us-east-1. Các đồng nghiệp của nhóm ở những AWS region khác như Asia Pacific và Europe cũng muốn cùng cộng tác trên bảng tính này.",
+    "promptVi": "Với vai trò solutions architect, bạn khuyến nghị gì để cho phép cộng tác này với ít công vận hành nhất (LEAST amount of operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Bảng tính trên Amazon Elastic File System (Amazon EFS) có thể được truy cập từ các AWS region khác bằng kết nối inter-region VPC peering", "reason": "EC2 instance có thể truy cập EFS xuyên AZ, xuyên region và xuyên VPC; từ region khác chỉ cần inter-region VPC peering là mount được cùng một file system. Mọi nhóm làm việc trên đúng một file, không phải sao chép hay viết thêm ứng dụng — ít công vận hành nhất." },
+      { "key": "B", "textVi": "Bảng tính sẽ phải được sao chép vào Amazon S3, sau đó có thể truy cập từ bất kỳ AWS region nào", "reason": "S3 không cho sửa object tại chỗ (in-place edit) và không tuân thủ POSIX, nên muốn cộng tác phải tự phát triển ứng dụng \"giả lập sửa tại chỗ\" — tốn nhiều công vận hành." },
+      { "key": "C", "textVi": "Dữ liệu bảng tính sẽ phải được chuyển vào một cơ sở dữ liệu Amazon RDS for MySQL, sau đó có thể truy cập từ bất kỳ AWS region nào", "reason": "Đưa bảng tính vào RDS for MySQL buộc phải viết code riêng để tái tạo chức năng bảng tính trên cơ sở dữ liệu, tốn rất nhiều công phát triển và vận hành." },
+      { "key": "D", "textVi": "Bảng tính sẽ phải được sao chép vào các Amazon EFS file system ở các AWS region khác, vì Amazon EFS là dịch vụ cấp region và không cho phép truy cập từ AWS region khác", "reason": "Tiền đề sai: EFS vẫn truy cập được từ region khác qua VPC peering. Hơn nữa sao chép thành nhiều bản thì mỗi nhóm sửa \"file của riêng mình\", không còn cộng tác trên một file chung." }
+    ],
+    "explanationVi": "Yêu cầu là nhiều region cùng sửa một bảng tính với ít công vận hành nhất. EFS là dịch vụ cấp region nhưng EC2 ở region khác vẫn mount được qua inter-region VPC peering (on-premises thì qua Direct Connect hoặc VPN), nên giữ nguyên file trên EFS là gọn nhất. Bẫy: nghĩ \"regional service\" nghĩa là không truy cập được từ region khác rồi đi sao chép file, hoặc chuyển sang S3/RDS vốn không hỗ trợ sửa file tại chỗ kiểu bảng tính.",
+    "keyHint": "\"Amazon EFS created in us-east-1\" + \"other AWS regions ... collaborate\" + \"LEAST amount of operational overhead\" → mount cùng EFS qua inter-region VPC peering."
+  },
+  {
+    "id": 3,
+    "stemVi": "Một startup y tế cần áp dụng các hướng dẫn về tuân thủ (compliance) và quy định pháp lý cho các object lưu trong Amazon S3. Một yêu cầu then chốt là phải bảo vệ đầy đủ trước việc xóa nhầm object.",
+    "promptVi": "Với vai trò solutions architect, bạn khuyến nghị những gì để đáp ứng các hướng dẫn này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Bật versioning trên Amazon S3 bucket", "reason": "Versioning giữ nhiều phiên bản của mỗi object trong cùng bucket. Khi xóa, S3 chỉ chèn một delete marker làm phiên bản hiện tại thay vì xóa vĩnh viễn, nên luôn khôi phục được phiên bản trước — bảo vệ trực tiếp trước việc xóa nhầm hoặc ghi đè." },
+      { "key": "B", "textVi": "Bật multi-factor authentication (MFA) delete trên Amazon S3 bucket", "reason": "MFA delete buộc phải xác thực thêm một lớp trước khi object bị xóa vĩnh viễn khỏi bucket, tạo thêm rào chắn chống xóa nhầm bên cạnh versioning." },
+      { "key": "C", "textVi": "Tạo event trigger khi xóa bất kỳ Amazon S3 object nào. Event gọi một thông báo Amazon Simple Notification Service (Amazon SNS) gửi email cho IT manager", "reason": "Thông báo chỉ được gửi sau khi object đã bị xóa, nên không ngăn được việc xóa nhầm — chỉ báo tin khi sự việc đã xảy ra." },
+      { "key": "D", "textVi": "Thiết lập quy trình xin phê duyệt của quản lý trước khi xóa Amazon S3 object", "reason": "Quy trình phê duyệt thủ công không phải cơ chế kỹ thuật của S3, không thực sự chặn được thao tác xóa trên bucket; đây chỉ là lựa chọn gây nhiễu." },
+      { "key": "E", "textVi": "Thay đổi cấu hình trên Amazon S3 console để người dùng phải xác nhận thêm khi xóa bất kỳ Amazon S3 object nào", "reason": "S3 không có cấu hình nào để yêu cầu xác nhận bổ sung trước khi xóa object, nên phương án này không làm được về kỹ thuật." }
+    ],
+    "explanationVi": "Đề cần bảo vệ object S3 trước việc xóa nhầm. Versioning cho phép khôi phục mọi phiên bản cũ (xóa chỉ tạo delete marker), còn MFA delete thêm một bước xác thực trước khi xóa vĩnh viễn — hai cơ chế này bổ trợ nhau. Bẫy: thông báo SNS sau khi xóa chỉ là phát hiện, không phải ngăn chặn; quy trình phê duyệt hay \"xác nhận thêm trên console\" không phải tính năng của S3.",
+    "keyHint": "\"protection against accidental deletion of objects\" trong S3 → bật Versioning + MFA delete."
+  },
+  {
+    "id": 4,
+    "stemVi": "Nhóm sản phẩm tại một startup nhận ra thị trường cần hỗ trợ cả giao tiếp client-server có trạng thái (stateful) và không trạng thái (stateless) qua các giao diện lập trình ứng dụng (API) được phát triển trên nền tảng của họ. Bạn được startup thuê làm solutions architect để xây dựng giải pháp đáp ứng nhu cầu này bằng Amazon API Gateway.",
+    "promptVi": "Bạn xác định phát biểu nào sau đây là đúng?",
+    "options": [
+      { "key": "A", "textVi": "Amazon API Gateway tạo RESTful API cho phép giao tiếp client-server không trạng thái (stateless), và Amazon API Gateway cũng tạo WebSocket API tuân theo giao thức WebSocket, cho phép giao tiếp hai chiều đồng thời (full-duplex) có trạng thái (stateful) giữa client và server", "reason": "Đúng cả hai vế: RESTful API của API Gateway dựa trên HTTP, không trạng thái, dùng các phương thức GET, POST, PUT, PATCH, DELETE; WebSocket API giữ kết nối lâu dài, có trạng thái, full-duplex và định tuyến message theo nội dung." },
+      { "key": "B", "textVi": "Amazon API Gateway tạo RESTful API cho phép giao tiếp client-server có trạng thái (stateful), và Amazon API Gateway cũng tạo WebSocket API tuân theo giao thức WebSocket, cho phép giao tiếp full-duplex có trạng thái (stateful) giữa client và server", "reason": "Sai ở vế RESTful API: REST trên HTTP là không trạng thái, mỗi request độc lập, không phải stateful." },
+      { "key": "C", "textVi": "Amazon API Gateway tạo RESTful API cho phép giao tiếp client-server không trạng thái (stateless), và Amazon API Gateway cũng tạo WebSocket API tuân theo giao thức WebSocket, cho phép giao tiếp full-duplex không trạng thái (stateless) giữa client và server", "reason": "Sai ở vế WebSocket: WebSocket duy trì một kết nối liên tục giữa client và server nên là stateful, không phải stateless." },
+      { "key": "D", "textVi": "Amazon API Gateway tạo RESTful API cho phép giao tiếp client-server có trạng thái (stateful), và Amazon API Gateway cũng tạo WebSocket API tuân theo giao thức WebSocket, cho phép giao tiếp full-duplex không trạng thái (stateless) giữa client và server", "reason": "Đảo ngược cả hai vế: RESTful API thực ra là stateless, còn WebSocket API thực ra là stateful." }
+    ],
+    "explanationVi": "API Gateway hỗ trợ hai kiểu API phục vụ đúng hai nhu cầu của đề: RESTful API (HTTP, không trạng thái) và WebSocket API (kết nối lâu dài, có trạng thái, full-duplex, dùng cho ứng dụng hai chiều thời gian thực). Chỉ cần nhớ cặp \"REST = stateless, WebSocket = stateful\" là loại được các phát biểu đảo vế.",
+    "keyHint": "\"stateful and stateless client-server communications\" với API Gateway → RESTful API là stateless, WebSocket API là stateful."
+  },
+  {
+    "id": 5,
+    "stemVi": "Một ngân hàng lớn đang dùng Amazon Simple Queue Service (Amazon SQS) để di chuyển một số ứng dụng ngân hàng lõi lên cloud nhằm bảo đảm tính sẵn sàng cao và hiệu quả chi phí, đồng thời giảm độ phức tạp và gánh nặng quản trị. Nhóm phát triển dự kiến tốc độ đỉnh khoảng 1000 message mỗi giây được xử lý qua SQS. Điều quan trọng là các message phải được xử lý theo đúng thứ tự.",
+    "promptVi": "Lựa chọn nào sau đây có thể dùng để triển khai hệ thống này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon SQS FIFO (First-In-First-Out) queue ở chế độ batch 4 message mỗi thao tác để xử lý message ở tốc độ đỉnh", "reason": "FIFO queue giữ đúng thứ tự gửi/nhận. Mặc định FIFO hỗ trợ 300 thao tác mỗi giây; gom 4 message mỗi thao tác thì đạt tới 1200 message mỗi giây, đủ cho mức đỉnh 1000 message mỗi giây." },
+      { "key": "B", "textVi": "Dùng Amazon SQS standard queue để xử lý message", "reason": "Standard queue chỉ sắp thứ tự theo kiểu best-effort, đôi khi message được giao khác thứ tự đã gửi, nên vi phạm yêu cầu xử lý theo thứ tự." },
+      { "key": "C", "textVi": "Dùng Amazon SQS FIFO (First-In-First-Out) queue để xử lý message", "reason": "Không dùng batch, FIFO queue mặc định chỉ hỗ trợ khoảng 300 message mỗi giây, không đủ cho mức đỉnh 1000 message mỗi giây của đề." },
+      { "key": "D", "textVi": "Dùng Amazon SQS FIFO (First-In-First-Out) queue ở chế độ batch 2 message mỗi thao tác để xử lý message ở tốc độ đỉnh", "reason": "Batch 2 message mỗi thao tác chỉ đạt khoảng 300 × 2 = 600 message mỗi giây, vẫn thấp hơn mức đỉnh 1000 message mỗi giây." }
+    ],
+    "explanationVi": "Yêu cầu \"processed in order\" loại ngay standard queue, chỉ còn FIFO. Theo hạn mức mặc định, FIFO queue xử lý 300 thao tác mỗi giây và tối đa 10 message mỗi batch (tức tới 3000 message mỗi giây); để đạt 1000 message mỗi giây cần ít nhất 4 message mỗi thao tác (300 × 4 = 1200). Bẫy là quên phép nhân này và chọn FIFO không batch hoặc batch quá nhỏ. Lưu ý: hiện nay FIFO còn có chế độ high throughput cho thông lượng cao hơn nhiều, nhưng đề đang tính theo hạn mức mặc định.",
+    "keyHint": "\"1000 messages per second\" + \"processed in order\" → SQS FIFO + batching (300 thao tác/giây × 4 message = 1200).",
+    "review": {
+      "reason": "Chưa chắc chắn: Phương án dùng FIFO queue với batch 4 message mỗi thao tác dựa trên giới hạn mặc định cũ của FIFO queue (300 thao tác/giây cho mỗi loại API send/receive/delete, tức 1.200 message/giây khi batch 4). Phép tính này vẫn đúng và đây vẫn là ý đồ của đề. Tuy nhiên hiện nay SQS FIFO có chế độ high throughput: SQS tự cấp thêm partition (mỗi partition 300 thao tác/giây, hoặc 3.000 message/giây khi batch), nên phương án chỉ ghi \"dùng Amazon SQS FIFO queue\" (không batch) cũng có thể đạt 1.000 message/giây nếu bật high throughput và dùng nhiều message group ID. Khi đi thi vẫn nên chọn phương án batch 4 message vì đề ngầm giả định FIFO ở chế độ mặc định."
+    }
+  },
+  {
+    "id": 6,
+    "stemVi": "Một thực tập sinh kỹ thuật phần mềm tại công ty thương mại điện tử đang viết tài liệu quy trình cấp phát Amazon EC2 instance qua Amazon EC2 API. Các instance này dùng cho một ứng dụng nội bộ xử lý dữ liệu bảng lương của phòng Nhân sự. Cậu ấy muốn làm nổi bật những loại volume không thể dùng làm boot volume.",
+    "promptVi": "Bạn có thể giúp thực tập sinh xác định những loại storage volume KHÔNG THỂ dùng làm boot volume khi tạo instance không? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Throughput Optimized Hard disk drive (st1)", "reason": "st1 là volume HDD tối ưu cho workload streaming lớn, đo hiệu năng bằng throughput (MiB/s); theo tài liệu EBS, st1 không được dùng làm boot volume — đúng là loại cần chỉ ra." },
+      { "key": "B", "textVi": "Cold Hard disk drive (sc1)", "reason": "sc1 là volume HDD giá rẻ cho dữ liệu ít truy cập; cũng như st1, sc1 không được dùng làm boot volume — đúng là loại cần chỉ ra." },
+      { "key": "C", "textVi": "General Purpose Solid State Drive (gp2)", "reason": "gp2 là volume SSD đa dụng và là lựa chọn boot volume phổ biến nhất, nên không thuộc nhóm \"không thể làm boot volume\"." },
+      { "key": "D", "textVi": "Provisioned IOPS Solid state drive (io1)", "reason": "io1 là volume SSD có IOPS cấp phát sẵn và dùng được làm boot volume, nên không thuộc nhóm cần chỉ ra." },
+      { "key": "E", "textVi": "Instance Store", "reason": "Instance store dùng được làm root device cho các AMI loại instance store-backed, nên vẫn có thể làm boot volume." }
+    ],
+    "explanationVi": "EBS chia làm hai nhóm: SSD (gp2/gp3, io1/io2) tối ưu cho giao dịch nhỏ, đo bằng IOPS; HDD (st1, sc1) tối ưu cho streaming lớn, đo bằng throughput. Hai loại HDD st1 và sc1 không thể làm boot volume, còn các loại SSD và instance store đều làm được. Mẹo nhớ: boot volume cần I/O ngẫu nhiên nhỏ, đúng điểm yếu của HDD.",
+    "keyHint": "\"CANNOT be used as boot volumes\" → các volume EBS loại HDD: st1 và sc1."
+  },
+  {
+    "id": 7,
+    "stemVi": "Người sáng lập duy nhất của một startup công nghệ vừa tạo một AWS account mới. Anh ấy đã cấp phát một Amazon EC2 instance 1A chạy ở Region A. Sau đó anh ấy tạo snapshot của instance 1A rồi tạo một Amazon Machine Image (AMI) mới ở Region A từ snapshot này. AMI này tiếp đó được sao chép sang Region B. Người sáng lập cấp phát instance 1B ở Region B bằng AMI mới này ở Region B.",
+    "promptVi": "Tại thời điểm này, những thực thể nào tồn tại ở Region B?",
+    "options": [
+      { "key": "A", "textVi": "1 Amazon EC2 instance, 1 AMI và 1 snapshot tồn tại ở Region B", "reason": "Khi sao chép AMI từ Region A sang Region B, AWS tự động tạo snapshot nền ở Region B vì AMI dựa trên snapshot; sau đó instance 1B được tạo từ AMI này. Do đó Region B có đủ 1 instance, 1 AMI và 1 snapshot." },
+      { "key": "B", "textVi": "1 Amazon EC2 instance và 1 AMI tồn tại ở Region B", "reason": "Thiếu snapshot: AMI sao chép sang Region B luôn đi kèm snapshot nền được tạo ở Region B." },
+      { "key": "C", "textVi": "1 Amazon EC2 instance và 1 snapshot tồn tại ở Region B", "reason": "Thiếu AMI: chính AMI đã được sao chép sang Region B và dùng để tạo instance 1B." },
+      { "key": "D", "textVi": "1 Amazon EC2 instance và 2 AMI tồn tại ở Region B", "reason": "Chỉ có một AMI được sao chép sang Region B; việc tạo instance từ AMI không sinh thêm AMI, và phương án này lại bỏ sót snapshot." }
+    ],
+    "explanationVi": "AMI chứa thông tin cần để khởi chạy instance và được xây trên các EBS snapshot bên dưới. Vì vậy sao chép AMI sang region khác thực chất là sao chép cả snapshot nền, nên Region B có thêm 1 snapshot cùng với 1 AMI; khởi chạy instance 1B từ AMI đó thêm 1 instance. Bẫy là quên rằng AMI luôn gắn với snapshot.",
+    "keyHint": "\"AMI is then copied into another Region B\" → sao chép AMI kéo theo snapshot nền ở region đích: 1 instance + 1 AMI + 1 snapshot."
+  },
+  {
+    "id": 8,
+    "stemVi": "Một doanh nghiệp chạy ứng dụng dạng microservices trên Amazon EKS, triển khai trên các worker node EC2. Ứng dụng gồm một service giao diện frontend (UI) làm việc với Amazon DynamoDB và một service xử lý dữ liệu lưu và lấy file từ Amazon S3. Tổ chức cần áp dụng nghiêm ngặt quyền tối thiểu (least privilege): các Pod của UI chỉ được truy cập DynamoDB, còn các Pod xử lý dữ liệu chỉ được truy cập S3.",
+    "promptVi": "Giải pháp nào áp dụng tốt nhất các kiểm soát truy cập này trong EKS cluster?",
+    "options": [
+      { "key": "A", "textVi": "Tạo các Kubernetes service account riêng cho service UI và service dữ liệu. Dùng IAM Roles for Service Accounts (IRSA) để gắn mỗi service account với một IAM role chỉ có các quyền cần thiết. Cấp quyền DynamoDB cho các Pod UI và quyền S3 cho các Pod dữ liệu", "reason": "IRSA là cách AWS khuyến nghị để cấp quyền IAM chi tiết cho từng Pod: mỗi service account gắn một IAM role chỉ có đúng quyền cần thiết, Pod assume role qua OIDC identity provider của EKS mà không dùng chung credential của EC2 node. Nhờ đó UI chỉ vào được DynamoDB, service dữ liệu chỉ vào được S3 — đúng least privilege và cô lập ở mức Pod." },
+      { "key": "B", "textVi": "Tạo một Kubernetes service account dùng chung cho mọi Pod. Gắn một IAM role duy nhất cho account này với cả hai policy AmazonS3FullAccess và AmazonDynamoDBFullAccess", "reason": "Một service account dùng chung với role có full quyền cả S3 lẫn DynamoDB khiến Pod UI vào được S3 và Pod dữ liệu vào được DynamoDB, phá vỡ nguyên tắc least privilege mà đề yêu cầu." },
+      { "key": "C", "textVi": "Gắn IAM policy trực tiếp vào từng Pod bằng Kubernetes annotation. Gán policy S3 cho các Pod data-service và policy DynamoDB cho các Pod UI", "reason": "Không thể gắn IAM policy trực tiếp vào Pod bằng annotation; ngoài IRSA, Pod chỉ thừa hưởng quyền từ IAM role của node, nên mọi Pod trên cùng node dùng chung quyền. Phương án này không khả thi về kỹ thuật." },
+      { "key": "D", "textVi": "Tạo IAM policy cho quyền DynamoDB và S3, gắn cả hai vào EC2 instance profile mà các EKS node dùng. Dùng Kubernetes role-based access control (RBAC) để kiểm soát quyền ở mức service trong cluster", "reason": "Gắn cả hai policy vào instance profile của node thì mọi Pod trên node đều có cả hai quyền. Kubernetes RBAC chỉ kiểm soát truy cập Kubernetes API trong cluster, không giới hạn được truy cập tới S3 hay DynamoDB." }
+    ],
+    "explanationVi": "Yêu cầu là least privilege ở mức Pod: mỗi service chỉ chạm tới đúng một dịch vụ AWS. IRSA giải quyết đúng việc này bằng cách gắn mỗi Kubernetes service account với một IAM role riêng, Pod lấy credential tạm thời qua OIDC thay vì dùng role của node. Bẫy thường gặp: gắn quyền vào instance profile của node (mọi Pod đều thừa hưởng) hoặc nghĩ Kubernetes RBAC kiểm soát được quyền gọi AWS API.",
+    "keyHint": "\"least privilege\" + \"UI Pods must access only DynamoDB\" trên EKS → IAM Roles for Service Accounts (IRSA), mỗi service account một IAM role."
+  },
+  {
+    "id": 9,
+    "stemVi": "Một công ty logistics đang xây dựng ứng dụng nhiều tầng (multi-tier) để theo dõi vị trí xe tải trong giờ cao điểm. Công ty muốn các điểm dữ liệu này truy cập được theo thời gian thực trong nền tảng phân tích của họ thông qua REST API. Công ty thuê bạn — một AWS Certified Solutions Architect Associate — xây dựng giải pháp multi-tier để lưu và truy xuất dữ liệu vị trí này cho việc phân tích.",
+    "promptVi": "Lựa chọn nào sau đây đáp ứng tình huống đã cho?",
+    "options": [
+      { "key": "A", "textVi": "Tận dụng Amazon API Gateway với Amazon Kinesis Data Analytics", "reason": "API Gateway tạo REST API nhận các request chứa dữ liệu vị trí từ xe tải và chuyển tới ứng dụng Kinesis Data Analytics phía sau; Kinesis Data Analytics (bản for Apache Flink nay là Amazon Managed Service for Apache Flink; bản for SQL đã ngừng từ 27/01/2026) biến đổi và phân tích dữ liệu streaming theo thời gian thực — đáp ứng cả REST API lẫn phân tích thời gian thực." },
+      { "key": "B", "textVi": "Tận dụng Amazon Athena với Amazon S3", "reason": "Athena là dịch vụ truy vấn tương tác bằng SQL chuẩn trên dữ liệu đã nằm trong S3; nó không dùng để dựng REST API nhận dữ liệu từ nguồn và không phân tích theo thời gian thực." },
+      { "key": "C", "textVi": "Tận dụng Amazon QuickSight với Amazon Redshift", "reason": "QuickSight là dịch vụ business intelligence serverless, Redshift là kho dữ liệu được quản lý; không dịch vụ nào trong cặp này dựng được REST API để nhận dữ liệu vị trí từ nguồn." },
+      { "key": "D", "textVi": "Tận dụng Amazon API Gateway với AWS Lambda", "reason": "API Gateway đáp ứng phần REST API, nhưng Lambda chỉ là compute chạy theo request, không lưu trữ và truy xuất dữ liệu vị trí để phân tích theo thời gian thực." }
+    ],
+    "explanationVi": "Đề cần hai thứ: một REST API để nhận dữ liệu vị trí và một lớp phân tích dữ liệu streaming theo thời gian thực. API Gateway (REST API) đưa dữ liệu vào Kinesis Data Analytics, nơi chạy ứng dụng Apache Flink cho các bài toán streaming ETL, sinh chỉ số liên tục và phân tích thời gian thực. Bẫy: Athena và QuickSight + Redshift chỉ phân tích dữ liệu đã lưu, còn Lambda không phải lớp lưu trữ hay phân tích luồng.",
+    "keyHint": "\"track the location of its trucks\" + \"real-time\" + \"via a REST API\" → API Gateway đưa dữ liệu streaming vào Kinesis Data Analytics.",
+    "review": {
+      "reason": "Chưa chắc chắn: Phương án API Gateway + Amazon Kinesis Data Analytics là đáp án đã cũ. Kinesis Data Analytics for Apache Flink đã đổi tên thành Amazon Managed Service for Apache Flink (30/08/2023), còn Kinesis Data Analytics for SQL đã bị ngừng hẳn từ 27/01/2026. API Gateway cũng không tích hợp thẳng với Kinesis Data Analytics mà tích hợp với Kinesis Data Streams (dữ liệu vào stream rồi ứng dụng Flink mới đọc), và bản thân Flink không phải nơi lưu trữ dữ liệu để truy vấn lại. Phương án API Gateway + AWS Lambda (Lambda ghi vào một kho như DynamoDB) cũng là kiến trúc REST nhiều tầng hợp lệ, trái với lập luận \"Lambda không lưu được dữ liệu\" của nguồn. Ý đồ của đề (dữ liệu streaming real-time → Kinesis) vẫn rõ, nhưng cách diễn đạt không còn chính xác."
+    }
+  },
+  {
+    "id": 10,
+    "stemVi": "Nhóm DevOps tại một công ty thương mại điện tử đã triển khai một nhóm Amazon EC2 instance trong một Auto Scaling group (ASG). Các instance trong ASG trải trên hai Availability Zone (AZ) thuộc region us-east-1. Mọi request đến đều được một Application Load Balancer (ALB) xử lý và định tuyến tới các EC2 instance trong Auto Scaling group. Trong một lần chạy thử, hai instance (instance 1 và 2, thuộc AZ A) bị nhóm DevOps terminate thủ công, khiến các Availability Zone mất cân bằng tài nguyên. Cuối ngày hôm đó, một instance khác (thuộc AZ B) bị health check của Application Load Balancer phát hiện là unhealthy.",
+    "promptVi": "Bạn có thể xác định kết quả đúng của các sự kiện này không? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Vì tài nguyên mất cân bằng giữa các Availability Zone, Amazon EC2 Auto Scaling sẽ bù lại bằng cách tái cân bằng (rebalancing) các Availability Zone. Khi tái cân bằng, Amazon EC2 Auto Scaling khởi chạy instance mới trước rồi mới terminate instance cũ, để việc tái cân bằng không làm giảm hiệu năng hay tính sẵn sàng của ứng dụng", "reason": "Việc terminate hoặc detach instance thủ công có thể làm ASG mất cân bằng giữa các AZ, và EC2 Auto Scaling bù lại bằng rebalancing. Khi rebalancing, nó khởi chạy instance mới trước rồi mới terminate instance cũ, nhờ đó không ảnh hưởng hiệu năng và tính sẵn sàng." },
+      { "key": "B", "textVi": "Amazon EC2 Auto Scaling tạo một scaling activity mới để terminate instance unhealthy rồi terminate nó. Sau đó, một scaling activity khác khởi chạy instance mới để thay thế instance đã bị terminate", "reason": "Với instance unhealthy, thứ tự ngược với rebalancing: Auto Scaling tạo scaling activity terminate instance unhealthy trước, rồi một scaling activity khác mới khởi chạy instance thay thế." },
+      { "key": "C", "textVi": "Amazon EC2 Auto Scaling tạo một scaling activity mới để khởi chạy instance mới thay thế instance unhealthy. Sau đó, Amazon EC2 Auto Scaling tạo một scaling activity mới để terminate instance unhealthy rồi terminate nó", "reason": "Sai thứ tự: khi thay instance unhealthy, Auto Scaling terminate instance unhealthy trước rồi mới khởi chạy instance mới." },
+      { "key": "D", "textVi": "Vì tài nguyên mất cân bằng giữa các Availability Zone, Amazon EC2 Auto Scaling sẽ bù lại bằng cách tái cân bằng các Availability Zone. Khi tái cân bằng, Amazon EC2 Auto Scaling terminate instance cũ trước rồi mới khởi chạy instance mới, để việc tái cân bằng không làm phát sinh thêm instance", "reason": "Sai thứ tự của rebalancing: Auto Scaling khởi chạy instance mới trước rồi mới terminate instance cũ, để giữ hiệu năng và tính sẵn sàng." },
+      { "key": "E", "textVi": "Amazon EC2 Auto Scaling tạo một scaling activity mới để đồng thời terminate instance unhealthy và khởi chạy instance mới", "reason": "Đây là lựa chọn bịa ra: việc terminate và khởi chạy là hai scaling activity riêng, không diễn ra đồng thời trong một activity." }
+    ],
+    "explanationVi": "Có hai sự kiện với hai thứ tự xử lý khác nhau. Mất cân bằng AZ do terminate thủ công → rebalancing: launch instance mới trước, terminate instance cũ sau, để không giảm năng lực phục vụ. Instance bị health check báo unhealthy → thay thế: terminate instance unhealthy trước, launch instance mới sau. Bẫy là đảo thứ tự giữa hai trường hợp hoặc nghĩ hai thao tác xảy ra đồng thời.",
+    "keyHint": "\"unbalanced resources\" giữa AZ → rebalancing (launch trước, terminate sau); \"detected as unhealthy\" → terminate trước, launch sau."
+  },
+  {
+    "id": 11,
+    "stemVi": "Một công ty nghiên cứu công nghệ sinh học cần phân tích dữ liệu trên kết quả xét nghiệm thời gian thực do một tổ chức đối tác cung cấp. Đối tác lưu các kết quả này trong một Amazon RDS for MySQL instance thuộc AWS account riêng của đối tác. Công ty nghiên cứu có một VPC private không có truy cập internet, Direct Connect hay kết nối VPN. Tuy vậy, công ty phải thiết lập kết nối an toàn và riêng tư tới cơ sở dữ liệu RDS trong VPC của đối tác. Giải pháp phải cho phép công ty kết nối từ VPC của mình, đồng thời giảm thiểu độ phức tạp và tuân thủ các yêu cầu bảo mật dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Yêu cầu đối tác tạo một Network Load Balancer (NLB) phía trước Amazon RDS for MySQL instance. Dùng AWS PrivateLink để expose NLB thành một interface VPC endpoint trong VPC của công ty nghiên cứu", "reason": "Đối tác đặt NLB trước RDS (trực tiếp hoặc qua một proxy) rồi tạo endpoint service PrivateLink; công ty tạo interface VPC endpoint trong VPC của mình để kết nối riêng tư. Lưu lượng nằm hoàn toàn trong mạng AWS, không cần internet gateway, VPN hay Direct Connect — an toàn và đơn giản." },
+      { "key": "B", "textVi": "Yêu cầu đối tác bật public access trên Amazon RDS instance và thêm rule security group cho phép truy cập inbound từ dải IP của công ty. Công ty truy cập cơ sở dữ liệu qua internet công cộng thông qua một NAT Gateway đặt trong private subnet", "reason": "Vi phạm điều kiện VPC không có truy cập internet, và mở RDS ra internet gây rủi ro bảo mật, tuân thủ. Hơn nữa NAT Gateway cần internet gateway mới ra được internet nên phương án không khả thi trong môi trường này." },
+      { "key": "C", "textVi": "Thiết lập VPC peering giữa VPC của công ty và VPC của đối tác. Dùng AWS Transit Gateway trong account của đối tác để định tuyến lưu lượng từ VPC của công ty tới cơ sở dữ liệu. Sửa route table của subnet RDS để cho phép truy cập từ CIDR block của công ty", "reason": "Dùng cả VPC peering lẫn Transit Gateway cho cùng một cặp VPC là mâu thuẫn về kiến trúc — chỉ cần một trong hai. Cấu hình định tuyến qua Transit Gateway thêm phức tạp không cần thiết." },
+      { "key": "D", "textVi": "Cấu hình một client VPN endpoint trong account của công ty. Cho các nhà nghiên cứu kết nối VPN từ máy cá nhân. Thiết lập một Direct Connect gateway tới VPC của đối tác và định tuyến lưu lượng RDS qua kết nối này", "reason": "Đề nói rõ không có Direct Connect; Client VPN dành cho người dùng cá nhân, không phải kết nối từ VPC tới VPC. Phương án vừa phức tạp vừa không đáp ứng yêu cầu kết nối từ chính VPC của công ty." }
+    ],
+    "explanationVi": "Đề cần kết nối riêng tư từ một VPC hoàn toàn private (không internet, không VPN, không Direct Connect) tới RDS ở account khác, với độ phức tạp thấp. PrivateLink đúng cho mẫu \"nhà cung cấp chia sẻ dịch vụ\": đối tác đặt NLB trước cơ sở dữ liệu và tạo endpoint service, bên dùng chỉ cần một interface VPC endpoint. Bẫy: mở public access qua NAT (cần internet), trộn VPC peering với Transit Gateway, hoặc dùng Client VPN/Direct Connect vốn bị đề loại trừ.",
+    "keyHint": "\"private VPC that does not have internet access, Direct Connect, or a VPN\" + RDS ở account đối tác → NLB + AWS PrivateLink (interface VPC endpoint)."
+  },
+  {
+    "id": 12,
+    "stemVi": "Nhóm DevOps tại một công ty thương mại điện tử muốn bảo trì một Amazon EC2 instance cụ thể thuộc một Auto Scaling group đang dùng step scaling policy. Nhóm gặp khó khăn: mỗi lần triển khai bản vá bảo trì, trạng thái health check của instance hiện out of service trong vài phút. Điều này khiến Auto Scaling group lập tức cấp phát một instance khác để thay thế.",
+    "promptVi": "Với vai trò solutions architect, bạn khuyến nghị những bước nào hiệu quả nhất về thời gian/tài nguyên (MOST time/resource efficient) để hoàn tất việc bảo trì sớm nhất? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Đưa instance vào trạng thái Standby rồi cập nhật instance bằng cách áp bản vá bảo trì. Khi instance sẵn sàng, thoát trạng thái Standby và đưa instance trở lại phục vụ", "reason": "Instance đang InService có thể chuyển sang Standby để cập nhật phần mềm hoặc xử lý sự cố rồi đưa trở lại phục vụ. Instance ở Standby vẫn thuộc Auto Scaling group nhưng không nhận lưu lượng, nên không bị coi là unhealthy và không bị thay thế." },
+      { "key": "B", "textVi": "Tạm dừng process ReplaceUnhealthy của Auto Scaling group rồi áp bản vá bảo trì cho instance. Khi instance sẵn sàng, đặt thủ công trạng thái health của instance về healthy và kích hoạt lại process ReplaceUnhealthy", "reason": "ReplaceUnhealthy là process terminate instance bị đánh dấu unhealthy rồi tạo instance thay thế; khi tạm dừng nó, Auto Scaling ngừng thay instance unhealthy. Đặt lại health về healthy trước khi resume giúp instance không bị thay khi process chạy lại." },
+      { "key": "C", "textVi": "Tạo snapshot của instance, tạo một Amazon Machine Image (AMI) mới rồi khởi chạy instance mới từ AMI này. Áp bản vá bảo trì cho instance mới rồi thêm nó trở lại Auto Scaling Group bằng manual scaling policy. Terminate instance cũ có vấn đề bảo trì", "reason": "Tạo snapshot, AMI rồi instance mới chỉ để áp một bản vá tốn thời gian và tài nguyên hơn nhiều so với vá trực tiếp instance hiện có, nên không phải cách hiệu quả nhất." },
+      { "key": "D", "textVi": "Xóa Auto Scaling group rồi áp bản sửa lỗi bảo trì cho instance đó. Tạo Auto Scaling group mới và thêm lại toàn bộ instance bằng manual scaling policy", "reason": "Xóa cả Auto Scaling group chỉ để vá một instance là quá tay, làm gián đoạn toàn bộ nhóm và tốn công dựng lại; đây không phải cách được khuyến nghị." },
+      { "key": "E", "textVi": "Tạm dừng process ScheduledActions của Auto Scaling group rồi áp bản vá bảo trì cho instance. Khi instance sẵn sàng, đặt thủ công trạng thái health của instance về healthy và kích hoạt lại process ScheduledActions", "reason": "Tạm dừng ScheduledActions chỉ ngăn các hành động scaling theo lịch chạy trong thời gian tạm dừng; nó không ngăn Auto Scaling thay instance unhealthy, nên không giải quyết vấn đề của đề." }
+    ],
+    "explanationVi": "Vấn đề là health check báo out of service khi vá khiến ASG thay instance ngay. Hai cách nhanh nhất là tạm tách instance khỏi vòng phục vụ bằng Standby, hoặc tạm dừng đúng process ReplaceUnhealthy rồi đặt lại health về healthy trước khi resume. Bẫy: tạm dừng nhầm process ScheduledActions (không liên quan đến thay instance unhealthy), hoặc các cách dựng lại AMI/ASG tốn thời gian.",
+    "keyHint": "\"maintenance patch\" + \"provision another replacement instance immediately\" → Standby state hoặc suspend process ReplaceUnhealthy."
+  },
+  {
+    "id": 13,
+    "stemVi": "Một cơ quan chính phủ đang phát triển ứng dụng trực tuyến giúp người dân nộp yêu cầu cấp phép qua giao diện web. Kiến trúc hệ thống gồm một tầng ứng dụng web front-end và một tầng xử lý nền lo việc kiểm tra và nộp biểu mẫu. Ứng dụng dự kiến có lưu lượng cao và phải bảo đảm mỗi yêu cầu được nộp đều được xử lý đúng một lần, không mất dữ liệu.",
+    "promptVi": "Lựa chọn thiết kế nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Triển khai một Amazon SQS FIFO queue để đệm và chuyển giao tin cậy các biểu mẫu từ tầng ứng dụng web tới tầng xử lý", "reason": "SQS FIFO queue được thiết kế cho xử lý đúng một lần (exactly-once processing) và giữ thứ tự, chống giao trùng lặp; queue còn đệm bền vững giữa hai tầng nên không mất dữ liệu khi lưu lượng cao — đúng yêu cầu toàn vẹn dữ liệu của đề." },
+      { "key": "B", "textVi": "Triển khai một Amazon SQS standard queue để đệm và chuyển giao tin cậy các biểu mẫu từ tầng ứng dụng web tới tầng xử lý", "reason": "Standard queue chỉ bảo đảm giao ít nhất một lần (at-least-once) và thứ tự best-effort, nên có thể giao trùng message, vi phạm yêu cầu xử lý đúng một lần." },
+      { "key": "C", "textVi": "Tận dụng Amazon EventBridge để gửi event từ ứng dụng web tới tầng xử lý nhằm xử lý biểu mẫu bất đồng bộ", "reason": "EventBridge chỉ cung cấp ngữ nghĩa giao ít nhất một lần, event có thể bị giao lặp khi có lỗi và không có thứ tự sẵn, nên không bảo đảm xử lý đúng một lần." },
+      { "key": "D", "textVi": "Tận dụng Amazon API Gateway để chuyển các biểu mẫu tới AWS Lambda xử lý theo thời gian thực", "reason": "API Gateway + Lambda hợp với xử lý đồng bộ thời gian thực, nhưng không có hàng đợi bền vững để tách rời hai tầng và không có cơ chế sẵn để bảo đảm xử lý đúng một lần." }
+    ],
+    "explanationVi": "Hai yêu cầu then chốt là \"exactly once\" và \"no loss of data\" giữa hai tầng chịu lưu lượng cao. SQS FIFO queue vừa đệm bền vững để tách rời tầng web khỏi tầng xử lý, vừa khử trùng lặp để mỗi biểu mẫu được xử lý đúng một lần. Bẫy: standard queue và EventBridge đều là at-least-once nên có thể trùng; gọi đồng bộ API Gateway → Lambda thì thiếu lớp đệm bền vững.",
+    "keyHint": "\"processed exactly once, with no loss of data\" giữa hai tầng → Amazon SQS FIFO queue."
+  },
+  {
+    "id": 14,
+    "stemVi": "Một công ty đã chuyển dữ liệu quan trọng cho kinh doanh lên Amazon Elastic File System (Amazon EFS), sẽ được nhiều Amazon EC2 instance truy cập.",
+    "promptVi": "Với vai trò AWS Certified Solutions Architect - Associate, bạn khuyến nghị những gì để kiểm soát truy cập sao cho chỉ những Amazon EC2 instance được phép mới đọc được từ Amazon EFS file system? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Dùng VPC security group để kiểm soát lưu lượng mạng đến và đi từ file system", "reason": "Security group gắn với mount target của EFS quyết định những instance nào được kết nối NFS tới file system ở tầng mạng, nên trực tiếp giới hạn instance được phép truy cập." },
+      { "key": "B", "textVi": "Dùng IAM policy để kiểm soát truy cập cho các client được mount file system với các quyền cần thiết", "reason": "Gắn IAM policy (file system policy) cho EFS để quyết định client nào được mount và với quyền gì (ví dụ chỉ đọc), kết hợp với security group để chỉ instance được phép mới đọc được dữ liệu." },
+      { "key": "C", "textVi": "Dùng network access control list (network ACL) để kiểm soát lưu lượng mạng đến và đi từ Amazon EC2 instance", "reason": "Network ACL hoạt động ở mức subnet, không phải mức instance, nên không phân biệt được từng EC2 instance được phép hay không." },
+      { "key": "D", "textVi": "Thiết lập root credential của IAM policy để kiểm soát và cấu hình các client truy cập Amazon EFS file system", "reason": "Không tồn tại khái niệm \"root credential của IAM policy\"; đây là lựa chọn bịa ra để gây nhiễu." },
+      { "key": "E", "textVi": "Dùng Amazon GuardDuty để ngăn truy cập không mong muốn vào Amazon EFS file system", "reason": "GuardDuty là dịch vụ phát hiện mối đe dọa, giám sát hoạt động độc hại và hành vi trái phép; nó không phải công cụ kiểm soát truy cập vào EFS." }
+    ],
+    "explanationVi": "AWS kiểm soát EC2 instance nào truy cập được EFS bằng hai lớp: VPC security group cho lưu lượng mạng tới mount target, và IAM policy gắn với file system để quyết định client nào được mount và với quyền gì. Có thể bổ sung EFS Access Points và quyền POSIX theo user/group ID để kiểm soát mức file, thư mục. Bẫy: network ACL chỉ ở mức subnet, GuardDuty chỉ phát hiện chứ không chặn, còn \"IAM policy root credentials\" là khái niệm không có thật.",
+    "keyHint": "\"only the permitted Amazon EC2 instances can read from the Amazon EFS file system\" → security group của mount target + IAM policy của EFS."
+  },
+  {
+    "id": 15,
+    "stemVi": "Một blogger công nghệ muốn viết bài so sánh giá các loại lưu trữ trên AWS Cloud. Blogger tạo một file thử 1 gigabyte chứa dữ liệu ngẫu nhiên. Tiếp theo anh ấy sao chép file này vào storage class AWS S3 Standard, cấp phát một Amazon EBS volume (General Purpose SSD (gp2)) với dung lượng cấp phát 100 gigabyte rồi sao chép file vào volume đó, và cuối cùng sao chép file vào một Amazon EFS Standard Storage filesystem. Cuối tháng, anh ấy phân tích hóa đơn chi phí phát sinh trên từng loại lưu trữ cho file thử.",
+    "promptVi": "Thứ tự đúng của chi phí lưu trữ file thử trên ba loại lưu trữ này là gì?",
+    "options": [
+      { "key": "A", "textVi": "Chi phí lưu file thử trên Amazon S3 Standard < Chi phí lưu file thử trên Amazon EFS < Chi phí lưu file thử trên Amazon EBS", "reason": "S3 Standard khoảng $0.023 mỗi GB-tháng nên tốn khoảng $0.023; EFS Standard khoảng $0.30 mỗi GB-tháng và chỉ tính phần dùng nên tốn khoảng $0.30; EBS gp2 tính $0.10 mỗi GB-tháng trên dung lượng cấp phát 100 GB nên tốn $10. Thứ tự S3 < EFS < EBS là đúng." },
+      { "key": "B", "textVi": "Chi phí lưu file thử trên Amazon S3 Standard < Chi phí lưu file thử trên Amazon EBS < Chi phí lưu file thử trên Amazon EFS", "reason": "Sai vì EBS tính tiền theo 100 GB cấp phát ($10) chứ không theo 1 GB dữ liệu, nên đắt hơn EFS (khoảng $0.30)." },
+      { "key": "C", "textVi": "Chi phí lưu file thử trên Amazon EFS < Chi phí lưu file thử trên Amazon S3 Standard < Chi phí lưu file thử trên Amazon EBS", "reason": "Sai vì giá EFS Standard (khoảng $0.30 mỗi GB-tháng) cao hơn nhiều so với S3 Standard (khoảng $0.023 mỗi GB-tháng)." },
+      { "key": "D", "textVi": "Chi phí lưu file thử trên Amazon EBS < Chi phí lưu file thử trên Amazon S3 Standard < Chi phí lưu file thử trên Amazon EFS", "reason": "Sai vì EBS là loại đắt nhất trong tình huống này do bị tính theo toàn bộ 100 GB đã cấp phát." }
+    ],
+    "explanationVi": "Điểm mấu chốt là cách tính tiền: S3 và EFS tính theo dung lượng thực dùng, còn EBS tính theo dung lượng đã cấp phát bất kể dữ liệu thật bao nhiêu. Với 1 GB: S3 Standard khoảng $0.023, EFS Standard khoảng $0.30, EBS gp2 100 GB là $10. Bẫy là so giá theo GB rồi quên rằng EBS bị tính cho cả 100 GB cấp phát.",
+    "keyHint": "\"100 gigabytes of provisioned storage\" cho EBS → EBS tính theo dung lượng cấp phát, nên S3 Standard < EFS < EBS."
+  },
+  {
+    "id": 16,
+    "stemVi": "Một phòng kiểm toán tạo và truy cập các báo cáo kiểm toán chỉ hai lần mỗi năm tài chính. Phòng dùng AWS Step Functions để điều phối quy trình tạo báo cáo, trong đó đã tích hợp sẵn các kịch bản failover và retry. Dữ liệu nền để tạo các báo cáo này được lưu trên Amazon S3, lên tới hàng trăm Terabyte và phải truy cập được với độ trễ mili giây.",
+    "promptVi": "Với vai trò AWS Certified Solutions Architect – Associate, storage class nào tiết kiệm chi phí nhất (MOST cost-effective) mà bạn khuyến nghị cho tình huống này?",
+    "options": [
+      { "key": "A", "textVi": "Amazon S3 Standard-Infrequent Access (S3 Standard-IA)", "reason": "S3 Standard-IA dành cho dữ liệu ít truy cập nhưng cần lấy nhanh khi cần, với cùng độ bền, throughput và độ trễ mili giây như S3 Standard nhưng giá lưu trữ mỗi GB thấp hơn (có phí truy xuất). Tính sẵn sàng thiết kế 99.9% thấp hơn S3 Standard một chút, nhưng quy trình đã có failover và retry nên tự chạy lại nếu dữ liệu tạm không truy cập được." },
+      { "key": "B", "textVi": "Amazon S3 Standard", "reason": "S3 Standard dành cho dữ liệu truy cập thường xuyên; với dữ liệu chỉ dùng hai lần mỗi năm, giá lưu trữ của nó cao hơn Standard-IA một cách không cần thiết." },
+      { "key": "C", "textVi": "Amazon S3 Intelligent-Tiering (S3 Intelligent-Tiering)", "reason": "Intelligent-Tiering thu thêm phí giám sát và tự động hóa theo từng object để tự chuyển tầng; khi mẫu truy cập đã biết rõ là rất thưa, Standard-IA có cùng độ trễ thấp và cùng tính sẵn sàng nhưng không tốn khoản phí giám sát đó, nên rẻ hơn." },
+      { "key": "D", "textVi": "Amazon S3 Glacier Deep Archive", "reason": "Glacier Deep Archive là lớp lưu trữ lưu trữ lâu dài giá rẻ, nhưng việc lấy dữ liệu mất nhiều giờ, không đáp ứng yêu cầu độ trễ mili giây." }
+    ],
+    "explanationVi": "Mẫu truy cập đã biết rõ: rất thưa (hai lần mỗi năm) nhưng khi cần phải có độ trễ mili giây. S3 Standard-IA đúng cho \"ít truy cập, cần nhanh khi truy cập\", giá lưu trữ thấp hơn S3 Standard. Tính sẵn sàng 99.9% của Standard-IA được bù bởi cơ chế failover và retry có sẵn trong Step Functions. Bẫy: Glacier Deep Archive rẻ hơn nhưng không có độ trễ mili giây; Intelligent-Tiering hợp khi mẫu truy cập không biết trước.",
+    "keyHint": "\"only twice in a financial year\" + \"millisecond latency\" + \"failover and retry\" → S3 Standard-IA.",
+    "review": {
+      "reason": "Chưa chắc chắn: Đề muốn chọn S3 Standard-IA, nhưng với hàng trăm TB chỉ truy cập 2 lần/năm thì S3 Intelligent-Tiering thường rẻ hơn. Object không được truy cập 30 ngày sẽ chuyển sang tầng Infrequent Access (giá ngang Standard-IA), sau 90 ngày sang tầng Archive Instant Access (khoảng 0,004 USD/GB-tháng, vẫn truy cập trong mili giây), và Intelligent-Tiering không thu phí truy xuất, trong khi Standard-IA thu khoảng 0,01 USD/GB mỗi lần đọc (hàng trăm TB × 2 lần/năm là khoản đáng kể). Phí giám sát của Intelligent-Tiering tính theo số object nên gần như không đáng kể với object lớn. Lập luận \"Standard-IA rẻ hơn Intelligent-Tiering\" trong giải thích gốc đã lỗi thời từ khi có tầng Archive Instant Access (11/2021); Standard-IA chỉ rẻ hơn khi dữ liệu gồm rất nhiều object nhỏ."
+    }
+  },
+  {
+    "id": 17,
+    "stemVi": "Khi tổng hợp log cho báo cáo tuần, nhóm phát triển tại một công ty thương mại điện tử nhận thấy có một lượng lớn bất thường các truy vấn AWS application programming interface (API) trái phép trong tuần. Do đang mùa thấp điểm nên hệ thống không bị ảnh hưởng rõ rệt. Tuy nhiên, sự việc khiến ban quản lý tìm một giải pháp tự động có thể phát cảnh báo gần thời gian thực (near-real-time) nếu sự việc như vậy lặp lại.",
+    "promptVi": "Lựa chọn nào sau đây là giải pháp tốt nhất cho tình huống đã cho?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Amazon CloudWatch metric filter xử lý các AWS CloudTrail log chứa chi tiết lời gọi API và theo dõi mọi lỗi bằng cách tính đến tất cả các mã lỗi cần theo dõi. Tạo alarm dựa trên tốc độ của metric này để gửi thông báo Amazon SNS tới nhóm cần nhận", "reason": "Khi CloudTrail log được gửi vào CloudWatch Logs, metric filter biến các lời gọi API lỗi (ví dụ lỗi không được phép) thành metric số, rồi CloudWatch Alarm theo dõi tốc độ metric và gửi SNS. Đây là cách tự động, gần thời gian thực và không cần dựng hạ tầng." },
+      { "key": "B", "textVi": "Cấu hình AWS CloudTrail stream dữ liệu event tới Amazon Kinesis. Dùng các metric cấp stream của Amazon Kinesis trong Amazon CloudWatch để kích hoạt một AWS Lambda function khởi chạy quy trình xử lý lỗi", "reason": "CloudTrail không stream trực tiếp tới Kinesis; trail chỉ gửi log tới S3 bucket và CloudWatch Logs. Hơn nữa metric cấp stream của Kinesis đo lưu lượng stream chứ không phản ánh số lời gọi API trái phép." },
+      { "key": "C", "textVi": "Chạy truy vấn SQL của Amazon Athena trên các file log AWS CloudTrail lưu trong Amazon S3 bucket. Dùng Amazon QuickSight tạo báo cáo cho dashboard quản lý", "reason": "Truy vấn Athena và báo cáo QuickSight giúp phân tích mẫu hành vi sau sự việc, nhưng không phải giải pháp tự động cảnh báo gần thời gian thực." },
+      { "key": "D", "textVi": "AWS Trusted Advisor công bố metric về kết quả kiểm tra lên Amazon CloudWatch. Tạo alarm theo dõi thay đổi trạng thái của các kiểm tra thuộc nhóm Service Limits cho các API. Alarm sẽ thông báo khi service quota bị chạm hoặc vượt", "reason": "Alarm của Trusted Advisor chỉ kích hoạt khi chạm hoặc vượt service quota, không phát hiện được khi số lời gọi API trái phép tăng đột biến hoặc có mẫu bất thường." }
+    ],
+    "explanationVi": "Đề cần cảnh báo tự động, gần thời gian thực khi số lời gọi API trái phép tăng bất thường. Mẫu chuẩn là đưa CloudTrail vào CloudWatch Logs, tạo metric filter theo các mã lỗi (như AccessDenied, UnauthorizedOperation), rồi đặt CloudWatch Alarm gửi SNS. Bẫy: Athena + QuickSight chỉ là báo cáo sau sự việc, Trusted Advisor chỉ báo về service quota. Ngoài ra CloudTrail Insights cũng phát hiện hoạt động API ghi bất thường, nhưng Insights event được gửi tới S3 chứ không tự phát cảnh báo.",
+    "keyHint": "\"illegal AWS API queries\" + \"near-real-time warnings\" → CloudTrail → CloudWatch Logs metric filter → CloudWatch Alarm → SNS."
+  },
+  {
+    "id": 18,
+    "stemVi": "Một hãng tin tức dùng Amazon Simple Storage Service (Amazon S3) để tập hợp video thô từ các nhóm phóng viên trên khắp nước Mỹ. Hãng gần đây đã mở rộng sang các khu vực mới ở châu Âu và châu Á. Các nhóm kỹ thuật tại chi nhánh nước ngoài báo cáo độ trễ rất lớn khi tải các file video dung lượng lớn lên Amazon S3 bucket đích.",
+    "promptVi": "Những lựa chọn nào sau đây tiết kiệm chi phí nhất (MOST cost-effective) để cải thiện tốc độ tải file lên Amazon S3? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon S3 Transfer Acceleration (Amazon S3TA) để tải file nhanh hơn lên S3 bucket đích", "reason": "S3 Transfer Acceleration tăng tốc truyền file đường dài giữa client và S3 bucket bằng cách tận dụng các edge location phân bố toàn cầu của CloudFront: dữ liệu vào edge gần nhất rồi đi tới S3 qua đường mạng tối ưu của AWS. Chỉ cần bật trên bucket, trả phí theo dung lượng truyền." },
+      { "key": "B", "textVi": "Dùng multipart upload để tải file nhanh hơn lên Amazon S3 bucket đích", "reason": "Multipart upload chia object thành nhiều phần tải song song, độc lập và theo thứ tự bất kỳ; phần nào lỗi chỉ cần tải lại phần đó. Nó cải thiện throughput và được khuyến nghị cho object từ khoảng 100 MB trở lên — không tốn thêm chi phí hạ tầng." },
+      { "key": "C", "textVi": "Tạo nhiều kết nối AWS Direct Connect giữa AWS Cloud và các chi nhánh ở châu Âu và châu Á. Dùng các kết nối Direct Connect để tải file nhanh hơn lên Amazon S3", "reason": "Direct Connect là kết nối mạng chuyên dụng, mất nhiều thời gian (có thể vài tháng) để cấp phát và tốn kém; dùng nhiều kết nối chỉ để tải video là quá mức cần thiết, không tiết kiệm chi phí." },
+      { "key": "D", "textVi": "Tạo nhiều kết nối AWS Site-to-Site VPN giữa AWS Cloud và các chi nhánh ở châu Âu và châu Á. Dùng các kết nối VPN này để tải file nhanh hơn lên Amazon S3", "reason": "Site-to-Site VPN tạo đường hầm IPSec mã hóa đi qua internet, phù hợp với nhu cầu băng thông thấp đến vừa; nó bảo mật kết nối nhưng không tăng tốc truyền file vào S3." },
+      { "key": "E", "textVi": "Dùng AWS Global Accelerator để tải file nhanh hơn lên Amazon S3 bucket đích", "reason": "Global Accelerator cung cấp static IP làm điểm vào cố định cho ALB, NLB hoặc EC2 instance; nó không dùng để tăng tốc tải file vào S3 bucket." }
+    ],
+    "explanationVi": "Vấn đề là tải file video lớn từ xa (châu Âu, châu Á) vào một S3 bucket. Hai cách rẻ và hiệu quả là S3 Transfer Acceleration (đi qua edge location rồi theo mạng nội bộ AWS) và multipart upload (chia nhỏ, tải song song, tải lại từng phần). Bẫy: Direct Connect tốn kém và chậm triển khai, VPN không tăng tốc, còn Global Accelerator dành cho endpoint ứng dụng chứ không cho S3 upload.",
+    "keyHint": "\"huge delays in uploading large video files\" từ \"Europe and Asia\" + \"MOST cost-effective\" → S3 Transfer Acceleration + multipart upload."
+  },
+  {
+    "id": 19,
+    "stemVi": "Một công ty bán lẻ vận hành hệ thống quản lý khách hàng dựa trên cơ sở dữ liệu Microsoft SQL Server. Hệ thống gắn chặt với các ứng dụng dựa vào truy vấn T-SQL. Công ty muốn hiện đại hóa hạ tầng bằng cách chuyển sang Amazon Aurora PostgreSQL, nhưng cần tránh sửa đổi lớn logic ứng dụng hiện có.",
+    "promptVi": "Công ty nên thực hiện tổ hợp hành động nào để đạt mục tiêu này với ít phải viết lại ứng dụng nhất (minimal application refactoring)? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Triển khai Babelfish for Aurora PostgreSQL để hỗ trợ các lệnh T-SQL", "reason": "Babelfish giúp Aurora PostgreSQL hiểu T-SQL và giao thức wire của SQL Server, nên ứng dụng vẫn gửi truy vấn kiểu SQL Server tới Aurora mà chỉ cần sửa code rất ít — đúng yêu cầu tránh viết lại ứng dụng." },
+      { "key": "B", "textVi": "Dùng AWS Schema Conversion Tool (AWS SCT) cùng AWS Database Migration Service (AWS DMS) để chuyển schema và dữ liệu", "reason": "AWS SCT chuyển schema SQL Server sang cú pháp tương thích PostgreSQL, còn AWS DMS chuyển dữ liệu thực với thời gian downtime tối thiểu — đây là phần di chuyển schema và dữ liệu cần thiết." },
+      { "key": "C", "textVi": "Cấu hình Amazon Aurora PostgreSQL với một custom endpoint mô phỏng hành vi của Microsoft SQL Server", "reason": "Endpoint của Aurora không mô phỏng giao thức SQL Server; không có tính năng nào khiến Aurora tự mô phỏng SQL Server nếu không bật Babelfish." },
+      { "key": "D", "textVi": "Dùng Amazon Aurora Global Database để sao chép dữ liệu qua các region nhằm tăng tương thích", "reason": "Aurora Global Database phục vụ khôi phục thảm họa xuyên region và mở rộng đọc, không giúp tương thích SQL Server hay giảm sửa code ứng dụng." },
+      { "key": "E", "textVi": "Dùng AWS Glue để chuyển các truy vấn T-SQL sang SQL tương thích PostgreSQL trong quá trình di chuyển", "reason": "AWS Glue là dịch vụ ETL và biến đổi dữ liệu, không chuyển đổi được truy vấn SQL trong code ứng dụng từ T-SQL sang cú pháp PostgreSQL." }
+    ],
+    "explanationVi": "Đề có hai nhu cầu: di chuyển cơ sở dữ liệu từ SQL Server sang Aurora PostgreSQL, và giữ ứng dụng T-SQL gần như nguyên vẹn. SCT + DMS lo phần schema và dữ liệu, còn Babelfish cho phép Aurora PostgreSQL nhận T-SQL và giao thức SQL Server nên ứng dụng ít phải sửa. Bẫy: \"custom endpoint mô phỏng SQL Server\" không tồn tại, Global Database và Glue không liên quan đến tương thích T-SQL.",
+    "keyHint": "\"rely on T-SQL queries\" + \"migrating to Amazon Aurora PostgreSQL\" + \"minimal application refactoring\" → Babelfish + SCT/DMS."
+  },
+  {
+    "id": 20,
+    "stemVi": "Một dịch vụ streaming video hàng đầu phân phối hàng tỷ giờ nội dung từ Amazon Simple Storage Service (Amazon S3) tới khách hàng trên toàn thế giới. Amazon S3 cũng là data lake cho giải pháp phân tích big data của họ. Data lake có một vùng staging nơi các kết quả truy vấn trung gian chỉ được giữ trong 24 giờ. Các kết quả này cũng được những phần khác của pipeline phân tích tham chiếu rất nhiều.",
+    "promptVi": "Chiến lược nào sau đây tiết kiệm chi phí nhất (MOST cost-effective) để lưu dữ liệu truy vấn trung gian này?",
+    "options": [
+      { "key": "A", "textVi": "Lưu kết quả truy vấn trung gian trong storage class Amazon S3 Standard", "reason": "S3 Standard dành cho dữ liệu truy cập thường xuyên với độ trễ thấp, throughput cao; nó không có phí lưu trữ tối thiểu theo thời gian và không có phí truy xuất, nên với dữ liệu chỉ giữ 24 giờ và bị đọc liên tục, đây là lựa chọn rẻ nhất." },
+      { "key": "B", "textVi": "Lưu kết quả truy vấn trung gian trong storage class Amazon S3 Glacier Instant Retrieval", "reason": "Glacier Instant Retrieval truy cập mili giây nhưng dành cho dữ liệu lưu trữ lâu dài, bị tính phí tối thiểu 90 ngày và có phí truy xuất, nên rất đắt cho dữ liệu chỉ giữ 24 giờ và bị đọc nhiều." },
+      { "key": "C", "textVi": "Lưu kết quả truy vấn trung gian trong storage class Amazon S3 Standard-Infrequent Access", "reason": "S3 Standard-IA bị tính phí tối thiểu 30 ngày (giữ 24 giờ vẫn trả tiền 30 ngày) và có phí truy xuất theo GB, sẽ rất cao vì kết quả bị pipeline đọc liên tục." },
+      { "key": "D", "textVi": "Lưu kết quả truy vấn trung gian trong storage class Amazon S3 One Zone-Infrequent Access", "reason": "S3 One Zone-IA rẻ hơn Standard-IA khoảng 20% nhưng vẫn bị tính phí tối thiểu 30 ngày và có phí truy xuất, nên không tiết kiệm cho dữ liệu sống 24 giờ và bị đọc nhiều." }
+    ],
+    "explanationVi": "Hai đặc điểm quyết định là dữ liệu chỉ sống 24 giờ và bị truy cập rất thường xuyên. Các lớp IA và Glacier có phí lưu trữ tối thiểu (30 hoặc 90 ngày) cùng phí truy xuất theo GB, nên vừa phải trả cho thời gian không dùng vừa trả phí cho mỗi lần đọc. S3 Standard không có hai khoản phí này nên là rẻ nhất. Bẫy: thấy giá lưu trữ mỗi GB của IA thấp hơn mà quên phí tối thiểu và phí truy xuất.",
+    "keyHint": "\"kept only for 24 hours\" + \"heavily referenced\" → S3 Standard (không phí lưu trữ tối thiểu, không phí truy xuất)."
+  },
+  {
+    "id": 21,
+    "stemVi": "Một công ty tư vấn bảo mật IT đang xây dựng giải pháp để bảo vệ dữ liệu lưu trong Amazon S3 khỏi mọi hoạt động độc hại, đồng thời kiểm tra lỗ hổng trên các Amazon EC2 instance.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp nào sau đây để đáp ứng yêu cầu đã cho?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon GuardDuty để giám sát mọi hoạt động độc hại trên dữ liệu lưu trong Amazon S3. Dùng các đánh giá bảo mật (security assessments) do Amazon Inspector cung cấp để kiểm tra lỗ hổng trên các Amazon EC2 instance", "reason": "GuardDuty phát hiện mối đe dọa liên tục cho account, workload và dữ liệu S3 bằng cách phân tích CloudTrail event, VPC Flow Logs, DNS log cùng threat intelligence và machine learning. Inspector đánh giá khả năng truy cập mạng ngoài ý muốn và lỗ hổng trên EC2 instance. Mỗi dịch vụ đúng vai trò của nó." },
+      { "key": "B", "textVi": "Dùng Amazon GuardDuty để giám sát mọi hoạt động độc hại trên dữ liệu lưu trong Amazon S3. Dùng các đánh giá bảo mật do Amazon GuardDuty cung cấp để kiểm tra lỗ hổng trên các Amazon EC2 instance", "reason": "Vế S3 đúng, nhưng GuardDuty không cung cấp đánh giá lỗ hổng cho EC2 instance; việc quét lỗ hổng là chức năng của Amazon Inspector." },
+      { "key": "C", "textVi": "Dùng Amazon Inspector để giám sát mọi hoạt động độc hại trên dữ liệu lưu trong Amazon S3. Dùng các đánh giá bảo mật do Amazon Inspector cung cấp để kiểm tra lỗ hổng trên các Amazon EC2 instance", "reason": "Vế EC2 đúng, nhưng Inspector không giám sát hoạt động độc hại trên dữ liệu S3; phát hiện mối đe dọa cho S3 là chức năng của GuardDuty." },
+      { "key": "D", "textVi": "Dùng Amazon Inspector để giám sát mọi hoạt động độc hại trên dữ liệu lưu trong Amazon S3. Dùng các đánh giá bảo mật do Amazon GuardDuty cung cấp để kiểm tra lỗ hổng trên các Amazon EC2 instance", "reason": "Đảo ngược vai trò cả hai dịch vụ: GuardDuty mới là bên phát hiện hoạt động độc hại với S3, còn Inspector mới là bên quét lỗ hổng EC2." }
+    ],
+    "explanationVi": "Cần phân biệt rõ hai dịch vụ bảo mật: GuardDuty phát hiện mối đe dọa và hoạt động độc hại (bao gồm với dữ liệu S3) dựa trên CloudTrail, VPC Flow Logs, DNS log; Inspector đánh giá lỗ hổng và mức phơi nhiễm mạng của EC2 instance. Các phương án sai đều tráo hoặc gộp vai trò của hai dịch vụ này.",
+    "keyHint": "\"malicious activity\" trên S3 → GuardDuty; \"vulnerabilities on Amazon EC2 instances\" → Amazon Inspector."
+  },
+  {
+    "id": 22,
+    "stemVi": "Một nền tảng bán vé sự kiện số vận hành service xử lý giao dịch lõi trên AWS. Service chạy trên các Amazon EC2 instance và lưu các giao dịch đã hoàn tất vào cơ sở dữ liệu Amazon Aurora PostgreSQL. Trong những giai đoạn người dùng hoạt động cao — như các đợt mở bán vé chớp nhoáng hay khuyến mãi dịp lễ — ứng dụng bắt đầu bị timeout, gây ra các giao dịch mua thất bại hoặc chậm trễ. Một solutions architect được yêu cầu thiết kế lại backend để có khả năng mở rộng (scalability) và hiệu quả chi phí, mà không phải thiết kế lại tầng cơ sở dữ liệu.",
+    "promptVi": "Tổ hợp hành động nào đáp ứng các mục tiêu này theo cách tiết kiệm chi phí và có khả năng mở rộng nhất? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Triển khai Amazon RDS Proxy giữa ứng dụng và Aurora PostgreSQL cluster. Triển khai các EC2 instance trong một Auto Scaling group để thử lại giao dịch khi cần", "reason": "RDS Proxy duy trì pool kết nối và tái sử dụng chúng giữa các client, giảm áp lực tạo kết nối mới — nguyên nhân phổ biến gây timeout trên Aurora lúc tải cao. Kết hợp Auto Scaling group cho EC2 giúp tầng compute co giãn theo nhu cầu mà không phải sửa tầng cơ sở dữ liệu." },
+      { "key": "B", "textVi": "Sửa ứng dụng để publish các event mua hàng vào một Amazon SQS queue. Khởi chạy một Auto Scaling group gồm các EC2 worker poll queue và xử lý giao dịch mua bất đồng bộ", "reason": "SQS tách rời tầng web khỏi logic xử lý, đệm các đợt tăng giao dịch đột biến mà không làm quá tải cơ sở dữ liệu. Worker trong Auto Scaling group co giãn theo lượng message, nên vừa bền vững vừa chỉ trả tiền compute theo nhu cầu thực." },
+      { "key": "C", "textVi": "Dùng một Amazon ElastiCache cluster để cache truy vấn cơ sở dữ liệu. Cấu hình ứng dụng lưu giao dịch mua vào cache trước khi ghi xuống cơ sở dữ liệu", "reason": "ElastiCache hợp cho workload đọc nhiều, không phải nơi ghi giao dịch bền vững; lưu giao dịch vào cache trước khi ghi cơ sở dữ liệu có nguy cơ mất dữ liệu khi node cache lỗi, và không giải quyết được việc cạn kết nối cơ sở dữ liệu khi ghi nhiều." },
+      { "key": "D", "textVi": "Triển khai Amazon API Gateway với throttling và usage plan để làm chậm các request mua hàng lúc cao điểm và giữ ổn định ứng dụng", "reason": "Throttling bảo vệ backend bằng cách trì hoãn hoặc từ chối request, làm trải nghiệm khách hàng tệ hơn lúc cao điểm; nó dập bớt nhu cầu chứ không tăng khả năng xử lý của backend." },
+      { "key": "E", "textVi": "Triển khai read replica cho cơ sở dữ liệu Aurora ở region khác và cấu hình EC2 instance đọc và ghi từ replica gần nhất theo độ trễ", "reason": "Read replica chỉ đọc, không nhận được lưu lượng ghi, nên không thể dùng để ghi giao dịch mua hàng; đây là lựa chọn gây nhiễu." }
+    ],
+    "explanationVi": "Timeout lúc cao điểm đến từ việc quá nhiều kết nối và giao dịch ghi dồn thẳng vào Aurora. RDS Proxy gom pool kết nối để giảm áp lực lên Aurora, còn SQS + worker trong Auto Scaling group đệm và xử lý bất đồng bộ các đợt tăng đột biến; cả hai không đòi thay đổi tầng cơ sở dữ liệu và chỉ tốn chi phí theo nhu cầu. Bẫy: cache không phải nơi ghi giao dịch bền vững, throttling làm mất đơn hàng, read replica không ghi được.",
+    "keyHint": "\"timing out\" lúc \"flash ticket sales\" + \"without reengineering the database layer\" → RDS Proxy (connection pooling) + SQS với worker Auto Scaling."
+  }
+]

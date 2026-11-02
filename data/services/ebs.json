@@ -1,0 +1,12 @@
+{
+  "id": "ebs", "name": "Amazon Elastic Block Store", "category": "Storage", "tier": "core",
+  "overview": "Amazon EBS cung cấp block storage bền vững cho EC2, phù hợp filesystem, boot volume và database workload.",
+  "concepts": [{ "term": "Volume", "desc": "Block device được provision trong một Availability Zone và gắn với instance tương thích." }, { "term": "Snapshot", "desc": "Backup tăng dần lưu trong S3-managed storage; có thể dùng tạo volume mới." }, { "term": "Volume type", "desc": "gp, io, throughput-optimized và cold HDD có đặc tính hiệu năng/giá khác nhau." }],
+  "howItWorks": "Tạo volume trong AZ, gắn vào EC2, format và mount từ hệ điều hành; snapshot lưu trạng thái volume để backup/khôi phục.",
+  "useCases": ["Boot/root volume cho EC2", "Database hoặc filesystem cần block storage", "Snapshot backup, copy và khởi tạo volume khác"],
+  "pricing": "Tính theo dung lượng provisioned, loại volume, IOPS/throughput cấu hình, snapshot và transfer giữa AZ/Region theo trường hợp.",
+  "examSignals": ["Block storage cần gắn với EC2 trong cùng AZ: EBS", "Filesystem dùng chung nhiều instance: EFS hoặc FSx phù hợp hơn", "Dữ liệu tạm gắn vòng đời host: instance store"],
+  "compareWith": [{ "service": "Amazon S3", "diff": "EBS cung cấp block device cho EC2; S3 lưu object truy cập qua API." }, { "service": "Amazon EFS", "diff": "EBS thường gắn với một instance/zone theo thiết kế; EFS là filesystem NFS chia sẻ đa AZ." }],
+  "facts": ["EBS volume tồn tại độc lập với instance cho tới khi xóa.", "Encryption có thể áp dụng cho volume/snapshot và cần quyền KMS nếu dùng customer-managed key.", "Snapshot không phải bản sao tức thời có cùng chi phí/đặc tính với volume online."],
+  "practice": { "steps": ["Tạo volume nhỏ trong AZ của một EC2 thử nghiệm hoặc chỉ xem cấu hình nếu không có sandbox.", "Nếu mount, format volume trống duy nhất và tạo tệp giả; không thao tác trên device production.", "Tạo snapshot thử chỉ khi cần học backup và ghi rõ identifier."], "freeTier": "EBS volume, IOPS provisioned, snapshot, transfer và EC2 attachment có thể tính phí; xem pricing theo loại và Region.", "cleanup": ["Unmount và detach volume trước khi xóa.", "Xóa volume thử và snapshot/AMIs phát sinh nếu không cần giữ.", "Kiểm tra volume orphan sau khi terminate instance; không xóa dữ liệu production."] }
+}

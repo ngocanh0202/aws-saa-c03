@@ -1,0 +1,6 @@
+{
+  "id": "drs", "name": "AWS Elastic Disaster Recovery", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Elastic Disaster Recovery (AWS DRS) replicates source servers to AWS staging resources and supports point-in-time recovery drills/failover.",
+  "examSignals": ["Pilot-light style server recovery with continuous block replication: AWS DRS", "Managed database replication/migration: DMS", "Backup-and-restore policies across AWS services: AWS Backup"],
+  "compareWith": [{ "service": "AWS Backup", "diff": "DRS continuously replicates server disks for recovery/failover; AWS Backup stores scheduled recovery points for supported resources." }]
+}

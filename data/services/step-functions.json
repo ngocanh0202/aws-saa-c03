@@ -1,0 +1,6 @@
+{
+  "id": "step-functions", "name": "AWS Step Functions", "category": "Application Integration", "tier": "minor",
+  "overview": "AWS Step Functions orchestrates distributed applications and serverless workflows with state transitions, retries, branching and service integrations.",
+  "examSignals": ["Coordinate multiple steps with retries/branching/state: Step Functions", "Route independent events to targets: EventBridge", "Buffer messages for asynchronous consumer processing: SQS"],
+  "compareWith": [{ "service": "Amazon EventBridge", "diff": "Step Functions manages a stateful multi-step workflow; EventBridge routes events based on rules." }]
+}

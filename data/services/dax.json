@@ -1,0 +1,6 @@
+{
+  "id": "dax", "name": "Amazon DynamoDB Accelerator (DAX)", "category": "Database", "tier": "minor",
+  "overview": "DynamoDB Accelerator (DAX) là in-memory cache tương thích DynamoDB API để giảm read latency cho eligible read-heavy workloads.",
+  "examSignals": ["Microsecond read caching for DynamoDB with minimal application changes: DAX", "Cache multiple data sources/custom Redis commands: ElastiCache"],
+  "compareWith": [{ "service": "Amazon ElastiCache", "diff": "DAX cache layer chuyên cho DynamoDB API; ElastiCache cung cấp cache engine/protocol tổng quát hơn." }]
+}

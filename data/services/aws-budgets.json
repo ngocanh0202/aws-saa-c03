@@ -1,0 +1,6 @@
+{
+  "id": "aws-budgets", "name": "AWS Budgets", "category": "AWS Cost Management", "tier": "minor",
+  "overview": "AWS Budgets đặt ngưỡng cost/usage/reservation/savings plans và gửi cảnh báo hoặc action theo điều kiện.",
+  "examSignals": ["Cảnh báo khi cost/usage chạm ngưỡng forecast/actual: AWS Budgets", "Phân tích lịch sử chi phí/filter service/account: Cost Explorer"],
+  "compareWith": [{ "service": "AWS Cost Explorer", "diff": "Budgets theo dõi target/threshold và cảnh báo; Cost Explorer phân tích/visualize chi phí lịch sử và dự báo." }]
+}

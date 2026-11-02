@@ -1,0 +1,12 @@
+{
+  "id": "sns", "name": "Amazon SNS", "category": "Application Integration", "tier": "core",
+  "overview": "Amazon SNS là dịch vụ pub/sub quản lý để publisher phát thông báo tới nhiều subscriber hoặc endpoint.",
+  "concepts": [{ "term": "Topic", "desc": "Điểm publisher gửi message; subscriber đăng ký nhận message từ topic." }, { "term": "Fan-out", "desc": "Một message topic được gửi tới nhiều endpoint, thường gồm các SQS queue." }, { "term": "Subscription filter", "desc": "Lọc message attributes để subscriber chỉ nhận loại sự kiện quan tâm." }],
+  "howItWorks": "Publisher publish tới topic; SNS áp dụng quyền, filter và giao message đến subscriber theo protocol; retry/DLQ phụ thuộc loại endpoint và cấu hình.",
+  "useCases": ["Thông báo đa kênh", "Fan-out một sự kiện sang nhiều queue/service", "Alert tới email/SMS hoặc HTTPS endpoint"],
+  "pricing": "Tính theo publish/delivery, protocol, SMS destination và data transfer; chi phí SMS khác biệt theo quốc gia.",
+  "examSignals": ["Một sự kiện cần gửi đồng thời nhiều consumer: SNS fan-out tới SQS", "Thông báo push tới subscriber: SNS", "Lọc thông báo theo thuộc tính: subscription filter policy"],
+  "compareWith": [{ "service": "Amazon SQS", "diff": "SNS push thông báo tới subscribers; SQS giữ message để consumer poll và xử lý độc lập." }, { "service": "Amazon EventBridge", "diff": "SNS pub/sub đơn giản cho topic; EventBridge có event bus, content-based rules và tích hợp sự kiện rộng." }],
+  "facts": ["SNS topic policy điều khiển quyền publish/subscribe cross-account.", "SQS subscription hữu ích để giữ message và hấp thụ consumer chậm.", "SMS có yêu cầu compliance/opt-in và giá theo quốc gia."],
+  "practice": { "steps": ["Tạo topic thử, publish message giả và đăng ký một endpoint do bạn kiểm soát.", "Nếu thử fan-out, dùng SQS queue riêng và policy giới hạn đúng topic.", "Không gửi SMS thật hoặc dữ liệu nhạy cảm trong bài lab."], "freeTier": "Publish/delivery, SMS, data transfer và encryption có thể tính phí; kiểm tra bảng giá theo protocol và quốc gia trước khi thử.", "cleanup": ["Hủy subscriptions và xóa topic thử.", "Xóa queue thử/fan-out và DLQ nếu tạo riêng.", "Gỡ policy/role chỉ tạo cho bài lab."] }
+}

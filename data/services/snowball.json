@@ -1,0 +1,6 @@
+{
+  "id": "snowball", "name": "AWS Snowball", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Snowball Edge supports offline data transfer and edge computing, but availability is restricted: since November 7, 2025, devices are available only to existing customers, with support in commercial Regions ending December 31, 2026.",
+  "examSignals": ["For current eligible Snowball customers, large offline data transfer can use Snowball Edge; check the published sunset timeline", "New customers should evaluate AWS Data Transfer Terminal, DataSync, or partner options according to connectivity and volume"],
+  "compareWith": [{ "service": "AWS DataSync", "diff": "Snow Family moves data with physical devices/edge capability; DataSync transfers data online over network." }]
+}

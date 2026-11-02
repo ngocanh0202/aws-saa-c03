@@ -1,0 +1,739 @@
+[
+  {
+    "id": 226,
+    "stemVi": "Một công ty đang dùng Amazon Route 53 latency-based routing để định tuyến request tới ứng dụng dựa trên UDP cho người dùng khắp thế giới. Ứng dụng được host trên các server dự phòng trong các data center on-premises của công ty ở Mỹ, châu Á và châu Âu. Yêu cầu tuân thủ của công ty quy định ứng dụng phải được host on-premises. Công ty muốn cải thiện hiệu năng và tính sẵn sàng của ứng dụng.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình ba Network Load Balancer (NLB) ở ba AWS Region để trỏ tới các endpoint on-premises. Tạo một accelerator bằng AWS Global Accelerator và đăng ký các NLB làm endpoint của nó. Cho người dùng truy cập ứng dụng qua một CNAME trỏ tới DNS của accelerator.",
+        "reason": "NLB hỗ trợ UDP và có thể dùng IP target nằm on-premises (qua Direct Connect hoặc VPN), nên ứng dụng vẫn host on-premises; Global Accelerator đưa traffic vào mạng toàn cầu của AWS tại edge gần nhất, health check và tự chuyển sang Region khỏe — cải thiện cả hiệu năng lẫn tính sẵn sàng."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình ba Application Load Balancer (ALB) ở ba AWS Region để trỏ tới các endpoint on-premises. Tạo một accelerator bằng AWS Global Accelerator và đăng ký các ALB làm endpoint của nó. Cho người dùng truy cập ứng dụng qua một CNAME trỏ tới DNS của accelerator.",
+        "reason": "ALB chỉ xử lý HTTP/HTTPS ở tầng 7, không hỗ trợ UDP, nên không chuyển được traffic của ứng dụng UDP này."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình ba Network Load Balancer (NLB) ở ba AWS Region để trỏ tới các endpoint on-premises. Trong Route 53, tạo một latency-based record trỏ tới ba NLB và dùng nó làm origin cho một Amazon CloudFront distribution. Cho người dùng truy cập ứng dụng qua một CNAME trỏ tới DNS của CloudFront.",
+        "reason": "CloudFront chỉ phân phối nội dung HTTP/HTTPS (và WebSocket), không chuyển tiếp traffic UDP, nên không dùng được cho ứng dụng này."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình ba Application Load Balancer (ALB) ở ba AWS Region để trỏ tới các endpoint on-premises. Trong Route 53, tạo một latency-based record trỏ tới ba ALB và dùng nó làm origin cho một Amazon CloudFront distribution. Cho người dùng truy cập ứng dụng qua một CNAME trỏ tới DNS của CloudFront.",
+        "reason": "Cả ALB lẫn CloudFront đều không hỗ trợ UDP, nên phương án này không phục vụ được ứng dụng dựa trên UDP."
+      }
+    ],
+    "explanationVi": "Ứng dụng dùng UDP và phải ở on-premises: cần load balancer tầng 4 hỗ trợ UDP và IP target on-premises (NLB), cộng một lớp tăng tốc toàn cầu cho traffic không phải HTTP (Global Accelerator) với health check và failover giữa các Region. Bẫy: ALB và CloudFront chỉ làm việc với HTTP/HTTPS nên loại mọi phương án có chúng.",
+    "keyHint": "\"UDP-based application\" + \"hosted on premises\" + \"improve the performance and availability\" → NLB với IP target on-premises + AWS Global Accelerator."
+  },
+  {
+    "id": 227,
+    "stemVi": "Một công ty chạy ứng dụng trên Amazon ECS. Ứng dụng tạo các phiên bản đổi kích thước từ một ảnh gốc, rồi gọi Amazon S3 API để lưu các ảnh đã đổi kích thước vào Amazon S3.",
+    "promptVi": "Solutions architect làm cách nào để bảo đảm ứng dụng có quyền truy cập Amazon S3?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cập nhật S3 role trong AWS IAM để cho phép quyền đọc/ghi từ Amazon ECS, rồi khởi chạy lại container.",
+        "reason": "IAM không có sẵn một \"S3 role\" nào để sửa; muốn container có quyền thì phải tạo role và khai báo nó trong task definition, khởi chạy lại container không tự gán quyền."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một IAM role có quyền S3, rồi chỉ định role đó làm taskRoleArn trong task definition.",
+        "reason": "Task role (taskRoleArn) cấp quyền IAM cho chính các container trong task; ECS tự cung cấp credentials tạm thời được xoay vòng cho ứng dụng gọi S3 API — cách chuẩn và theo least privilege."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một security group cho phép truy cập từ Amazon ECS tới Amazon S3, và cập nhật launch configuration mà ECS cluster dùng.",
+        "reason": "Security group chỉ kiểm soát traffic mạng, không cấp quyền gọi API; S3 API call vẫn bị từ chối nếu không có quyền IAM."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một IAM user có quyền S3, rồi khởi chạy lại các Amazon EC2 instance của ECS cluster trong khi đăng nhập bằng tài khoản này.",
+        "reason": "Đăng nhập bằng IAM user không gán quyền cho ứng dụng chạy trên instance; dùng IAM user với access key dài hạn cho ứng dụng cũng là anti-pattern về bảo mật."
+      }
+    ],
+    "explanationVi": "Ứng dụng chạy trong ECS task nhận quyền AWS qua task role khai báo bằng taskRoleArn trong task definition; credentials tạm thời được cấp tự động. Bẫy: security group chỉ là tường lửa mạng, không cấp quyền API; IAM user với khóa dài hạn và khái niệm \"S3 role\" có sẵn đều sai.",
+    "keyHint": "Ứng dụng trên \"Amazon ECS\" cần \"permission to access Amazon S3\" → IAM role làm taskRoleArn trong task definition."
+  },
+  {
+    "id": 228,
+    "stemVi": "Một công ty chạy các môi trường demo cho khách hàng trên Amazon EC2 instance. Mỗi môi trường được cô lập trong VPC riêng. Nhóm vận hành của công ty cần được thông báo khi có kết nối RDP hoặc SSH được thiết lập tới một môi trường.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Amazon CloudWatch Application Insights để tạo AWS Systems Manager OpsItem khi phát hiện truy cập RDP hoặc SSH.",
+        "reason": "Application Insights giám sát sức khỏe và sự cố của ứng dụng (như SQL Server, .NET), không phát hiện kết nối mạng RDP hay SSH tới instance."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình EC2 instance với IAM instance profile có IAM role gắn policy AmazonSSMManagedInstanceCore.",
+        "reason": "Policy này chỉ cho phép instance được Systems Manager quản lý (ví dụ dùng Session Manager); nó không tạo ra thông báo nào khi có kết nối RDP hay SSH."
+      },
+      {
+        "key": "C",
+        "textVi": "Publish VPC flow logs vào Amazon CloudWatch Logs. Tạo các metric filter cần thiết. Tạo một Amazon CloudWatch metric alarm có notification action khi alarm ở trạng thái ALARM.",
+        "reason": "VPC Flow Logs ghi lại các kết nối được chấp nhận; metric filter trên CloudWatch Logs đếm kết nối tới cổng 22 (SSH) và 3389 (RDP), và alarm gửi thông báo (qua SNS) cho nhóm vận hành khi có kết nối."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình một Amazon EventBridge rule lắng nghe sự kiện loại EC2 Instance State-change Notification. Cấu hình một Amazon Simple Notification Service (Amazon SNS) topic làm target. Cho nhóm vận hành subscribe vào topic.",
+        "reason": "Sự kiện state-change chỉ báo khi instance chuyển trạng thái (pending, running, stopped, terminated), không báo khi có người kết nối RDP hay SSH."
+      }
+    ],
+    "explanationVi": "Cần phát hiện kết nối mạng tới cổng SSH/RDP: VPC Flow Logs ghi lại thông tin traffic, đưa vào CloudWatch Logs, dùng metric filter lọc cổng 22 và 3389 rồi đặt alarm gửi thông báo. Bẫy: sự kiện state-change của EC2 chỉ về vòng đời instance; policy SSM và Application Insights không phát hiện kết nối.",
+    "keyHint": "\"notified when RDP or SSH access ... has been established\" → VPC Flow Logs vào CloudWatch Logs + metric filter + CloudWatch alarm."
+  },
+  {
+    "id": 229,
+    "stemVi": "Một công ty đang ra mắt ứng dụng trên AWS. Ứng dụng dùng một Application Load Balancer (ALB) để chuyển traffic tới ít nhất hai Amazon EC2 instance trong một target group. Các instance nằm trong một Auto Scaling group cho mỗi môi trường. Công ty cần một môi trường development và một môi trường production. Môi trường production sẽ có những giai đoạn traffic cao.",
+    "promptVi": "Giải pháp nào cấu hình môi trường development tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình lại target group trong môi trường development chỉ có một EC2 instance làm target.",
+        "reason": "Target group được Auto Scaling group quản lý: instance do Auto Scaling khởi chạy tự được đăng ký lại, nên sửa target group thủ công không giới hạn số instance đang chạy và không giảm chi phí."
+      },
+      {
+        "key": "B",
+        "textVi": "Đổi thuật toán cân bằng tải của ALB sang least outstanding requests.",
+        "reason": "Thuật toán cân bằng tải chỉ thay đổi cách chia request giữa các target, không thay đổi số instance đang chạy nên không ảnh hưởng chi phí."
+      },
+      {
+        "key": "C",
+        "textVi": "Giảm kích thước EC2 instance ở cả hai môi trường.",
+        "reason": "Thu nhỏ instance ở production có thể làm ứng dụng không chịu nổi các giai đoạn traffic cao; đề chỉ yêu cầu tối ưu môi trường development."
+      },
+      {
+        "key": "D",
+        "textVi": "Giảm số EC2 instance tối đa trong Auto Scaling group của môi trường development.",
+        "reason": "Chi phí EC2 tỉ lệ với số instance đang chạy; hạ maximum capacity của Auto Scaling group môi trường development chặn trần số instance dev có thể mở rộng tới, giảm chi phí mà không đụng tới production."
+      }
+    ],
+    "explanationVi": "Môi trường development không cần gánh traffic cao như production, nên cách gọn nhất để giảm chi phí là giới hạn số instance tối đa của Auto Scaling group dev. Bẫy: sửa target group thủ công bị Auto Scaling ghi đè; đổi thuật toán cân bằng tải không đổi chi phí; thu nhỏ instance ở production gây rủi ro hiệu năng.",
+    "keyHint": "\"development environment MOST cost-effectively\" + mỗi môi trường có Auto Scaling group → giảm maximum capacity của Auto Scaling group môi trường dev."
+  },
+  {
+    "id": 230,
+    "stemVi": "Một công ty có nền tảng game phổ biến chạy trên AWS. Ứng dụng nhạy cảm với độ trễ vì độ trễ ảnh hưởng tới trải nghiệm người dùng và có thể tạo lợi thế không công bằng cho một số người chơi. Ứng dụng được triển khai ở mọi AWS Region. Nó chạy trên các Amazon EC2 instance thuộc các Auto Scaling group đặt sau các Application Load Balancer (ALB). Solutions architect cần triển khai cơ chế giám sát sức khỏe của ứng dụng và chuyển hướng traffic tới các endpoint khỏe.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình một accelerator trong AWS Global Accelerator. Thêm listener cho cổng ứng dụng đang lắng nghe và gắn nó với một Regional endpoint ở mỗi Region. Thêm ALB làm endpoint.",
+        "reason": "Global Accelerator đưa người chơi vào mạng toàn cầu của AWS tại edge gần nhất, giảm độ trễ và jitter; nó liên tục health check các ALB ở từng Region và tự chuyển traffic sang endpoint khỏe trong vài giây."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon CloudFront distribution và chỉ định ALB làm origin server. Cấu hình cache behavior dùng cache header của origin. Dùng AWS Lambda function để tối ưu traffic.",
+        "reason": "CloudFront tối ưu cho cache nội dung HTTP; traffic game mang tính động, thời gian thực không hưởng lợi từ cache, và cơ chế này không phải cách health check rồi chuyển hướng giữa các ALB theo Region."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon CloudFront distribution và chỉ định Amazon S3 làm origin server. Cấu hình cache behavior dùng cache header của origin. Dùng AWS Lambda function để tối ưu traffic.",
+        "reason": "Ứng dụng chạy trên EC2 sau ALB, không nằm trên S3; origin S3 không liên quan và không giám sát sức khỏe các endpoint ứng dụng."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình một Amazon DynamoDB database làm kho dữ liệu cho ứng dụng. Tạo một DynamoDB Accelerator (DAX) cluster làm cache in-memory cho DynamoDB chứa dữ liệu ứng dụng.",
+        "reason": "DAX chỉ tăng tốc truy vấn database, không giám sát sức khỏe ứng dụng và không chuyển hướng traffic người dùng tới endpoint khỏe."
+      }
+    ],
+    "explanationVi": "Cần hai thứ: độ trễ thấp ổn định cho người chơi toàn cầu và cơ chế health check kèm chuyển hướng traffic giữa các Region. Global Accelerator làm cả hai: định tuyến qua mạng AWS với anycast IP và failover tự động giữa các ALB endpoint. Bẫy: CloudFront là CDN cho nội dung cache được; DAX là tối ưu database.",
+    "keyHint": "\"sensitive to latency\" + \"monitor the health\" + \"redirect traffic to healthy endpoints\" giữa nhiều Region → AWS Global Accelerator với ALB làm endpoint."
+  },
+  {
+    "id": 231,
+    "stemVi": "Solutions architect cần thiết kế một microservice mới cho ứng dụng của công ty. Client phải gọi được một HTTPS endpoint để tới microservice. Microservice cũng phải dùng AWS Identity and Access Management (IAM) để xác thực các lời gọi. Solutions architect sẽ viết logic cho microservice bằng một AWS Lambda function duy nhất viết bằng Go 1.x.",
+    "promptVi": "Giải pháp nào triển khai function theo cách hiệu quả vận hành nhất (MOST operationally efficient)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon API Gateway REST API. Cấu hình method dùng Lambda function. Bật xác thực IAM trên API.",
+        "reason": "Theo đáp án gốc: API Gateway REST API cung cấp HTTPS endpoint managed, tích hợp sẵn với Lambda và hỗ trợ xác thực IAM (AWS_IAM authorization), kèm các tính năng quản lý API như throttling, stage, custom domain."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Lambda function URL cho function. Chỉ định AWS_IAM làm kiểu xác thực.",
+        "reason": "Function URL cung cấp HTTPS endpoint và hỗ trợ kiểu xác thực AWS_IAM, nhưng theo đáp án gốc phương án này không được chọn vì thiếu các tính năng quản lý API mà API Gateway REST API có sẵn (throttling, stage, usage plan, custom domain)."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon CloudFront distribution. Triển khai function lên Lambda@Edge. Tích hợp logic xác thực IAM vào Lambda@Edge function.",
+        "reason": "Lambda@Edge dùng để xử lý request/response tại edge của CloudFront, không phải nơi host backend microservice; tự viết logic xác thực IAM (kiểm chữ ký SigV4) lại rất tốn công."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon CloudFront distribution. Triển khai function lên CloudFront Functions. Chỉ định AWS_IAM làm kiểu xác thực.",
+        "reason": "CloudFront Functions chỉ chạy JavaScript nhẹ, thời gian chạy rất ngắn, không chạy được code Go và không có kiểu xác thực AWS_IAM."
+      }
+    ],
+    "explanationVi": "Đề cần HTTPS endpoint, xác thực bằng IAM và backend là một Lambda function. Đáp án gốc chọn API Gateway REST API vì đây là cách managed quen thuộc để đưa Lambda ra HTTPS với AWS_IAM authorization. Bẫy: Lambda@Edge và CloudFront Functions là tính năng xử lý tại edge, không dùng làm backend microservice. Lưu ý: Lambda function URL với AWS_IAM là một cách nhẹ hơn để có HTTPS endpoint xác thực bằng IAM; nhiều nguồn chọn cách này, nhưng đáp án gốc là API Gateway.",
+    "keyHint": "\"HTTPS endpoint\" + \"use IAM to authenticate calls\" + \"single AWS Lambda function\" → đáp án gốc: API Gateway REST API với IAM authentication.",
+    "review": { "reason": "Chưa chắc chắn: Lambda function URL với kiểu xác thực AWS_IAM cũng cung cấp HTTPS endpoint và xác thực IAM (SigV4) cho một hàm duy nhất mà không cần thêm dịch vụ nào, nên nhiều nguồn coi đây là cách hiệu quả vận hành nhất; API Gateway REST API chỉ hơn khi cần throttling, usage plan, custom domain… mà đề không yêu cầu. Ngoài ra runtime go1.x của Lambda đã ngừng hỗ trợ; hàm Go hiện chạy trên runtime OS-only (provided.al2023), điều này không đổi lựa chọn kiến trúc." }
+  },
+  {
+    "id": 232,
+    "stemVi": "Một công ty có ứng dụng game trực tuyến với tính năng chơi nhiều người dùng TCP và UDP. Công ty dùng Amazon Route 53 để trỏ traffic ứng dụng tới nhiều Network Load Balancer (NLB) ở các AWS Region khác nhau. Công ty cần cải thiện hiệu năng ứng dụng và giảm độ trễ cho game trực tuyến để chuẩn bị cho lượng người dùng tăng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thêm một Amazon CloudFront distribution phía trước các NLB. Tăng tham số Cache-Control max-age.",
+        "reason": "CloudFront chỉ làm việc với HTTP/HTTPS, không chuyển tiếp traffic game TCP/UDP tùy ý; tăng max-age cũng vô nghĩa với dữ liệu game thời gian thực."
+      },
+      {
+        "key": "B",
+        "textVi": "Thay các NLB bằng Application Load Balancer (ALB). Cấu hình Route 53 dùng latency-based routing.",
+        "reason": "ALB không hỗ trợ UDP (cũng không nhận TCP thuần ngoài HTTP/HTTPS), nên sẽ làm hỏng tính năng chơi nhiều người; latency-based routing vẫn phụ thuộc DNS và internet công cộng."
+      },
+      {
+        "key": "C",
+        "textVi": "Thêm AWS Global Accelerator phía trước các NLB. Cấu hình endpoint của Global Accelerator dùng đúng các listener port.",
+        "reason": "Global Accelerator hỗ trợ cả TCP và UDP, nhận NLB làm endpoint và đưa traffic từ edge gần người chơi đi qua mạng AWS, giảm độ trễ và jitter, đồng thời có failover nhanh giữa các Region."
+      },
+      {
+        "key": "D",
+        "textVi": "Thêm một Amazon API Gateway endpoint phía sau các NLB. Bật API caching. Ghi đè method caching cho các stage khác nhau.",
+        "reason": "API Gateway chỉ xử lý API HTTP/REST/WebSocket, không phục vụ traffic game TCP/UDP; đặt thêm nó cũng tăng chứ không giảm độ trễ."
+      }
+    ],
+    "explanationVi": "Traffic game gồm cả TCP và UDP và người dùng ở nhiều Region: Global Accelerator là dịch vụ tăng tốc tầng 4 dùng được với NLB, định tuyến qua mạng AWS để giảm độ trễ. Bẫy: CloudFront, ALB và API Gateway đều gắn với HTTP nên không hỗ trợ UDP.",
+    "keyHint": "\"TCP and UDP\" + nhiều \"Network Load Balancers\" ở nhiều Region + \"decrease latency\" → AWS Global Accelerator."
+  },
+  {
+    "id": 233,
+    "stemVi": "Một công ty có ứng dụng xử lý dữ liệu legacy chạy trên Amazon EC2 instance. Dữ liệu được xử lý tuần tự, nhưng thứ tự kết quả không quan trọng. Ứng dụng dùng kiến trúc monolithic. Cách duy nhất để công ty mở rộng ứng dụng đáp ứng nhu cầu tăng là tăng kích thước instance.\n\nCác developer của công ty quyết định viết lại ứng dụng theo kiến trúc microservices trên Amazon Elastic Container Service (Amazon ECS).",
+    "promptVi": "Solutions architect nên đề xuất gì cho việc giao tiếp giữa các microservice?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Simple Queue Service (Amazon SQS) queue. Thêm code vào data producer để gửi dữ liệu vào queue. Thêm code vào data consumer để xử lý dữ liệu từ queue.",
+        "reason": "SQS tách rời (decouple) producer và consumer: dữ liệu được lưu bền trong queue tới khi xử lý xong, nhiều consumer có thể xử lý song song và mở rộng độc lập; thứ tự không quan trọng nên standard queue là đủ."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon Simple Notification Service (Amazon SNS) topic. Thêm code vào data producer để publish thông báo vào topic. Thêm code vào data consumer để subscribe vào topic.",
+        "reason": "SNS fan-out mỗi message tới mọi subscriber, nên các consumer sẽ xử lý trùng cùng một dữ liệu thay vì chia việc; SNS cũng không giữ message chờ khi consumer bận."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS Lambda function để chuyển message. Thêm code vào data producer để gọi Lambda function với một data object. Thêm code vào data consumer để nhận data object do Lambda function chuyển tới.",
+        "reason": "Dùng Lambda làm trung gian chuyển message là tự dựng một cơ chế hàng đợi: không có lưu đệm, retry hay điều tiết tải sẵn như SQS, lại tăng độ phức tạp."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon DynamoDB table. Bật DynamoDB Streams. Thêm code vào data producer để ghi dữ liệu vào bảng. Thêm code vào data consumer để dùng DynamoDB Streams API phát hiện bản ghi mới và lấy dữ liệu.",
+        "reason": "Dùng bảng và stream làm hàng đợi là đi đường vòng: phải quản lý shard của stream, dữ liệu stream chỉ giữ 24 giờ và các consumer khó chia việc cho nhau — phức tạp hơn SQS."
+      }
+    ],
+    "explanationVi": "Chuyển monolith sang microservices cần một kênh giao tiếp bất đồng bộ giúp tách rời (decouple) các thành phần và mở rộng consumer độc lập. SQS là lựa chọn chuẩn: lưu message bền, nhiều consumer chia nhau xử lý. Bẫy: SNS phát cùng message cho mọi subscriber; Lambda hay DynamoDB Streams làm hàng đợi đều phức tạp hơn.",
+    "keyHint": "\"order of results does not matter\" + chuyển sang \"microservices\" cần giao tiếp producer/consumer → Amazon SQS queue."
+  },
+  {
+    "id": 234,
+    "stemVi": "Một công ty đang xây dựng hệ thống game cần gửi các sự kiện riêng biệt (unique events) đồng thời tới các service riêng lẻ: leaderboard, matchmaking và authentication. Công ty cần một hệ thống event-driven trên AWS bảo đảm thứ tự của các sự kiện.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon EventBridge event bus",
+        "reason": "EventBridge event bus định tuyến sự kiện tới nhiều target nhưng không bảo đảm thứ tự sự kiện."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon Simple Notification Service (Amazon SNS) FIFO topics",
+        "reason": "SNS FIFO topic fan-out cùng lúc tới nhiều subscriber (như các SQS FIFO queue của từng service) và bảo đảm thứ tự cũng như loại bỏ trùng lặp message — đáp ứng cả gửi đồng thời lẫn giữ thứ tự."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon Simple Notification Service (Amazon SNS) standard topics",
+        "reason": "SNS standard topic fan-out được nhưng chỉ giao theo kiểu best-effort ordering, có thể giao sai thứ tự hoặc trùng lặp."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon Simple Queue Service (Amazon SQS) FIFO queues",
+        "reason": "SQS FIFO queue giữ thứ tự, nhưng mỗi message chỉ được một consumer nhận; muốn gửi cùng sự kiện tới ba service đồng thời thì cần một lớp fan-out phía trước."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu cùng lúc: gửi sự kiện tới nhiều service đồng thời (fan-out) và bảo đảm thứ tự. Chỉ SNS FIFO topic có cả hai. Bẫy: SQS FIFO giữ thứ tự nhưng không fan-out; SNS standard và EventBridge fan-out được nhưng không bảo đảm thứ tự.",
+    "keyHint": "gửi tới nhiều service \"concurrently\" + \"guarantees the order of the events\" → Amazon SNS FIFO topic."
+  },
+  {
+    "id": 235,
+    "stemVi": "Một công ty đang di chuyển workload lên AWS. Công ty có dữ liệu giao dịch và dữ liệu nhạy cảm trong các cơ sở dữ liệu. Công ty muốn dùng các giải pháp AWS Cloud để tăng cường bảo mật và giảm công vận hành cho các cơ sở dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Di chuyển các cơ sở dữ liệu sang Amazon EC2. Dùng AWS managed key của AWS Key Management Service (AWS KMS) để mã hóa.",
+        "reason": "Chạy database trên EC2 nghĩa là tự lo cài đặt, vá lỗi, backup và failover — không giảm công vận hành như yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Di chuyển các cơ sở dữ liệu sang Amazon RDS. Cấu hình mã hóa at rest.",
+        "reason": "RDS là dịch vụ managed tự lo vá lỗi, backup và failover nên giảm công vận hành; bật mã hóa at rest bằng KMS bảo vệ dữ liệu nhạy cảm trong storage, backup và snapshot."
+      },
+      {
+        "key": "C",
+        "textVi": "Di chuyển dữ liệu sang Amazon S3. Dùng Amazon Macie để bảo mật và bảo vệ dữ liệu.",
+        "reason": "S3 là object storage, không thay được cơ sở dữ liệu giao dịch; Macie chỉ phát hiện dữ liệu nhạy cảm chứ không mã hóa hay bảo vệ database."
+      },
+      {
+        "key": "D",
+        "textVi": "Di chuyển cơ sở dữ liệu sang Amazon RDS. Dùng Amazon CloudWatch Logs để bảo mật và bảo vệ dữ liệu.",
+        "reason": "RDS giảm công vận hành, nhưng CloudWatch Logs chỉ thu thập log, không mã hóa hay bảo vệ dữ liệu nhạy cảm."
+      }
+    ],
+    "explanationVi": "Đề cần hai thứ cho cơ sở dữ liệu giao dịch: giảm công vận hành (dịch vụ managed như RDS) và tăng bảo mật cho dữ liệu nhạy cảm (mã hóa at rest). Bẫy: database trên EC2 vẫn tự vận hành; S3 không phải database giao dịch; CloudWatch Logs không phải công cụ bảo vệ dữ liệu.",
+    "keyHint": "\"transactional and sensitive data\" + \"increase security and reduce operational overhead for the databases\" → Amazon RDS + encryption at rest."
+  },
+  {
+    "id": 236,
+    "stemVi": "Một công ty giải trí đang dùng Amazon DynamoDB để lưu metadata của media. Ứng dụng đọc rất nhiều (read intensive) và đang gặp tình trạng chậm trễ. Công ty không có nhân sự để gánh thêm công vận hành và cần cải thiện hiệu năng của DynamoDB mà không phải cấu hình lại ứng dụng.",
+    "promptVi": "Solutions architect nên đề xuất gì để đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon ElastiCache for Redis.",
+        "reason": "Redis có API khác DynamoDB; ứng dụng phải viết thêm logic đọc cache, ghi cache và vô hiệu hóa cache — trái với yêu cầu không cấu hình lại ứng dụng."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon DynamoDB Accelerator (DAX).",
+        "reason": "DAX là cache in-memory fully managed dành riêng cho DynamoDB, tương thích API DynamoDB nên ứng dụng chỉ cần trỏ sang endpoint DAX; độ trễ đọc giảm xuống cỡ micro giây mà không thêm công vận hành."
+      },
+      {
+        "key": "C",
+        "textVi": "Replicate dữ liệu bằng DynamoDB global tables.",
+        "reason": "Global tables tạo bản sao ở nhiều Region để phục vụ ứng dụng đa Region và khôi phục thảm họa, không giảm độ trễ đọc trong Region hiện tại."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon ElastiCache for Memcached với Auto Discovery được bật.",
+        "reason": "Auto Discovery chỉ giúp client tìm các node của cluster; ứng dụng vẫn phải viết lại logic cache vì Memcached không tương thích API DynamoDB."
+      }
+    ],
+    "explanationVi": "Ứng dụng đọc nhiều trên DynamoDB, cần nhanh hơn mà không thêm công vận hành và không sửa ứng dụng: DAX là cache managed, tương thích API DynamoDB nên hầu như không phải sửa code. Bẫy: ElastiCache (Redis hay Memcached) buộc viết lại logic cache; global tables phục vụ đa Region chứ không tăng tốc đọc.",
+    "keyHint": "DynamoDB \"read intensive\" + \"without reconfiguring the application\" + không thêm công vận hành → DynamoDB Accelerator (DAX)."
+  },
+  {
+    "id": 237,
+    "stemVi": "Một công ty đang triển khai giải pháp lưu trữ dùng chung cho một ứng dụng game được host trên AWS Cloud. Công ty cần dùng được Lustre client để truy cập dữ liệu. Giải pháp phải được quản lý hoàn toàn (fully managed).",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một AWS DataSync task chia sẻ dữ liệu dưới dạng file system có thể mount. Mount file system vào application server.",
+        "reason": "DataSync là dịch vụ truyền và đồng bộ dữ liệu, không cung cấp file system nào để mount hay chia sẻ."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một AWS Storage Gateway file gateway. Tạo file share dùng client protocol cần thiết. Kết nối application server tới file share.",
+        "reason": "File gateway chỉ cung cấp file share qua NFS hoặc SMB, không hỗ trợ giao thức Lustre."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon Elastic File System (Amazon EFS) file system và cấu hình để hỗ trợ Lustre. Gắn file system vào origin server. Kết nối application server tới file system.",
+        "reason": "EFS chỉ dùng giao thức NFS; không có tùy chọn nào để cấu hình EFS hỗ trợ Lustre client."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon FSx for Lustre file system. Gắn file system vào origin server. Kết nối application server tới file system.",
+        "reason": "FSx for Lustre là file system Lustre fully managed, hiệu năng cao; Lustre client mount và truy cập trực tiếp, đáp ứng cả yêu cầu dùng Lustre lẫn fully managed."
+      }
+    ],
+    "explanationVi": "Từ khóa \"Lustre clients\" cộng \"fully managed\" chỉ thẳng tới Amazon FSx for Lustre. Bẫy: EFS chỉ hỗ trợ NFS; Storage Gateway file gateway dùng NFS/SMB; DataSync chỉ là công cụ truyền dữ liệu.",
+    "keyHint": "\"Lustre clients\" + \"fully managed\" → Amazon FSx for Lustre."
+  },
+  {
+    "id": 238,
+    "stemVi": "Một công ty có ứng dụng ba tầng trên AWS thu nhận dữ liệu cảm biến từ thiết bị của người dùng. Traffic đi qua một Network Load Balancer (NLB), tới các Amazon EC2 instance của tầng web, rồi tới các EC2 instance của tầng ứng dụng. Tầng ứng dụng gọi tới một cơ sở dữ liệu.",
+    "promptVi": "Solutions architect nên làm gì để tăng cường bảo mật cho dữ liệu khi truyền (in transit)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình một TLS listener. Triển khai server certificate trên NLB.",
+        "reason": "NLB hỗ trợ TLS listener với chứng chỉ server (ví dụ từ ACM); dữ liệu từ thiết bị tới NLB được mã hóa TLS, trực tiếp tăng bảo mật cho dữ liệu in transit."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình AWS Shield Advanced. Bật AWS WAF trên NLB.",
+        "reason": "Shield Advanced chống DDoS, không mã hóa dữ liệu; AWS WAF cũng không gắn được vào NLB (chỉ ALB, CloudFront, API Gateway…)."
+      },
+      {
+        "key": "C",
+        "textVi": "Đổi load balancer sang Application Load Balancer (ALB). Bật AWS WAF trên ALB.",
+        "reason": "WAF lọc request độc hại ở tầng 7, không mã hóa dữ liệu khi truyền; việc đổi load balancer cũng không cần thiết cho yêu cầu này."
+      },
+      {
+        "key": "D",
+        "textVi": "Mã hóa Amazon Elastic Block Store (Amazon EBS) volume trên các EC2 instance bằng AWS Key Management Service (AWS KMS).",
+        "reason": "Mã hóa EBS là bảo vệ dữ liệu at rest trên đĩa, không ảnh hưởng tới dữ liệu đang truyền qua mạng."
+      }
+    ],
+    "explanationVi": "Bảo mật dữ liệu in transit nghĩa là mã hóa đường truyền: cấu hình TLS listener có server certificate trên NLB. Bẫy: Shield và WAF bảo vệ khỏi tấn công chứ không mã hóa (và WAF không gắn vào NLB); mã hóa EBS là at rest.",
+    "keyHint": "\"security of the data in transit\" + \"Network Load Balancer\" → TLS listener + server certificate trên NLB."
+  },
+  {
+    "id": 239,
+    "stemVi": "Một công ty thương mại điện tử nhận thấy hiệu năng của ứng dụng web dựa trên Amazon RDS bị suy giảm. Nguyên nhân là số truy vấn SQL chỉ đọc (read-only) do các chuyên viên phân tích kinh doanh chạy tăng lên. Solutions architect cần giải quyết vấn đề với ít thay đổi nhất cho ứng dụng web hiện có.",
+    "promptVi": "Solutions architect nên đề xuất gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Export dữ liệu sang Amazon DynamoDB và để các chuyên viên phân tích chạy truy vấn trên đó.",
+        "reason": "DynamoDB là cơ sở dữ liệu NoSQL, không chạy các truy vấn SQL hiện có của nhóm phân tích; còn phải dựng quy trình export và đồng bộ dữ liệu."
+      },
+      {
+        "key": "B",
+        "textVi": "Nạp dữ liệu vào Amazon ElastiCache và để các chuyên viên phân tích chạy truy vấn trên đó.",
+        "reason": "ElastiCache là cache key-value in-memory, không hỗ trợ truy vấn SQL phân tích và phải tự viết logic nạp dữ liệu."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một read replica của cơ sở dữ liệu chính và để các chuyên viên phân tích chạy truy vấn trên đó.",
+        "reason": "Read replica nhận bản sao dữ liệu liên tục từ DB chính; nhóm phân tích chỉ cần đổi endpoint sang replica để chạy các truy vấn SQL chỉ đọc, giải phóng DB chính cho ứng dụng web mà ứng dụng không phải sửa gì."
+      },
+      {
+        "key": "D",
+        "textVi": "Copy dữ liệu vào một Amazon Redshift cluster và để các chuyên viên phân tích chạy truy vấn trên đó.",
+        "reason": "Redshift hợp cho phân tích quy mô lớn nhưng phải dựng cluster và pipeline ETL đồng bộ dữ liệu — nhiều công và thay đổi hơn read replica."
+      }
+    ],
+    "explanationVi": "Tải đọc từ nhóm phân tích làm chậm DB chính; read replica tách tải đọc đó ra mà ứng dụng web không phải sửa, nhóm phân tích vẫn dùng SQL quen thuộc. Bẫy: DynamoDB và ElastiCache không chạy SQL; Redshift đòi dựng thêm ETL.",
+    "keyHint": "\"read-only SQL queries\" làm chậm RDS + \"minimal changes\" → RDS read replica cho nhóm phân tích."
+  },
+  {
+    "id": 240,
+    "stemVi": "Solutions architect nhận thấy một batch job chạy hằng đêm được scale tự động trong suốt 1 giờ mới đạt được capacity Amazon EC2 mong muốn. Capacity đỉnh mỗi đêm đều như nhau và batch job luôn bắt đầu lúc 1 giờ sáng. Solutions architect cần một giải pháp tiết kiệm chi phí (cost-effective) giúp nhanh chóng đạt capacity EC2 mong muốn và cho phép Auto Scaling group scale down sau khi batch job hoàn tất.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tăng minimum capacity của Auto Scaling group.",
+        "reason": "Minimum capacity cao giữ nhiều instance chạy suốt 24 giờ, kể cả khi không có job, và ngăn scale down sau khi job xong — lãng phí chi phí."
+      },
+      {
+        "key": "B",
+        "textVi": "Tăng maximum capacity của Auto Scaling group.",
+        "reason": "Maximum capacity chỉ là trần; nâng trần không làm Auto Scaling group đạt capacity mong muốn nhanh hơn."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình scheduled scaling để scale up tới mức compute mong muốn.",
+        "reason": "Tải xảy ra đúng giờ (1 giờ sáng) và mức đỉnh như nhau mỗi đêm, nên scheduled scaling tăng capacity lên đúng mức trước giờ chạy và một lịch khác hạ capacity xuống sau khi job xong — nhanh và chỉ trả tiền khi cần."
+      },
+      {
+        "key": "D",
+        "textVi": "Đổi scaling policy để thêm nhiều EC2 instance hơn trong mỗi lần scale.",
+        "reason": "Vẫn là scale phản ứng sau khi metric tăng, nên vẫn chậm lúc bắt đầu job; thêm nhiều instance mỗi lần còn dễ vượt quá mức cần."
+      }
+    ],
+    "explanationVi": "Khi tải lặp lại đúng giờ và mức đỉnh biết trước, scheduled scaling là cách rẻ và nhanh nhất: có đủ capacity ngay khi job bắt đầu và thu hồi khi xong. Bẫy: tăng minimum thì trả tiền cả ngày; tăng maximum không làm scale nhanh hơn; chỉnh bước scale vẫn là phản ứng sau.",
+    "keyHint": "\"peak capacity is the same every night\" + \"always start at 1 AM\" → scheduled scaling cho Auto Scaling group."
+  },
+  {
+    "id": 241,
+    "stemVi": "Một nhân viên mới vào công ty với vai trò deployment engineer. Deployment engineer sẽ dùng AWS CloudFormation template để tạo nhiều tài nguyên AWS. Solutions architect muốn deployment engineer thực hiện công việc theo nguyên tắc least privilege (quyền tối thiểu).",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp hành động nào để đạt mục tiêu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cho deployment engineer dùng credentials của AWS account root user để thực hiện các thao tác stack của AWS CloudFormation.",
+        "reason": "Root user có toàn quyền không giới hạn trên account — trái ngược hoàn toàn với least privilege; AWS khuyến nghị không dùng root cho công việc hằng ngày."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo IAM user mới cho deployment engineer và thêm IAM user vào một group gắn IAM policy PowerUsers.",
+        "reason": "PowerUserAccess cho phép gần như mọi thao tác trên mọi service (trừ quản lý IAM), rộng hơn nhiều so với những gì deployment engineer cần."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo IAM user mới cho deployment engineer và thêm IAM user vào một group gắn IAM policy AdministratorAccess.",
+        "reason": "AdministratorAccess cấp toàn quyền trên account, vi phạm nguyên tắc least privilege."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo IAM user mới cho deployment engineer và thêm IAM user vào một group có IAM policy chỉ cho phép các thao tác AWS CloudFormation.",
+        "reason": "User chỉ có quyền thao tác CloudFormation (tạo, cập nhật, xóa stack…) — đúng những gì công việc cần, theo least privilege."
+      },
+      {
+        "key": "E",
+        "textVi": "Tạo một IAM role cho deployment engineer để định nghĩa rõ các quyền riêng cho AWS CloudFormation stack và khởi chạy stack bằng IAM role đó.",
+        "reason": "IAM role (CloudFormation service role) chứa đúng các quyền stack cần để tạo tài nguyên; CloudFormation dùng role này khi tạo tài nguyên, nên bản thân engineer không cần quyền trực tiếp trên từng service."
+      }
+    ],
+    "explanationVi": "Least privilege ở đây gồm hai lớp: engineer chỉ được quyền thao tác CloudFormation, còn quyền tạo tài nguyên nằm trong một IAM role riêng mà stack dùng khi chạy. Bẫy: root user, PowerUserAccess và AdministratorAccess đều cấp quyền quá rộng.",
+    "keyHint": "\"AWS CloudFormation templates\" + \"principle of least privilege\" → IAM user với quyền chỉ CloudFormation + IAM role (service role) riêng cho stack."
+  },
+  {
+    "id": 242,
+    "stemVi": "Hạ tầng của một công ty gồm các Amazon EC2 instance và một Amazon RDS DB instance trong một AWS Region duy nhất. Công ty muốn sao lưu dữ liệu sang một Region riêng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Backup để copy các bản backup EC2 và RDS sang Region riêng.",
+        "reason": "AWS Backup quản lý tập trung backup cho cả EC2 và RDS trong một backup plan, có sẵn rule copy cross-Region tự động — một dịch vụ cho mọi thứ, ít công vận hành nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon Data Lifecycle Manager (Amazon DLM) để copy các bản backup EC2 và RDS sang Region riêng.",
+        "reason": "DLM chỉ tự động hóa EBS snapshot và AMI, không hỗ trợ backup RDS."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo Amazon Machine Image (AMI) của các EC2 instance. Copy AMI sang Region riêng. Tạo một read replica cho RDS DB instance ở Region riêng.",
+        "reason": "Tạo và copy AMI thủ công tốn công; read replica chỉ là bản sao đồng bộ liên tục — lỗi hay xóa nhầm dữ liệu cũng bị sao theo, không phải bản backup có thể khôi phục về thời điểm trước."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo Amazon Elastic Block Store (Amazon EBS) snapshot. Copy EBS snapshot sang Region riêng. Tạo RDS snapshot. Export RDS snapshot sang Amazon S3. Cấu hình S3 Cross-Region Replication (CRR) sang Region riêng.",
+        "reason": "Nhiều bước thủ công và nhiều dịch vụ phải phối hợp; RDS snapshot export sang S3 ở dạng Parquet dùng cho phân tích, không khôi phục trực tiếp thành DB instance được."
+      }
+    ],
+    "explanationVi": "Cần backup cả EC2 lẫn RDS sang Region khác với ít công nhất: AWS Backup hỗ trợ cả hai loại tài nguyên và có sẵn cross-Region copy trong backup plan. Bẫy: DLM không hỗ trợ RDS; read replica không phải backup; chuỗi snapshot + export + CRR quá nhiều bước.",
+    "keyHint": "\"EC2 instances and an Amazon RDS DB instance\" + \"back up its data in a separate Region\" + \"LEAST operational overhead\" → AWS Backup với cross-Region copy."
+  },
+  {
+    "id": 243,
+    "stemVi": "Một công ty có ứng dụng chia sẻ ảnh ba tầng. Ứng dụng dùng một Amazon EC2 instance cho tầng front-end, một EC2 instance khác cho tầng ứng dụng và một EC2 instance thứ ba cho cơ sở dữ liệu MySQL. Solutions architect phải thiết kế giải pháp có khả năng mở rộng (scalable) và có tính sẵn sàng cao (highly available) mà ứng dụng cần thay đổi ít nhất.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon S3 để host tầng front-end. Dùng AWS Lambda function cho tầng ứng dụng. Chuyển cơ sở dữ liệu sang một Amazon DynamoDB table. Dùng Amazon S3 để lưu và phục vụ ảnh của người dùng.",
+        "reason": "Kiến trúc serverless này co giãn tốt nhưng buộc viết lại gần như toàn bộ: front-end thành trang tĩnh, logic thành Lambda, MySQL thành DynamoDB — trái với yêu cầu thay đổi ít nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng các môi trường AWS Elastic Beanstalk có load balancer, Multi-AZ cho tầng front-end và tầng ứng dụng. Chuyển cơ sở dữ liệu sang một Amazon RDS DB instance với nhiều read replica để phục vụ ảnh của người dùng.",
+        "reason": "Read replica dùng để giảm tải đọc, không phải nơi lưu và phục vụ file ảnh; lưu ảnh trong database là anti-pattern, và read replica không tự failover như Multi-AZ."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon S3 để host tầng front-end. Dùng một fleet EC2 instance trong Auto Scaling group cho tầng ứng dụng. Chuyển cơ sở dữ liệu sang instance type tối ưu bộ nhớ (memory optimized) để lưu và phục vụ ảnh của người dùng.",
+        "reason": "Database vẫn chạy trên một instance duy nhất nên vẫn là single point of failure; đổi sang instance memory optimized không tạo tính sẵn sàng cao, còn lưu ảnh trong database là anti-pattern."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng các môi trường AWS Elastic Beanstalk có load balancer, Multi-AZ cho tầng front-end và tầng ứng dụng. Chuyển cơ sở dữ liệu sang một Amazon RDS Multi-AZ DB instance. Dùng Amazon S3 để lưu và phục vụ ảnh của người dùng.",
+        "reason": "Elastic Beanstalk chạy code hiện có trên nhiều AZ phía sau load balancer với Auto Scaling; RDS for MySQL Multi-AZ giữ MySQL mà có failover tự động; S3 lưu và phục vụ ảnh bền, co giãn — HA và scalable với ít thay đổi code."
+      }
+    ],
+    "explanationVi": "Muốn scalable, highly available mà ít sửa ứng dụng: đưa hai tầng web/ứng dụng lên Elastic Beanstalk (load balancer, Multi-AZ, Auto Scaling), giữ MySQL trên RDS Multi-AZ và chuyển ảnh sang S3. Bẫy: kiến trúc serverless với DynamoDB phải viết lại; read replica hay instance lớn hơn không phải nơi lưu ảnh và không tạo HA cho database.",
+    "keyHint": "\"scalable and highly available\" + \"least amount of change to the application\" → Elastic Beanstalk Multi-AZ + RDS Multi-AZ + ảnh trên S3."
+  },
+  {
+    "id": 244,
+    "stemVi": "Một công ty thấy chi phí Amazon EC2 tăng trong hóa đơn gần nhất. Nhóm billing nhận thấy một vài EC2 instance bị scale dọc (vertical scaling) sang instance type lớn hơn ngoài ý muốn. Solutions architect cần tạo biểu đồ so sánh chi phí EC2 của 2 tháng gần nhất và phân tích chuyên sâu để tìm nguyên nhân gốc của việc scale dọc này.",
+    "promptVi": "Solutions architect nên tạo thông tin này thế nào với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Budgets để tạo báo cáo ngân sách và so sánh chi phí EC2 theo instance type.",
+        "reason": "AWS Budgets dùng để đặt ngưỡng ngân sách và cảnh báo khi vượt, không phải công cụ vẽ biểu đồ so sánh và phân tích chi tiết theo instance type."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng tính năng lọc chi tiết (granular filtering) của Cost Explorer để phân tích chuyên sâu chi phí EC2 theo instance type.",
+        "reason": "Cost Explorer có sẵn biểu đồ chi phí theo thời gian, lọc và nhóm theo service, instance type, khoảng thời gian — so sánh 2 tháng và tìm instance bị đổi type ngay trên console, không cần thiết lập gì."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng các biểu đồ trên dashboard AWS Billing and Cost Management để so sánh chi phí EC2 theo instance type trong 2 tháng gần nhất.",
+        "reason": "Dashboard Billing chỉ hiển thị tổng quan chi phí theo service, không có bộ lọc chi tiết theo instance type để phân tích chuyên sâu."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Cost and Usage Reports để tạo báo cáo và gửi vào một Amazon S3 bucket. Dùng Amazon QuickSight với nguồn là Amazon S3 để tạo biểu đồ tương tác theo instance type.",
+        "reason": "CUR cùng QuickSight cho phân tích rất chi tiết nhưng phải cấu hình báo cáo, chờ dữ liệu và dựng dataset, dashboard — nhiều công hơn Cost Explorer có sẵn."
+      }
+    ],
+    "explanationVi": "Cần biểu đồ so sánh chi phí EC2 theo thời gian và phân tích theo instance type với ít công nhất: Cost Explorer có sẵn cả biểu đồ lẫn bộ lọc chi tiết. Bẫy: Budgets dùng để cảnh báo ngân sách; dashboard Billing quá tổng quát; CUR + QuickSight mạnh nhưng tốn công thiết lập.",
+    "keyHint": "\"graph comparing the last 2 months of EC2 costs\" + \"in-depth analysis\" theo instance type + \"LEAST operational overhead\" → AWS Cost Explorer."
+  },
+  {
+    "id": 245,
+    "stemVi": "Một công ty đã triển khai ứng dụng web trên AWS. Công ty host cơ sở dữ liệu backend trên Amazon RDS for MySQL với một primary DB instance và năm read replica để đáp ứng nhu cầu mở rộng. Các read replica không được trễ quá 1 giây so với primary DB instance. Cơ sở dữ liệu thường xuyên chạy các stored procedure theo lịch.\n\nKhi traffic của website tăng, các replica bị trễ thêm trong các giai đoạn tải cao điểm. Solutions architect phải giảm độ trễ replication (replication lag) nhiều nhất có thể. Solutions architect phải hạn chế tối đa thay đổi code ứng dụng và hạn chế tối đa công vận hành lâu dài.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Di chuyển cơ sở dữ liệu sang Amazon Aurora MySQL. Thay các read replica bằng Aurora Replica và cấu hình Aurora Auto Scaling. Thay các stored procedure bằng native function của Aurora MySQL.",
+        "reason": "Aurora Replica dùng chung cluster volume với writer nên replication lag thường dưới 100 mili giây, dễ đạt yêu cầu dưới 1 giây; Aurora tương thích MySQL nên ít sửa code, và Aurora Auto Scaling tự thêm bớt replica — ít công vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai một Amazon ElastiCache for Redis cluster phía trước cơ sở dữ liệu. Sửa ứng dụng để kiểm tra cache trước khi truy vấn cơ sở dữ liệu. Thay các stored procedure bằng AWS Lambda function.",
+        "reason": "Phải sửa ứng dụng để thêm logic cache và viết lại stored procedure thành Lambda; cache cũng không giảm replication lag giữa các replica MySQL."
+      },
+      {
+        "key": "C",
+        "textVi": "Di chuyển cơ sở dữ liệu sang MySQL chạy trên các Amazon EC2 instance. Chọn EC2 instance lớn, tối ưu tính toán (compute optimized) cho mọi replica node. Giữ các stored procedure trên EC2 instance.",
+        "reason": "Tự vận hành MySQL trên EC2 làm tăng công vận hành lâu dài; replication kiểu binlog vẫn là cơ chế gây lag, instance lớn hơn không bảo đảm hết trễ."
+      },
+      {
+        "key": "D",
+        "textVi": "Di chuyển cơ sở dữ liệu sang Amazon DynamoDB. Cấp một lượng lớn read capacity unit (RCU) để đáp ứng throughput cần thiết và cấu hình on-demand capacity scaling. Thay các stored procedure bằng DynamoDB streams.",
+        "reason": "Chuyển từ MySQL quan hệ sang DynamoDB NoSQL buộc viết lại tầng dữ liệu và logic stored procedure — thay đổi code rất lớn."
+      }
+    ],
+    "explanationVi": "Replication lag của MySQL đến từ việc mỗi replica phải phát lại binlog; Aurora Replica đọc cùng storage với writer nên lag chỉ cỡ mili giây. Aurora MySQL tương thích với ứng dụng hiện có và Aurora Auto Scaling giảm công vận hành. Bẫy: ElastiCache và DynamoDB buộc sửa ứng dụng; tự chạy MySQL trên EC2 tăng công vận hành mà không hết lag.",
+    "keyHint": "RDS for MySQL \"replication lag\" + \"minimize changes to the application code\" + \"minimize ongoing operational overhead\" → Aurora MySQL + Aurora Replicas + Aurora Auto Scaling."
+  },
+  {
+    "id": 246,
+    "stemVi": "Một công ty đang xây dựng ứng dụng quản lý quan hệ khách hàng (customer relationship management) mới trên web. Ứng dụng sẽ dùng nhiều Amazon EC2 instance dùng Amazon Elastic Block Store (Amazon EBS) volume, đặt sau một Application Load Balancer (ALB). Ứng dụng cũng sẽ dùng một cơ sở dữ liệu Amazon Aurora. Toàn bộ dữ liệu của ứng dụng phải được mã hóa at rest và in transit.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng chứng chỉ AWS Key Management Service (AWS KMS) trên ALB để mã hóa dữ liệu in transit. Dùng AWS Certificate Manager (ACM) để mã hóa at rest các EBS volume và storage của cơ sở dữ liệu Aurora.",
+        "reason": "Đảo ngược vai trò hai dịch vụ: KMS quản lý khóa mã hóa chứ không cấp chứng chỉ TLS cho ALB, còn ACM cấp chứng chỉ TLS chứ không mã hóa EBS hay Aurora at rest."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS root account đăng nhập AWS Management Console. Upload các chứng chỉ mã hóa của công ty. Trong khi vẫn ở root account, chọn tùy chọn bật mã hóa cho toàn bộ dữ liệu at rest và in transit của account.",
+        "reason": "AWS không có tùy chọn nào bật mã hóa at rest và in transit cho toàn bộ account; dùng root account cho việc cấu hình thường ngày cũng trái khuyến nghị bảo mật."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Key Management Service (AWS KMS) để mã hóa at rest các EBS volume và storage của cơ sở dữ liệu Aurora. Gắn một chứng chỉ AWS Certificate Manager (ACM) vào ALB để mã hóa dữ liệu in transit.",
+        "reason": "KMS cung cấp khóa để mã hóa at rest cho EBS volume và storage của Aurora; chứng chỉ ACM gắn vào HTTPS listener của ALB mã hóa traffic TLS từ client — đáp ứng cả at rest lẫn in transit."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng BitLocker để mã hóa toàn bộ dữ liệu at rest. Import các khóa chứng chỉ TLS của công ty vào AWS Key Management Service (AWS KMS). Gắn các KMS key vào ALB để mã hóa dữ liệu in transit.",
+        "reason": "BitLocker chỉ là công cụ mã hóa đĩa của Windows, không mã hóa được storage của Aurora; ALB dùng chứng chỉ từ ACM hoặc IAM chứ không gắn được KMS key để làm TLS."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu, hai dịch vụ: mã hóa at rest cho EBS và Aurora dùng khóa của KMS, còn mã hóa in transit cho ALB dùng chứng chỉ TLS của ACM. Bẫy: phương án đảo ngược vai trò KMS và ACM; không có công tắc bật mã hóa cho cả account; BitLocker không mã hóa được Aurora và ALB không dùng KMS key làm chứng chỉ.",
+    "keyHint": "\"encrypted at rest and in transit\" với EBS, Aurora và ALB → KMS cho at rest + chứng chỉ ACM trên ALB cho in transit."
+  },
+  {
+    "id": 247,
+    "stemVi": "Một công ty xử lý giao dịch có các batch job viết bằng script chạy hằng tuần trên Amazon EC2 instance. Các EC2 instance nằm trong một Auto Scaling group. Số lượng giao dịch có thể thay đổi, nhưng mức CPU utilization nền ghi nhận ở mỗi lần chạy luôn từ 60% trở lên. Công ty cần cấp capacity 30 phút trước khi job chạy.\n\nHiện tại, các kỹ sư làm việc này bằng cách sửa thủ công các tham số của Auto Scaling group. Công ty không có nguồn lực để phân tích xu hướng capacity cần thiết cho số lượng instance của Auto Scaling group. Công ty cần một cách tự động để thay đổi desired capacity của Auto Scaling group.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một dynamic scaling policy cho Auto Scaling group. Cấu hình policy scale theo metric CPU utilization. Đặt target value của metric là 60%.",
+        "reason": "Dynamic scaling chỉ phản ứng sau khi CPU đã tăng, nên không thể cấp capacity sẵn 30 phút trước khi job chạy."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một scheduled scaling policy cho Auto Scaling group. Đặt desired capacity, minimum capacity và maximum capacity phù hợp. Đặt lịch lặp lại hằng tuần. Đặt thời điểm bắt đầu là 30 phút trước khi batch job chạy.",
+        "reason": "Scheduled scaling cần biết trước con số capacity cố định, trong khi số giao dịch thay đổi và công ty không có nguồn lực phân tích để xác định con số đó."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một predictive scaling policy cho Auto Scaling group. Cấu hình policy scale theo dự báo (forecast). Đặt scaling metric là CPU utilization. Đặt target value của metric là 60%. Trong policy, đặt instance được khởi chạy trước (pre-launch) 30 phút trước khi job chạy.",
+        "reason": "Predictive scaling dùng machine learning học mẫu tải lặp lại từ dữ liệu lịch sử để dự báo capacity cần, và SchedulingBufferTime cho khởi chạy instance trước 30 phút — tự động, không cần ai phân tích xu hướng."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon EventBridge event để gọi AWS Lambda function khi metric CPU utilization của Auto Scaling group đạt 60%. Cấu hình Lambda function tăng desired capacity và maximum capacity của Auto Scaling group thêm 20%.",
+        "reason": "Phải tự viết và bảo trì code, lại chỉ phản ứng khi CPU đã đạt 60% nên không cấp capacity trước 30 phút được."
+      }
+    ],
+    "explanationVi": "Job lặp lại theo tuần, cần capacity sẵn 30 phút trước nhưng không ai phân tích được con số cần thiết: predictive scaling tự học mẫu tải từ lịch sử và khởi chạy instance trước theo thời gian đệm đã đặt. Bẫy: dynamic scaling và Lambda theo ngưỡng CPU đều phản ứng sau; scheduled scaling đòi tự xác định capacity cố định.",
+    "keyHint": "\"provision the capacity 30 minutes before\" + \"does not have the resources to analyze the required capacity trends\" → predictive scaling với pre-launch (scheduling buffer)."
+  },
+  {
+    "id": 248,
+    "stemVi": "Một công ty muốn tạo ứng dụng di động cho phép người dùng stream các video clip quay chậm (slow-motion) trên thiết bị di động. Hiện tại, ứng dụng quay video clip và upload chúng ở định dạng thô (raw) vào một Amazon S3 bucket. Ứng dụng lấy các video clip trực tiếp từ S3 bucket. Tuy nhiên, video ở định dạng thô có dung lượng lớn.\n\nNgười dùng gặp vấn đề buffering và phát lại trên thiết bị di động. Công ty muốn triển khai giải pháp tối đa hóa hiệu năng và khả năng mở rộng (scalability) của ứng dụng đồng thời giảm thiểu công vận hành.",
+    "promptVi": "Tổ hợp giải pháp nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai Amazon CloudFront để phân phối và cache nội dung.",
+        "reason": "CloudFront cache video tại edge location gần người dùng, giảm độ trễ và buffering, tự mở rộng theo lượng truy cập và là dịch vụ managed."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS DataSync để replicate các file video sang các S3 bucket khác ở các AWS Region khác.",
+        "reason": "DataSync là công cụ truyền dữ liệu, không phải CDN; chép video sang nhiều Region vẫn không cache gần người dùng và không làm video nhẹ hơn."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Elastic Transcoder để chuyển các file video sang định dạng phù hợp hơn.",
+        "reason": "Theo đáp án gốc: Elastic Transcoder là dịch vụ managed chuyển video thô dung lượng lớn sang định dạng và bitrate phù hợp cho thiết bị di động, giảm dung lượng và buffering mà không phải quản lý server (xem ghi chú review về trạng thái hiện tại của dịch vụ)."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai một Auto Scaling group gồm các Amazon EC2 instance ở Local Zones để phân phối và cache nội dung.",
+        "reason": "Tự dựng lớp cache trên EC2 ở Local Zones phải tự vận hành phần mềm cache và fleet instance, lại chỉ phủ vài khu vực — tốn công hơn CloudFront nhiều."
+      },
+      {
+        "key": "E",
+        "textVi": "Triển khai một Auto Scaling group gồm các Amazon EC2 instance để chuyển các file video sang định dạng phù hợp hơn.",
+        "reason": "Tự chạy phần mềm transcode trên EC2 đòi cài đặt, vá lỗi và điều chỉnh scaling — nhiều công vận hành hơn dịch vụ transcode managed."
+      }
+    ],
+    "explanationVi": "Vấn đề có hai phần: video thô quá nặng (cần transcode sang định dạng hợp với di động) và phân phối chưa tối ưu (cần CDN cache gần người dùng). Đáp án gốc chọn Elastic Transcoder cho phần đầu và CloudFront cho phần sau, đều là dịch vụ managed. Bẫy: DataSync không phải CDN; tự dựng EC2 để cache hay transcode tốn công vận hành.",
+    "keyHint": "video \"large in their raw format\" + \"buffering and playback\" + \"minimizing operational overhead\" → transcode managed (Elastic Transcoder, nay là MediaConvert) + CloudFront.",
+    "review": { "reason": "Đáp án có thể sai: AWS đã ngừng Amazon Elastic Transcoder từ 13/11/2025 (không còn truy cập được console hay tài nguyên), nên phương án dùng Elastic Transcoder không còn triển khai được; AWS khuyến nghị chuyển sang AWS Elemental MediaConvert. Ý đồ của câu (CloudFront + dịch vụ transcode managed thay vì tự dựng EC2) vẫn đúng, nhưng với các lựa chọn hiện có thì chỉ cách tự transcode bằng Auto Scaling group EC2 là còn làm được; lựa chọn nên được cập nhật thành MediaConvert." }
+  },
+  {
+    "id": 249,
+    "stemVi": "Một công ty chạy ứng dụng web dựa trên Amazon RDS. Một quản trị viên cơ sở dữ liệu mới vô tình sửa thông tin trong một bảng, gây mất dữ liệu. Để có thể khôi phục sau loại sự cố này, công ty muốn khả năng khôi phục cơ sở dữ liệu về trạng thái 5 phút trước bất kỳ thay đổi nào trong 30 ngày gần nhất.",
+    "promptVi": "Solutions architect nên đưa tính năng nào vào thiết kế để đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Read replica",
+        "reason": "Read replica sao chép liên tục mọi thay đổi từ DB chính, nên thao tác sửa nhầm cũng bị sao theo gần như ngay lập tức; nó không cho quay về thời điểm trước."
+      },
+      {
+        "key": "B",
+        "textVi": "Manual snapshot",
+        "reason": "Manual snapshot chỉ ghi lại trạng thái tại lúc chụp; không thể chụp liên tục để luôn có bản ở đúng 5 phút trước mọi thay đổi trong 30 ngày."
+      },
+      {
+        "key": "C",
+        "textVi": "Automated backups",
+        "reason": "Automated backups gồm snapshot hằng ngày và transaction log, cho phép point-in-time recovery tới bất kỳ thời điểm nào (thường chỉ cách hiện tại khoảng 5 phút) trong retention period — đặt 30 ngày (tối đa 35) là đáp ứng."
+      },
+      {
+        "key": "D",
+        "textVi": "Multi-AZ deployment",
+        "reason": "Multi-AZ giữ bản standby đồng bộ để failover khi hạ tầng hỏng; thao tác sửa nhầm dữ liệu cũng được ghi sang standby nên không giúp khôi phục."
+      }
+    ],
+    "explanationVi": "Khôi phục về một thời điểm bất kỳ trong 30 ngày là point-in-time recovery, dựa trên automated backups của RDS với retention period tối đa 35 ngày. Bẫy: read replica và Multi-AZ sao chép luôn cả thay đổi sai; manual snapshot không đủ chi tiết theo thời gian.",
+    "keyHint": "\"restore the database to its state from 5 minutes before any change within the last 30 days\" → RDS automated backups (point-in-time recovery)."
+  },
+  {
+    "id": 250,
+    "stemVi": "Một công ty đang tiến hành kiểm toán nội bộ. Công ty muốn bảo đảm dữ liệu trong một Amazon S3 bucket gắn với data lake AWS Lake Formation của công ty không chứa dữ liệu nhạy cảm của khách hàng hoặc nhân viên. Công ty muốn phát hiện thông tin nhận dạng cá nhân (PII) hoặc thông tin tài chính, bao gồm số hộ chiếu và số thẻ tín dụng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình AWS Audit Manager trên account. Chọn Payment Card Industry Data Security Standards (PCI DSS) để kiểm toán.",
+        "reason": "Audit Manager thu thập bằng chứng về cấu hình và hoạt động để đánh giá tuân thủ theo framework, không quét nội dung object trong S3 để tìm số hộ chiếu hay số thẻ tín dụng."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình Amazon S3 Inventory trên S3 bucket. Cấu hình Amazon Athena để truy vấn inventory.",
+        "reason": "S3 Inventory chỉ liệt kê metadata của object (tên, kích thước, trạng thái mã hóa…), không chứa nội dung file nên không phát hiện được PII."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình Amazon Macie chạy một data discovery job dùng managed identifier cho các loại dữ liệu cần tìm.",
+        "reason": "Macie quét nội dung object trong S3 bằng machine learning và pattern matching, có sẵn managed data identifier cho PII, số hộ chiếu và số thẻ tín dụng — đúng công cụ cho yêu cầu này."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon S3 Select để chạy báo cáo trên S3 bucket.",
+        "reason": "S3 Select chỉ lọc dữ liệu trong từng object riêng lẻ bằng SQL đơn giản; nó không quét toàn bucket và không có sẵn khả năng nhận diện PII."
+      }
+    ],
+    "explanationVi": "Phát hiện dữ liệu nhạy cảm (PII, số hộ chiếu, số thẻ tín dụng) trong S3 là chức năng chính của Amazon Macie với các managed data identifier có sẵn. Bẫy: Audit Manager đánh giá tuân thủ chứ không quét dữ liệu; S3 Inventory chỉ có metadata; S3 Select chỉ truy vấn từng object.",
+    "keyHint": "\"discover personally identifiable information (PII)\" + \"passport numbers and credit card numbers\" trong S3 → Amazon Macie."
+  }
+]

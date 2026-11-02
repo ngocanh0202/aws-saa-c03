@@ -1,0 +1,12 @@
+{
+  "id": "eventbridge", "name": "Amazon EventBridge", "category": "Application Integration", "tier": "core",
+  "overview": "Amazon EventBridge định tuyến sự kiện theo rule tới targets để kết nối ứng dụng, AWS services và SaaS một cách bất đồng bộ.",
+  "concepts": [{ "term": "Event bus", "desc": "Nhận events từ AWS services, ứng dụng hoặc SaaS; bus có thể chia sẻ liên tài khoản." }, { "term": "Rule/pattern", "desc": "So khớp nội dung/sự kiện và chọn target; target invocation có retry/DLQ tùy cấu hình." }, { "term": "Scheduler", "desc": "Lên lịch gọi target theo lịch/cron mà không cần tự dựng polling service." }],
+  "howItWorks": "Producer gửi event vào bus; EventBridge kiểm tra event pattern của rules rồi invoke targets; retry và dead-letter handling phụ thuộc cấu hình.",
+  "useCases": ["Event-driven integration giữa dịch vụ", "Định tuyến event theo nội dung", "Lên lịch tác vụ serverless"],
+  "pricing": "Chi phí dựa trên event ingestion, replay/archive, schema discovery và feature/target usage; verify giá theo bus và Region.",
+  "examSignals": ["Định tuyến AWS service events theo content rule: EventBridge", "Lịch cron gọi Lambda mà không quản lý server: EventBridge Scheduler", "Buffer queue và consumer poll: SQS phù hợp hơn"],
+  "compareWith": [{ "service": "Amazon SNS", "diff": "EventBridge lọc/định tuyến theo event pattern và bus; SNS là pub/sub topic với fan-out đơn giản." }, { "service": "AWS Step Functions", "diff": "EventBridge phát/định tuyến event; Step Functions điều phối workflow nhiều bước có trạng thái." }],
+  "facts": ["Event bus không phải durable work queue thay cho SQS.", "Target permissions phải cho EventBridge quyền invoke.", "Event pattern khớp cấu trúc/nội dung; kiểm tra sample event để tránh rule quá rộng."],
+  "practice": { "steps": ["Tạo custom event bus/rule thử và target Lambda trả kết quả tĩnh.", "Gửi một event giả, kiểm tra pattern match và target invocation/log.", "Giới hạn quyền invoke vào đúng rule/bus; không phát event từ production."], "freeTier": "Event ingestion, archive/replay, scheduler và target services có thể tính phí; kiểm tra usage allowances và Region trước khi thử.", "cleanup": ["Disable/xóa rule thử rồi xóa event bus nếu không dùng.", "Xóa target Lambda/logs, archive và DLQ riêng do bài lab tạo.", "Gỡ permission chỉ cấp cho EventBridge lab sau khi không còn rule phụ thuộc."] }
+}

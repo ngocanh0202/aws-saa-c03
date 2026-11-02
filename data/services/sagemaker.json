@@ -1,0 +1,6 @@
+{
+  "id": "sagemaker", "name": "Amazon SageMaker", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon SageMaker provides managed tools/infrastructure to prepare data, build/train models, deploy endpoints and operate ML workflows.",
+  "examSignals": ["Build/train/deploy custom ML models and managed notebooks/pipelines: SageMaker", "Use prebuilt NLP/vision API without model training: Comprehend/Rekognition/Textract"],
+  "compareWith": [{ "service": "Amazon Comprehend", "diff": "SageMaker is a broad managed ML platform for custom model workflows; Comprehend provides ready-made NLP APIs." }]
+}

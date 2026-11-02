@@ -1,0 +1,6 @@
+{
+  "id": "firewall-manager", "name": "AWS Firewall Manager", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS Firewall Manager centrally configures and audits supported firewall/security protections across AWS Organizations accounts and resources.",
+  "examSignals": ["Central policy management for WAF/Shield/security protections across accounts: Firewall Manager", "Define account hierarchy and SCP guardrails: Organizations/Control Tower"],
+  "compareWith": [{ "service": "AWS WAF", "diff": "Firewall Manager centrally manages policies across accounts; WAF evaluates web requests on associated resources." }]
+}

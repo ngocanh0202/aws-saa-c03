@@ -1,0 +1,12 @@
+{
+  "id": "vpc", "name": "Amazon VPC", "category": "Networking and Content Delivery", "tier": "core",
+  "overview": "Amazon VPC tạo một mạng logic cô lập trong AWS để kiểm soát địa chỉ IP, subnet, route và ranh giới mạng.",
+  "concepts": [{ "term": "Subnet", "desc": "Phân đoạn CIDR nằm trong một Availability Zone; route table quyết định đường đi." }, { "term": "Internet/NAT gateway", "desc": "Internet gateway phục vụ đường Internet cho tài nguyên có định tuyến phù hợp; NAT gateway cho phép kết nối outbound từ private subnet." }, { "term": "Security group/NACL", "desc": "Security group stateful ở ENI/resource; network ACL stateless ở subnet." }],
+  "howItWorks": "Tạo VPC với CIDR không chồng lấn, chia subnet theo AZ, gắn route table và gateway, rồi kiểm soát lưu lượng bằng security group/NACL.",
+  "useCases": ["Cô lập workload và phân tầng public/private", "Kết nối VPC với mạng on-premises hoặc VPC khác", "Kiểm soát luồng mạng và egress"],
+  "pricing": "VPC cơ bản không tính phí riêng, nhưng NAT Gateway, endpoints, VPN, Transit Gateway, IP công khai và data transfer có thể tính phí.",
+  "examSignals": ["Private subnet cần outbound IPv4 Internet: NAT Gateway ở public subnet và route phù hợp", "Kết nối private tới dịch vụ AWS: VPC endpoint có thể tránh Internet/NAT", "Kết nối mạng công ty: Site-to-Site VPN hoặc Direct Connect"],
+  "compareWith": [{ "service": "VPC Endpoints", "diff": "Endpoint tạo kết nối private từ VPC tới dịch vụ/endpoint service; VPC là mạng chứa workload." }, { "service": "AWS Transit Gateway", "diff": "Transit Gateway là hub kết nối nhiều VPC/mạng; không thay thế thiết kế subnet và route trong từng VPC." }],
+  "facts": ["Subnet gắn với một AZ.", "Route table quyết định đường đi; gắn Internet Gateway đơn thuần không làm subnet public nếu thiếu route và cấu hình IP phù hợp.", "NAT Gateway có chi phí theo giờ và dữ liệu."],
+  "practice": { "steps": ["Tạo VPC thử trong region sandbox với CIDR riêng không chồng lấn.", "Tạo subnet và xem main route table; tránh NAT Gateway để không phát sinh phí khi chỉ học cấu trúc.", "Kiểm tra security group inbound/outbound và flow của một sơ đồ giả lập trước khi gắn workload."], "freeTier": "VPC cấu trúc cơ bản không có phí riêng; NAT Gateway, public IPv4, endpoint và transfer có thể tính phí. Kiểm tra bảng giá theo Region trước khi triển khai.", "cleanup": ["Xóa interface/network interface và tài nguyên phụ thuộc.", "Xóa NAT Gateway, release Elastic IP và xóa endpoint nếu đã tạo.", "Xóa subnet, route table tùy chỉnh, Internet Gateway và VPC thử sau khi tháo phụ thuộc."] }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "ec2", "name": "Amazon EC2", "category": "Compute", "tier": "core",
+  "overview": "Amazon EC2 cung cấp máy chủ ảo có thể thay đổi loại máy, hệ điều hành và dung lượng theo nhu cầu.",
+  "concepts": [
+    { "term": "Instance type", "desc": "Quy định CPU, bộ nhớ, lưu trữ và mạng; chọn họ máy phù hợp workload." },
+    { "term": "AMI", "desc": "Mẫu hệ điều hành và cấu hình dùng để khởi chạy instance." },
+    { "term": "Security group", "desc": "Tường lửa trạng thái ở cấp instance; chỉ mở luồng cần thiết." }
+  ],
+  "howItWorks": "Chọn AMI, instance type, VPC/subnet, IAM role, security group và storage rồi khởi chạy; instance truy cập qua mạng được phép.",
+  "useCases": ["Máy chủ ứng dụng cần quyền kiểm soát hệ điều hành", "Tác vụ lâu dài hoặc phần mềm không phù hợp mô hình serverless"],
+  "pricing": "Chi phí phụ thuộc loại instance, khu vực, thời gian chạy và storage/network. On-Demand linh hoạt; Savings Plans/Reserved phù hợp cam kết; Spot có thể bị gián đoạn.",
+  "examSignals": ["Cần quyền kiểm soát hệ điều hành hoặc phần mềm tùy chỉnh", "Spot cho workload chịu được gián đoạn", "Auto Scaling duy trì số lượng instance theo nhu cầu"],
+  "compareWith": [{ "service": "AWS Lambda", "diff": "Lambda chạy hàm theo sự kiện, không quản lý máy chủ; EC2 cho quyền kiểm soát OS và tiến trình dài hạn." }, { "service": "AWS Fargate", "diff": "Fargate chạy container không quản lý máy chủ; EC2 yêu cầu quản lý instance." }],
+  "facts": ["Instance store có vòng đời gắn với host; EBS tồn tại độc lập hơn instance.", "Security group là stateful; network ACL là stateless ở subnet."],
+  "practice": {
+    "steps": ["Trong sandbox cá nhân, tạo một instance nhỏ trong subnet phù hợp; không gán địa chỉ công khai nếu không cần.", "Chỉ mở SSH từ IP của bạn hoặc dùng Systems Manager Session Manager; không dùng 0.0.0.0/0.", "Xem trạng thái, metrics và thông tin kết nối; không đưa dữ liệu thật lên máy thử."],
+    "freeTier": "Ưu đãi phụ thuộc tài khoản, thời điểm, khu vực và loại instance; instance, EBS, IP công khai, lưu lượng và snapshot có thể tính phí. Kiểm tra AWS Pricing/Free Tier trước khi tạo.",
+    "cleanup": ["Terminate instance thử nghiệm.", "Xóa volume EBS và snapshot không còn dùng.", "Xóa security group, key pair và tài nguyên mạng chỉ tạo cho bài thực hành sau khi xác nhận không còn phụ thuộc."]
+  }
+}

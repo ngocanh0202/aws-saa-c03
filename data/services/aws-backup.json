@@ -1,0 +1,6 @@
+{
+  "id": "aws-backup", "name": "AWS Backup", "category": "Storage", "tier": "minor",
+  "overview": "AWS Backup tập trung hóa backup plans, schedules, retention và recovery points cho nhiều AWS services.",
+  "examSignals": ["Centralized backup policy nhiều AWS services/accounts: AWS Backup", "EBS-only lifecycle scheduling: Data Lifecycle Manager có thể đủ", "Archival object storage: S3 lifecycle/Glacier"],
+  "compareWith": [{ "service": "Amazon Data Lifecycle Manager", "diff": "AWS Backup điều phối backup nhiều dịch vụ; DLM tập trung lifecycle EBS snapshots/AMI." }]
+}

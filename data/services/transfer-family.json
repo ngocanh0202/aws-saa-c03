@@ -1,0 +1,6 @@
+{
+  "id": "transfer-family", "name": "AWS Transfer Family", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Transfer Family provides managed file transfer endpoints for protocols such as SFTP, FTPS and FTP backed by AWS storage.",
+  "examSignals": ["External partners need managed SFTP/FTPS access to S3/EFS: Transfer Family", "Move bulk files between locations with scheduled sync: DataSync"],
+  "compareWith": [{ "service": "AWS DataSync", "diff": "Transfer Family exposes managed file-transfer protocol endpoints to users/partners; DataSync transfers datasets between storage locations." }]
+}

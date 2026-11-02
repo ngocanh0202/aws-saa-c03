@@ -1,0 +1,6 @@
+{
+  "id": "control-tower", "name": "AWS Control Tower", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS Control Tower thiết lập và quản trị landing zone multi-account với account factory, guardrails và centralized governance.",
+  "examSignals": ["Set up governed multi-account landing zone: Control Tower", "Build organization/accounts/policies directly: AWS Organizations"],
+  "compareWith": [{ "service": "AWS Organizations", "diff": "Control Tower tự động hóa landing zone/controls dựa trên Organizations; Organizations cung cấp account hierarchy và policies nền tảng." }]
+}

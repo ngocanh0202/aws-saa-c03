@@ -1,0 +1,6 @@
+{
+  "id": "workload-discovery", "name": "Workload Discovery on AWS", "category": "Management and Governance", "tier": "minor",
+  "overview": "Workload Discovery on AWS không còn được cung cấp. AWS gợi ý CloudWatch Application Map và AWS DevOps Agent cho các nhu cầu quan sát/khám phá workload; cần đánh giá độ phù hợp vì không nhất thiết thay thế hoàn toàn sơ đồ kiến trúc đa tài khoản.",
+  "examSignals": ["Câu hỏi cũ có thể nhắc Workload Discovery; dịch vụ không còn khả dụng, hãy xem giải pháp quan sát/khám phá hiện hành", "Observe metrics/logs/alarms: CloudWatch", "Inventory/configuration history and compliance: AWS Config"],
+  "compareWith": [{ "service": "AWS Config", "diff": "Workload Discovery focuses on architecture visualization; Config records resource configurations and evaluates rules." }]
+}

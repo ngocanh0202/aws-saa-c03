@@ -1,0 +1,6 @@
+{
+  "id": "app-runner", "name": "AWS App Runner", "category": "Compute", "tier": "minor",
+  "overview": "AWS App Runner triển khai web applications/API từ source code hoặc container image thành dịch vụ web được quản lý.",
+  "examSignals": ["Deploy web app/container nhanh mà không quản lý infrastructure: App Runner", "Cần kiểm soát networking/orchestration sâu hoặc nhiều service: ECS/EKS có thể phù hợp hơn"],
+  "compareWith": [{ "service": "AWS Elastic Beanstalk", "diff": "App Runner đơn giản hóa deploy web services từ source/image; Beanstalk cung cấp environment orchestration rộng hơn trên AWS resources." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "emr", "name": "Amazon EMR", "category": "Analytics", "tier": "minor",
+  "overview": "Amazon EMR runs big-data frameworks such as Spark/Hadoop on managed clusters or supported serverless deployments.",
+  "examSignals": ["Need managed Spark/Hadoop environment and cluster/framework control: EMR", "Managed serverless SQL ETL with less cluster management: Glue", "Ad hoc SQL on S3: Athena"],
+  "compareWith": [{ "service": "AWS Glue", "diff": "EMR exposes broader big-data framework/runtime control; Glue provides managed ETL/catalog workflows." }]
+}

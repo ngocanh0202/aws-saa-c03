@@ -1,0 +1,6 @@
+{
+  "id": "resource-access-manager", "name": "AWS Resource Access Manager", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS RAM shares supported AWS resources securely with accounts, organizational units or the organization without duplicating the resources.",
+  "examSignals": ["Share supported VPC/subnet/resources across accounts: RAM", "Share object data through explicit storage permissions: S3/IAM policies"],
+  "compareWith": [{ "service": "AWS Organizations", "diff": "RAM shares selected resources; Organizations groups/accounts and applies organization-level policies." }]
+}

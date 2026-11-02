@@ -1,0 +1,6 @@
+{
+  "id": "comprehend-medical", "name": "Amazon Comprehend Medical", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Comprehend Medical nhận diện medical text entities/relationships và PHI trong unstructured clinical text theo service capabilities.",
+  "examSignals": ["Medical terminology/PHI extraction from clinical text: Comprehend Medical", "General sentiment/entities in non-clinical text: Comprehend"],
+  "compareWith": [{ "service": "Amazon Comprehend", "diff": "Comprehend Medical được thiết kế cho clinical text concepts; Comprehend phục vụ NLP use cases tổng quát." }]
+}

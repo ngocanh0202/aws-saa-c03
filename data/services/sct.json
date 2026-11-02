@@ -1,0 +1,6 @@
+{
+  "id": "sct", "name": "AWS Schema Conversion Tool", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS Schema Conversion Tool (SCT) assesses and converts database schemas/code for heterogeneous database migrations where supported.",
+  "examSignals": ["Convert schema/procedural code between database engines: SCT", "Move table data and ongoing changes: DMS"],
+  "compareWith": [{ "service": "AWS Database Migration Service", "diff": "SCT converts schema/code; DMS migrates database data and can replicate changes." }]
+}

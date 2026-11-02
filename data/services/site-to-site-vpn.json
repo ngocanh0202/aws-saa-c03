@@ -1,0 +1,6 @@
+{
+  "id": "site-to-site-vpn", "name": "AWS Site-to-Site VPN", "category": "Networking and Content Delivery", "tier": "minor",
+  "overview": "AWS Site-to-Site VPN creates encrypted IPsec tunnels between on-premises/customer networks and AWS network gateways.",
+  "examSignals": ["Encrypted network connection over Internet to VPC: Site-to-Site VPN", "Dedicated private connectivity with predictable throughput: Direct Connect; add VPN for encryption if required"],
+  "compareWith": [{ "service": "AWS Client VPN", "diff": "Site-to-Site VPN connects network gateways; Client VPN connects individual remote users/devices." }]
+}

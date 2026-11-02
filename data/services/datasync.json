@@ -1,0 +1,12 @@
+{
+  "id": "datasync", "name": "AWS DataSync", "category": "Migration and Transfer", "tier": "core",
+  "overview": "AWS DataSync tự động hóa truyền dữ liệu file/object giữa on-premises, AWS storage và các location được hỗ trợ.",
+  "concepts": [{ "term": "Task/location", "desc": "Location mô tả source/target; task định nghĩa hướng, include/exclude và lịch chuyển dữ liệu." }, { "term": "Agent", "desc": "VM/appliance tùy topology kết nối một số on-premises storage tới AWS." }, { "term": "Verification/transfer mode", "desc": "Task options kiểm soát kiểm tra, overwrite, metadata và lịch truyền." }],
+  "howItWorks": "DataSync kết nối hai locations qua task, quét/so sánh metadata và truyền dữ liệu qua network theo lịch hoặc chạy một lần.",
+  "useCases": ["Migration NFS/SMB file shares tới AWS storage", "Đồng bộ dữ liệu giữa storage endpoints", "Lặp lại transfer có kiểm tra và scheduling"],
+  "pricing": "Phí thường dựa trên dữ liệu được truyền và location/feature; storage đích, agent infrastructure, requests và network transfer tính riêng.",
+  "examSignals": ["Managed online transfer/on-premises file migration: DataSync", "Petabyte offline transfer khi network không phù hợp: Snow Family", "Hybrid NFS/SMB access tới S3: Storage Gateway"],
+  "compareWith": [{ "service": "AWS Storage Gateway", "diff": "DataSync chuyển/synchronize dữ liệu; Storage Gateway cung cấp hybrid storage access/cache gateway." }, { "service": "AWS Snowball", "diff": "DataSync truyền online qua network; Snowball physical device phù hợp transfer offline/large-scale." }],
+  "facts": ["Task options quyết định delete/overwrite behavior; kiểm tra kỹ trước khi chạy production.", "Agent và network endpoints phải cho phép đường kết nối DataSync.", "Kiểm tra integrity/metadata theo yêu cầu ứng dụng."],
+  "practice": { "steps": ["Dùng source/target test locations và bộ tệp giả nhỏ, không trỏ vào shares production.", "Tạo task run-once với include filter và overwrite/delete behavior đã xác nhận.", "Xem transfer report/errors và xác thực tệp đích."], "freeTier": "Data transferred, S3/EFS/FSx operations, agent compute và network transfer có thể tính phí; kiểm tra giá DataSync theo location/Region.", "cleanup": ["Xóa task thử sau khi run kết thúc.", "Xóa location/agent chỉ dùng cho lab và revoke credentials/role grants.", "Xóa source/target test files và kiểm tra không để sync task định kỳ chạy tiếp."] }
+}

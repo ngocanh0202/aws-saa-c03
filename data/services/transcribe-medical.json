@@ -1,0 +1,6 @@
+{
+  "id": "transcribe-medical", "name": "Amazon Transcribe Medical", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Transcribe Medical is a speech-recognition capability tailored to medical terminology and clinical dictation/transcription workflows.",
+  "examSignals": ["Medical speech audio transcription: Transcribe Medical", "Extract clinical entities from existing text: Comprehend Medical", "General audio transcription: Transcribe"],
+  "compareWith": [{ "service": "Amazon Comprehend Medical", "diff": "Transcribe Medical converts clinical speech to text; Comprehend Medical extracts medical entities/relationships from text." }]
+}

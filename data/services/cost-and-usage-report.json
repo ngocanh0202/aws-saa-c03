@@ -1,0 +1,6 @@
+{
+  "id": "cost-and-usage-report", "name": "AWS Cost and Usage Reports", "category": "AWS Cost Management", "tier": "minor",
+  "overview": "AWS Cost and Usage Reports (CUR) tạo detailed billing/usage data files, thường gửi tới S3 để truy vấn/phân tích.",
+  "examSignals": ["Granular itemized billing and usage dataset for custom analysis: CUR", "Quick interactive spend visualization: Cost Explorer", "Budget threshold notifications: AWS Budgets"],
+  "compareWith": [{ "service": "AWS Cost Explorer", "diff": "CUR cung cấp detailed export data để tự phân tích; Cost Explorer cung cấp built-in interactive cost views." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "guardduty", "name": "Amazon GuardDuty", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "Amazon GuardDuty continuously analyzes supported AWS data sources/signals to detect potential threats and suspicious activity.",
+  "examSignals": ["Managed threat detection from AWS account/network/DNS activity: GuardDuty", "Investigate/correlate findings: Detective", "Scan workloads for software vulnerabilities: Inspector"],
+  "compareWith": [{ "service": "Amazon Detective", "diff": "GuardDuty generates threat findings; Detective helps investigate and correlate those findings." }]
+}

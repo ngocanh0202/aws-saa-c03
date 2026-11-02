@@ -1,0 +1,6 @@
+{
+  "id": "client-vpn", "name": "AWS Client VPN", "category": "Networking and Content Delivery", "tier": "minor",
+  "overview": "AWS Client VPN cung cấp managed remote-access VPN để người dùng kết nối an toàn từ client tới AWS/on-premises networks.",
+  "examSignals": ["Remote workforce cần client-to-site VPN vào VPC: Client VPN", "Kết nối site/router network với AWS: Site-to-Site VPN hoặc Direct Connect"],
+  "compareWith": [{ "service": "AWS Site-to-Site VPN", "diff": "Client VPN kết nối individual user devices; Site-to-Site VPN nối hai network gateways." }]
+}

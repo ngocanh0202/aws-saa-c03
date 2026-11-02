@@ -1,0 +1,12 @@
+{
+  "id": "cloudwatch", "name": "Amazon CloudWatch", "category": "Management and Governance", "tier": "core",
+  "overview": "Amazon CloudWatch thu thập metrics, logs và events để quan sát hệ thống, cảnh báo và tự động hóa phản ứng.",
+  "concepts": [{ "term": "Metric/alarm", "desc": "Metric là chuỗi đo lường theo namespace/dimension; alarm đổi state theo threshold hoặc anomaly." }, { "term": "Logs/log group", "desc": "Log groups chứa streams và retention; ingestion và lưu trữ có thể tính phí." }, { "term": "Dashboard", "desc": "Tổng hợp widgets để theo dõi metrics, logs và alarm." }],
+  "howItWorks": "AWS services/agents gửi telemetry vào CloudWatch; người dùng tạo alarm/query/dashboard và có thể kích hoạt SNS hoặc action được hỗ trợ.",
+  "useCases": ["Theo dõi health/performance và cảnh báo", "Tập trung application logs", "Tạo dashboard vận hành và truy vấn log"],
+  "pricing": "Metrics, custom metrics, log ingestion/storage/query, dashboards, alarms, API calls và data transfer có thể tính phí theo usage.",
+  "examSignals": ["Metrics, logs, alarms và dashboards: CloudWatch", "Audit API activity: CloudTrail", "Cấu hình drift/compliance inventory: AWS Config"],
+  "compareWith": [{ "service": "AWS CloudTrail", "diff": "CloudWatch quan sát operational metrics/logs/alarms; CloudTrail ghi lại hoạt động API/account." }, { "service": "AWS X-Ray", "diff": "CloudWatch tập trung metrics/logs; X-Ray trace request qua các thành phần ứng dụng." }],
+  "facts": ["EC2 detailed monitoring và custom metrics có thể khác basic metrics về chu kỳ/cost.", "Log retention mặc định có thể không hết hạn; đặt retention có chủ đích.", "Alarm chỉ hữu ích khi metric/threshold/action được cấu hình phù hợp."],
+  "practice": { "steps": ["Trong sandbox, xem metrics sẵn có hoặc phát một metric/log giả từ workload lab.", "Tạo alarm thử với ngưỡng rõ ràng; kiểm tra notification endpoint do bạn kiểm soát.", "Tránh gửi secrets/PII vào log và đặt retention ngắn cho dữ liệu thử."], "freeTier": "CloudWatch allowances/giá phụ thuộc metric, log ingestion, retention, query, alarm và Region; custom usage dễ phát sinh phí. Kiểm tra bảng giá hiện tại.", "cleanup": ["Xóa alarm, dashboard và subscription notification thử.", "Đặt retention/xóa log group thử khi không cần lưu.", "Gỡ agent/metric publisher lab nếu có cài; không xóa telemetry của workload khác."] }
+}

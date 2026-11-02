@@ -1,0 +1,12 @@
+{
+  "id": "cloudfront", "name": "Amazon CloudFront", "category": "Networking and Content Delivery", "tier": "core",
+  "overview": "CloudFront là CDN phân phối nội dung qua edge location, có thể cache nội dung và chuyển request tới origin.",
+  "concepts": [{ "term": "Distribution", "desc": "Cấu hình CDN gồm domain, origin, behavior, cache policy và bảo vệ truy cập." }, { "term": "Origin", "desc": "Nguồn nội dung như S3 hoặc HTTP server; origin access control giúp giữ S3 private." }, { "term": "Invalidation/TTL", "desc": "TTL điều khiển thời hạn cache; invalidation yêu cầu bỏ object khỏi edge cache." }],
+  "howItWorks": "Viewer gửi request tới edge; behavior chọn origin/cache policy; CloudFront trả cache hit hoặc lấy nội dung từ origin rồi phục vụ viewer.",
+  "useCases": ["Giảm độ trễ phân phối nội dung tĩnh", "Tăng tốc website/API toàn cầu", "Bảo vệ origin bằng HTTPS, signed URL/cookie và tích hợp WAF"],
+  "pricing": "Chi phí phụ thuộc data transfer, request, tính năng và khu vực edge; invalidation, logs và origin cũng có thể phát sinh chi phí.",
+  "examSignals": ["Người dùng toàn cầu cần phân phối nội dung có cache: CloudFront", "Nội dung S3 cần giữ bucket private: Origin Access Control", "Nội dung chỉ người được phép tải: signed URL/cookie"],
+  "compareWith": [{ "service": "Elastic Load Balancing", "diff": "CloudFront cache/phân phối ở edge toàn cầu; ELB cân bằng kết nối tới targets của ứng dụng." }, { "service": "Amazon Route 53", "diff": "Route 53 trả lời DNS; CloudFront phân phối HTTP(S) và cache nội dung." }],
+  "facts": ["Cache behavior điều khiển path pattern/origin/policy.", "HTTPS tới viewer và giữa CloudFront-origin cần cấu hình chứng chỉ phù hợp.", "CloudFront không thay thế authorization của ứng dụng."],
+  "practice": { "steps": ["Dùng nội dung public vô hại hoặc bucket thử riêng tư với origin access control.", "Tạo distribution thử và kiểm tra cache behavior cùng HTTPS; không cấu hình domain production.", "Xem request qua distribution và xác nhận quyền truy cập origin không bị mở public ngoài ý muốn."], "freeTier": "Request, transfer, logs, WAF và origin có thể tính phí; credits/ưu đãi thay đổi. Kiểm tra ước tính CloudFront theo khu vực và usage trước khi deploy.", "cleanup": ["Disable distribution và đợi trạng thái cho phép xóa.", "Xóa distribution, log bucket và policy/OAC chỉ tạo riêng sau khi tháo phụ thuộc.", "Xóa nội dung bucket thử nếu không còn cần; kiểm tra origin không bị để public ngoài ý muốn."] }
+}

@@ -1,0 +1,6 @@
+{
+  "id": "fsx-lustre", "name": "Amazon FSx for Lustre", "category": "Storage", "tier": "minor",
+  "overview": "Amazon FSx for Lustre provides high-performance parallel file storage for compute-intensive/HPC workloads and can integrate with S3 data repositories.",
+  "examSignals": ["High-performance parallel filesystem for HPC/ML workloads: FSx for Lustre", "Shared general-purpose Linux NFS: EFS", "Object data lake storage: S3"],
+  "compareWith": [{ "service": "Amazon EFS", "diff": "FSx for Lustre targets high-throughput parallel compute access; EFS is managed shared NFS for general file workloads." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "cost-explorer", "name": "AWS Cost Explorer", "category": "AWS Cost Management", "tier": "minor",
+  "overview": "AWS Cost Explorer phân tích và visualize AWS cost/usage history, filter/group theo dịch vụ, account, tag và dimensions.",
+  "examSignals": ["Visualize historical cost/usage and forecast: Cost Explorer", "Receive threshold alerts: AWS Budgets", "Export detailed line-item data: CUR"],
+  "compareWith": [{ "service": "AWS Budgets", "diff": "Cost Explorer phân tích xu hướng/chi tiết chi phí; Budgets theo dõi ngưỡng và gửi cảnh báo/action." }]
+}

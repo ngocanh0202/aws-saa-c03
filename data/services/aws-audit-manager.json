@@ -1,0 +1,6 @@
+{
+  "id": "aws-audit-manager", "name": "AWS Audit Manager", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS Audit Manager tự động thu thập evidence và tổ chức assessments để hỗ trợ audit/compliance workflows.",
+  "examSignals": ["Chuẩn bị audit evidence/assessment theo framework: Audit Manager", "API activity forensics: CloudTrail", "Resource configuration compliance: AWS Config"],
+  "compareWith": [{ "service": "AWS Config", "diff": "Audit Manager tổ chức audit evidence/assessments; Config ghi resource configurations và đánh giá configuration rules." }]
+}

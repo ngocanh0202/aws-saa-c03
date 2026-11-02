@@ -1,0 +1,12 @@
+{
+  "id": "fargate", "name": "AWS Fargate", "category": "Containers", "tier": "core",
+  "overview": "AWS Fargate là serverless compute cho container workloads trên Amazon ECS hoặc Amazon EKS, loại bỏ việc quản lý worker EC2.",
+  "concepts": [{ "term": "Task/pod sizing", "desc": "CPU, memory, OS/architecture và ephemeral storage phải nằm trong cấu hình được hỗ trợ." }, { "term": "Networking", "desc": "Task/pod có network interface và security group theo network mode/integration." }, { "term": "Task role", "desc": "IAM permissions được cấp cho code chạy trong container." }],
+  "howItWorks": "Người dùng khai báo container workload; Fargate cấp compute isolation khi task/pod chạy và tính usage theo tài nguyên đã cấu hình/thời gian.",
+  "useCases": ["Chạy ECS tasks mà không quản lý EC2", "Chạy EKS pods serverless khi tương thích", "Tác vụ container ngắn hạn hoặc service ít cần tinh chỉnh host"],
+  "pricing": "Tính theo CPU, memory, OS/architecture, ephemeral storage và thời gian task/pod; network/LB/logs tính riêng.",
+  "examSignals": ["Container cần tránh quản trị server/cluster nodes: Fargate", "Cần host-level control hoặc GPU/supported feature cụ thể: EC2 launch option có thể phù hợp hơn", "Container orchestration AWS-native: ECS có thể ghép Fargate"],
+  "compareWith": [{ "service": "Amazon EC2", "diff": "Fargate trừu tượng hóa host cho containers; EC2 cho quyền kiểm soát máy chủ và có thể tối ưu chi phí fleet ổn định." }, { "service": "Amazon ECS", "diff": "ECS là orchestrator; Fargate là lựa chọn compute chạy ECS tasks." }],
+  "facts": ["Không mọi cấu hình EC2 đều được hỗ trợ trên Fargate.", "Task private subnet cần đường tới image/logs/services phù hợp; không có Internet mặc định.", "Task chạy liên tục vẫn phát sinh chi phí theo tài nguyên."],
+  "practice": { "steps": ["Trong sandbox, chạy một ECS Fargate task ngắn từ image public đáng tin cậy.", "Dùng task role tối thiểu, giới hạn CPU/memory và task count; tránh public IP nếu không cần.", "Quan sát startup, log và network interface rồi dừng task."], "freeTier": "Fargate usage, ephemeral storage, data transfer, NAT, logs và load balancer có thể tính phí; kiểm tra giá theo cấu hình/Region.", "cleanup": ["Dừng/xóa task hoặc scale ECS service về 0 rồi xóa service.", "Xóa ENI, log groups, target groups và cluster lab sau khi không còn phụ thuộc.", "Xác nhận không còn task/pod chạy vì chúng tiếp tục tính phí."] }
+}

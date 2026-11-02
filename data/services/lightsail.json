@@ -1,0 +1,6 @@
+{
+  "id": "lightsail", "name": "Amazon Lightsail", "category": "Compute", "tier": "minor",
+  "overview": "Amazon Lightsail provides simplified virtual servers and bundled cloud resources for small projects and predictable starter deployments.",
+  "examSignals": ["Simple bundled VPS for small web app/dev project: Lightsail", "Fine-grained scalable infrastructure/networking control: EC2 and related services"],
+  "compareWith": [{ "service": "Amazon EC2", "diff": "Lightsail simplifies provisioning with bundles; EC2 offers broader instance/network/storage configuration control." }]
+}

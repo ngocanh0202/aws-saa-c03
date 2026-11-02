@@ -1,0 +1,12 @@
+{
+  "id": "ecs", "name": "Amazon Elastic Container Service", "category": "Containers", "tier": "core",
+  "overview": "Amazon ECS điều phối container tasks/services, tích hợp với AWS networking, IAM, load balancing và logging.",
+  "concepts": [{ "term": "Task definition", "desc": "Blueprint cho container image, CPU/memory, ports, roles, volumes và logging." }, { "term": "Task/service", "desc": "Task là đơn vị chạy; service duy trì task count và hỗ trợ rolling deployment/health." }, { "term": "Launch type/capacity provider", "desc": "Chọn EC2 capacity tự quản hoặc Fargate managed compute phù hợp workload." }],
+  "howItWorks": "ECS scheduler đặt tasks vào cluster theo task definition/capacity; service duy trì desired count và tích hợp target groups/CloudWatch.",
+  "useCases": ["Triển khai microservices dạng container", "Chạy batch/background containers", "Chọn giữa EC2 fleet hoặc serverless Fargate"],
+  "pricing": "ECS control plane không tính phí riêng; trả tiền cho EC2 hoặc Fargate CPU/memory, storage, load balancer, logs và transfer.",
+  "examSignals": ["AWS-native container orchestration đơn giản: ECS", "Container không muốn quản lý worker nodes: ECS với Fargate", "Yêu cầu Kubernetes API: EKS"],
+  "compareWith": [{ "service": "Amazon EKS", "diff": "ECS là orchestrator AWS-native; EKS cung cấp Kubernetes control plane và tương thích hệ sinh thái Kubernetes." }, { "service": "AWS Fargate", "diff": "ECS điều phối task/service; Fargate là compute launch option cho task/container." }],
+  "facts": ["Task execution role dùng cho agent kéo image/ghi log; task role là quyền của ứng dụng trong container.", "Service desired count duy trì task count nhưng không tự bảo đảm app không có lỗi logic.", "Image thường lấy từ ECR hoặc registry tương thích."],
+  "practice": { "steps": ["Dùng image public vô hại trong cluster lab và chọn Fargate task nhỏ nếu muốn tránh quản lý EC2.", "Giới hạn task count=1, CPU/memory tối thiểu phù hợp, private networking nếu có thể.", "Xem task status/logs; không mount secrets hoặc cấu hình privileged container."], "freeTier": "ECS không tính control plane nhưng Fargate/EC2, public IP, ALB, logs và transfer có thể tính phí; xác nhận giá trước khi chạy task.", "cleanup": ["Scale service desired count về 0, xóa service rồi task definition revision/cluster lab.", "Xóa load balancer, target group, log groups, ECR image thử nếu không cần.", "Nếu chạy EC2 capacity, terminate instances và xóa EBS/IP orphan."] }
+}

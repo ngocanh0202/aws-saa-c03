@@ -1,0 +1,6 @@
+{
+  "id": "transcribe", "name": "Amazon Transcribe", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Transcribe converts speech/audio into text using managed speech recognition, with supported batch and streaming features.",
+  "examSignals": ["Speech-to-text transcription: Transcribe", "Text-to-speech synthesis: Polly", "Medical dictation/transcription: Transcribe Medical"],
+  "compareWith": [{ "service": "Amazon Polly", "diff": "Transcribe turns audio speech into text; Polly turns text into synthesized speech." }]
+}

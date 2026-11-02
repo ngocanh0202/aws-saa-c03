@@ -1,0 +1,20 @@
+{
+  "id": "s3", "name": "Amazon S3", "category": "Storage", "tier": "core",
+  "overview": "Amazon S3 là dịch vụ lưu trữ đối tượng có khả năng mở rộng cho dữ liệu, backup, nội dung tĩnh và data lake.",
+  "concepts": [
+    { "term": "Bucket/object/key", "desc": "Bucket là vùng chứa; object là dữ liệu cùng metadata; key xác định object trong bucket." },
+    { "term": "Storage class", "desc": "Chọn theo tần suất truy cập, độ trễ, khả năng phục hồi và thời gian lưu tối thiểu." },
+    { "term": "Versioning", "desc": "Giữ các phiên bản object để phục hồi thao tác ghi/xóa; làm tăng lượng dữ liệu lưu." }
+  ],
+  "howItWorks": "Ứng dụng gọi API để ghi/đọc object trong bucket; IAM, bucket policy, access point và mã hóa kiểm soát truy cập/bảo vệ dữ liệu.",
+  "useCases": ["Backup và lưu trữ dữ liệu phi cấu trúc", "Website tĩnh và phân phối nội dung", "Data lake và tích hợp analytics"],
+  "pricing": "Tính phí theo dung lượng/lớp lưu trữ, request, retrieval, replication và data transfer; lifecycle có thể chuyển lớp nhưng cần cân nhắc phí và thời gian lưu tối thiểu.",
+  "examSignals": ["Object storage quy mô lớn, bền vững", "Truy cập không thường xuyên: cân nhắc lớp IA/Archive và retrieval", "Chia sẻ riêng tư giữa tài khoản: bucket policy hoặc access point"],
+  "compareWith": [{ "service": "Amazon EBS", "diff": "S3 lưu object qua API; EBS là block volume gắn với EC2." }, { "service": "Amazon EFS", "diff": "S3 truy cập object; EFS cung cấp filesystem NFS dùng chung." }],
+  "facts": ["S3 không phải filesystem hay block device.", "Versioning/lifecycle/replication cần cấu hình rõ; xóa phiên bản có thể cần thao tác riêng.", "Mặc định hãy giữ bucket private và áp dụng least privilege."],
+  "practice": {
+    "steps": ["Tạo bucket thử nghiệm với tên duy nhất, giữ quyền truy cập public bị chặn.", "Tải lên một tệp vô hại, đọc lại bằng quyền IAM của chính bạn.", "Bật versioning trong sandbox nếu cần quan sát phiên bản; tránh dữ liệu cá nhân/thật."],
+    "freeTier": "Dung lượng, request, retrieval, replication và transfer có thể tính phí; ưu đãi thay đổi theo tài khoản/chương trình. Xem bảng giá hiện hành trước khi thử.",
+    "cleanup": ["Xóa mọi object và mọi phiên bản/delete marker nếu đã bật versioning.", "Xóa bucket thử nghiệm.", "Gỡ policy/role thử chỉ tạo riêng cho bài thực hành."]
+  }
+}

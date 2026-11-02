@@ -1,0 +1,6 @@
+{
+  "id": "connect", "name": "Amazon Connect", "category": "Application Integration", "tier": "minor",
+  "overview": "Amazon Connect là cloud contact center service cho customer interactions qua voice/chat với routing, flows, queues និង agent workspace.",
+  "examSignals": ["Cloud-based contact center/call routing: Amazon Connect", "Text-to-speech output in applications: Amazon Polly", "Conversational bot intent recognition: Amazon Lex"],
+  "compareWith": [{ "service": "Amazon Lex", "diff": "Connect điều phối contact center interactions/agents; Lex cung cấp conversational bot/NLU capability có thể tích hợp." }]
+}

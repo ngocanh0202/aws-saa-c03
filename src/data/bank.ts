@@ -1,0 +1,46 @@
+import type { ExternalSet, Question, QuestionMeta, QuestionVi, ServiceNote, ServiceRef, SetsFile } from './types';
+
+/** Bộ câu hỏi External kèm hướng dẫn tiếng Việt (theo id câu trong bộ). */
+export interface ExternalBook extends ExternalSet {
+  vi: Map<number, QuestionVi>;
+}
+
+export interface Bank {
+  questions: Map<number, Question>;
+  meta: Map<number, QuestionMeta>;
+  vi: Map<number, QuestionVi>;
+  services: Map<string, ServiceRef>;
+  serviceNotes: Map<string, ServiceNote>;
+  questionsByService: Map<string, number[]>;
+  sets: SetsFile;
+  externals: ExternalBook[];
+}
+
+export function buildBank(input: {
+  questions: Question[];
+  metas: QuestionMeta[];
+  vis: QuestionVi[];
+  registry: ServiceRef[];
+  serviceNotes?: ServiceNote[];
+  sets: SetsFile;
+  externals?: ExternalSet[];
+  externalVis?: Record<string, QuestionVi[]>;
+}): Bank {
+  const questionsByService = new Map<string, number[]>();
+  for (const m of [...input.metas].sort((a, b) => a.id - b.id)) {
+    for (const s of m.services) questionsByService.set(s, [...(questionsByService.get(s) ?? []), m.id]);
+  }
+  return {
+    questions: new Map(input.questions.map((q) => [q.id, q])),
+    meta: new Map(input.metas.map((m) => [m.id, m])),
+    vi: new Map(input.vis.map((v) => [v.id, v])),
+    services: new Map(input.registry.map((s) => [s.id, s])),
+    serviceNotes: new Map((input.serviceNotes ?? []).map((s) => [s.id, s])),
+    questionsByService,
+    sets: input.sets,
+    externals: (input.externals ?? []).map((set) => ({
+      ...set,
+      vi: new Map((input.externalVis?.[set.slug] ?? []).map((v) => [v.id, v])),
+    })),
+  };
+}

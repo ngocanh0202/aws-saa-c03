@@ -1,0 +1,6 @@
+{
+  "id": "comprehend", "name": "Amazon Comprehend", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Comprehend cung cấp NLP APIs để trích xuất entities, sentiment, key phrases, language và insights từ văn bản.",
+  "examSignals": ["Sentiment/entity/key phrase extraction from text without training custom model: Comprehend", "OCR text extraction from scanned documents: Textract"],
+  "compareWith": [{ "service": "Amazon Textract", "diff": "Comprehend phân tích ngôn ngữ trong text; Textract trích xuất text/forms/tables từ tài liệu hình ảnh/PDF." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "textract", "name": "Amazon Textract", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Textract extracts printed/handwritten text and structured forms/tables from supported scanned documents and images.",
+  "examSignals": ["OCR plus forms/tables/key-value extraction from documents: Textract", "Visual object/face analysis: Rekognition", "NLP sentiment/entities after text extraction: Comprehend"],
+  "compareWith": [{ "service": "Amazon Rekognition", "diff": "Textract extracts document text and structure; Rekognition analyzes image/video visual content and labels." }]
+}

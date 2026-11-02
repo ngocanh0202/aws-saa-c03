@@ -1,0 +1,6 @@
+{
+  "id": "shield", "name": "AWS Shield", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS Shield provides managed DDoS protection for AWS applications; Standard protection is included for supported services and Advanced adds enhanced capabilities under its terms.",
+  "examSignals": ["DDoS protection with response/support features: Shield Advanced", "Filter HTTP request patterns/rate: WAF", "Central multi-account protection policy: Firewall Manager"],
+  "compareWith": [{ "service": "AWS WAF", "diff": "Shield mitigates DDoS attacks; WAF applies web request rules such as allow/block/rate controls." }]
+}

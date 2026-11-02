@@ -1,0 +1,6 @@
+{
+  "id": "lex", "name": "Amazon Lex", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Lex builds conversational interfaces/chatbots using speech or text input and intent/slot recognition.",
+  "examSignals": ["Build conversational chatbot/voice bot with intents and slots: Lex", "Convert text to lifelike speech: Polly", "Contact center platform that can integrate bots: Connect"],
+  "compareWith": [{ "service": "Amazon Polly", "diff": "Lex recognizes conversational input and intents; Polly synthesizes text into speech audio." }]
+}

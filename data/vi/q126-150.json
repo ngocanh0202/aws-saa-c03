@@ -1,0 +1,331 @@
+[
+  {
+    "id": 126,
+    "stemVi": "Một công ty cần cấp cho một nhóm phát triển phân tán toàn cầu quyền truy cập an toàn vào tài nguyên AWS của công ty, theo cách tuân thủ các chính sách bảo mật. Hiện công ty dùng một Active Directory on-premises để xác thực nội bộ. Công ty dùng AWS Organizations để quản lý nhiều AWS account phục vụ nhiều dự án.\n\nCông ty cần một giải pháp tích hợp với hạ tầng hiện có để quản lý danh tính và kiểm soát truy cập tập trung.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Thiết lập AWS Directory Service để tạo một AWS Managed Microsoft Active Directory trên AWS. Thiết lập trust relationship với Active Directory on-premises. Dùng các IAM role được gán cho các group Active Directory để truy cập tài nguyên AWS trong các AWS account của công ty.", "reason": "Làm được nhưng phải vận hành thêm một directory trên AWS, duy trì trust và tự cấu hình IAM role trong từng account — nhiều công hơn so với quản lý truy cập tập trung qua IAM Identity Center." },
+      { "key": "B", "textVi": "Tạo một IAM user cho mỗi developer. Quản lý thủ công quyền của từng IAM user theo mức độ tham gia từng dự án. Bắt buộc multi-factor authentication (MFA) làm lớp bảo mật bổ sung.", "reason": "IAM user riêng lẻ không tích hợp với Active Directory hiện có, phải quản lý thủ công trên nhiều account — không tập trung và tốn công nhất." },
+      { "key": "C", "textVi": "Dùng AD Connector trong AWS Directory Service để kết nối tới Active Directory on-premises. Tích hợp AD Connector với AWS IAM Identity Center. Cấu hình permission set để cấp cho mỗi group AD quyền truy cập vào các AWS account và tài nguyên cụ thể.", "reason": "AD Connector chuyển tiếp xác thực về AD on-premises mà không phải đồng bộ hay lưu thêm directory; IAM Identity Center gán permission set cho group AD trên mọi account trong Organizations — quản lý danh tính và truy cập tập trung với ít công nhất." },
+      { "key": "D", "textVi": "Dùng Amazon Cognito để triển khai giải pháp identity federation. Tích hợp giải pháp identity federation với Active Directory on-premises. Dùng Amazon Cognito để cấp access token cho developer truy cập các AWS account và tài nguyên.", "reason": "Cognito dành cho xác thực người dùng cuối của ứng dụng web và mobile, không phải công cụ quản lý truy cập của nhân viên vào console và nhiều account trong Organizations." }
+    ],
+    "explanationVi": "Cần tận dụng AD on-premises và quản lý truy cập tập trung cho nhiều account trong Organizations. AD Connector + IAM Identity Center với permission set theo group AD là cách chuẩn, ít vận hành nhất. Bẫy: Managed AD + trust làm được nhưng tốn công hơn; IAM user thủ công không mở rộng; Cognito dành cho người dùng ứng dụng.",
+    "keyHint": "\"on-premises Active Directory\" + \"AWS Organizations\" + \"centralized identity management\" → AD Connector + IAM Identity Center."
+  },
+  {
+    "id": 127,
+    "stemVi": "Một công ty tài chính chạy ứng dụng web trên AWS. Ứng dụng dùng một Amazon API Gateway Regional API endpoint để người dùng lấy giá cổ phiếu hiện tại. Nhóm bảo mật của công ty nhận thấy số lượng API request tăng lên. Nhóm bảo mật lo ngại các cuộc tấn công HTTP flood có thể làm ứng dụng ngừng hoạt động.\n\nSolutions architect phải thiết kế giải pháp bảo vệ ứng dụng khỏi loại tấn công này.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Amazon CloudFront distribution đặt trước API Gateway Regional API endpoint với maximum TTL là 24 giờ.", "reason": "Cache 24 giờ không phù hợp với giá cổ phiếu hiện tại, và CloudFront tự nó không giới hạn tần suất request của từng nguồn nên không chặn được HTTP flood." },
+      { "key": "B", "textVi": "Tạo một Regional AWS WAF web ACL với một rate-based rule. Gắn web ACL vào API Gateway stage.", "reason": "Rate-based rule của AWS WAF đếm request theo IP trong một khoảng thời gian và tự chặn IP vượt ngưỡng — chống HTTP flood trực tiếp; web ACL gắn thẳng vào API Gateway stage, được quản lý hoàn toàn." },
+      { "key": "C", "textVi": "Dùng Amazon CloudWatch metric để theo dõi Count metric và cảnh báo nhóm bảo mật khi đạt tới tần suất định trước.", "reason": "CloudWatch chỉ cảnh báo, không chặn request; nhóm bảo mật vẫn phải xử lý thủ công trong lúc ứng dụng bị tấn công." },
+      { "key": "D", "textVi": "Tạo một Amazon CloudFront distribution với Lambda@Edge đặt trước API Gateway Regional API endpoint. Tạo một AWS Lambda function để chặn request từ các IP address vượt quá tần suất định trước.", "reason": "Phải tự viết và bảo trì logic đếm, chặn theo IP (cần cả nơi lưu trạng thái đếm) — tốn công hơn nhiều so với rate-based rule có sẵn của WAF." }
+    ],
+    "explanationVi": "HTTP flood là tấn công tầng 7 bằng lượng lớn request. Rate-based rule của AWS WAF gắn vào API Gateway stage tự động chặn nguồn gửi quá nhiều request. Bẫy: CloudFront cache không giới hạn tần suất; CloudWatch chỉ cảnh báo; Lambda@Edge tự viết tốn công.",
+    "keyHint": "\"HTTP flood attacks\" + API Gateway + \"LEAST operational overhead\" → AWS WAF rate-based rule."
+  },
+  {
+    "id": 128,
+    "stemVi": "Một công ty đang áp dụng chính sách lưu giữ dữ liệu (data retention) mới cho mọi cơ sở dữ liệu chạy trên Amazon RDS DB instance. Công ty phải giữ bản sao lưu hằng ngày trong tối thiểu 2 năm. Các bản sao lưu phải nhất quán (consistent) và khôi phục được.",
+    "promptVi": "Solutions architect nên đề xuất giải pháp nào để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một backup vault trong AWS Backup để giữ các bản sao lưu RDS. Tạo một backup plan mới với lịch hằng ngày và thời hạn hết hạn (expiration) là 2 năm sau khi tạo. Gán các RDS DB instance vào backup plan.", "reason": "AWS Backup tạo snapshot RDS nhất quán theo lịch hằng ngày, giữ đúng 2 năm rồi tự hết hạn, và quản lý tập trung cho mọi DB instance được gán — đáp ứng đủ yêu cầu." },
+      { "key": "B", "textVi": "Cấu hình backup window cho các RDS DB instance để chụp snapshot hằng ngày. Gán snapshot retention policy 2 năm cho mỗi RDS DB instance. Dùng Amazon Data Lifecycle Manager (Amazon DLM) để lên lịch xóa snapshot.", "reason": "Automated backup của RDS chỉ giữ tối đa 35 ngày, không đặt được 2 năm; Amazon DLM quản lý EBS snapshot và AMI, không quản lý RDS snapshot." },
+      { "key": "C", "textVi": "Cấu hình transaction log của cơ sở dữ liệu được tự động sao lưu sang Amazon CloudWatch Logs với thời hạn hết hạn là 2 năm.", "reason": "Transaction log trong CloudWatch Logs không phải bản sao lưu cơ sở dữ liệu nhất quán; không thể restore một DB instance từ đó." },
+      { "key": "D", "textVi": "Cấu hình một AWS Database Migration Service (AWS DMS) replication task. Triển khai một replication instance, và cấu hình một change data capture (CDC) task để stream các thay đổi của cơ sở dữ liệu sang Amazon S3 làm đích. Cấu hình S3 Lifecycle policy để xóa các snapshot sau 2 năm.", "reason": "DMS CDC chỉ ghi lại các thay đổi dưới dạng file trong S3, không tạo bản sao lưu nhất quán có thể restore thành DB instance; lại phải vận hành replication instance." }
+    ],
+    "explanationVi": "Cần bản sao lưu hằng ngày, giữ tối thiểu 2 năm, nhất quán và khôi phục được. AWS Backup với backup plan hằng ngày và retention 2 năm đáp ứng trực tiếp. Bẫy: automated backup của RDS giới hạn 35 ngày; DLM dành cho EBS; log hay CDC không phải bản backup restore được.",
+    "keyHint": "\"retain daily backups for a minimum period of 2 years\" + RDS → AWS Backup backup plan."
+  },
+  {
+    "id": 129,
+    "stemVi": "Một công ty game trực tuyến đang chuyển nơi lưu dữ liệu người dùng sang Amazon DynamoDB để phục vụ lượng người dùng ngày càng tăng. Kiến trúc hiện tại gồm các DynamoDB table chứa hồ sơ người dùng, thành tích và giao dịch trong game.\n\nCông ty cần thiết kế một kiến trúc DynamoDB vững chắc, luôn sẵn sàng (continuously available) và có khả năng phục hồi (resilient) để duy trì trải nghiệm chơi game liền mạch cho người dùng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo các DynamoDB table trong một AWS Region duy nhất. Dùng on-demand capacity mode. Dùng global tables để sao chép dữ liệu sang nhiều Region.", "reason": "Phương án tự mâu thuẫn: nói chỉ dùng một Region nhưng lại dùng global tables đa Region; on-demand cũng thường đắt hơn provisioned có auto scaling khi tải lớn và ổn định." },
+      { "key": "B", "textVi": "Dùng DynamoDB Accelerator (DAX) để cache dữ liệu truy cập thường xuyên. Triển khai table trong một AWS Region duy nhất và bật auto scaling. Cấu hình Cross-Region Replication thủ công sang các Region khác.", "reason": "DAX là chi phí thêm và không tăng độ sẵn sàng của dữ liệu; tự làm replication thủ công giữa các Region tốn công và dễ sai, trong khi global tables đã có sẵn cơ chế này." },
+      { "key": "C", "textVi": "Tạo các DynamoDB table ở nhiều AWS Region. Dùng on-demand capacity mode. Dùng DynamoDB Streams cho Cross-Region Replication giữa các Region.", "reason": "Tự xây replication bằng DynamoDB Streams (kèm Lambda hay ứng dụng xử lý) phải tự lo xung đột và lỗi — tốn công và kém tin cậy hơn global tables; on-demand cũng đắt hơn cho tải lớn." },
+      { "key": "D", "textVi": "Dùng DynamoDB global tables để tự động sao chép dữ liệu đa Region. Triển khai table ở nhiều AWS Region. Dùng provisioned capacity mode. Bật auto scaling.", "reason": "Global tables sao chép tự động active-active giữa các Region nên dữ liệu luôn sẵn sàng và chịu được sự cố cả Region; provisioned capacity kèm auto scaling rẻ hơn on-demand cho lượng người dùng lớn, tải tương đối đều." }
+    ],
+    "explanationVi": "Cần kiến trúc luôn sẵn sàng, phục hồi được, và rẻ nhất. DynamoDB global tables lo phần đa Region tự động; provisioned capacity + auto scaling tối ưu chi phí khi tải lớn và dự đoán được. Bẫy: tự làm replication (thủ công hoặc qua Streams) tốn công; DAX thêm chi phí mà không tăng tính sẵn sàng; phương án \"một Region + global tables\" tự mâu thuẫn.",
+    "keyHint": "\"continuously available, and resilient\" + DynamoDB + \"MOST cost-effectively\" → global tables + provisioned capacity với auto scaling."
+  },
+  {
+    "id": 130,
+    "stemVi": "Một công ty chạy cơ sở dữ liệu Oracle on-premises. Trong quá trình migrate lên AWS, công ty muốn nâng cấp cơ sở dữ liệu lên phiên bản mới nhất hiện có. Công ty cũng muốn thiết lập khắc phục thảm họa (disaster recovery - DR) cho cơ sở dữ liệu. Công ty cần giảm thiểu công vận hành cho hoạt động thường ngày và cho việc thiết lập DR. Công ty cũng cần giữ quyền truy cập vào hệ điều hành bên dưới của cơ sở dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Migrate cơ sở dữ liệu Oracle sang một Amazon EC2 instance. Thiết lập database replication sang một AWS Region khác.", "reason": "EC2 cho truy cập hệ điều hành nhưng công ty phải tự lo cài đặt, vá lỗi, sao lưu và tự dựng replication cho DR — nhiều công vận hành nhất." },
+      { "key": "B", "textVi": "Migrate cơ sở dữ liệu Oracle sang Amazon RDS for Oracle. Bật Cross-Region automated backups để sao chép snapshot sang một AWS Region khác.", "reason": "RDS for Oracle là dịch vụ managed nhưng không cho truy cập hệ điều hành bên dưới, vi phạm yêu cầu giữ quyền truy cập OS." },
+      { "key": "C", "textVi": "Migrate cơ sở dữ liệu Oracle sang Amazon RDS Custom for Oracle. Tạo một read replica cho cơ sở dữ liệu ở một AWS Region khác.", "reason": "RDS Custom for Oracle vẫn tự động hóa sao lưu và các tác vụ quản trị nhưng cho phép truy cập hệ điều hành bên dưới; read replica ở Region khác làm DR — đáp ứng cả yêu cầu truy cập OS lẫn ít công vận hành." },
+      { "key": "D", "textVi": "Migrate cơ sở dữ liệu Oracle sang Amazon RDS for Oracle. Tạo một standby database ở một Availability Zone khác.", "reason": "RDS for Oracle không cho truy cập OS; standby ở AZ khác (Multi-AZ) chỉ là tính sẵn sàng cao trong một Region, không phải DR." }
+    ],
+    "explanationVi": "Từ khóa quyết định là cần truy cập hệ điều hành bên dưới nhưng vẫn muốn ít công vận hành. RDS Custom for Oracle nằm giữa RDS và EC2: managed nhưng vẫn vào được OS, và hỗ trợ read replica cho DR. Bẫy: RDS for Oracle thường không cho vào OS; EC2 tốn công nhất; Multi-AZ không phải DR.",
+    "keyHint": "\"maintain access to the database's underlying operating system\" + \"minimize the operational overhead\" → Amazon RDS Custom for Oracle.",
+    "review": {
+      "reason": "Đáp án có thể sai: tài liệu RDS hiện hành ghi rõ \"You can't create cross-Region RDS Custom for Oracle replicas\", nên phương án RDS Custom kèm read replica ở Region khác không làm được như mô tả (replica RDS Custom for Oracle cũng chỉ hỗ trợ Enterprise Edition). Thêm nữa, AWS đã thông báo ngừng hỗ trợ RDS Custom for Oracle từ 31/03/2027. Phương án migrate lên EC2 rồi tự thiết lập replication sang Region khác hiện là lựa chọn duy nhất khả thi mà vẫn giữ quyền truy cập OS, dù tốn công vận hành hơn."
+    }
+  },
+  {
+    "id": 131,
+    "stemVi": "Một công ty thương mại điện tử đang xây dựng một ứng dụng phân tán gồm nhiều serverless function và AWS service để hoàn thành các tác vụ xử lý đơn hàng. Các tác vụ này cần bước phê duyệt thủ công trong workflow. Solutions architect cần thiết kế kiến trúc cho ứng dụng xử lý đơn hàng. Giải pháp phải kết hợp được nhiều AWS Lambda function thành các ứng dụng serverless phản hồi nhanh. Giải pháp cũng phải điều phối (orchestrate) dữ liệu và service chạy trên Amazon EC2 instance, container hoặc server on-premises.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Step Functions để xây dựng ứng dụng.", "reason": "Step Functions là dịch vụ điều phối workflow serverless: nối nhiều Lambda thành state machine, hỗ trợ bước chờ phê duyệt thủ công (callback với task token), retry, xử lý lỗi, và điều phối cả tác vụ trên EC2, container hay on-premises qua activity — đáp ứng mọi yêu cầu." },
+      { "key": "B", "textVi": "Tích hợp mọi thành phần ứng dụng trong một AWS Glue job.", "reason": "Glue là dịch vụ ETL xử lý dữ liệu, không phải công cụ điều phối workflow có bước phê duyệt thủ công và nhiều service." },
+      { "key": "C", "textVi": "Dùng Amazon Simple Queue Service (Amazon SQS) để xây dựng ứng dụng.", "reason": "SQS chỉ là hàng đợi message để tách rời các thành phần; nó không quản lý trạng thái workflow, thứ tự các bước hay bước phê duyệt thủ công." },
+      { "key": "D", "textVi": "Dùng các AWS Lambda function và Amazon EventBridge event để xây dựng ứng dụng.", "reason": "Lambda + EventBridge là kiến trúc hướng sự kiện, nhưng trạng thái workflow, bước phê duyệt và xử lý lỗi phải tự viết code — khó quản lý và tốn công hơn Step Functions." }
+    ],
+    "explanationVi": "Đề mô tả đúng chức năng của một dịch vụ điều phối workflow: kết hợp nhiều Lambda, có bước phê duyệt thủ công, điều phối cả EC2, container và on-premises. AWS Step Functions làm được tất cả mà không cần quản lý hạ tầng. Bẫy: SQS và EventBridge là thành phần truyền message/sự kiện, không quản lý trạng thái workflow; Glue dành cho ETL.",
+    "keyHint": "\"manual approvals\" + \"combine multiple AWS Lambda functions\" + \"orchestrate\" → AWS Step Functions."
+  },
+  {
+    "id": 132,
+    "stemVi": "Một công ty dự định lưu dữ liệu trên các Amazon RDS DB instance. Công ty phải mã hóa dữ liệu khi lưu trữ (at rest).",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một key trong AWS Key Management Service (AWS KMS). Bật encryption cho các DB instance.", "reason": "RDS tích hợp sẵn với AWS KMS: chọn KMS key và bật encryption khi tạo DB instance thì storage, backup, snapshot và read replica đều được mã hóa at rest." },
+      { "key": "B", "textVi": "Tạo một encryption key. Lưu key trong AWS Secrets Manager. Dùng key để mã hóa các DB instance.", "reason": "Secrets Manager lưu secret như mật khẩu cơ sở dữ liệu; RDS không nhận key từ Secrets Manager để mã hóa storage — mã hóa at rest của RDS dùng KMS key." },
+      { "key": "C", "textVi": "Tạo một certificate trong AWS Certificate Manager (ACM). Bật SSL/TLS trên các DB instance bằng certificate đó.", "reason": "SSL/TLS mã hóa dữ liệu khi truyền (in transit), không mã hóa dữ liệu lưu trên storage." },
+      { "key": "D", "textVi": "Tạo một certificate trong AWS Identity and Access Management (IAM). Bật SSL/TLS trên các DB instance bằng certificate đó.", "reason": "SSL/TLS chỉ bảo vệ dữ liệu khi truyền, và certificate lưu trong IAM không phải cách mã hóa storage của RDS." }
+    ],
+    "explanationVi": "Mã hóa at rest cho RDS được làm bằng AWS KMS key, bật khi tạo DB instance. Bẫy: SSL/TLS (dù certificate từ ACM hay IAM) là mã hóa in transit; Secrets Manager lưu secret chứ không làm key mã hóa storage RDS.",
+    "keyHint": "\"encrypt the data at rest\" + Amazon RDS → AWS KMS key + bật encryption."
+  },
+  {
+    "id": 133,
+    "stemVi": "Một công ty đang xây dựng giải pháp báo cáo các sự kiện Amazon EC2 Auto Scaling của mọi ứng dụng trong một AWS account. Công ty cần dùng một giải pháp serverless để lưu dữ liệu trạng thái EC2 Auto Scaling vào Amazon S3. Sau đó công ty sẽ dùng dữ liệu trong Amazon S3 để cập nhật gần thời gian thực (near-real-time) lên một dashboard. Giải pháp không được ảnh hưởng tới tốc độ khởi chạy EC2 instance.",
+    "promptVi": "Công ty nên chuyển dữ liệu vào Amazon S3 như thế nào để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng một Amazon CloudWatch metric stream để gửi dữ liệu trạng thái EC2 Auto Scaling tới Amazon Kinesis Data Firehose. Lưu dữ liệu vào Amazon S3.", "reason": "CloudWatch metric stream đẩy liên tục metric gần thời gian thực sang Kinesis Data Firehose, Firehose ghi vào S3; cả hai đều serverless và nằm ngoài quá trình launch instance nên không làm chậm việc khởi chạy." },
+      { "key": "B", "textVi": "Chạy một Amazon EMR cluster để thu thập dữ liệu trạng thái EC2 Auto Scaling và gửi dữ liệu tới Amazon Kinesis Data Firehose. Lưu dữ liệu vào Amazon S3.", "reason": "EMR cluster chạy trên EC2 instance, không phải serverless, và không phải công cụ thu thập sự kiện Auto Scaling." },
+      { "key": "C", "textVi": "Tạo một Amazon EventBridge rule để kích hoạt một AWS Lambda function theo lịch. Cấu hình Lambda function gửi trực tiếp dữ liệu trạng thái EC2 Auto Scaling vào Amazon S3.", "reason": "Chạy theo lịch nghĩa là dữ liệu chỉ được cập nhật theo chu kỳ, không đạt yêu cầu gần thời gian thực." },
+      { "key": "D", "textVi": "Dùng một bootstrap script khi launch EC2 instance để cài Amazon Kinesis Agent. Cấu hình Kinesis Agent thu thập dữ liệu trạng thái EC2 Auto Scaling và gửi dữ liệu tới Amazon Kinesis Data Firehose. Lưu dữ liệu vào Amazon S3.", "reason": "Cài agent trong bootstrap script làm quá trình khởi chạy mỗi instance lâu hơn, vi phạm yêu cầu không ảnh hưởng tốc độ launch." }
+    ],
+    "explanationVi": "Yêu cầu: serverless, gần thời gian thực, lưu vào S3, không đụng tới quá trình launch instance. CloudWatch metric stream → Kinesis Data Firehose → S3 thỏa đủ. Bẫy: EMR không serverless; lịch chạy định kỳ không gần thời gian thực; bootstrap script làm chậm launch.",
+    "keyHint": "\"serverless\" + \"near-real-time\" + \"must not affect the speed of EC2 instance launches\" → CloudWatch metric stream + Kinesis Data Firehose."
+  },
+  {
+    "id": 134,
+    "stemVi": "Một công ty đang ra mắt ứng dụng mới triển khai trên một Amazon Elastic Container Service (Amazon ECS) cluster, dùng Fargate launch type cho các ECS task. Công ty đang theo dõi mức sử dụng CPU và memory vì dự đoán lưu lượng lớn khi ứng dụng ra mắt. Tuy nhiên, công ty muốn giảm chi phí khi mức sử dụng giảm.",
+    "promptVi": "Solutions architect nên đề xuất gì?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon EC2 Auto Scaling để co giãn vào những khoảng thời gian nhất định dựa trên mẫu lưu lượng trước đây.", "reason": "Với Fargate không có EC2 instance nào để EC2 Auto Scaling quản lý; ứng dụng lại mới ra mắt nên chưa có mẫu lưu lượng cũ để lên lịch." },
+      { "key": "B", "textVi": "Dùng một AWS Lambda function để co giãn Amazon ECS dựa trên các lần vượt ngưỡng metric kích hoạt Amazon CloudWatch alarm.", "reason": "Tự viết Lambda để thay đổi số task là thêm code phải bảo trì, trong khi ECS đã có Application Auto Scaling làm sẵn việc này." },
+      { "key": "C", "textVi": "Dùng Amazon EC2 Auto Scaling với simple scaling policy để co giãn khi các lần vượt ngưỡng metric của ECS kích hoạt Amazon CloudWatch alarm.", "reason": "EC2 Auto Scaling co giãn EC2 instance, không co giãn số task Fargate; simple scaling còn phản ứng chậm vì có cooldown." },
+      { "key": "D", "textVi": "Dùng AWS Application Auto Scaling với target tracking policy để co giãn khi các lần vượt ngưỡng metric của ECS kích hoạt Amazon CloudWatch alarm.", "reason": "Application Auto Scaling điều chỉnh số task của ECS service; target tracking giữ CPU hoặc memory quanh giá trị mục tiêu — tăng task khi tải cao và giảm task để tiết kiệm khi tải xuống." }
+    ],
+    "explanationVi": "ECS trên Fargate co giãn bằng cách thay đổi số task, và công cụ làm việc đó là Application Auto Scaling (service auto scaling). Target tracking theo CPU/memory tự tăng khi đông và giảm khi vắng để cắt chi phí. Bẫy: EC2 Auto Scaling không áp dụng cho Fargate; Lambda tự viết tốn công.",
+    "keyHint": "\"ECS\" + \"Fargate\" + \"reduce costs when utilization decreases\" → Application Auto Scaling với target tracking."
+  },
+  {
+    "id": 135,
+    "stemVi": "Ứng dụng của một công ty chạy trên các Amazon EC2 instance phía sau một Application Load Balancer (ALB). Các instance chạy trong một Amazon EC2 Auto Scaling group trải trên nhiều Availability Zone. Vào nửa đêm ngày đầu tiên của mỗi tháng, ứng dụng chậm hẳn đi khi batch tính toán tài chính cuối tháng chạy. Việc này khiến CPU utilization của các EC2 instance lập tức lên đỉnh 100%, làm gián đoạn ứng dụng.",
+    "promptVi": "Solutions architect nên đề xuất gì để ứng dụng xử lý được khối lượng công việc và tránh downtime?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình một Amazon CloudFront distribution đặt trước ALB.", "reason": "CloudFront cache nội dung cho người dùng, không giảm được tải tính toán của batch tài chính chạy trên EC2." },
+      { "key": "B", "textVi": "Cấu hình một EC2 Auto Scaling simple scaling policy dựa trên CPU utilization.", "reason": "Simple scaling chỉ phản ứng sau khi CPU đã vượt ngưỡng, rồi còn chờ instance mới khởi động; vì CPU lên 100% ngay lập tức nên ứng dụng vẫn bị gián đoạn trong khoảng thời gian đó." },
+      { "key": "C", "textVi": "Cấu hình một EC2 Auto Scaling scheduled scaling policy theo lịch hằng tháng.", "reason": "Tải tăng vào thời điểm biết trước (nửa đêm ngày 1 hằng tháng), nên scheduled scaling tăng capacity trước khi batch chạy và giảm lại sau đó — tránh CPU chạm 100% và tránh downtime." },
+      { "key": "D", "textVi": "Cấu hình Amazon ElastiCache để giảm bớt một phần khối lượng công việc khỏi các EC2 instance.", "reason": "ElastiCache cache kết quả đọc, không giảm được phần tính toán nặng của batch cuối tháng." }
+    ],
+    "explanationVi": "Đỉnh tải xảy ra theo lịch cố định và bùng lên tức thì. Scheduled scaling chuẩn bị sẵn capacity trước thời điểm đó. Bẫy: scaling theo CPU luôn phản ứng muộn với tải tăng đột ngột; CloudFront và ElastiCache không giảm được tải tính toán.",
+    "keyHint": "\"first day of every month at midnight\" → EC2 Auto Scaling scheduled scaling."
+  },
+  {
+    "id": 136,
+    "stemVi": "Hệ thống đặt hàng của một công ty gửi request từ client tới các Amazon EC2 instance. Các EC2 instance xử lý đơn hàng rồi lưu vào một cơ sở dữ liệu trên Amazon RDS. Người dùng báo rằng họ phải xử lý lại đơn hàng khi hệ thống gặp lỗi. Công ty muốn một giải pháp có khả năng phục hồi (resilient) có thể tự động xử lý đơn hàng khi xảy ra sự cố ngừng hệ thống.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Chuyển các EC2 instance vào một Auto Scaling group. Tạo một Amazon EventBridge (Amazon CloudWatch Events) rule nhắm tới một Amazon Elastic Container Service (Amazon ECS) task.", "reason": "Rule EventBridge kích hoạt ECS task không lưu giữ đơn hàng đang chờ; nếu hệ thống lỗi thì đơn hàng vẫn mất và không được xử lý lại tự động." },
+      { "key": "B", "textVi": "Chuyển các EC2 instance vào một Auto Scaling group phía sau một Application Load Balancer (ALB). Cập nhật hệ thống đặt hàng gửi message tới ALB endpoint.", "reason": "ALB chuyển request đồng bộ tới instance; khi instance lỗi giữa chừng thì request đang xử lý bị mất và client phải gửi lại — không giải quyết việc phải xử lý lại đơn hàng." },
+      { "key": "C", "textVi": "Chuyển các EC2 instance vào một Auto Scaling group. Cấu hình hệ thống đặt hàng gửi message vào một Amazon Simple Queue Service (Amazon SQS) queue. Cấu hình các EC2 instance lấy message từ queue.", "reason": "Đơn hàng nằm bền trong SQS cho tới khi được xử lý xong và xóa; nếu instance lỗi, message hết visibility timeout sẽ hiện lại để instance khác xử lý tự động, còn Auto Scaling group thay instance hỏng." },
+      { "key": "D", "textVi": "Tạo một Amazon Simple Notification Service (Amazon SNS) topic. Tạo một AWS Lambda function và subscribe function vào SNS topic. Cấu hình hệ thống đặt hàng gửi message tới SNS topic. Gửi lệnh tới các EC2 instance để xử lý message bằng AWS Systems Manager Run Command.", "reason": "SNS đẩy message đi ngay chứ không giữ lại để xử lý sau; chuỗi Lambda gọi Run Command phức tạp và nếu EC2 lỗi thì đơn hàng vẫn mất." }
+    ],
+    "explanationVi": "Vấn đề là đơn hàng bị mất khi hệ thống lỗi. Đặt SQS queue làm bộ đệm bền giữa client và EC2: message chỉ bị xóa khi xử lý xong, nếu lỗi sẽ được xử lý lại tự động. Bẫy: ALB và SNS đều không giữ lại đơn hàng khi phía xử lý gặp sự cố.",
+    "keyHint": "\"must reprocess orders when the system fails\" + \"process orders automatically\" → SQS queue + Auto Scaling group."
+  },
+  {
+    "id": 137,
+    "stemVi": "Một ứng dụng chạy trên các Amazon EC2 instance trong private subnet. Ứng dụng cần truy cập một Amazon DynamoDB table.",
+    "promptVi": "Cách AN TOÀN NHẤT (MOST secure) để truy cập table, đồng thời đảm bảo traffic không rời khỏi mạng AWS, là gì?",
+    "options": [
+      { "key": "A", "textVi": "Dùng một VPC endpoint cho DynamoDB.", "reason": "Gateway VPC endpoint cho DynamoDB đưa traffic từ private subnet tới DynamoDB qua mạng AWS mà không cần internet, không tốn phí endpoint, và có thể gắn endpoint policy giới hạn table được truy cập." },
+      { "key": "B", "textVi": "Dùng một NAT gateway trong public subnet.", "reason": "NAT gateway đưa traffic ra endpoint công khai của DynamoDB qua internet gateway, không phải đường riêng tư, và tốn phí xử lý dữ liệu." },
+      { "key": "C", "textVi": "Dùng một NAT instance trong private subnet.", "reason": "NAT instance phải nằm trong public subnet mới hoạt động, và dù vậy vẫn đưa traffic ra internet; còn phải tự quản lý instance." },
+      { "key": "D", "textVi": "Dùng internet gateway gắn với VPC.", "reason": "Instance trong private subnet không đi thẳng qua internet gateway được, và đi qua internet trái với yêu cầu traffic không rời mạng AWS." }
+    ],
+    "explanationVi": "Cần truy cập DynamoDB từ private subnet mà traffic không đi ra internet. VPC endpoint (gateway endpoint) cho DynamoDB là đường riêng tư, an toàn nhất. Bẫy: NAT gateway, NAT instance và internet gateway đều đưa traffic tới endpoint công khai.",
+    "keyHint": "\"private subnets\" + DynamoDB + \"traffic does not leave the AWS network\" → VPC endpoint cho DynamoDB."
+  },
+  {
+    "id": 138,
+    "stemVi": "Một công ty dùng AWS Organizations để tạo AWS account riêng cho từng đơn vị kinh doanh, để quản lý độc lập account của từng đơn vị khi có yêu cầu. Người nhận email root đã bỏ lỡ một thông báo gửi tới địa chỉ email root user của một account. Công ty muốn đảm bảo không bỏ lỡ thông báo nào trong tương lai. Các thông báo trong tương lai chỉ được gửi tới quản trị viên của account.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình email server của công ty chuyển tiếp các email thông báo gửi tới địa chỉ email root user của AWS account tới mọi user trong tổ chức.", "reason": "Gửi thông báo cho mọi user trong tổ chức vi phạm yêu cầu chỉ giới hạn cho quản trị viên của account, lại làm lộ thông tin nhạy cảm." },
+      { "key": "B", "textVi": "Cấu hình mọi địa chỉ email root user của AWS account là distribution list gửi tới một vài quản trị viên có thể xử lý cảnh báo. Cấu hình AWS account alternate contacts trong AWS Organizations console hoặc bằng lập trình.", "reason": "Distribution list gồm vài quản trị viên giúp thông báo không phụ thuộc một người mà vẫn chỉ tới đúng người có trách nhiệm; alternate contacts (billing, operations, security) đảm bảo từng loại thông báo đến đúng nhóm." },
+      { "key": "C", "textVi": "Cấu hình mọi email của AWS account root user gửi tới một quản trị viên chịu trách nhiệm theo dõi cảnh báo và chuyển tiếp tới các nhóm phù hợp.", "reason": "Một người duy nhất là single point of failure — đúng tình huống đã khiến thông báo bị bỏ lỡ." },
+      { "key": "D", "textVi": "Cấu hình mọi AWS account hiện có và mọi account mới tạo dùng chung một địa chỉ email root user. Cấu hình AWS account alternate contacts trong AWS Organizations console hoặc bằng lập trình.", "reason": "Mỗi AWS account phải có địa chỉ email root user riêng, không thể dùng chung một địa chỉ cho mọi account." }
+    ],
+    "explanationVi": "Cần không bỏ lỡ thông báo nhưng chỉ quản trị viên được nhận. Dùng distribution list vài quản trị viên cho email root và thiết lập alternate contacts là cách AWS khuyến nghị. Bẫy: gửi cho mọi người quá rộng; một người là single point of failure; email root không dùng chung được giữa các account.",
+    "keyHint": "\"notifications are not missed\" + \"limited to account administrators\" → email root là distribution list + alternate contacts."
+  },
+  {
+    "id": 139,
+    "stemVi": "Một nhóm phát triển ứng dụng đang thiết kế một microservice chuyển ảnh lớn thành ảnh nhỏ hơn đã nén. Khi người dùng upload ảnh qua giao diện web, microservice cần lưu ảnh vào một Amazon S3 bucket, xử lý và nén ảnh bằng một AWS Lambda function, rồi lưu ảnh đã nén vào một S3 bucket khác.\n\nSolutions architect cần thiết kế giải pháp dùng các thành phần bền (durable) và không lưu trạng thái (stateless) để tự động xử lý ảnh.",
+    "promptVi": "Tổ hợp hành động nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Amazon Simple Queue Service (Amazon SQS) queue. Cấu hình S3 bucket gửi notification tới SQS queue khi có ảnh được upload lên S3 bucket.", "reason": "S3 event notification đưa mỗi lần upload thành một message trong SQS; SQS lưu message bền cho tới khi được xử lý, nên không mất sự kiện dù phía xử lý tạm lỗi." },
+      { "key": "B", "textVi": "Cấu hình Lambda function dùng Amazon Simple Queue Service (Amazon SQS) queue làm nguồn kích hoạt. Khi message SQS được xử lý thành công, xóa message khỏi queue.", "reason": "Lambda nhận message từ SQS qua event source mapping, nén ảnh rồi xóa message khi thành công; message lỗi sẽ hiện lại để thử lại — xử lý tự động và Lambda không phải giữ trạng thái." },
+      { "key": "C", "textVi": "Cấu hình Lambda function theo dõi S3 bucket để phát hiện upload mới. Khi phát hiện ảnh được upload, ghi tên file vào một file text trong bộ nhớ và dùng file text đó để theo dõi các ảnh đã xử lý.", "reason": "Ghi danh sách ảnh đã xử lý vào bộ nhớ Lambda là lưu trạng thái trong môi trường tạm thời, sẽ mất khi môi trường thực thi bị thu hồi — vừa stateful vừa không bền." },
+      { "key": "D", "textVi": "Chạy một Amazon EC2 instance để theo dõi một Amazon Simple Queue Service (Amazon SQS) queue. Khi có item được thêm vào queue, ghi tên file vào một file text trên EC2 instance và kích hoạt Lambda function.", "reason": "EC2 instance giữ trạng thái trong file text cục bộ, là single point of failure và thêm công vận hành, trái với yêu cầu thành phần stateless." },
+      { "key": "E", "textVi": "Cấu hình một Amazon EventBridge (Amazon CloudWatch Events) event để theo dõi S3 bucket. Khi có ảnh được upload, gửi cảnh báo tới một Amazon Simple Notification Service (Amazon SNS) topic có email của chủ ứng dụng để xử lý tiếp.", "reason": "Gửi email cho người để xử lý tiếp nghĩa là xử lý thủ công, không phải tự động nén ảnh bằng Lambda." }
+    ],
+    "explanationVi": "Mẫu kiến trúc chuẩn: S3 event notification → SQS queue → Lambda. SQS là thành phần bền giữ sự kiện, Lambda xử lý stateless và xóa message khi xong. Bẫy: lưu trạng thái trong bộ nhớ Lambda hay file trên EC2 là stateful; email cho người là thủ công.",
+    "keyHint": "\"durable, stateless components\" + \"process the images automatically\" → S3 event notification tới SQS, Lambda đọc SQS."
+  },
+  {
+    "id": 140,
+    "stemVi": "Một công ty đang thiết kế một ứng dụng. Ứng dụng dùng một AWS Lambda function để nhận thông tin qua Amazon API Gateway và lưu thông tin vào một cơ sở dữ liệu Amazon Aurora PostgreSQL.\n\nTrong giai đoạn proof-of-concept, công ty phải tăng đáng kể các quota của Lambda để xử lý khối lượng lớn dữ liệu cần nạp vào cơ sở dữ liệu. Solutions architect phải đề xuất một thiết kế mới để cải thiện khả năng mở rộng và giảm thiểu công cấu hình.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Refactor code Lambda function thành code Apache Tomcat chạy trên các Amazon EC2 instance. Kết nối cơ sở dữ liệu bằng Java Database Connectivity (JDBC) driver gốc.", "reason": "Viết lại ứng dụng trên Tomcat/EC2 tốn nhiều công và phải tự quản lý, co giãn server — ngược với yêu cầu giảm thiểu công cấu hình." },
+      { "key": "B", "textVi": "Đổi nền tảng từ Aurora sang Amazon DynamoDB. Triển khai một DynamoDB Accelerator (DAX) cluster. Dùng DAX client SDK để trỏ các lời gọi DynamoDB API hiện có tới DAX cluster.", "reason": "Ứng dụng đang dùng Aurora PostgreSQL nên không có \"lời gọi DynamoDB API hiện có\"; chuyển sang DynamoDB phải thiết kế lại dữ liệu và code, còn DAX chỉ tăng tốc đọc chứ không giúp nạp dữ liệu." },
+      { "key": "C", "textVi": "Tạo hai Lambda function. Cấu hình một function nhận thông tin. Cấu hình function kia nạp thông tin vào cơ sở dữ liệu. Tích hợp các Lambda function bằng Amazon Simple Notification Service (Amazon SNS).", "reason": "SNS đẩy ngay mỗi message tới Lambda ghi dữ liệu, không có bộ đệm để điều tiết, nên khi dữ liệu dồn dập Lambda vẫn phải co giãn mạnh và cơ sở dữ liệu vẫn bị quá tải." },
+      { "key": "D", "textVi": "Tạo hai Lambda function. Cấu hình một function nhận thông tin. Cấu hình function kia nạp thông tin vào cơ sở dữ liệu. Tích hợp các Lambda function bằng một Amazon Simple Queue Service (Amazon SQS) queue.", "reason": "SQS làm bộ đệm giữa phần nhận và phần ghi: function nhận chỉ đẩy message vào queue, function ghi đọc theo batch với mức đồng thời kiểm soát được, nên hai phần co giãn độc lập mà không cần tăng quota Lambda hay làm quá tải Aurora." }
+    ],
+    "explanationVi": "Vấn đề là một Lambda vừa nhận vừa ghi trực tiếp vào cơ sở dữ liệu nên phải co giãn cực mạnh khi dữ liệu nhiều. Tách thành hai function và đặt SQS queue ở giữa giúp tách rời (decouple), đệm tải và ghi theo batch. Bẫy: SNS không có bộ đệm; chuyển sang EC2 hay DynamoDB là thay đổi lớn.",
+    "keyHint": "\"increase the Lambda quotas significantly\" + \"improve scalability\" → tách hai Lambda qua SQS queue."
+  },
+  {
+    "id": 141,
+    "stemVi": "Một công ty muốn chạy một in-memory database cho ứng dụng nhạy cảm với độ trễ chạy trên các Amazon EC2 instance. Ứng dụng xử lý hơn 100.000 giao dịch mỗi phút và cần thông lượng mạng cao. Solutions architect cần đưa ra một thiết kế mạng tiết kiệm chi phí và giảm thiểu phí truyền dữ liệu (data transfer).",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Chạy mọi EC2 instance trong cùng một Availability Zone trong cùng một AWS Region. Chỉ định placement group với cluster strategy khi launch các EC2 instance.", "reason": "Cluster placement group đặt các instance sát nhau trong một AZ, cho độ trễ thấp nhất và thông lượng mạng cao nhất; traffic giữa các instance trong cùng AZ bằng IP private không bị tính phí data transfer." },
+      { "key": "B", "textVi": "Chạy mọi EC2 instance ở các Availability Zone khác nhau trong cùng một AWS Region. Chỉ định placement group với partition strategy khi launch các EC2 instance.", "reason": "Traffic giữa các AZ bị tính phí data transfer và có độ trễ cao hơn; partition strategy nhằm cô lập lỗi phần cứng cho hệ thống phân tán lớn, không tối ưu độ trễ." },
+      { "key": "C", "textVi": "Triển khai một Auto Scaling group launch EC2 instance ở các Availability Zone khác nhau dựa trên mục tiêu network utilization.", "reason": "Trải instance qua nhiều AZ làm phát sinh phí data transfer giữa AZ và tăng độ trễ; Auto Scaling không giải quyết yêu cầu mạng độ trễ thấp." },
+      { "key": "D", "textVi": "Triển khai một Auto Scaling group với step scaling policy để launch EC2 instance ở các Availability Zone khác nhau.", "reason": "Cũng trải qua nhiều AZ nên phát sinh phí data transfer giữa AZ và độ trễ cao hơn; step scaling không liên quan tới thiết kế mạng." }
+    ],
+    "explanationVi": "Yêu cầu tập trung vào độ trễ thấp, thông lượng mạng cao và phí truyền dữ liệu thấp. Cluster placement group trong một AZ đáp ứng cả ba. Bẫy: đa AZ tăng tính sẵn sàng nhưng tốn phí data transfer giữa AZ và thêm độ trễ — không phải điều đề đòi hỏi.",
+    "keyHint": "\"latency-sensitive\" + \"high network throughput\" + \"minimizes data transfer charges\" → cluster placement group trong một AZ."
+  },
+  {
+    "id": 142,
+    "stemVi": "Một công ty đang phát triển một game nhiều người chơi thời gian thực dùng UDP để giao tiếp giữa client và các server trong một Auto Scaling group. Nhu cầu dự kiến tăng đột biến trong ngày, nên nền tảng game server phải thích ứng theo. Các developer muốn lưu điểm của người chơi và các dữ liệu phi quan hệ (non-relational) khác trong một giải pháp cơ sở dữ liệu tự co giãn mà không cần can thiệp.",
+    "promptVi": "Solutions architect nên đề xuất giải pháp nào?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon Route 53 để phân phối traffic và Amazon Aurora Serverless để lưu dữ liệu.", "reason": "Route 53 là DNS, không phải load balancer phân phối traffic UDP tới Auto Scaling group; Aurora là cơ sở dữ liệu quan hệ, không phải lựa chọn cho dữ liệu phi quan hệ." },
+      { "key": "B", "textVi": "Dùng một Network Load Balancer để phân phối traffic và Amazon DynamoDB on-demand để lưu dữ liệu.", "reason": "Network Load Balancer hỗ trợ UDP và phân phối tới Auto Scaling group; DynamoDB on-demand là NoSQL cho dữ liệu phi quan hệ và tự co giãn theo request mà không cần can thiệp — đúng cả hai yêu cầu." },
+      { "key": "C", "textVi": "Dùng một Network Load Balancer để phân phối traffic và Amazon Aurora Global Database để lưu dữ liệu.", "reason": "Network Load Balancer phù hợp, nhưng Aurora Global Database là cơ sở dữ liệu quan hệ đa Region, không dành cho dữ liệu phi quan hệ và không tự co giãn capacity." },
+      { "key": "D", "textVi": "Dùng một Application Load Balancer để phân phối traffic và Amazon DynamoDB global tables để lưu dữ liệu.", "reason": "Application Load Balancer chỉ hỗ trợ HTTP/HTTPS (tầng 7), không phân phối được traffic UDP của game." }
+    ],
+    "explanationVi": "Hai yêu cầu: phân phối traffic UDP và cơ sở dữ liệu phi quan hệ tự co giãn. Network Load Balancer + DynamoDB on-demand đáp ứng cả hai. Bẫy: ALB không hỗ trợ UDP; Route 53 không phải load balancer; Aurora là cơ sở dữ liệu quan hệ.",
+    "keyHint": "\"UDP\" + \"non-relational data\" + \"scale without intervention\" → Network Load Balancer + DynamoDB on-demand."
+  },
+  {
+    "id": 143,
+    "stemVi": "Một công ty chạy ứng dụng trên một nhóm Amazon Linux EC2 instance. Vì lý do tuân thủ, công ty phải giữ mọi file log của ứng dụng trong 7 năm. Các file log sẽ được phân tích bởi một công cụ báo cáo cần truy cập đồng thời mọi file.",
+    "promptVi": "Giải pháp lưu trữ nào đáp ứng các yêu cầu này tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Amazon Elastic Block Store (Amazon EBS)", "reason": "EBS volume gắn với instance trong một AZ, không phù hợp cho công cụ báo cáo truy cập đồng thời, và đắt hơn nhiều so với S3 để giữ log 7 năm." },
+      { "key": "B", "textVi": "Amazon Elastic File System (Amazon EFS)", "reason": "EFS cho truy cập đồng thời nhưng giá mỗi GB cao hơn S3 đáng kể; giữ khối log tăng dần trong 7 năm sẽ tốn kém hơn." },
+      { "key": "C", "textVi": "Amazon EC2 instance store", "reason": "Instance store là storage tạm, dữ liệu mất khi instance stop hoặc terminate — không thể dùng để lưu log 7 năm." },
+      { "key": "D", "textVi": "Amazon S3", "reason": "S3 có độ bền dữ liệu (durability) cao, dung lượng không giới hạn, nhiều client truy cập đồng thời qua API, và rẻ nhất cho lưu trữ dài hạn (có thể dùng lifecycle chuyển sang lớp rẻ hơn)." }
+    ],
+    "explanationVi": "Cần lưu log lâu dài 7 năm, truy cập đồng thời và rẻ nhất. S3 đáp ứng tốt nhất về chi phí và độ bền. Bẫy: EFS truy cập đồng thời được nhưng đắt; EBS gắn instance và đắt; instance store không bền.",
+    "keyHint": "\"retain all application log files for 7 years\" + \"access all the files concurrently\" + \"MOST cost-effectively\" → Amazon S3."
+  },
+  {
+    "id": 144,
+    "stemVi": "Một công ty chạy website tĩnh bằng Amazon S3. Công ty muốn thêm một form liên hệ vào trang web. Form liên hệ sẽ có các thành phần phía server động để người dùng nhập tên, địa chỉ email, số điện thoại và lời nhắn. Công ty dự đoán có ít hơn 100 lượt truy cập website mỗi tháng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Chạy trang form liên hệ động trên Amazon Elastic Container Service (Amazon ECS). Thiết lập Amazon Simple Email Service (Amazon SES) kết nối với bất kỳ nhà cung cấp email bên thứ ba nào.", "reason": "ECS phải chạy container liên tục nên phát sinh chi phí cố định dù chỉ có dưới 100 lượt truy cập mỗi tháng." },
+      { "key": "B", "textVi": "Tạo một Amazon API Gateway endpoint với backend AWS Lambda gọi tới Amazon Simple Email Service (Amazon SES).", "reason": "API Gateway + Lambda + SES là serverless, chỉ trả tiền theo request; với dưới 100 lượt mỗi tháng chi phí gần như bằng 0, mà vẫn cung cấp phần xử lý phía server cho form." },
+      { "key": "C", "textVi": "Chuyển trang web tĩnh thành động bằng cách triển khai Amazon Lightsail. Dùng client-side scripting để xây form liên hệ. Tích hợp form với Amazon WorkMail.", "reason": "Lightsail là server chạy liên tục tính phí hằng tháng, WorkMail tính phí theo mailbox; client-side scripting cũng không phải thành phần phía server như đề yêu cầu." },
+      { "key": "D", "textVi": "Tạo một Amazon EC2 instance t2.micro. Triển khai LAMP stack (Linux, Apache, MySQL, PHP/Perl/Python) để chạy trang web. Dùng client-side scripting để xây form liên hệ. Tích hợp form với Amazon WorkMail.", "reason": "EC2 và WorkMail đều tính phí liên tục, lại phải tự quản lý server — đắt và tốn công hơn cho lưu lượng rất thấp." }
+    ],
+    "explanationVi": "Lưu lượng rất thấp (dưới 100 lượt/tháng) thì giải pháp trả theo request là rẻ nhất. API Gateway + Lambda + SES thêm phần xử lý phía server cho website tĩnh mà không có chi phí cố định. Bẫy: ECS, Lightsail, EC2 đều chạy liên tục; WorkMail là dịch vụ hộp thư tính phí theo user.",
+    "keyHint": "\"fewer than 100 site visits each month\" + \"dynamic server-side components\" + \"MOST cost-effectively\" → API Gateway + Lambda + SES."
+  },
+  {
+    "id": 145,
+    "stemVi": "Một công ty muốn chuyển ứng dụng sang một giải pháp serverless. Giải pháp serverless cần phân tích dữ liệu hiện có và dữ liệu mới bằng SQL. Công ty lưu dữ liệu trong một Amazon S3 bucket. Dữ liệu cần được mã hóa và phải được sao chép sang một AWS Region khác.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một S3 bucket mới. Nạp dữ liệu vào S3 bucket mới. Dùng S3 Cross-Region Replication (CRR) để sao chép các object đã mã hóa sang một S3 bucket ở Region khác. Dùng server-side encryption với AWS KMS multi-Region key (SSE-KMS). Dùng Amazon Athena để truy vấn dữ liệu.", "reason": "Làm được về kỹ thuật, nhưng tạo bucket mới và chuyển dữ liệu sang là bước thừa, còn quản lý multi-Region KMS key (key policy, quyền cho replication) thêm công so với SSE-S3." },
+      { "key": "B", "textVi": "Tạo một S3 bucket mới. Nạp dữ liệu vào S3 bucket mới. Dùng S3 Cross-Region Replication (CRR) để sao chép các object đã mã hóa sang một S3 bucket ở Region khác. Dùng server-side encryption với AWS KMS multi-Region key (SSE-KMS). Dùng Amazon RDS để truy vấn dữ liệu.", "reason": "RDS không phải serverless và không truy vấn trực tiếp dữ liệu trong S3 — phải nạp dữ liệu vào cơ sở dữ liệu; lại thêm bước tạo bucket mới và quản lý KMS key." },
+      { "key": "C", "textVi": "Nạp dữ liệu vào S3 bucket hiện có. Dùng S3 Cross-Region Replication (CRR) để sao chép các object đã mã hóa sang một S3 bucket ở Region khác. Dùng server-side encryption với khóa mã hóa do Amazon S3 quản lý (SSE-S3). Dùng Amazon Athena để truy vấn dữ liệu.", "reason": "Dùng bucket hiện có nên không phải di chuyển dữ liệu; SSE-S3 do AWS tự quản lý khóa; CRR sao chép sang Region khác; Athena truy vấn SQL serverless trực tiếp trên S3 — đủ yêu cầu với ít công nhất." },
+      { "key": "D", "textVi": "Nạp dữ liệu vào S3 bucket hiện có. Dùng S3 Cross-Region Replication (CRR) để sao chép các object đã mã hóa sang một S3 bucket ở Region khác. Dùng server-side encryption với khóa mã hóa do Amazon S3 quản lý (SSE-S3). Dùng Amazon RDS để truy vấn dữ liệu.", "reason": "RDS không phải serverless và không truy vấn dữ liệu nằm trong S3 được; phải dựng DB instance và nạp dữ liệu vào — nhiều công vận hành." }
+    ],
+    "explanationVi": "Yêu cầu: truy vấn SQL serverless trên dữ liệu S3, mã hóa, sao chép sang Region khác, ít công nhất. Giữ bucket hiện có + SSE-S3 + CRR + Athena là tổ hợp đơn giản nhất. Bẫy: RDS không phải công cụ serverless truy vấn dữ liệu trên S3; tạo bucket mới và quản lý KMS key là công việc thừa khi đề không đòi khóa do khách hàng quản lý.",
+    "keyHint": "\"serverless\" + \"analyze ... by using SQL\" trên S3 + \"LEAST operational overhead\" → Athena + SSE-S3 + CRR trên bucket hiện có."
+  },
+  {
+    "id": 146,
+    "stemVi": "Một công ty hiện lưu 5 TB dữ liệu trong các hệ thống block storage on-premises. Giải pháp lưu trữ hiện tại còn rất ít dung lượng cho dữ liệu mới. Công ty chạy ứng dụng on-premises cần truy xuất dữ liệu thường xuyên dùng với độ trễ thấp. Công ty cần một giải pháp lưu trữ trên cloud.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này hiệu quả vận hành nhất (MOST operational efficiency)?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon S3 File Gateway. Tích hợp S3 File Gateway với các ứng dụng on-premises để lưu và truy xuất trực tiếp file bằng file system SMB.", "reason": "S3 File Gateway cung cấp storage dạng file (SMB/NFS), trong khi ứng dụng đang dùng block storage; chuyển sang file share buộc phải thay đổi cách ứng dụng truy cập dữ liệu." },
+      { "key": "B", "textVi": "Dùng một AWS Storage Gateway Volume Gateway với cached volumes làm iSCSI target.", "reason": "Volume Gateway cung cấp block storage qua iSCSI như hiện tại; ở chế độ cached volumes, dữ liệu chính nằm trên AWS (giải quyết thiếu dung lượng) còn dữ liệu hay dùng được cache tại chỗ cho độ trễ thấp." },
+      { "key": "C", "textVi": "Dùng một AWS Storage Gateway Volume Gateway với stored volumes làm iSCSI target.", "reason": "Stored volumes giữ toàn bộ dữ liệu trên storage on-premises và chỉ sao lưu bất đồng bộ lên AWS, nên không giải quyết việc thiếu dung lượng tại chỗ." },
+      { "key": "D", "textVi": "Dùng một AWS Storage Gateway Tape Gateway. Tích hợp Tape Gateway với các ứng dụng on-premises để lưu virtual tape trong Amazon S3.", "reason": "Tape Gateway thay thế thư viện băng từ cho sao lưu và lưu trữ, không phục vụ ứng dụng truy xuất dữ liệu hằng ngày với độ trễ thấp." }
+    ],
+    "explanationVi": "Ứng dụng dùng block storage, thiếu dung lượng tại chỗ nhưng vẫn cần độ trễ thấp cho dữ liệu hay dùng. Volume Gateway cached volumes đẩy dữ liệu chính lên cloud và giữ cache cục bộ. Bẫy: stored volumes vẫn giữ toàn bộ dữ liệu tại chỗ; File Gateway là file-level; Tape Gateway dành cho backup.",
+    "keyHint": "\"block storage\" + \"limited space\" + \"frequently accessed data with low latency\" → Volume Gateway cached volumes."
+  },
+  {
+    "id": 147,
+    "stemVi": "Một solutions architect đang tạo một Amazon CloudFront distribution mới cho một ứng dụng. Một phần thông tin người dùng gửi lên là nhạy cảm. Ứng dụng dùng HTTPS nhưng cần thêm một lớp bảo mật. Thông tin nhạy cảm cần được bảo vệ xuyên suốt toàn bộ application stack, và chỉ một số ứng dụng nhất định được truy cập thông tin này.",
+    "promptVi": "Solutions architect nên thực hiện hành động nào?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình một CloudFront signed URL.", "reason": "Signed URL kiểm soát ai được tải nội dung qua CloudFront trong thời gian nhất định, không mã hóa dữ liệu người dùng gửi lên." },
+      { "key": "B", "textVi": "Cấu hình một CloudFront signed cookie.", "reason": "Signed cookie cũng chỉ giới hạn quyền truy cập vào nội dung, không bảo vệ các trường dữ liệu nhạy cảm khi chúng đi qua các tầng của hệ thống." },
+      { "key": "C", "textVi": "Cấu hình một CloudFront field-level encryption profile.", "reason": "Field-level encryption mã hóa các trường nhạy cảm ngay tại edge bằng public key; dữ liệu giữ nguyên trạng thái mã hóa qua mọi tầng phía sau, và chỉ ứng dụng có private key mới giải mã được — đúng cả hai yêu cầu." },
+      { "key": "D", "textVi": "Cấu hình CloudFront và đặt Origin Protocol Policy là HTTPS Only cho Viewer Protocol Policy.", "reason": "HTTPS chỉ mã hóa trên đường truyền, ứng dụng vốn đã dùng HTTPS; khi tới origin dữ liệu được giải mã và mọi thành phần phía sau đều đọc được." }
+    ],
+    "explanationVi": "Cần thêm một lớp ngoài HTTPS, bảo vệ dữ liệu nhạy cảm xuyên suốt stack và chỉ cho một số ứng dụng đọc. CloudFront field-level encryption làm đúng việc này. Bẫy: signed URL/cookie là kiểm soát truy cập nội dung; HTTPS Only chỉ bảo vệ khi truyền.",
+    "keyHint": "\"another layer of security\" + \"protected throughout the entire application stack\" + \"restricted to certain applications\" → CloudFront field-level encryption."
+  },
+  {
+    "id": 148,
+    "stemVi": "Một phòng thí nghiệm nghiên cứu y khoa tạo ra dữ liệu liên quan đến một nghiên cứu mới. Phòng thí nghiệm muốn cung cấp dữ liệu với độ trễ tối thiểu cho các phòng khám trên khắp cả nước, để dùng trong các ứng dụng on-premises làm việc với file. Các file dữ liệu được lưu trong một Amazon S3 bucket có quyền chỉ đọc cho từng phòng khám.",
+    "promptVi": "Solutions architect nên đề xuất gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Triển khai một AWS Storage Gateway file gateway dưới dạng virtual machine (VM) on-premises tại mỗi phòng khám.", "reason": "File gateway cung cấp giao diện file (NFS/SMB) cho ứng dụng on-premises với backend là S3 bucket trung tâm, và cache cục bộ các file hay dùng — mỗi phòng khám đọc dữ liệu với độ trễ thấp mà không phải đổi ứng dụng." },
+      { "key": "B", "textVi": "Migrate các file tới ứng dụng on-premises của từng phòng khám bằng AWS DataSync để xử lý.", "reason": "DataSync tạo bản sao dữ liệu tại từng nơi, phải lên lịch đồng bộ liên tục cho mọi phòng khám; không phải cách truy cập trực tiếp dữ liệu trong S3 bucket." },
+      { "key": "C", "textVi": "Triển khai một AWS Storage Gateway volume gateway dưới dạng virtual machine (VM) on-premises tại mỗi phòng khám.", "reason": "Volume gateway cung cấp block storage qua iSCSI, không cho ứng dụng truy cập các object có sẵn trong S3 bucket dưới dạng file." },
+      { "key": "D", "textVi": "Gắn một Amazon Elastic File System (Amazon EFS) file system vào server on-premises của từng phòng khám.", "reason": "Dữ liệu đang nằm trong S3 chứ không phải EFS; mount EFS từ on-premises cần Direct Connect hoặc VPN và độ trễ phụ thuộc đường mạng, không đạt độ trễ tối thiểu." }
+    ],
+    "explanationVi": "Dữ liệu ở S3, người dùng là ứng dụng on-premises làm việc với file và cần độ trễ thấp. Storage Gateway file gateway tại mỗi phòng khám cho truy cập dạng file vào S3 kèm cache cục bộ. Bẫy: volume gateway là block storage; DataSync là công cụ sao chép; EFS không chứa dữ liệu này và truy cập từ xa có độ trễ cao.",
+    "keyHint": "\"on-premises, file-based applications\" + dữ liệu trong S3 + \"minimum latency\" → Storage Gateway file gateway."
+  },
+  {
+    "id": 149,
+    "stemVi": "Một công ty chạy ứng dụng trên một đội lớn Amazon EC2 instance. Ứng dụng đọc và ghi các bản ghi vào một Amazon DynamoDB table. Kích thước DynamoDB table tăng liên tục, nhưng ứng dụng chỉ cần dữ liệu của 30 ngày gần nhất. Công ty cần một giải pháp giảm thiểu chi phí và công phát triển.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng một AWS CloudFormation template để triển khai toàn bộ giải pháp. Redeploy CloudFormation stack mỗi 30 ngày và xóa stack cũ.", "reason": "Xóa stack cũ là xóa luôn table và toàn bộ dữ liệu, kể cả dữ liệu vẫn còn trong 30 ngày gần nhất mà ứng dụng cần; lại phải thao tác lặp đi lặp lại." },
+      { "key": "B", "textVi": "Dùng một EC2 instance chạy ứng dụng giám sát từ AWS Marketplace. Cấu hình ứng dụng giám sát dùng Amazon DynamoDB Streams để lưu timestamp khi có item mới được tạo trong table. Dùng một script chạy trên EC2 instance để xóa các item có timestamp cũ hơn 30 ngày.", "reason": "Thêm một EC2 instance, phần mềm Marketplace và script xóa phải tự viết, vận hành; mỗi lần xóa còn tốn write capacity — đắt và tốn công hơn cơ chế có sẵn." },
+      { "key": "C", "textVi": "Cấu hình Amazon DynamoDB Streams kích hoạt một AWS Lambda function khi có item mới được tạo trong table. Cấu hình Lambda function xóa các item trong table cũ hơn 30 ngày.", "reason": "Mỗi lần ghi lại kích hoạt Lambda đi tìm và xóa item cũ, phải scan hoặc query bảng và tốn write capacity cho thao tác xóa — tốn chi phí và công phát triển." },
+      { "key": "D", "textVi": "Mở rộng ứng dụng để thêm một thuộc tính có giá trị bằng timestamp hiện tại cộng 30 ngày cho mỗi item mới tạo trong table. Cấu hình DynamoDB dùng thuộc tính đó làm TTL attribute.", "reason": "DynamoDB TTL tự xóa item khi quá thời điểm hết hạn mà không tốn write capacity; chỉ cần thêm một thuộc tính khi ghi và bật TTL — ít công phát triển và rẻ nhất." }
+    ],
+    "explanationVi": "Cần tự loại bỏ dữ liệu cũ hơn 30 ngày với chi phí và công sức thấp nhất. DynamoDB TTL là tính năng có sẵn, miễn phí cho thao tác xóa, chỉ cần một thuộc tính thời điểm hết hạn. Bẫy: tự viết cơ chế xóa bằng Lambda hay EC2 tốn capacity và công; redeploy stack làm mất dữ liệu.",
+    "keyHint": "\"needs only data from the last 30 days\" + \"minimizes cost and development effort\" → DynamoDB TTL."
+  },
+  {
+    "id": 150,
+    "stemVi": "Một công ty đang xây dựng ứng dụng trên AWS Cloud. Ứng dụng sẽ lưu dữ liệu trong các Amazon S3 bucket ở hai AWS Region. Công ty phải dùng một AWS Key Management Service (AWS KMS) customer managed key để mã hóa mọi dữ liệu lưu trong các S3 bucket. Dữ liệu trong cả hai S3 bucket phải được mã hóa và giải mã bằng cùng một KMS key. Dữ liệu và key phải được lưu ở cả hai Region.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một S3 bucket ở mỗi Region. Cấu hình các S3 bucket dùng server-side encryption với khóa mã hóa do Amazon S3 quản lý (SSE-S3). Cấu hình replication giữa các S3 bucket.", "reason": "SSE-S3 dùng khóa do S3 quản lý, không phải KMS customer managed key như yêu cầu." },
+      { "key": "B", "textVi": "Tạo một customer managed multi-Region KMS key. Tạo một S3 bucket ở mỗi Region. Cấu hình replication giữa các S3 bucket. Cấu hình ứng dụng dùng KMS key với client-side encryption.", "reason": "Multi-Region KMS key có cùng key ID và key material ở cả hai Region, nên dữ liệu mã hóa ở Region này giải mã được ở Region kia bằng cùng một key; key tồn tại ở cả hai Region, dữ liệu được replicate — đáp ứng đủ yêu cầu." },
+      { "key": "C", "textVi": "Tạo một customer managed KMS key và một S3 bucket ở mỗi Region. Cấu hình các S3 bucket dùng server-side encryption với khóa mã hóa do Amazon S3 quản lý (SSE-S3). Cấu hình replication giữa các S3 bucket.", "reason": "Tạo KMS key nhưng bucket lại mã hóa bằng SSE-S3, nên dữ liệu không được mã hóa bằng customer managed key; hai key tạo riêng ở hai Region cũng là hai key khác nhau." },
+      { "key": "D", "textVi": "Tạo một customer managed KMS key và một S3 bucket ở mỗi Region. Cấu hình các S3 bucket dùng server-side encryption với AWS KMS key (SSE-KMS). Cấu hình replication giữa các S3 bucket.", "reason": "KMS key tạo riêng ở mỗi Region là hai key độc lập với key material khác nhau, vi phạm yêu cầu mã hóa và giải mã bằng cùng một KMS key." }
+    ],
+    "explanationVi": "Yêu cầu then chốt: cùng một KMS customer managed key dùng được ở cả hai Region. Chỉ multi-Region KMS key đáp ứng — các bản key ở hai Region có cùng key ID và key material. Bẫy: SSE-S3 không phải customer managed key; tạo key riêng ở từng Region là hai key khác nhau dù cùng loại.",
+    "keyHint": "\"same KMS key\" + \"stored in each of the two Regions\" → customer managed multi-Region KMS key."
+  }
+]

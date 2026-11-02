@@ -1,0 +1,6 @@
+{
+  "id": "cloudformation", "name": "AWS CloudFormation", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS CloudFormation mô tả và provision AWS infrastructure bằng templates/stacks để quản lý thay đổi lặp lại như code.",
+  "examSignals": ["Repeatable declarative infrastructure deployment: CloudFormation", "Multi-account landing zone guardrails: Control Tower", "Container app deployment abstraction: Elastic Beanstalk"],
+  "compareWith": [{ "service": "AWS Service Catalog", "diff": "CloudFormation triển khai stack từ template; Service Catalog quản trị phân phối sản phẩm/template được phê duyệt cho người dùng." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "fsx-windows", "name": "Amazon FSx for Windows File Server", "category": "Storage", "tier": "minor",
+  "overview": "Amazon FSx for Windows File Server supplies managed Windows-native SMB file shares with Active Directory integration options.",
+  "examSignals": ["Shared Windows SMB file shares with Windows ACL/AD integration: FSx for Windows", "Shared Linux NFS filesystem: EFS"],
+  "compareWith": [{ "service": "Amazon EFS", "diff": "FSx for Windows is SMB/Windows-native storage; EFS is NFS primarily for Linux clients." }]
+}

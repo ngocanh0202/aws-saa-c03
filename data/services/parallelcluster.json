@@ -1,0 +1,6 @@
+{
+  "id": "parallelcluster", "name": "AWS ParallelCluster", "category": "Compute", "tier": "minor",
+  "overview": "AWS ParallelCluster deploys and manages HPC clusters on AWS using configurable scheduler, compute fleet, storage and networking.",
+  "examSignals": ["Create configurable HPC cluster with schedulers such as Slurm: ParallelCluster", "Run independent batch jobs with managed queue scheduling: AWS Batch"],
+  "compareWith": [{ "service": "AWS Batch", "diff": "ParallelCluster provisions a traditional HPC cluster/scheduler; Batch abstracts job queues and managed compute scheduling." }]
+}

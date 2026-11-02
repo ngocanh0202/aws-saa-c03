@@ -1,0 +1,12 @@
+{
+  "id": "cloudtrail", "name": "AWS CloudTrail", "category": "Management and Governance", "tier": "core",
+  "overview": "AWS CloudTrail ghi lại account/API activity dưới dạng events để audit, điều tra bảo mật và theo dõi thay đổi AWS resources.",
+  "concepts": [{ "term": "Management/data events", "desc": "Management events ghi control plane activity; data events chi tiết resource operations và có thể tính phí." }, { "term": "Trail/event data store", "desc": "Trail chuyển logs tới S3/CloudWatch; CloudTrail Lake lưu và truy vấn events theo cấu hình." }, { "term": "Organization trail", "desc": "Trail quản trị tập trung event collection trên organization accounts." }],
+  "howItWorks": "AWS API activity tạo events; CloudTrail event history/trails/event data stores thu thập, lưu trữ và cho phép tìm kiếm/alert theo cấu hình.",
+  "useCases": ["Audit ai đã gọi API/thay đổi cấu hình", "Tập trung log multi-account vào S3", "Điều tra security/compliance events"],
+  "pricing": "Event history/management events có điều kiện miễn phí theo feature; data events, Insights, Lake ingestion/storage/query và S3/CloudWatch có thể tính phí.",
+  "examSignals": ["Ai đã thay đổi tài nguyên/API nào: CloudTrail", "Operational metrics/logs/alarms: CloudWatch", "Config history/compliance drift: AWS Config"],
+  "compareWith": [{ "service": "Amazon CloudWatch", "diff": "CloudTrail ghi AWS API/account activity; CloudWatch thu metrics/logs và tạo alarms." }, { "service": "AWS Config", "diff": "CloudTrail trả lời hoạt động API ai/khi nào; Config theo dõi resource configuration/state và compliance." }],
+  "facts": ["Không bật data event collection nghĩa là không có đầy đủ record cho mọi data-plane access.", "S3 log bucket cần policy, encryption và integrity protection phù hợp.", "CloudTrail event records không thay application audit log."],
+  "practice": { "steps": ["Trong sandbox, xem Event history và lọc một hành động vô hại của chính mình.", "Nếu thử trail, ghi vào bucket riêng với encryption và log file validation phù hợp.", "Chỉ bật data events cho test resource cụ thể để tránh volume/cost lớn."], "freeTier": "Data events, Insights, CloudTrail Lake, S3 storage/requests và CloudWatch delivery có thể tính phí; kiểm tra feature-specific price trước khi bật.", "cleanup": ["Xóa trail/event data store thử nếu không cần lưu audit.", "Xóa S3/CloudWatch destinations chỉ tạo cho lab sau khi xuất/lưu evidence cần thiết.", "Không xóa organization/security trails đang bắt buộc; xác nhận scope trước cleanup."] }
+}

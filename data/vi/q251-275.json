@@ -1,0 +1,748 @@
+[
+  {
+    "id": 251,
+    "stemVi": "Một công ty host website trên các Amazon EC2 instance đặt sau một Application Load Balancer (ALB). Website phục vụ nội dung tĩnh. Traffic tới website đang tăng và công ty lo ngại chi phí có thể tăng theo.",
+    "promptVi": "Solutions architect nên làm gì để giảm chi phí của website?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon CloudFront distribution để cache các file tĩnh tại các edge location.",
+        "reason": "CloudFront cache file tĩnh tại edge nên phần lớn request không còn đi tới ALB và EC2; công ty cần ít instance hơn và giảm chi phí truyền dữ liệu ra từ origin — cách giảm chi phí trực tiếp nhất khi traffic tăng."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon ElastiCache cluster. Kết nối ALB tới ElastiCache cluster để phục vụ các file đã cache.",
+        "reason": "ALB không thể dùng ElastiCache làm target; ElastiCache là cache dữ liệu in-memory cho ứng dụng gọi tới, không phục vụ file tĩnh trực tiếp cho người dùng, lại thêm chi phí cluster."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS WAF web ACL và gắn nó vào ALB. Thêm một rule vào web ACL để cache các file tĩnh.",
+        "reason": "AWS WAF chỉ lọc request theo rule (chặn tấn công web), không có tính năng cache nên không giảm được tải hay chi phí."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo ALB thứ hai ở một AWS Region khác. Định tuyến traffic người dùng tới Region gần nhất để giảm thiểu chi phí truyền dữ liệu.",
+        "reason": "Thêm ALB và EC2 ở Region thứ hai làm chi phí hạ tầng gần như gấp đôi, trong khi mỗi request vẫn do EC2 xử lý; không giảm được chi phí."
+      }
+    ],
+    "explanationVi": "Website phục vụ nội dung tĩnh và traffic tăng: đặt CloudFront phía trước để cache ở edge, giảm số request tới ALB/EC2 và giảm data transfer từ origin. Bẫy: ElastiCache là cache cho ứng dụng chứ không phải CDN, WAF không cache, còn nhân đôi hạ tầng sang Region khác chỉ làm tăng chi phí.",
+    "keyHint": "\"serves static content\" + \"reduce the cost\" → Amazon CloudFront cache tại edge location."
+  },
+  {
+    "id": 252,
+    "stemVi": "Một công ty chạy ứng dụng trên một cơ sở dữ liệu Oracle. Công ty dự định nhanh chóng chuyển lên AWS vì thiếu nguồn lực cho việc quản trị cơ sở dữ liệu, quản trị backup và bảo trì data center. Ứng dụng dùng các tính năng database của bên thứ ba cần quyền truy cập đặc quyền (privileged access).",
+    "promptVi": "Giải pháp nào giúp công ty chuyển cơ sở dữ liệu lên AWS tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển cơ sở dữ liệu sang Amazon RDS for Oracle. Thay các tính năng của bên thứ ba bằng các dịch vụ cloud.",
+        "reason": "RDS for Oracle không cấp quyền đặc quyền vào OS và database; thay các tính năng bên thứ ba bằng dịch vụ cloud buộc phải sửa ứng dụng, trái với yêu cầu chuyển nhanh."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển cơ sở dữ liệu sang Amazon RDS Custom for Oracle. Tùy chỉnh cấu hình database để hỗ trợ các tính năng của bên thứ ba.",
+        "reason": "RDS Custom for Oracle vẫn là dịch vụ managed (AWS lo backup tự động, hạ tầng) nhưng cho quyền truy cập đặc quyền vào OS và database để cài, cấu hình tính năng bên thứ ba — vừa giảm công quản trị vừa không phải sửa ứng dụng."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển cơ sở dữ liệu sang một Amazon Machine Image (AMI) Oracle trên Amazon EC2. Tùy chỉnh cấu hình database để hỗ trợ các tính năng của bên thứ ba.",
+        "reason": "Tự chạy Oracle trên EC2 cho đủ quyền nhưng công ty phải tự quản trị database, backup, vá lỗi — đúng phần việc công ty đang thiếu nguồn lực để làm."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển cơ sở dữ liệu sang Amazon RDS for PostgreSQL bằng cách viết lại code ứng dụng để bỏ phụ thuộc vào Oracle APEX.",
+        "reason": "Viết lại ứng dụng để đổi engine tốn nhiều thời gian và chi phí phát triển, không phải cách chuyển nhanh; đề cũng không nói ứng dụng chỉ phụ thuộc vào Oracle APEX."
+      }
+    ],
+    "explanationVi": "Hai ràng buộc: công ty không đủ người quản trị (cần dịch vụ managed) và ứng dụng cần quyền đặc quyền cho tính năng bên thứ ba (RDS thường không cho). RDS Custom for Oracle giải đúng bài toán này. Bẫy: EC2 cho đủ quyền nhưng dồn toàn bộ việc quản trị lại cho công ty; đổi sang PostgreSQL hay thay tính năng đều phải sửa ứng dụng.",
+    "keyHint": "\"third-party database features that require privileged access\" + thiếu nguồn lực quản trị → Amazon RDS Custom for Oracle.",
+    "review": {
+      "reason": "Chưa chắc chắn: Amazon RDS Custom for Oracle hết hỗ trợ ngày 31/03/2027 và AWS khuyên khách hàng chuyển sang Oracle tự quản lý trên EC2. Đáp án vẫn đúng với ý đề (giữ được tính năng bên thứ ba mà vẫn có dịch vụ được quản lý), nhưng với dự án mới hôm nay, phương án chạy Oracle trên EC2 từ AMI là lựa chọn còn được hỗ trợ lâu dài."
+    }
+  },
+  {
+    "id": 253,
+    "stemVi": "Một công ty đang xây dựng ứng dụng quản lý quan hệ khách hàng (customer relationship management) mới trên web. Ứng dụng sẽ dùng nhiều Amazon EC2 instance dùng Amazon Elastic Block Store (Amazon EBS) volume, đặt sau một Application Load Balancer (ALB). Ứng dụng cũng sẽ dùng một cơ sở dữ liệu Amazon Aurora. Toàn bộ dữ liệu của ứng dụng phải được mã hóa at rest và in transit.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng chứng chỉ AWS Key Management Service (AWS KMS) trên ALB để mã hóa dữ liệu in transit. Dùng AWS Certificate Manager (ACM) để mã hóa at rest các EBS volume và storage của cơ sở dữ liệu Aurora.",
+        "reason": "Đảo ngược vai trò hai dịch vụ: KMS quản lý khóa mã hóa chứ không cấp chứng chỉ TLS cho ALB, còn ACM cấp chứng chỉ TLS chứ không mã hóa EBS hay Aurora at rest."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS root account đăng nhập AWS Management Console. Upload các chứng chỉ mã hóa của công ty. Trong khi vẫn ở root account, chọn tùy chọn bật mã hóa cho toàn bộ dữ liệu at rest và in transit của account.",
+        "reason": "AWS không có tùy chọn nào bật mã hóa at rest và in transit cho toàn bộ account; dùng root account cho việc cấu hình thường ngày cũng trái khuyến nghị bảo mật."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Key Management Service (AWS KMS) để mã hóa at rest các EBS volume và storage của cơ sở dữ liệu Aurora. Gắn một chứng chỉ AWS Certificate Manager (ACM) vào ALB để mã hóa dữ liệu in transit.",
+        "reason": "KMS cung cấp khóa để mã hóa at rest cho EBS volume và storage của Aurora; chứng chỉ ACM gắn vào HTTPS listener của ALB mã hóa traffic TLS từ client — đáp ứng cả at rest lẫn in transit."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng BitLocker để mã hóa toàn bộ dữ liệu at rest. Import các khóa chứng chỉ TLS của công ty vào AWS Key Management Service (AWS KMS). Gắn các KMS key vào ALB để mã hóa dữ liệu in transit.",
+        "reason": "BitLocker chỉ là công cụ mã hóa đĩa của Windows, không mã hóa được storage của Aurora; ALB dùng chứng chỉ từ ACM hoặc IAM chứ không gắn được KMS key để làm TLS."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu, hai dịch vụ: mã hóa at rest cho EBS và Aurora dùng khóa của KMS, còn mã hóa in transit cho ALB dùng chứng chỉ TLS của ACM. Bẫy: phương án đảo ngược vai trò KMS và ACM; không có công tắc bật mã hóa cho cả account; BitLocker không mã hóa được Aurora và ALB không dùng KMS key làm chứng chỉ.",
+    "keyHint": "\"encrypted at rest and in transit\" với EBS, Aurora và ALB → KMS cho at rest + chứng chỉ ACM trên ALB cho in transit."
+  },
+  {
+    "id": 254,
+    "stemVi": "Một công ty trước đây đã chuyển giải pháp data warehouse lên AWS. Công ty cũng có một kết nối AWS Direct Connect. Người dùng tại văn phòng công ty truy vấn data warehouse bằng một công cụ trực quan hóa (visualization tool). Kích thước trung bình của một kết quả truy vấn do data warehouse trả về là 50 MB, còn mỗi trang web do công cụ trực quan hóa gửi đi khoảng 500 KB. Các tập kết quả do data warehouse trả về không được cache.",
+    "promptVi": "Giải pháp nào cho chi phí truyền dữ liệu ra ngoài (data transfer egress) THẤP NHẤT (LOWEST) cho công ty?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Host công cụ trực quan hóa on-premises và truy vấn trực tiếp data warehouse qua internet.",
+        "reason": "Mỗi truy vấn kéo 50 MB kết quả ra khỏi AWS theo giá egress internet — lượng dữ liệu lớn nhất với đơn giá cao nhất, nên đắt nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Host công cụ trực quan hóa trong cùng AWS Region với data warehouse. Truy cập nó qua internet.",
+        "reason": "Kết quả 50 MB ở lại trong Region là đúng hướng, nhưng các trang 500 KB đi ra qua internet chịu đơn giá egress internet, cao hơn đơn giá data transfer out qua Direct Connect mà công ty đã có."
+      },
+      {
+        "key": "C",
+        "textVi": "Host công cụ trực quan hóa on-premises và truy vấn trực tiếp data warehouse qua kết nối Direct Connect tại một location trong cùng AWS Region.",
+        "reason": "Đơn giá egress qua Direct Connect thấp, nhưng mỗi truy vấn vẫn đưa 50 MB ra khỏi AWS — gấp khoảng 100 lần so với chỉ gửi trang 500 KB."
+      },
+      {
+        "key": "D",
+        "textVi": "Host công cụ trực quan hóa trong cùng AWS Region với data warehouse và truy cập nó qua kết nối Direct Connect tại một location trong cùng Region.",
+        "reason": "Kết quả 50 MB chỉ đi giữa data warehouse và công cụ trong cùng Region; thứ duy nhất ra khỏi AWS là trang web 500 KB, lại đi qua Direct Connect với đơn giá egress thấp — tổng egress rẻ nhất."
+      }
+    ],
+    "explanationVi": "Chi phí egress = lượng dữ liệu ra khỏi AWS × đơn giá. Đặt công cụ trực quan hóa cạnh data warehouse để kết quả 50 MB không rời AWS, chỉ gửi trang 500 KB về văn phòng, và gửi qua Direct Connect vì đơn giá egress thấp hơn internet. Bẫy: chọn Direct Connect nhưng vẫn kéo 50 MB mỗi truy vấn về on-premises.",
+    "keyHint": "\"LOWEST data transfer egress cost\" + kết quả 50 MB so với trang 500 KB → đặt công cụ cùng Region với data warehouse và truy cập qua Direct Connect."
+  },
+  {
+    "id": 255,
+    "stemVi": "Một công ty đang triển khai một ứng dụng mới trên các Amazon EC2 instance. Ứng dụng ghi dữ liệu vào các Amazon Elastic Block Store (Amazon EBS) volume. Công ty cần bảo đảm mọi dữ liệu ghi vào các EBS volume đều được mã hóa at rest.",
+    "promptVi": "Giải pháp nào đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một IAM role quy định mã hóa EBS. Gắn role đó vào các EC2 instance.",
+        "reason": "IAM role chỉ cấp quyền gọi API cho instance, không làm cho volume được mã hóa; không có kiểu role \"quy định mã hóa EBS\" nào."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo các EBS volume ở dạng volume được mã hóa. Gắn các EBS volume vào các EC2 instance.",
+        "reason": "EBS volume được mã hóa (bằng KMS key) tự mã hóa mọi dữ liệu ghi vào, cả snapshot tạo từ nó, mà ứng dụng không phải làm gì thêm — đáp ứng đúng yêu cầu mã hóa at rest."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một tag cho EC2 instance có key là Encrypt và value là True. Gắn tag cho mọi instance cần mã hóa ở mức EBS.",
+        "reason": "Tag chỉ là metadata để phân loại; gắn tag Encrypt=True không kích hoạt mã hóa nào cho volume."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một key policy của AWS Key Management Service (AWS KMS) để ép buộc mã hóa EBS trong account. Bảo đảm key policy đang hoạt động.",
+        "reason": "Key policy chỉ quy định ai được dùng khóa KMS, không buộc volume phải mã hóa; muốn ép buộc ở mức account thì dùng thiết lập EBS encryption by default của EC2, không phải key policy."
+      }
+    ],
+    "explanationVi": "Mã hóa at rest cho EBS được bật ngay khi tạo volume (hoặc bằng EBS encryption by default cho cả Region); sau đó mọi dữ liệu ghi vào đều được mã hóa trong suốt. Bẫy: IAM role, tag hay KMS key policy đều không tự bật mã hóa cho volume.",
+    "keyHint": "\"all data that is written to the EBS volumes is encrypted at rest\" → tạo EBS volume ở dạng encrypted."
+  },
+  {
+    "id": 256,
+    "stemVi": "Một solutions architect đang thiết kế kiến trúc disaster recovery (DR) cho một công ty. Công ty có một cơ sở dữ liệu MySQL chạy trên một Amazon EC2 instance trong private subnet, có backup theo lịch. Thiết kế DR cần bao gồm nhiều AWS Region.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển cơ sở dữ liệu MySQL sang nhiều EC2 instance. Cấu hình một EC2 instance standby ở DR Region. Bật replication.",
+        "reason": "Tự vận hành MySQL trên nhiều EC2 và tự cấu hình, giám sát replication sang Region khác, tự failover — tốn công vận hành nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển cơ sở dữ liệu MySQL sang Amazon RDS. Dùng triển khai Multi-AZ. Bật read replication cho DB instance chính ở các Availability Zone khác nhau.",
+        "reason": "Multi-AZ và read replica ở các AZ khác nhau đều nằm trong cùng một Region, nên không đáp ứng yêu cầu DR trải nhiều Region."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển cơ sở dữ liệu MySQL sang một Amazon Aurora global database. Đặt primary DB cluster ở Region chính. Đặt secondary DB cluster ở DR Region.",
+        "reason": "Aurora global database là dịch vụ managed, tự sao chép dữ liệu ở tầng storage sang Region khác với độ trễ thường dưới 1 giây và hỗ trợ failover nhanh — DR đa Region mà gần như không phải tự vận hành."
+      },
+      {
+        "key": "D",
+        "textVi": "Lưu các bản backup theo lịch của cơ sở dữ liệu MySQL vào một Amazon S3 bucket được cấu hình S3 Cross-Region Replication (CRR). Dùng bản backup để khôi phục cơ sở dữ liệu ở DR Region.",
+        "reason": "Có dữ liệu ở Region khác nhưng khi có sự cố phải tự dựng EC2, cài MySQL và restore thủ công; RPO phụ thuộc lịch backup và RTO cao, tốn công khi DR."
+      }
+    ],
+    "explanationVi": "Cần DR trải nhiều Region với ít công vận hành nhất: Aurora global database (tương thích MySQL) lo sẵn replication xuyên Region và failover. Bẫy: Multi-AZ chỉ bảo vệ trong một Region; tự replication trên EC2 hay backup/restore qua S3 CRR đều đòi nhiều thao tác thủ công.",
+    "keyHint": "\"DR design needs to include multiple AWS Regions\" + \"LEAST operational overhead\" với MySQL → Amazon Aurora global database."
+  },
+  {
+    "id": 257,
+    "stemVi": "Hệ thống báo cáo của một công ty gửi hàng trăm file .csv vào một Amazon S3 bucket mỗi ngày. Công ty phải chuyển các file này sang định dạng Apache Parquet và phải lưu chúng vào một bucket chứa dữ liệu đã chuyển đổi.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công phát triển nhất (LEAST development effort)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon EMR cluster có cài Apache Spark. Viết một ứng dụng Spark để chuyển đổi dữ liệu. Dùng EMR File System (EMRFS) để ghi file vào bucket dữ liệu đã chuyển đổi.",
+        "reason": "Phải tự viết ứng dụng Spark và dựng, quản lý EMR cluster — nhiều công phát triển và vận hành hơn một ETL job serverless."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một AWS Glue crawler để khám phá dữ liệu. Tạo một AWS Glue ETL job (extract, transform, load) để chuyển đổi dữ liệu. Chỉ định bucket dữ liệu đã chuyển đổi ở bước output.",
+        "reason": "Crawler tự nhận diện schema của file CSV, còn Glue ETL job (serverless, có thể dựng bằng giao diện trực quan) chuyển sang Parquet và ghi vào bucket đích — gần như không phải viết code."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Batch tạo một job definition với cú pháp Bash để chuyển đổi dữ liệu và xuất dữ liệu ra bucket dữ liệu đã chuyển đổi. Dùng job definition đó để submit một job. Chỉ định array job làm loại job.",
+        "reason": "Phải tự viết script chuyển đổi CSV sang Parquet, đóng gói container và cấu hình môi trường compute cho Batch — tốn công phát triển hơn Glue."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một AWS Lambda function để chuyển đổi dữ liệu và xuất dữ liệu ra bucket dữ liệu đã chuyển đổi. Cấu hình một event notification cho S3 bucket. Chỉ định Lambda function làm đích của event notification.",
+        "reason": "Phải tự viết code chuyển đổi và đóng gói thư viện Parquet cho Lambda, lại bị giới hạn 15 phút và bộ nhớ nếu file lớn — nhiều công phát triển hơn dùng Glue."
+      }
+    ],
+    "explanationVi": "Chuyển CSV sang Parquet là bài toán ETL chuẩn; AWS Glue crawler + Glue ETL job làm việc này mà gần như không phải viết code. Bẫy: EMR, AWS Batch và Lambda đều khả thi về kỹ thuật nhưng đều đòi tự viết logic chuyển đổi, nên không phải \"LEAST development effort\".",
+    "keyHint": "\"convert these files to Apache Parquet\" + \"LEAST development effort\" → AWS Glue crawler + Glue ETL job."
+  },
+  {
+    "id": 258,
+    "stemVi": "Một công ty dùng Amazon S3 để lưu ảnh độ phân giải cao trong một S3 bucket. Để giảm thiểu thay đổi ứng dụng, công ty lưu ảnh dưới dạng phiên bản mới nhất (latest version) của một S3 object. Công ty chỉ cần giữ lại hai phiên bản gần nhất của mỗi ảnh.\n\nCông ty muốn giảm chi phí. Công ty đã xác định S3 bucket này là một khoản chi lớn.",
+    "promptVi": "Giải pháp nào giảm chi phí S3 với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng S3 Lifecycle để xóa các phiên bản object đã hết hạn và giữ lại hai phiên bản gần nhất.",
+        "reason": "Lifecycle rule NoncurrentVersionExpiration với tùy chọn giữ lại số phiên bản noncurrent mới nhất (NewerNoncurrentVersions = 1) giữ phiên bản hiện tại cùng một phiên bản trước đó và tự xóa phần còn lại — tự động, không cần code."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng một AWS Lambda function để kiểm tra các phiên bản cũ và xóa tất cả trừ hai phiên bản gần nhất.",
+        "reason": "Phải tự viết, lên lịch và duy trì code liệt kê và xóa phiên bản trên cả bucket lớn — tốn công hơn tính năng có sẵn của S3 Lifecycle."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng S3 Batch Operations để xóa các phiên bản object noncurrent và chỉ giữ lại hai phiên bản gần nhất.",
+        "reason": "Batch Operations chạy theo từng job trên một manifest danh sách object; phải tự lập danh sách phiên bản cần xóa và chạy lại mỗi khi có phiên bản mới, không tự động liên tục như Lifecycle."
+      },
+      {
+        "key": "D",
+        "textVi": "Tắt versioning trên S3 bucket và giữ lại hai phiên bản gần nhất.",
+        "reason": "Versioning chỉ có thể suspend chứ không tắt hẳn, và việc này không xóa các phiên bản cũ đã có; sau đó mỗi lần ghi đè sẽ thay thế object nên không còn giữ được hai phiên bản."
+      }
+    ],
+    "explanationVi": "Giữ đúng N phiên bản gần nhất và xóa phần còn lại là tính năng có sẵn của S3 Lifecycle cho bucket có versioning (hết hạn noncurrent version, giữ lại số phiên bản noncurrent mới nhất). Bẫy: Lambda và Batch Operations làm được nhưng phải tự xây và chạy lại; suspend versioning không dọn phiên bản cũ.",
+    "keyHint": "\"retain only the two most recent versions\" + \"LEAST operational overhead\" → S3 Lifecycle rule cho noncurrent versions."
+  },
+  {
+    "id": 259,
+    "stemVi": "Một công ty chạy các ứng dụng container bằng Amazon Elastic Kubernetes Service (Amazon EKS). Tải của công ty không ổn định trong ngày. Công ty muốn Amazon EKS scale in và scale out theo tải.",
+    "promptVi": "Tổ hợp bước nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng một AWS Lambda function để thay đổi kích thước EKS cluster.",
+        "reason": "Phải tự viết và duy trì logic theo dõi tải và thay đổi số node, trong khi Kubernetes đã có công cụ autoscaling chuẩn — tốn công vận hành hơn."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Kubernetes Metrics Server để kích hoạt horizontal pod autoscaling.",
+        "reason": "Metrics Server cung cấp số liệu CPU/memory cho Horizontal Pod Autoscaler, để số pod tự tăng giảm theo tải — lớp co giãn ở mức ứng dụng."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Kubernetes Cluster Autoscaler để quản lý số node trong cluster.",
+        "reason": "Cluster Autoscaler tự thêm node khi có pod không đủ chỗ chạy và bớt node khi thừa tài nguyên — lớp co giãn ở mức hạ tầng, bổ sung cho việc co giãn pod."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon API Gateway và kết nối nó tới Amazon EKS.",
+        "reason": "API Gateway chỉ đưa API ra ngoài cho client gọi vào, không có chức năng co giãn pod hay node của EKS."
+      },
+      {
+        "key": "E",
+        "textVi": "Dùng AWS App Mesh để quan sát hoạt động mạng.",
+        "reason": "App Mesh là service mesh để quản lý và quan sát traffic giữa các service, không co giãn cluster; AWS cũng đã thông báo ngừng hỗ trợ App Mesh."
+      }
+    ],
+    "explanationVi": "Co giãn EKS theo tải cần hai lớp: Horizontal Pod Autoscaler (dựa trên số liệu từ Metrics Server) tăng giảm số pod, và Cluster Autoscaler tăng giảm số node để chứa các pod đó. Cả hai là thành phần chuẩn của Kubernetes nên ít công vận hành. Bẫy: tự viết Lambda tốn công; API Gateway và App Mesh không liên quan đến co giãn.",
+    "keyHint": "\"scale in and out according to the workload\" trên EKS → Metrics Server + Horizontal Pod Autoscaler cho pod, Cluster Autoscaler cho node."
+  },
+  {
+    "id": 260,
+    "stemVi": "Một công ty thu thập dữ liệu từ rất nhiều người tham gia dùng thiết bị đeo (wearable devices). Công ty lưu dữ liệu trong một bảng Amazon DynamoDB và dùng các ứng dụng để phân tích dữ liệu. Tải dữ liệu ổn định và dự đoán được. Công ty muốn giữ chi phí DynamoDB ở mức bằng hoặc thấp hơn ngân sách đã dự báo.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng provisioned mode và DynamoDB Standard-Infrequent Access (DynamoDB Standard-IA). Đặt trước capacity (reserved capacity) cho tải đã dự báo.",
+        "reason": "Table class Standard-IA chỉ rẻ hơn về lưu trữ nhưng đắt hơn cho đọc/ghi, không hợp với dữ liệu được phân tích thường xuyên; reserved capacity cũng không áp dụng cho bảng Standard-IA."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng provisioned mode. Chỉ định read capacity units (RCU) và write capacity units (WCU).",
+        "reason": "Tải ổn định và dự đoán được thì provisioned mode với RCU/WCU cố định có đơn giá thấp hơn on-demand và chi phí cố định theo capacity đã đặt — dễ giữ trong ngân sách."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng on-demand mode. Đặt read capacity units (RCU) và write capacity units (WCU) đủ cao để đáp ứng thay đổi của tải.",
+        "reason": "On-demand mode không cho đặt RCU/WCU (tính tiền theo từng request), và với tải ổn định thì đơn giá của nó cao hơn provisioned."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng on-demand mode. Chỉ định read capacity units (RCU) và write capacity units (WCU) với reserved capacity.",
+        "reason": "On-demand mode không có RCU/WCU để chỉ định và không mua được reserved capacity; reserved capacity chỉ dành cho provisioned mode."
+      }
+    ],
+    "explanationVi": "Tải ổn định, dự đoán được và cần bám ngân sách là tín hiệu dùng provisioned mode với RCU/WCU xác định. On-demand hợp với tải khó đoán và đắt hơn cho tải đều. Bẫy: gán RCU/WCU hay reserved capacity cho on-demand là không tồn tại; Standard-IA chỉ tiết kiệm khi dữ liệu ít được truy cập.",
+    "keyHint": "\"constant and predictable\" + \"stay at or below its forecasted budget\" → DynamoDB provisioned mode với RCU/WCU xác định."
+  },
+  {
+    "id": 261,
+    "stemVi": "Một công ty host ứng dụng ecommerce ba tầng (three-tier) trên một nhóm Amazon EC2 instance. Các instance chạy trong một Auto Scaling group đặt sau một Application Load Balancer (ALB). Toàn bộ dữ liệu ecommerce được lưu trong một Amazon RDS for MariaDB Multi-AZ DB instance.\n\nCông ty muốn tối ưu việc quản lý session của khách hàng trong quá trình giao dịch. Ứng dụng phải lưu dữ liệu session một cách bền vững (durably).",
+    "promptVi": "Những giải pháp nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật tính năng sticky sessions (session affinity) trên ALB.",
+        "reason": "Sticky session giữ mỗi khách hàng ở cùng một instance trong suốt giao dịch, nên các request của một giao dịch không bị chuyển qua lại giữa các instance — tối ưu việc quản lý session."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng một bảng Amazon DynamoDB để lưu thông tin session của khách hàng.",
+        "reason": "Theo đáp án gốc, lựa chọn này không được chọn: kho session được ưu tiên là cache in-memory đi kèm sticky session, vì truy cập session trong giao dịch diễn ra liên tục và cần độ trễ dưới mili giây; DynamoDB vẫn là cách lưu session bền vững hợp lệ nhưng không phải phương án đề hướng tới."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai một Amazon Cognito user pool để quản lý thông tin session của người dùng.",
+        "reason": "Cognito user pool dùng để đăng ký, xác thực người dùng và cấp token, không phải kho lưu dữ liệu session của ứng dụng (giỏ hàng, trạng thái giao dịch)."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai một Amazon ElastiCache for Redis cluster để lưu thông tin session của khách hàng.",
+        "reason": "ElastiCache for Redis làm kho session tập trung, rất nhanh, mọi instance đều đọc được; có replication Multi-AZ và persistence để session không mất khi một instance bị scale in."
+      },
+      {
+        "key": "E",
+        "textVi": "Dùng AWS Systems Manager Application Manager trong ứng dụng để quản lý thông tin session của người dùng.",
+        "reason": "Application Manager là giao diện vận hành để xem và quản lý tài nguyên của ứng dụng, không lưu hay quản lý session của người dùng cuối."
+      }
+    ],
+    "explanationVi": "Đáp án gốc ghép sticky session trên ALB (giữ khách ở cùng instance trong giao dịch) với ElastiCache for Redis (kho session tập trung, nhanh, có replication) để session vẫn còn khi instance thay đổi. Lưu ý: DynamoDB cũng là kho session bền vững phổ biến và một số nguồn chọn nó thay cho sticky session. Bẫy: Cognito lo xác thực, còn Systems Manager Application Manager lo vận hành, đều không lưu session.",
+    "keyHint": "\"optimize customer session management\" + \"store session data durably\" → sticky sessions trên ALB + ElastiCache for Redis làm kho session.",
+    "review": {
+      "reason": "Đáp án có thể sai: đề bắt buộc \"store session data durably\", nhưng sticky session trên ALB không lưu dữ liệu session ở đâu cả: session vẫn nằm trong bộ nhớ của từng instance và mất khi Auto Scaling group scale in hoặc instance hỏng. Bảng DynamoDB lưu session bền vững trên nhiều AZ và là kho session được AWS khuyến nghị, nên bộ đáp án hợp lý hơn là DynamoDB + ElastiCache for Redis (hai cách lưu session tập trung), thay cho sticky session."
+    }
+  },
+  {
+    "id": 262,
+    "stemVi": "Một công ty ecommerce muốn ra mắt website mỗi ngày một ưu đãi (one-deal-a-day) trên AWS. Mỗi ngày sẽ có đúng một sản phẩm được giảm giá trong 24 giờ. Công ty muốn xử lý được hàng triệu request mỗi giờ với độ trễ mili giây trong giờ cao điểm.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon S3 để host toàn bộ website trong các S3 bucket khác nhau. Thêm các Amazon CloudFront distribution. Đặt các S3 bucket làm origin cho các distribution. Lưu dữ liệu đơn hàng trong Amazon S3.",
+        "reason": "S3 chỉ host được nội dung tĩnh, không chạy được logic backend để nhận đơn; lưu đơn hàng dưới dạng object S3 không thay được database giao dịch, và chia nhiều bucket, nhiều distribution là thừa."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai toàn bộ website trên các Amazon EC2 instance chạy trong các Auto Scaling group trải nhiều Availability Zone. Thêm một Application Load Balancer (ALB) để phân phối traffic của website. Thêm một ALB khác cho các backend API. Lưu dữ liệu trong Amazon RDS for MySQL.",
+        "reason": "Chạy được nhưng phải quản lý EC2, Auto Scaling, hai ALB và RDS; RDS cũng khó giữ độ trễ mili giây với hàng triệu request mỗi giờ nếu không thêm cache — nhiều công vận hành hơn kiến trúc serverless."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển toàn bộ ứng dụng sang chạy trong container. Host các container trên Amazon Elastic Kubernetes Service (Amazon EKS). Dùng Kubernetes Cluster Autoscaler để tăng và giảm số pod nhằm xử lý các đợt tăng traffic. Lưu dữ liệu trong Amazon RDS for MySQL.",
+        "reason": "Phải container hóa và vận hành EKS cluster; hơn nữa Cluster Autoscaler co giãn số node chứ không phải số pod (đó là việc của Horizontal Pod Autoscaler) — tốn công và mô tả sai công cụ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng một Amazon S3 bucket để host nội dung tĩnh của website. Triển khai một Amazon CloudFront distribution. Đặt S3 bucket làm origin. Dùng Amazon API Gateway và các AWS Lambda function cho các backend API. Lưu dữ liệu trong Amazon DynamoDB.",
+        "reason": "S3 + CloudFront phục vụ nội dung tĩnh ở edge, API Gateway + Lambda tự co giãn cho API, DynamoDB xử lý hàng triệu request với độ trễ mili giây một chữ số — toàn bộ serverless nên ít công vận hành nhất."
+      }
+    ],
+    "explanationVi": "Traffic dồn dập trong giờ cao điểm và yêu cầu độ trễ mili giây với ít công vận hành: kiến trúc serverless S3 + CloudFront, API Gateway + Lambda, DynamoDB tự co giãn mà không phải quản lý server. Bẫy: chỉ dùng S3 thì không có backend và database giao dịch; EC2 hay EKS với RDS đều tốn công vận hành hơn.",
+    "keyHint": "\"millions of requests each hour with millisecond latency\" + \"LEAST operational overhead\" → S3 + CloudFront, API Gateway + Lambda, DynamoDB."
+  },
+  {
+    "id": 263,
+    "stemVi": "Một công ty muốn gửi toàn bộ log của AWS Systems Manager Session Manager vào một Amazon S3 bucket để lưu trữ lâu dài (archival).",
+    "promptVi": "Giải pháp nào đáp ứng yêu cầu này hiệu quả vận hành nhất (MOST operational efficiency)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật S3 logging trong Systems Manager console. Chọn một S3 bucket để gửi dữ liệu session tới.",
+        "reason": "Session Manager có sẵn tùy chọn ghi log phiên vào S3 trong phần preferences; chỉ cần bật và chọn bucket, không phải cài thêm agent hay dựng pipeline — hiệu quả vận hành nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Cài Amazon CloudWatch agent. Đẩy toàn bộ log vào một CloudWatch log group. Export log từ group sang một S3 bucket để lưu trữ lâu dài.",
+        "reason": "Phải cài agent trên mọi instance và export log sang S3 thủ công hoặc theo lịch; CloudWatch agent thu log hệ thống chứ không phải cách chuẩn để ghi dữ liệu session của Session Manager."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Systems Manager document để upload toàn bộ log server lên một S3 bucket trung tâm. Dùng Amazon EventBridge để chạy document đó trên mọi server trong account hằng ngày.",
+        "reason": "Phải tự viết document và lập lịch, chỉ gom log server mỗi ngày một lần chứ không ghi lại dữ liệu từng phiên Session Manager — tốn công và không đúng thứ cần lưu."
+      },
+      {
+        "key": "D",
+        "textVi": "Cài một Amazon CloudWatch agent. Đẩy toàn bộ log vào một CloudWatch log group. Tạo một CloudWatch Logs subscription đẩy mọi log event mới tới một Amazon Kinesis Data Firehose delivery stream. Đặt Amazon S3 làm đích.",
+        "reason": "Thêm agent, log group, subscription và Firehose chỉ để đưa log về S3 — nhiều thành phần phải vận hành và tốn chi phí, trong khi Session Manager ghi thẳng vào S3 được."
+      }
+    ],
+    "explanationVi": "Session Manager tích hợp sẵn việc ghi log phiên vào S3 (hoặc CloudWatch Logs) qua phần cài đặt. Chỉ cần bật và chọn bucket là xong. Bẫy: các phương án cài CloudWatch agent, tự viết SSM document hay dựng pipeline qua Firehose đều làm được một phần nhưng tốn nhiều công hơn.",
+    "keyHint": "\"Session Manager logs to an Amazon S3 bucket\" + \"MOST operational efficiency\" → bật S3 logging có sẵn trong Session Manager."
+  },
+  {
+    "id": 264,
+    "stemVi": "Một công ty đang lưu hàng petabyte dữ liệu trong Amazon S3 Standard. Dữ liệu nằm trong nhiều S3 bucket và được truy cập với tần suất khác nhau. Công ty không biết mẫu truy cập (access pattern) của toàn bộ dữ liệu. Công ty cần triển khai giải pháp cho từng S3 bucket để tối ưu chi phí sử dụng S3.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này hiệu quả vận hành nhất (MOST operational efficiency)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một S3 Lifecycle configuration có rule chuyển các object trong S3 bucket sang S3 Intelligent-Tiering.",
+        "reason": "Intelligent-Tiering tự theo dõi truy cập của từng object và chuyển giữa các tier (frequent, infrequent, archive instant) mà không có phí retrieval; một lifecycle rule mỗi bucket là đủ — hợp nhất khi không biết mẫu truy cập."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng công cụ S3 storage class analysis để xác định tier phù hợp cho từng object trong S3 bucket. Chuyển từng object sang tier đã xác định.",
+        "reason": "Storage class analysis chỉ đưa ra khuyến nghị; chuyển thủ công từng object với hàng petabyte dữ liệu tốn rất nhiều công, và phải làm lại khi mẫu truy cập thay đổi."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một S3 Lifecycle configuration có rule chuyển các object trong S3 bucket sang S3 Glacier Instant Retrieval.",
+        "reason": "Glacier Instant Retrieval có phí retrieval cao và thời gian lưu tối thiểu 90 ngày; dữ liệu còn được truy cập thường xuyên sẽ làm chi phí tăng chứ không giảm."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một S3 Lifecycle configuration có rule chuyển các object trong S3 bucket sang S3 One Zone-Infrequent Access (S3 One Zone-IA).",
+        "reason": "One Zone-IA chỉ lưu trong một AZ nên giảm khả năng chịu mất AZ, lại có phí retrieval; chuyển mù toàn bộ dữ liệu có tần suất truy cập khác nhau sang đó có thể đắt hơn."
+      }
+    ],
+    "explanationVi": "Mẫu truy cập không biết trước hoặc thay đổi là tình huống điển hình của S3 Intelligent-Tiering: nó tự chuyển object giữa các tier theo truy cập thực tế. Một lifecycle rule cho mỗi bucket là cách triển khai ít công nhất. Bẫy: chuyển cả khối sang một lớp lưu trữ cố định (Glacier Instant Retrieval, One Zone-IA) có thể phát sinh phí retrieval lớn.",
+    "keyHint": "\"does not know access patterns\" + \"MOST operational efficiency\" → S3 Lifecycle rule chuyển sang S3 Intelligent-Tiering."
+  },
+  {
+    "id": 265,
+    "stemVi": "Một công ty cung cấp dịch vụ giao đồ ăn đang tăng trưởng nhanh. Vì tăng trưởng, hệ thống xử lý đơn hàng của công ty gặp vấn đề co giãn trong giờ cao điểm. Kiến trúc hiện tại gồm: một nhóm Amazon EC2 instance chạy trong một Amazon EC2 Auto Scaling group để thu nhận đơn hàng từ ứng dụng; một nhóm EC2 instance khác chạy trong một Amazon EC2 Auto Scaling group để thực hiện (fulfill) đơn hàng.\n\nQuá trình thu nhận đơn hàng diễn ra nhanh, nhưng quá trình thực hiện đơn hàng có thể lâu hơn. Dữ liệu không được mất vì một sự kiện co giãn (scaling event). Solutions architect phải bảo đảm cả quá trình thu nhận lẫn quá trình thực hiện đơn hàng đều co giãn đúng trong giờ cao điểm. Giải pháp phải tối ưu mức sử dụng tài nguyên AWS của công ty.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng các metric của Amazon CloudWatch để theo dõi CPU của từng instance trong các Auto Scaling group. Cấu hình minimum capacity của từng Auto Scaling group theo giá trị tải đỉnh.",
+        "reason": "Giữ minimum ở mức tải đỉnh khiến instance chạy thừa ngoài giờ cao điểm, trái yêu cầu tối ưu tài nguyên; không có hàng đợi nên đơn hàng vẫn có thể mất khi instance bị scale in."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng các metric của Amazon CloudWatch để theo dõi CPU của từng instance trong các Auto Scaling group. Cấu hình một CloudWatch alarm gọi một Amazon Simple Notification Service (Amazon SNS) topic để tạo thêm các Auto Scaling group khi cần.",
+        "reason": "SNS chỉ gửi thông báo, không tạo Auto Scaling group; tạo thêm cả group mới là thừa khi chỉ cần tăng capacity, và vẫn không có cơ chế giữ đơn hàng khỏi bị mất."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo hai Amazon Simple Queue Service (Amazon SQS) queue: một cho thu nhận đơn hàng và một cho thực hiện đơn hàng. Cấu hình các EC2 instance poll queue tương ứng. Co giãn các Auto Scaling group dựa trên thông báo mà các queue gửi.",
+        "reason": "Dùng queue là đúng hướng, nhưng SQS không tự gửi thông báo để kích hoạt scaling; cần dựa vào CloudWatch metric của queue, nên cơ chế co giãn mô tả ở đây không hoạt động."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo hai Amazon Simple Queue Service (Amazon SQS) queue: một cho thu nhận đơn hàng và một cho thực hiện đơn hàng. Cấu hình các EC2 instance poll queue tương ứng. Tạo một metric dựa trên phép tính backlog per instance. Co giãn các Auto Scaling group dựa trên metric này.",
+        "reason": "SQS giữ đơn hàng bền vững nên không mất dữ liệu khi scale in, và tách rời hai giai đoạn có tốc độ khác nhau; scaling theo backlog per instance (số message chờ chia cho số instance) phản ánh đúng khối lượng việc, nên mỗi group có vừa đủ instance."
+      }
+    ],
+    "explanationVi": "Hai giai đoạn chạy với tốc độ khác nhau và không được mất đơn: đặt SQS queue giữa chúng để tách rời và lưu tạm đơn hàng. Co giãn Auto Scaling group theo metric backlog per instance là mẫu AWS khuyến nghị cho worker đọc từ SQS, vừa đủ capacity vừa không lãng phí. Bẫy: SQS không \"gửi thông báo\" để scale; đặt minimum theo tải đỉnh gây lãng phí.",
+    "keyHint": "\"Data must not be lost because of a scaling event\" + \"optimize utilization\" → SQS queue + scaling theo backlog per instance."
+  },
+  {
+    "id": 266,
+    "stemVi": "Một công ty có ứng dụng nhiều tầng (multi-tier) triển khai trên một số Amazon EC2 instance trong một Auto Scaling group. Một Amazon RDS for Oracle instance là tầng dữ liệu của ứng dụng, có dùng các hàm PL/SQL đặc thù của Oracle. Traffic tới ứng dụng đang tăng đều. Điều này khiến các EC2 instance bị quá tải và RDS instance sắp hết dung lượng lưu trữ. Auto Scaling group không có scaling metric nào, chỉ định nghĩa số instance healthy tối thiểu. Công ty dự đoán traffic sẽ tiếp tục tăng với tốc độ đều nhưng khó đoán trước rồi mới chững lại.",
+    "promptVi": "Solutions architect nên làm gì để bảo đảm hệ thống có thể tự động co giãn cho lượng traffic tăng thêm? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình storage Auto Scaling trên RDS for Oracle instance.",
+        "reason": "RDS storage autoscaling tự tăng dung lượng khi dung lượng trống xuống thấp, không downtime và không cần thao tác — giải quyết việc RDS sắp hết storage mà vẫn giữ Oracle và PL/SQL."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển cơ sở dữ liệu sang Amazon Aurora để dùng storage tự co giãn.",
+        "reason": "Aurora chỉ tương thích MySQL hoặc PostgreSQL, không chạy được các hàm PL/SQL đặc thù của Oracle; chuyển sang sẽ phải viết lại code database."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình một alarm trên RDS for Oracle instance khi dung lượng trống thấp.",
+        "reason": "Alarm chỉ cảnh báo, vẫn phải có người tăng dung lượng thủ công; không phải co giãn tự động."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình Auto Scaling group dùng CPU trung bình làm scaling metric.",
+        "reason": "CPU trung bình là metric có sẵn của EC2 trong CloudWatch; target tracking theo CPU tự thêm instance khi quá tải và bớt khi tải giảm, phù hợp với traffic tăng khó đoán."
+      },
+      {
+        "key": "E",
+        "textVi": "Cấu hình Auto Scaling group dùng dung lượng bộ nhớ trống trung bình làm scaling metric.",
+        "reason": "EC2 không có sẵn metric bộ nhớ trong CloudWatch; phải cài CloudWatch agent và tạo custom metric, phức tạp hơn so với dùng CPU có sẵn."
+      }
+    ],
+    "explanationVi": "Hai điểm nghẽn: storage của RDS và năng lực của tầng EC2. Bật storage autoscaling cho RDS for Oracle (giữ nguyên PL/SQL) và cho Auto Scaling group co giãn theo CPU trung bình. Bẫy: chuyển sang Aurora làm mất PL/SQL; alarm chỉ báo động; metric bộ nhớ không có sẵn nếu không cài agent.",
+    "keyHint": "\"RDS instance to run out of storage\" + \"Oracle-specific PL/SQL\" → RDS storage autoscaling; \"EC2 instances to become overloaded\" → scaling theo CPU trung bình."
+  },
+  {
+    "id": 267,
+    "stemVi": "Một công ty đang chạy một ứng dụng kinh doanh quan trọng trên các Amazon EC2 instance đặt sau một Application Load Balancer. Các EC2 instance chạy trong một Auto Scaling group và truy cập một Amazon RDS DB instance.\n\nThiết kế không vượt qua đợt đánh giá vận hành (operational review) vì các EC2 instance và DB instance đều nằm trong một Availability Zone duy nhất. Solutions architect phải cập nhật thiết kế để dùng thêm một Availability Zone thứ hai.",
+    "promptVi": "Giải pháp nào giúp ứng dụng có tính sẵn sàng cao (highly available)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một subnet trong mỗi Availability Zone. Cấu hình Auto Scaling group phân bổ các EC2 instance trên cả hai Availability Zone. Cấu hình DB instance có kết nối tới từng mạng.",
+        "reason": "Tầng EC2 đã đúng, nhưng một RDS DB instance đơn lẻ vẫn chỉ nằm ở một AZ; \"kết nối tới từng mạng\" không tạo ra bản dự phòng, nên database vẫn là điểm lỗi duy nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo hai subnet trải qua cả hai Availability Zone. Cấu hình Auto Scaling group phân bổ các EC2 instance trên cả hai Availability Zone. Cấu hình DB instance có kết nối tới từng mạng.",
+        "reason": "Subnet trong VPC chỉ thuộc về một AZ, không thể trải qua nhiều AZ; database cũng vẫn không có bản dự phòng."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một subnet trong mỗi Availability Zone. Cấu hình Auto Scaling group phân bổ các EC2 instance trên cả hai Availability Zone. Cấu hình DB instance dùng triển khai Multi-AZ.",
+        "reason": "Mỗi AZ có subnet riêng, Auto Scaling group chạy instance trên cả hai AZ, và RDS Multi-AZ duy trì standby đồng bộ ở AZ kia với failover tự động — cả tầng ứng dụng lẫn database đều chịu được mất một AZ."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một subnet trải qua cả hai Availability Zone. Cấu hình Auto Scaling group phân bổ các EC2 instance trên cả hai Availability Zone. Cấu hình DB instance dùng triển khai Multi-AZ.",
+        "reason": "Multi-AZ cho database là đúng, nhưng một subnet không thể trải qua hai AZ, nên thiết kế này không làm được về kỹ thuật."
+      }
+    ],
+    "explanationVi": "Tính sẵn sàng cao qua hai AZ cần: mỗi AZ một subnet (subnet không trải nhiều AZ), Auto Scaling group phân bổ instance trên cả hai, và RDS Multi-AZ cho database. Bẫy: \"subnet trải qua nhiều AZ\" là không tồn tại; cho DB instance \"kết nối nhiều mạng\" không thay được Multi-AZ.",
+    "keyHint": "\"located in a single Availability Zone\" + \"highly available\" → một subnet mỗi AZ, Auto Scaling group đa AZ, RDS Multi-AZ."
+  },
+  {
+    "id": 268,
+    "stemVi": "Một công ty dự kiến tăng trưởng nhanh trong thời gian tới. Solutions architect cần cấu hình người dùng hiện có và cấp quyền cho người dùng mới trên AWS. Solutions architect đã quyết định tạo các IAM group. Solutions architect sẽ thêm người dùng mới vào các IAM group theo phòng ban.",
+    "promptVi": "Hành động bổ sung nào là cách an toàn nhất (MOST secure) để cấp quyền cho người dùng mới?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Áp dụng service control policy (SCP) để quản lý quyền truy cập.",
+        "reason": "SCP thuộc AWS Organizations, chỉ đặt giới hạn quyền tối đa cho cả account và không cấp quyền nào; không gắn được SCP vào IAM group."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo các IAM role có quyền least privilege. Gắn các role vào các IAM group.",
+        "reason": "Không thể gắn IAM role vào IAM group; role được assume để nhận credentials tạm thời, còn group chỉ nhận policy."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một IAM policy cấp quyền theo least privilege. Gắn policy vào các IAM group.",
+        "reason": "Gắn IAM policy least privilege vào group theo phòng ban thì mọi user mới thêm vào group tự kế thừa đúng quyền cần thiết — an toàn và dễ mở rộng khi công ty tăng trưởng."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo các IAM role. Gắn các role với một permissions boundary xác định quyền tối đa.",
+        "reason": "Permissions boundary chỉ giới hạn quyền tối đa, tự nó không cấp quyền; các role này cũng không gắn được với group nên user mới không nhận được quyền."
+      }
+    ],
+    "explanationVi": "Với IAM group, cách cấp quyền là gắn IAM policy vào group, và theo least privilege để an toàn nhất. Bẫy: SCP và permissions boundary chỉ đặt giới hạn trên, không cấp quyền; IAM role không gắn được vào group.",
+    "keyHint": "\"IAM groups\" + \"MOST secure way to grant permissions\" → IAM policy least privilege gắn vào group."
+  },
+  {
+    "id": 269,
+    "stemVi": "Một công ty đang dùng Amazon CloudFront cho website của mình. Công ty đã bật logging trên CloudFront distribution và log được lưu trong một Amazon S3 bucket của công ty. Công ty cần thực hiện các phân tích nâng cao trên log và dựng biểu đồ trực quan (visualizations).",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng truy vấn SQL chuẩn trong Amazon Athena để phân tích log CloudFront trong S3 bucket. Trực quan hóa kết quả bằng AWS Glue.",
+        "reason": "Athena phân tích log là đúng, nhưng AWS Glue là dịch vụ ETL và data catalog, không có chức năng dựng biểu đồ trực quan."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng truy vấn SQL chuẩn trong Amazon Athena để phân tích log CloudFront trong S3 bucket. Trực quan hóa kết quả bằng Amazon QuickSight.",
+        "reason": "Athena chạy SQL chuẩn trực tiếp trên log trong S3 mà không cần nạp dữ liệu, còn QuickSight kết nối Athena làm nguồn dữ liệu để dựng dashboard và biểu đồ — đáp ứng cả phân tích lẫn trực quan hóa."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng truy vấn SQL chuẩn trong Amazon DynamoDB để phân tích log CloudFront trong S3 bucket. Trực quan hóa kết quả bằng AWS Glue.",
+        "reason": "DynamoDB là cơ sở dữ liệu NoSQL, không chạy SQL trên dữ liệu nằm trong S3; Glue cũng không phải công cụ trực quan hóa."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng truy vấn SQL chuẩn trong Amazon DynamoDB để phân tích log CloudFront trong S3 bucket. Trực quan hóa kết quả bằng Amazon QuickSight.",
+        "reason": "QuickSight trực quan hóa được, nhưng DynamoDB không truy vấn được log nằm trong S3; muốn vậy phải nạp log vào bảng trước, và nó cũng không hợp cho phân tích nâng cao."
+      }
+    ],
+    "explanationVi": "Log đã nằm trong S3: Athena truy vấn SQL trực tiếp trên đó (serverless), QuickSight dựng biểu đồ từ kết quả của Athena. Bẫy: Glue là ETL chứ không trực quan hóa; DynamoDB không truy vấn dữ liệu trong S3.",
+    "keyHint": "\"logs are saved in ... S3\" + \"advanced analyses\" + \"visualizations\" → Amazon Athena + Amazon QuickSight."
+  },
+  {
+    "id": 270,
+    "stemVi": "Một công ty luật cần chia sẻ thông tin với công chúng. Thông tin gồm hàng trăm file phải cho phép mọi người đọc công khai. Cấm mọi người sửa hoặc xóa các file trước một ngày đã định trong tương lai.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này theo cách an toàn nhất (MOST secure)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Upload toàn bộ file lên một Amazon S3 bucket được cấu hình static website hosting. Cấp quyền IAM chỉ đọc cho mọi AWS principal truy cập S3 bucket cho tới ngày đã định.",
+        "reason": "Quyền IAM chỉ áp dụng cho principal có danh tính AWS, không làm file đọc công khai được; cũng không có gì ngăn người có quyền ghi (như admin) sửa hoặc xóa file trước ngày đã định."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon S3 bucket mới có bật S3 Versioning. Dùng S3 Object Lock với retention period tương ứng với ngày đã định. Cấu hình S3 bucket cho static website hosting. Đặt một S3 bucket policy cho phép quyền chỉ đọc với các object.",
+        "reason": "Object Lock (cần versioning) với retention period tới ngày đã định bảo vệ object theo mô hình WORM, không ai sửa hay xóa được phiên bản đó; static website hosting và bucket policy chỉ đọc cho công chúng truy cập — đáp ứng đủ và an toàn nhất."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon S3 bucket mới có bật S3 Versioning. Cấu hình event trigger chạy một AWS Lambda function khi có object bị sửa hoặc xóa. Cấu hình Lambda function thay các object bằng bản gốc từ một S3 bucket private.",
+        "reason": "Lambda chỉ phản ứng sau khi file đã bị sửa hoặc xóa, tức là không ngăn được hành động bị cấm; cơ chế tự viết này cũng dễ lỗi và không có cấu hình cho đọc công khai."
+      },
+      {
+        "key": "D",
+        "textVi": "Upload toàn bộ file lên một Amazon S3 bucket được cấu hình static website hosting. Chọn folder chứa các file. Dùng S3 Object Lock với retention period tương ứng với ngày đã định. Cấp quyền IAM chỉ đọc cho mọi AWS principal truy cập S3 bucket.",
+        "reason": "Object Lock yêu cầu bucket có bật versioning và không áp dụng theo kiểu chọn folder trên console; quyền IAM cho AWS principal cũng không cho công chúng đọc file."
+      }
+    ],
+    "explanationVi": "Cần hai thứ: cấm sửa/xóa tới một ngày định trước (S3 Object Lock với retention period, đòi hỏi versioning) và cho công chúng đọc (static website hosting + bucket policy chỉ đọc). Bẫy: quyền IAM không dành cho người dùng ẩn danh; Lambda khôi phục sau sự cố không phải là ngăn chặn.",
+    "keyHint": "\"publicly readable\" + \"modifications or deletions ... before a designated future date are prohibited\" → S3 Versioning + Object Lock retention + bucket policy chỉ đọc."
+  },
+  {
+    "id": 271,
+    "stemVi": "Một công ty có workload production chạy trên 1.000 Amazon EC2 Linux instance. Workload chạy bằng phần mềm của bên thứ ba. Công ty cần vá phần mềm bên thứ ba trên mọi EC2 instance càng nhanh càng tốt để khắc phục một lỗ hổng bảo mật nghiêm trọng.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một AWS Lambda function để áp dụng bản vá cho mọi EC2 instance.",
+        "reason": "Lambda không tự chạy lệnh được bên trong EC2 instance; phải tự viết code (thường vẫn gọi Systems Manager) để điều phối 1.000 instance — chậm và phức tạp hơn."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình AWS Systems Manager Patch Manager để áp dụng bản vá cho mọi EC2 instance.",
+        "reason": "Patch Manager áp bản vá theo patch baseline từ kho của hệ điều hành; bản vá khẩn cho phần mềm bên thứ ba cần lệnh cài riêng, phải cấu hình baseline và kho thêm nên không nhanh bằng chạy lệnh trực tiếp."
+      },
+      {
+        "key": "C",
+        "textVi": "Lên lịch một AWS Systems Manager maintenance window để áp dụng bản vá cho mọi EC2 instance.",
+        "reason": "Maintenance window chỉ chạy tác vụ theo lịch đã định; phải chờ tới khung giờ đó, trái yêu cầu vá càng nhanh càng tốt."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Systems Manager Run Command để chạy một lệnh tùy chỉnh áp dụng bản vá trên mọi EC2 instance.",
+        "reason": "Run Command chạy ngay một lệnh hoặc script tùy chỉnh trên hàng loạt instance cùng lúc (chọn theo tag hoặc tất cả), có kiểm soát tốc độ và báo kết quả — cách nhanh nhất để vá phần mềm bên thứ ba trên 1.000 instance."
+      }
+    ],
+    "explanationVi": "Vá khẩn một phần mềm bên thứ ba trên 1.000 instance: Systems Manager Run Command chạy ngay lệnh cài bản vá tùy chỉnh trên toàn bộ fleet. Bẫy: Patch Manager hợp với vá định kỳ theo baseline của OS, maintenance window phải chờ lịch, còn Lambda phải tự xây cơ chế điều phối.",
+    "keyHint": "\"patch the third-party software\" + \"as quickly as possible\" trên 1.000 instance → AWS Systems Manager Run Command."
+  },
+  {
+    "id": 272,
+    "stemVi": "Solutions architect cần cho các thành viên trong nhóm truy cập Amazon S3 bucket ở hai AWS account khác nhau: một account development và một account production. Hiện nhóm đã truy cập được các S3 bucket trong account development bằng các IAM user riêng, được gán vào một IAM group có quyền phù hợp trong account đó.\n\nSolutions architect đã tạo một IAM role trong account production. Role có một policy cấp quyền truy cập một S3 bucket trong account production.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này đồng thời tuân thủ nguyên tắc least privilege?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Gắn policy Administrator Access cho các user của account development.",
+        "reason": "AdministratorAccess cấp toàn quyền trên account development, vi phạm nặng least privilege, và tự nó cũng không cho truy cập bucket ở account production."
+      },
+      {
+        "key": "B",
+        "textVi": "Thêm account development làm principal trong trust policy của role ở account production.",
+        "reason": "Trust policy cho phép principal từ account development assume role ở production; user chỉ nhận credentials tạm thời với đúng quyền S3 của role — truy cập chéo account theo least privilege."
+      },
+      {
+        "key": "C",
+        "textVi": "Tắt tính năng S3 Block Public Access trên S3 bucket ở account production.",
+        "reason": "Tắt Block Public Access mở đường cho bucket bị truy cập công khai — trái ngược least privilege, và cũng không cấp quyền cho user của account development."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một user trong account production với credentials riêng cho từng thành viên trong nhóm.",
+        "reason": "Nhân đôi IAM user ở account production tạo thêm credentials dài hạn phải quản lý, và không dùng tới role đã tạo sẵn; kém an toàn và khó quản trị hơn assume role."
+      }
+    ],
+    "explanationVi": "Truy cập chéo account chuẩn là IAM role: account production tin account development trong trust policy, user development assume role để nhận quyền S3 hạn chế của role. Lưu ý thêm: user bên development cũng cần quyền sts:AssumeRole trên role đó (thêm vào policy của group). Bẫy: AdministratorAccess, tắt Block Public Access hay tạo user trùng lặp đều cấp quá rộng hoặc tăng rủi ro.",
+    "keyHint": "\"IAM role in the production account\" + \"principle of least privilege\" → thêm account development vào trust policy của role để assume role chéo account."
+  },
+  {
+    "id": 273,
+    "stemVi": "Một solutions architect đang thiết kế kiến trúc cho một ứng dụng mới triển khai lên AWS Cloud. Ứng dụng sẽ chạy trên các Amazon EC2 On-Demand Instance và tự động co giãn trên nhiều Availability Zone. Các EC2 instance sẽ scale up và scale down thường xuyên trong ngày. Một Application Load Balancer (ALB) sẽ phân phối tải. Kiến trúc cần hỗ trợ quản lý dữ liệu session phân tán (distributed session data management). Công ty sẵn sàng sửa code nếu cần.",
+    "promptVi": "Solutions architect nên làm gì để bảo đảm kiến trúc hỗ trợ quản lý dữ liệu session phân tán?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon ElastiCache để quản lý và lưu dữ liệu session.",
+        "reason": "ElastiCache (Redis hoặc Memcached) là kho session tập trung, độ trễ thấp mà mọi instance đều đọc ghi được; instance trở thành stateless nên scale in không làm mất session — đúng yêu cầu session phân tán (cần sửa code, điều công ty chấp nhận)."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng session affinity (sticky sessions) của ALB để quản lý dữ liệu session.",
+        "reason": "Sticky session vẫn giữ session trên từng instance; khi instance bị scale down thường xuyên, session trên đó mất — không phải quản lý session phân tán."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Session Manager của AWS Systems Manager để quản lý session.",
+        "reason": "Session Manager dùng để mở phiên shell quản trị vào instance, không liên quan tới session của người dùng ứng dụng."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng API GetSessionToken của AWS Security Token Service (AWS STS) để quản lý session.",
+        "reason": "GetSessionToken cấp credentials AWS tạm thời cho IAM user (thường kèm MFA), không phải kho lưu session của ứng dụng web."
+      }
+    ],
+    "explanationVi": "Instance co giãn liên tục nên session không được nằm trên instance: đưa session ra kho tập trung như ElastiCache để ứng dụng stateless. Đề cho phép sửa code, đúng thứ cần để ứng dụng đọc ghi session vào ElastiCache. Bẫy: sticky session không phân tán; Session Manager và STS GetSessionToken chỉ trùng chữ \"session\".",
+    "keyHint": "\"distributed session data management\" + \"willing to make changes to code\" → Amazon ElastiCache làm kho session."
+  },
+  {
+    "id": 274,
+    "stemVi": "Một công ty host ứng dụng web ba tầng trên AWS Cloud. Một Amazon RDS for MySQL Multi-AZ server làm tầng cơ sở dữ liệu. Amazon ElastiCache làm tầng cache. Công ty muốn một chiến lược cache thêm hoặc cập nhật dữ liệu trong cache khi khách hàng thêm một mục vào cơ sở dữ liệu. Dữ liệu trong cache phải luôn khớp với dữ liệu trong cơ sở dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai chiến lược cache lazy loading.",
+        "reason": "Lazy loading chỉ nạp dữ liệu vào cache khi có cache miss; khi database được ghi, cache không được cập nhật nên có thể chứa dữ liệu cũ."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai chiến lược cache write-through.",
+        "reason": "Write-through ghi vào cache ngay mỗi khi ghi vào database, nên dữ liệu mới được thêm/cập nhật trong cache đúng lúc khách hàng thêm mục và cache luôn khớp với database."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai chiến lược cache thêm TTL (adding TTL).",
+        "reason": "TTL chỉ đặt thời hạn để dữ liệu cache hết hạn; nó giảm độ cũ của dữ liệu nhưng không cập nhật cache khi database thay đổi."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai chiến lược cache của AWS AppConfig.",
+        "reason": "AWS AppConfig dùng để quản lý và triển khai cấu hình ứng dụng, không có chiến lược cache dữ liệu nào tên như vậy."
+      }
+    ],
+    "explanationVi": "Yêu cầu \"cập nhật cache khi ghi vào database\" và \"cache luôn khớp database\" chính là định nghĩa write-through. Bẫy: lazy loading chỉ nạp khi đọc trượt nên dữ liệu có thể cũ; TTL chỉ giới hạn tuổi thọ dữ liệu cache; AppConfig không phải chiến lược cache.",
+    "keyHint": "\"adds or updates data in the cache when a customer adds an item to the database\" + \"must always match\" → chiến lược write-through."
+  },
+  {
+    "id": 275,
+    "stemVi": "Một công ty đang chuyển cơ sở dữ liệu Oracle on-premises sang Amazon Aurora PostgreSQL. Cơ sở dữ liệu có nhiều ứng dụng cùng ghi vào các bảng giống nhau. Các ứng dụng cần được chuyển lần lượt từng cái, mỗi lần cách nhau một tháng. Ban quản lý lo ngại cơ sở dữ liệu có lượng đọc và ghi rất lớn. Dữ liệu phải được giữ đồng bộ giữa hai cơ sở dữ liệu trong suốt quá trình migration.",
+    "promptVi": "Solutions architect nên đề xuất gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS DataSync cho lần migration ban đầu. Dùng AWS Database Migration Service (AWS DMS) tạo một replication task change data capture (CDC) và một table mapping chọn tất cả các bảng.",
+        "reason": "DataSync chuyển file và object, không migrate được dữ liệu từ Oracle sang Aurora PostgreSQL; phương án cũng không chuyển đổi schema từ Oracle sang PostgreSQL."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS DataSync cho lần migration ban đầu. Dùng AWS Database Migration Service (AWS DMS) tạo một replication task full load cộng change data capture (CDC) và một table mapping chọn tất cả các bảng.",
+        "reason": "Task full load + CDC là đúng, nhưng DataSync không dùng cho migration database và phương án vẫn thiếu bước chuyển đổi schema cho migration khác engine."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Schema Conversion Tool cùng AWS Database Migration Service (AWS DMS) với một replication instance loại memory optimized. Tạo một replication task full load cộng change data capture (CDC) và một table mapping chọn tất cả các bảng.",
+        "reason": "SCT chuyển schema và code Oracle sang PostgreSQL; DMS full load + CDC chép dữ liệu ban đầu rồi đồng bộ liên tục mọi bảng suốt nhiều tháng migration; replication instance memory optimized hợp với lượng giao dịch lớn vì DMS đệm thay đổi trong bộ nhớ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Schema Conversion Tool cùng AWS Database Migration Service (AWS DMS) với một replication instance loại compute optimized. Tạo một replication task full load cộng change data capture (CDC) và một table mapping chọn các bảng lớn nhất.",
+        "reason": "Chỉ chọn các bảng lớn nhất thì các bảng còn lại không được đồng bộ, trái yêu cầu giữ dữ liệu khớp giữa hai database; AWS khuyến nghị instance memory optimized cho tải giao dịch lớn."
+      }
+    ],
+    "explanationVi": "Migration khác engine (Oracle sang Aurora PostgreSQL) cần SCT để chuyển schema và DMS để chuyển dữ liệu. Chuyển ứng dụng lần lượt trong nhiều tháng đòi task full load + CDC trên tất cả các bảng, và lượng đọc ghi lớn hợp với replication instance memory optimized. Bẫy: DataSync chỉ chuyển file; chỉ chọn một phần bảng làm dữ liệu lệch nhau.",
+    "keyHint": "\"Oracle ... to Amazon Aurora PostgreSQL\" + \"kept in sync ... throughout the migration\" + \"high number of reads and writes\" → SCT + DMS full load + CDC, replication instance memory optimized."
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "id": "pinpoint", "name": "Amazon Pinpoint", "category": "Application Integration", "tier": "minor",
+  "overview": "Amazon Pinpoint historically provided customer engagement campaigns/journeys; AWS has announced end-of-support on October 30, 2026 and stopped onboarding new customers in May 2025. Verify migration plans and current support status.",
+  "examSignals": ["Pinpoint engagement features have a published end-of-support date; do not select for a new workload", "For campaigns/journeys evaluate Amazon Connect Customer engagement capabilities; messaging channel APIs continue under AWS End User Messaging", "For email delivery consider SES; analytics/event collection may use Kinesis"],
+  "compareWith": [{ "service": "Amazon SNS", "diff": "Pinpoint historically provided customer engagement journeys/campaigns; SNS is a pub/sub notification service and is not a direct feature-equivalent replacement." }]
+}

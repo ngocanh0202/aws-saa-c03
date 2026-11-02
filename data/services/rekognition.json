@@ -1,0 +1,6 @@
+{
+  "id": "rekognition", "name": "Amazon Rekognition", "category": "Machine Learning", "tier": "minor",
+  "overview": "Amazon Rekognition analyzes images/videos for supported labels, faces, text, moderation and related computer-vision tasks.",
+  "examSignals": ["Image/video computer vision labels/faces/moderation: Rekognition", "Extract text/forms/tables from scanned documents: Textract", "Natural language entity/sentiment analysis: Comprehend"],
+  "compareWith": [{ "service": "Amazon Textract", "diff": "Rekognition detects visual objects/faces/content attributes; Textract extracts document text and structured form/table data." }]
+}

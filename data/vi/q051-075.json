@@ -1,0 +1,336 @@
+[
+  {
+    "id": 51,
+    "stemVi": "Một công ty muốn di chuyển ứng dụng nguyên khối (monolithic) on-premises hiện có lên AWS. Công ty muốn giữ lại càng nhiều code front-end và code back-end càng tốt. Tuy nhiên, công ty muốn tách ứng dụng thành các ứng dụng nhỏ hơn. Mỗi ứng dụng sẽ do một nhóm khác nhau quản lý. Công ty cần một giải pháp có khả năng mở rộng cao (highly scalable) và giảm tối thiểu công vận hành.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Host ứng dụng trên AWS Lambda. Tích hợp ứng dụng với Amazon API Gateway.", "reason": "Muốn chạy trên Lambda thì phải viết lại ứng dụng thành các hàm theo sự kiện, chịu giới hạn thời gian chạy và mô hình lập trình riêng — trái với yêu cầu giữ lại càng nhiều code càng tốt." },
+      { "key": "B", "textVi": "Host ứng dụng bằng AWS Amplify. Kết nối ứng dụng với một Amazon API Gateway API được tích hợp với AWS Lambda.", "reason": "Amplify chủ yếu host front-end web/mobile; back-end phải viết lại thành các hàm Lambda sau API Gateway, nên không giữ được code back-end hiện có." },
+      { "key": "C", "textVi": "Host ứng dụng trên các Amazon EC2 instance. Thiết lập một Application Load Balancer với các EC2 instance trong một Auto Scaling group làm target.", "reason": "Đây là lift-and-shift nguyên khối: giữ được code nhưng không tách ứng dụng thành các phần nhỏ cho từng nhóm, và công ty vẫn phải vá, quản lý hệ điều hành trên EC2 — tốn công vận hành hơn." },
+      { "key": "D", "textVi": "Host ứng dụng trên Amazon Elastic Container Service (Amazon ECS). Thiết lập một Application Load Balancer với Amazon ECS làm target.", "reason": "Container hóa cho phép giữ gần như nguyên code front-end và back-end, đồng thời tách thành nhiều ECS service độc lập để từng nhóm quản lý; ECS tự mở rộng số task, ALB định tuyến traffic tới từng service — mở rộng cao và ít công vận hành." }
+    ],
+    "explanationVi": "Đề có ba ý: giữ nguyên code, tách thành nhiều ứng dụng nhỏ cho nhiều nhóm, và mở rộng cao với ít công vận hành. Container trên ECS phía sau ALB đáp ứng cả ba: đóng gói code hiện có vào container, mỗi phần là một service riêng, ALB định tuyến theo path hoặc host. Bẫy: Lambda và Amplify buộc phải viết lại code, còn EC2 chỉ bê nguyên khối lên cloud mà không tách nhỏ.",
+    "keyHint": "\"keep as much of the front-end code and the backend code as possible\" + \"break the application into smaller applications\" → container hóa, chạy trên Amazon ECS sau ALB."
+  },
+  {
+    "id": 52,
+    "stemVi": "Một công ty đang chuẩn bị triển khai một workload serverless mới. Solutions architect phải áp dụng nguyên tắc đặc quyền tối thiểu (principle of least privilege) để cấu hình các quyền dùng khi chạy một hàm AWS Lambda. Một Amazon EventBridge (Amazon CloudWatch Events) rule sẽ gọi (invoke) hàm này.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Thêm cho hàm một execution role với action là lambda:InvokeFunction và principal là *.", "reason": "Execution role quy định những gì hàm Lambda được làm khi chạy, không quy định ai được gọi hàm; hơn nữa principal * cho phép bất kỳ ai, vi phạm nguyên tắc đặc quyền tối thiểu." },
+      { "key": "B", "textVi": "Thêm cho hàm một execution role với action là lambda:InvokeFunction và principal là Service: lambda.amazonaws.com.", "reason": "Execution role không phải chỗ cấp quyền gọi hàm, và principal lambda.amazonaws.com là chính dịch vụ Lambda chứ không phải EventBridge — rule vẫn không có quyền invoke." },
+      { "key": "C", "textVi": "Thêm cho hàm một resource-based policy với action là lambda:* và principal là Service: events.amazonaws.com.", "reason": "Dùng resource-based policy cho EventBridge là đúng chỗ, nhưng lambda:* cấp mọi action trên hàm (sửa code, sửa cấu hình…) — thừa quyền, vi phạm nguyên tắc đặc quyền tối thiểu." },
+      { "key": "D", "textVi": "Thêm cho hàm một resource-based policy với action là lambda:InvokeFunction và principal là Service: events.amazonaws.com.", "reason": "Quyền để một dịch vụ khác gọi Lambda được cấp bằng resource-based policy của hàm; chỉ cho đúng action lambda:InvokeFunction và đúng principal events.amazonaws.com là mức quyền tối thiểu để EventBridge rule gọi được hàm." }
+    ],
+    "explanationVi": "Có hai loại quyền với Lambda: execution role (hàm được gọi tới dịch vụ nào) và resource-based policy (ai được gọi hàm). EventBridge gọi hàm nên cần resource-based policy với principal events.amazonaws.com, và least privilege nghĩa là chỉ cấp lambda:InvokeFunction. Bẫy: nhầm execution role với quyền invoke, hoặc cấp lambda:* thừa quyền.",
+    "keyHint": "\"principle of least privilege\" + \"EventBridge rule will invoke the function\" → resource-based policy, action lambda:InvokeFunction, principal events.amazonaws.com."
+  },
+  {
+    "id": 53,
+    "stemVi": "Một công ty dùng AWS Systems Manager để quản lý định kỳ và vá (patching) các Amazon EC2 instance. Các EC2 instance nằm trong một target group kiểu IP address phía sau một Application Load Balancer (ALB). Quy định bảo mật mới yêu cầu công ty phải đưa EC2 instance ra khỏi vòng phục vụ (remove from service) trong lúc vá. Khi công ty làm theo quy định này trong lần vá tiếp theo, công ty gặp lỗi trong cửa sổ vá (patching window).",
+    "promptVi": "Tổ hợp giải pháp nào sẽ khắc phục các lỗi này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Đổi target type của target group từ kiểu IP address sang kiểu instance.", "reason": "Target type không đổi được trên target group đã tạo (phải tạo target group mới), và bản thân kiểu target không tự đưa instance ra khỏi vòng phục vụ rồi đưa lại sau khi vá — gốc của lỗi là quy trình vá chưa xử lý việc deregister." },
+      { "key": "B", "textVi": "Tiếp tục dùng Systems Manager document hiện có mà không thay đổi, vì nó đã được tối ưu để xử lý instance nằm trong target group kiểu IP address phía sau ALB.", "reason": "Chính document hiện tại đang gây lỗi khi làm theo quy định mới; giữ nguyên thì lỗi vẫn lặp lại ở lần vá sau." },
+      { "key": "C", "textVi": "Áp dụng Systems Manager Automation document AWSEC2-PatchLoadBalancerInstance để quản lý quá trình vá.", "reason": "Runbook này tự động deregister instance khỏi load balancer, chờ drain kết nối, chạy vá, rồi register lại vào target group — xử lý đúng yêu cầu đưa instance ra khỏi vòng phục vụ trong lúc vá." },
+      { "key": "D", "textVi": "Dùng Systems Manager maintenance windows để tự động đưa các instance ra khỏi vòng phục vụ rồi vá chúng.", "reason": "Maintenance window lên lịch và chạy các task (như Automation runbook vá instance sau load balancer) trong khung giờ định sẵn, nên quá trình gỡ instance, vá và đưa lại được tự động hóa theo lịch." },
+      { "key": "E", "textVi": "Cấu hình Systems Manager State Manager để đưa các instance ra khỏi vòng phục vụ và quản lý lịch vá. Dùng health check của ALB để định tuyến lại traffic.", "reason": "State Manager dùng để giữ instance ở một cấu hình mong muốn, không phải để điều phối quy trình nhiều bước deregister → vá → register; dựa vào health check thất bại thì request vẫn có thể tới instance đang vá cho đến khi bị đánh dấu unhealthy." }
+    ],
+    "explanationVi": "Lỗi xuất hiện vì quy trình vá hiện tại không biết cách gỡ instance khỏi ALB rồi đưa lại. Runbook AWSEC2-PatchLoadBalancerInstance làm đúng chuỗi deregister → vá → register, còn maintenance window lo phần chạy theo lịch. Bẫy: đổi target type không giải quyết phần tự động hóa, còn State Manager và health check không điều phối được quy trình nhiều bước.",
+    "keyHint": "\"remove EC2 instances from service during a patch\" + ALB → Systems Manager Automation AWSEC2-PatchLoadBalancerInstance chạy trong maintenance window.",
+    "review": { "reason": "Chưa chắc chắn: tài liệu runbook AWSEC2-PatchLoadBalancerInstance chỉ nhận tham số InstanceId và gỡ/gắn lại instance khỏi target group theo instance, không nói rõ có hỗ trợ target group kiểu IP address hay không. Vì đề nhấn mạnh target group kiểu IP, cặp \"đổi target type sang instance + dùng runbook AWSEC2-PatchLoadBalancerInstance\" cũng là cách hiểu có căn cứ, thay cho lựa chọn dùng maintenance window." }
+  },
+  {
+    "id": 54,
+    "stemVi": "Một công ty đã triển khai một giải pháp DNS tự quản lý trên ba Amazon EC2 instance phía sau một Network Load Balancer (NLB) ở Region us-west-2. Phần lớn người dùng của công ty ở Hoa Kỳ và châu Âu. Công ty muốn cải thiện hiệu năng và tính sẵn sàng của giải pháp. Công ty khởi chạy và cấu hình ba EC2 instance ở Region eu-west-1 và thêm chúng làm target cho một NLB mới.",
+    "promptVi": "Công ty có thể dùng giải pháp nào để định tuyến traffic tới tất cả các EC2 instance?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Amazon Route 53 geolocation routing policy để định tuyến request tới một trong hai NLB. Tạo một Amazon CloudFront distribution. Dùng Route 53 record làm origin của distribution.", "reason": "CloudFront chỉ phục vụ traffic HTTP/HTTPS, trong khi truy vấn DNS chủ yếu đi qua UDP cổng 53 — đặt CloudFront phía trước không chuyển tiếp được truy vấn DNS." },
+      { "key": "B", "textVi": "Tạo một standard accelerator trong AWS Global Accelerator. Tạo endpoint group ở us-west-2 và eu-west-1. Thêm hai NLB làm endpoint cho các endpoint group.", "reason": "Global Accelerator hỗ trợ TCP và UDP, cấp địa chỉ IP anycast tĩnh, đưa người dùng vào mạng toàn cầu của AWS và định tuyến tới endpoint group gần nhất còn khỏe, tự chuyển sang Region kia khi một Region lỗi — tăng cả hiệu năng lẫn tính sẵn sàng cho cả sáu instance." },
+      { "key": "C", "textVi": "Gắn Elastic IP address cho sáu EC2 instance. Tạo một Amazon Route 53 geolocation routing policy để định tuyến request tới một trong sáu EC2 instance. Tạo một Amazon CloudFront distribution. Dùng Route 53 record làm origin của distribution.", "reason": "Vẫn vướng việc CloudFront không chuyển tiếp traffic DNS qua UDP; thêm nữa, trỏ thẳng tới từng instance bỏ qua NLB nên mất cân bằng tải trong Region." },
+      { "key": "D", "textVi": "Thay hai NLB bằng hai Application Load Balancer (ALB). Tạo một Amazon Route 53 latency routing policy để định tuyến request tới một trong hai ALB. Tạo một Amazon CloudFront distribution. Dùng Route 53 record làm origin của distribution.", "reason": "ALB chỉ xử lý HTTP/HTTPS ở layer 7, không nhận được truy vấn DNS qua UDP; CloudFront cũng chỉ phục vụ HTTP/HTTPS, nên cả chuỗi này không chạy được với dịch vụ DNS." }
+    ],
+    "explanationVi": "Dịch vụ DNS dùng UDP (và TCP) cổng 53, không phải HTTP, nên mọi phương án có CloudFront hay ALB đều không dùng được. Global Accelerator hỗ trợ UDP, cho IP tĩnh toàn cầu và định tuyến tới NLB gần nhất còn khỏe ở hai Region, vừa giảm độ trễ vừa tăng tính sẵn sàng. Bẫy: thấy người dùng ở nhiều châu lục liền nghĩ tới CloudFront mà quên kiểm tra giao thức.",
+    "keyHint": "\"self-managed DNS\" (UDP) + NLB ở hai Region + \"improve the performance and availability\" → AWS Global Accelerator với endpoint group mỗi Region."
+  },
+  {
+    "id": 55,
+    "stemVi": "Một công ty chạy ứng dụng production trên một nhóm Amazon EC2 instance. Ứng dụng đọc dữ liệu từ một Amazon SQS queue và xử lý các message song song. Lượng message không dự đoán được và thường có traffic ngắt quãng. Ứng dụng này phải xử lý message liên tục mà không có downtime.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Chỉ dùng Spot Instance để đáp ứng capacity tối đa cần thiết.", "reason": "Spot có thể bị thu hồi bất cứ lúc nào; nếu toàn bộ fleet là Spot thì có thể mất hết capacity cùng lúc và ngừng xử lý message — vi phạm yêu cầu không có downtime." },
+      { "key": "B", "textVi": "Chỉ dùng Reserved Instance để đáp ứng capacity tối đa cần thiết.", "reason": "Mua Reserved Instance theo mức đỉnh nghĩa là trả tiền cho capacity nằm không trong phần lớn thời gian, vì lượng message thất thường và ngắt quãng — lãng phí chi phí." },
+      { "key": "C", "textVi": "Dùng Reserved Instance cho capacity nền (baseline) và dùng Spot Instance để đáp ứng capacity bổ sung.", "reason": "Reserved Instance giữ mức nền luôn chạy nên việc xử lý không bao giờ dừng; phần tăng thêm dùng Spot rẻ nhất, và vì message nằm an toàn trong SQS nên Spot bị thu hồi thì message chỉ quay lại queue để instance khác xử lý." },
+      { "key": "D", "textVi": "Dùng Reserved Instance cho capacity nền và dùng On-Demand Instance để đáp ứng capacity bổ sung.", "reason": "Cách này ổn định nhưng On-Demand đắt hơn Spot nhiều, trong khi workload xử lý từ SQS chịu được gián đoạn — chưa phải tiết kiệm chi phí nhất." }
+    ],
+    "explanationVi": "Cần xử lý liên tục (nên có mức nền ổn định) và rẻ nhất (nên tận dụng Spot cho phần dao động). SQS là bộ đệm bền: message không bị xóa cho đến khi xử lý xong, nên instance Spot bị thu hồi giữa chừng cũng không mất dữ liệu. Bẫy: chỉ dùng Spot thì rủi ro downtime, chỉ dùng Reserved Instance theo đỉnh thì lãng phí, còn On-Demand cho phần tăng thêm thì đắt hơn Spot.",
+    "keyHint": "\"without any downtime\" + \"unpredictable ... intermittent traffic\" từ SQS + \"MOST cost-effectively\" → Reserved Instance cho baseline + Spot cho phần tăng thêm."
+  },
+  {
+    "id": 56,
+    "stemVi": "Một công ty đang di chuyển một ứng dụng từ máy chủ on-premises sang các Amazon EC2 instance. Theo yêu cầu thiết kế của đợt di chuyển, solutions architect phải triển khai các alarm cho metric hạ tầng. Công ty không cần hành động nếu CPU utilization tăng quá 50% trong một khoảng ngắn. Tuy nhiên, nếu CPU utilization tăng quá 50% và đồng thời read IOPS trên đĩa cao, công ty cần hành động càng sớm càng tốt. Solutions architect cũng phải giảm báo động giả (false alarm).",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo Amazon CloudWatch composite alarm ở những chỗ có thể.", "reason": "Composite alarm kết hợp trạng thái của nhiều alarm bằng biểu thức logic, ví dụ chỉ vào trạng thái ALARM khi alarm CPU > 50% VÀ alarm read IOPS cao cùng ALARM — bỏ qua CPU tăng đơn lẻ và giảm báo động giả." },
+      { "key": "B", "textVi": "Tạo Amazon CloudWatch dashboard để trực quan hóa các metric và phản ứng nhanh với sự cố.", "reason": "Dashboard chỉ hiển thị metric, cần người ngồi theo dõi; nó không tự báo động khi hai điều kiện xảy ra cùng lúc nên không đáp ứng yêu cầu hành động sớm." },
+      { "key": "C", "textVi": "Tạo Amazon CloudWatch Synthetics canary để giám sát ứng dụng và phát alarm.", "reason": "Synthetics canary chạy script mô phỏng người dùng để kiểm tra endpoint từ bên ngoài; nó không đánh giá kết hợp CPU utilization và read IOPS của instance." },
+      { "key": "D", "textVi": "Tạo các Amazon CloudWatch metric alarm đơn lẻ với nhiều ngưỡng metric ở những chỗ có thể.", "reason": "Một metric alarm chỉ so một metric (hoặc một biểu thức metric math) với một ngưỡng; nó không diễn đạt được điều kiện \"CPU cao VÀ read IOPS cao\" theo trạng thái alarm như composite alarm, nên khó giảm báo động giả." }
+    ],
+    "explanationVi": "Điều kiện cần báo động là hai tín hiệu xảy ra cùng lúc: CPU > 50% và read IOPS cao, còn CPU tăng đơn lẻ thì bỏ qua. CloudWatch composite alarm được thiết kế đúng cho việc này: gộp nhiều alarm bằng AND/OR để chỉ báo khi thật sự có vấn đề, giảm nhiễu. Bẫy: dashboard không tự báo động, còn Synthetics dùng để giám sát từ phía người dùng.",
+    "keyHint": "\"CPU ... and read IOPS ... at the same time\" + \"reduce false alarms\" → CloudWatch composite alarm."
+  },
+  {
+    "id": 57,
+    "stemVi": "Solutions architect phải thiết kế một hạ tầng có tính sẵn sàng cao (highly available) cho một website. Website chạy trên các web server Windows trên Amazon EC2 instance. Solutions architect phải triển khai giải pháp có thể giảm thiểu một cuộc tấn công DDoS quy mô lớn xuất phát từ hàng nghìn địa chỉ IP. Website không được phép có downtime.",
+    "promptVi": "Solutions architect nên thực hiện những hành động nào để bảo vệ website khỏi kiểu tấn công này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Shield Advanced để chặn cuộc tấn công DDoS.", "reason": "Shield Advanced bảo vệ nâng cao trước DDoS quy mô lớn ở tầng mạng và ứng dụng, có phát hiện và giảm thiểu tự động, đội ứng cứu DDoS của AWS hỗ trợ và bảo vệ chi phí khi bị scale do tấn công." },
+      { "key": "B", "textVi": "Cấu hình Amazon GuardDuty để tự động chặn kẻ tấn công.", "reason": "GuardDuty là dịch vụ phát hiện mối đe dọa, chỉ tạo finding; nó không tự chặn traffic, và muốn chặn thì phải tự dựng thêm cơ chế phản ứng — không giảm thiểu được DDoS quy mô lớn." },
+      { "key": "C", "textVi": "Cấu hình website dùng Amazon CloudFront cho cả nội dung tĩnh và động.", "reason": "CloudFront có mạng edge phân tán rộng, hấp thụ và lọc traffic tấn công trước khi tới origin, lại được Shield Standard bảo vệ sẵn và tích hợp với Shield Advanced/AWS WAF — giúp website vẫn phục vụ được khi bị tấn công." },
+      { "key": "D", "textVi": "Dùng một hàm AWS Lambda để tự động thêm địa chỉ IP của kẻ tấn công vào network ACL của VPC.", "reason": "Network ACL có giới hạn số rule nhỏ (mặc định 20 rule mỗi chiều), không thể chứa hàng nghìn IP tấn công; phản ứng thủ công kiểu này cũng quá chậm với DDoS." },
+      { "key": "E", "textVi": "Dùng EC2 Spot Instance trong một Auto Scaling group với target tracking scaling policy đặt ở mức 80% CPU utilization.", "reason": "Scale theo CPU chỉ làm tốn tiền theo traffic tấn công chứ không chặn tấn công; Spot Instance còn có thể bị thu hồi, trái với yêu cầu không có downtime." }
+    ],
+    "explanationVi": "Chống DDoS quy mô lớn trên AWS dựa vào hai lớp: Shield Advanced để phát hiện và giảm thiểu, và CloudFront để hấp thụ traffic tại edge trước khi tới EC2. Hai dịch vụ này kết hợp giúp website vẫn chạy khi bị tấn công từ hàng nghìn IP. Bẫy: GuardDuty chỉ phát hiện, network ACL không đủ rule cho hàng nghìn IP, và Auto Scaling không phải công cụ chống tấn công.",
+    "keyHint": "\"large-scale DDoS attack ... thousands of IP addresses\" + \"Downtime is not acceptable\" → AWS Shield Advanced + Amazon CloudFront."
+  },
+  {
+    "id": 58,
+    "stemVi": "Một công ty truyền thông đang đánh giá khả năng chuyển hệ thống lên AWS Cloud. Công ty cần ít nhất 10 TB lưu trữ với hiệu năng I/O cao nhất có thể để xử lý video, 300 TB lưu trữ có độ bền rất cao để chứa nội dung media, và 900 TB lưu trữ để đáp ứng yêu cầu lưu trữ lâu dài (archival) cho media không còn được sử dụng.",
+    "promptVi": "Solutions architect nên đề xuất bộ dịch vụ nào để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Amazon EBS cho hiệu năng tối đa, Amazon S3 cho lưu trữ dữ liệu bền, và Amazon S3 Glacier cho lưu trữ lâu dài", "reason": "S3 và S3 Glacier đúng cho hai nhu cầu sau, nhưng EBS là lưu trữ gắn qua mạng nên I/O thấp hơn instance store gắn trực tiếp vào host — không phải hiệu năng I/O cao nhất có thể." },
+      { "key": "B", "textVi": "Amazon EBS cho hiệu năng tối đa, Amazon EFS cho lưu trữ dữ liệu bền, và Amazon S3 Glacier cho lưu trữ lâu dài", "reason": "EBS không cho I/O cao nhất như instance store, và lưu 300 TB nội dung media trên EFS đắt hơn nhiều so với S3 mà không cần hệ thống file dùng chung." },
+      { "key": "C", "textVi": "Amazon EC2 instance store cho hiệu năng tối đa, Amazon EFS cho lưu trữ dữ liệu bền, và Amazon S3 cho lưu trữ lâu dài", "reason": "Instance store đúng cho phần hiệu năng, nhưng EFS là lựa chọn đắt cho 300 TB nội dung, và dùng S3 thông thường cho 900 TB dữ liệu không còn dùng đắt hơn nhiều so với S3 Glacier." },
+      { "key": "D", "textVi": "Amazon EC2 instance store cho hiệu năng tối đa, Amazon S3 cho lưu trữ dữ liệu bền, và Amazon S3 Glacier cho lưu trữ lâu dài", "reason": "Instance store (NVMe gắn trực tiếp vào host) cho I/O cao nhất cho dữ liệu xử lý video tạm thời; S3 có độ bền dữ liệu (durability) 11 số 9 cho 300 TB nội dung; S3 Glacier có chi phí thấp nhất cho 900 TB media lưu trữ lâu dài — mỗi nhu cầu có đúng dịch vụ." }
+    ],
+    "explanationVi": "Đề chia ba nhu cầu: I/O cao nhất, lưu trữ bền, lưu trữ lâu dài giá rẻ. \"Maximum possible I/O\" cho dữ liệu xử lý tạm thời chỉ instance store đạt được, S3 cho độ bền cao với chi phí hợp lý, và S3 Glacier cho dữ liệu không còn dùng. Bẫy: EBS vẫn là lưu trữ qua mạng nên thua instance store về I/O, còn EFS đắt cho dung lượng lớn không cần chia sẻ file.",
+    "keyHint": "\"maximum possible I/O performance\" → EC2 instance store; \"very durable\" → S3; \"archival media that is not in use anymore\" → S3 Glacier."
+  },
+  {
+    "id": 59,
+    "stemVi": "Một công ty có hai ứng dụng: một ứng dụng gửi (sender) gửi các message có payload cần xử lý, và một ứng dụng xử lý (processing) nhận các message đó. Công ty muốn dùng một dịch vụ AWS để trung chuyển message giữa hai ứng dụng. Ứng dụng gửi có thể gửi khoảng 1.000 message mỗi giờ. Mỗi message có thể mất tới 2 ngày để xử lý. Nếu message xử lý thất bại, chúng phải được giữ lại để không ảnh hưởng đến việc xử lý các message còn lại.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này và hiệu quả vận hành nhất (MOST operationally efficient)?",
+    "options": [
+      { "key": "A", "textVi": "Dựng một Amazon EC2 instance chạy cơ sở dữ liệu Redis. Cấu hình cả hai ứng dụng dùng instance này. Lần lượt lưu, xử lý và xóa các message.", "reason": "Tự vận hành Redis trên một EC2 instance nghĩa là tự lo vá, sao lưu, mở rộng và sẵn sàng; lại phải tự viết logic hàng đợi và giữ message lỗi — kém hiệu quả vận hành nhất." },
+      { "key": "B", "textVi": "Dùng một Amazon Kinesis data stream để nhận message từ ứng dụng gửi. Tích hợp ứng dụng xử lý với Kinesis Client Library (KCL).", "reason": "Kinesis dành cho dữ liệu streaming xử lý theo thứ tự trong shard; không có dead-letter queue cho từng bản ghi, nên một bản ghi xử lý lỗi dễ chặn các bản ghi sau trong shard, và phải quản lý shard, checkpoint — không hợp với 1.000 message mỗi giờ." },
+      { "key": "C", "textVi": "Tích hợp ứng dụng gửi và ứng dụng xử lý với một Amazon Simple Queue Service (Amazon SQS) queue. Cấu hình một dead-letter queue để thu các message xử lý thất bại.", "reason": "SQS được quản lý hoàn toàn, giữ message tối đa 14 ngày (dư cho thời gian xử lý tới 2 ngày); dead-letter queue tách riêng message lỗi sau số lần thử nhất định để các message khác vẫn được xử lý." },
+      { "key": "D", "textVi": "Cho ứng dụng xử lý subscribe vào một Amazon Simple Notification Service (Amazon SNS) topic để nhận thông báo cần xử lý. Tích hợp ứng dụng gửi để ghi vào SNS topic.", "reason": "SNS đẩy (push) message tới subscriber ngay khi nhận, không lưu message để ứng dụng xử lý kéo về dần trong tới 2 ngày; nó không phải hàng đợi bền cho mô hình xử lý này." }
+    ],
+    "explanationVi": "Mô hình gửi–xử lý với message xử lý lâu và cần giữ lại message lỗi là trường hợp điển hình của hàng đợi. SQS giữ message tới 14 ngày, là dịch vụ được quản lý, và dead-letter queue tách message lỗi ra để không chặn các message khác. Bẫy: Kinesis dành cho streaming thông lượng cao theo thứ tự, SNS là pub/sub đẩy ngay chứ không lưu trữ, còn Redis tự quản lý tốn công vận hành.",
+    "keyHint": "\"up to 2 days to be processed\" + \"fail to process, they must be retained\" + \"MOST operationally efficient\" → Amazon SQS + dead-letter queue."
+  },
+  {
+    "id": 60,
+    "stemVi": "Một công ty có môi trường lưu dữ liệu trong một Amazon S3 bucket. Các object được truy cập thường xuyên suốt cả ngày. Công ty có yêu cầu mã hóa nghiêm ngặt cho dữ liệu lưu trong S3 bucket. Hiện công ty dùng AWS Key Management Service (AWS KMS) để mã hóa. Công ty muốn tối ưu chi phí liên quan đến việc mã hóa các object S3 mà không phát sinh thêm lệnh gọi tới AWS KMS.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng mã hóa phía server với khóa do Amazon S3 quản lý (SSE-S3).", "reason": "SSE-S3 không gọi KMS, nhưng nó bỏ hẳn KMS và khóa do công ty kiểm soát, trong khi công ty đang dùng KMS cho yêu cầu mã hóa nghiêm ngặt — đổi mô hình quản lý khóa chứ không phải tối ưu chi phí KMS." },
+      { "key": "B", "textVi": "Dùng S3 Bucket Key cho mã hóa phía server với khóa AWS KMS (SSE-KMS) trên các object mới.", "reason": "S3 Bucket Key tạo một khóa cấp bucket tồn tại trong thời gian ngắn từ KMS rồi dùng nó sinh data key cho các object, giảm tới 99% số request tới KMS và chi phí đi kèm, mà vẫn giữ SSE-KMS với khóa KMS hiện có." },
+      { "key": "C", "textVi": "Dùng mã hóa phía client với customer managed key của AWS KMS.", "reason": "Mã hóa phía client vẫn gọi KMS để lấy data key cho mỗi lần mã hóa/giải mã, lại thêm công sửa ứng dụng — không giảm lệnh gọi KMS." },
+      { "key": "D", "textVi": "Dùng mã hóa phía server với khóa do khách hàng cung cấp (SSE-C) lưu trong AWS KMS.", "reason": "Với SSE-C, khách hàng phải tự quản lý khóa và gửi khóa kèm mỗi request; S3 không lấy khóa từ KMS, nên muốn lưu khóa trong KMS thì ứng dụng vẫn phải gọi KMS mỗi lần — vừa phức tạp vừa không giảm lệnh gọi." }
+    ],
+    "explanationVi": "Object được truy cập liên tục với SSE-KMS làm phát sinh rất nhiều request tới KMS, và KMS tính phí theo request. S3 Bucket Key giảm mạnh số request này mà vẫn giữ nguyên mã hóa bằng khóa KMS. Bẫy: SSE-S3 rẻ nhưng rời bỏ KMS, còn mã hóa phía client và SSE-C không giảm lệnh gọi KMS mà còn thêm công quản lý.",
+    "keyHint": "\"optimize costs ... without making additional calls to AWS KMS\" với SSE-KMS → S3 Bucket Key."
+  },
+  {
+    "id": 61,
+    "stemVi": "Ứng dụng web của một công ty chạy trên các Amazon EC2 instance phía sau một Application Load Balancer. Công ty vừa đổi chính sách: nay ứng dụng chỉ được phép truy cập từ một quốc gia cụ thể.",
+    "promptVi": "Cấu hình nào đáp ứng yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình security group cho các EC2 instance.", "reason": "Security group chỉ cho phép theo IP/CIDR, port và giao thức, không có điều kiện theo quốc gia; hơn nữa traffic tới instance đến từ ALB chứ không phải trực tiếp từ người dùng." },
+      { "key": "B", "textVi": "Cấu hình security group trên Application Load Balancer.", "reason": "Security group của ALB cũng chỉ lọc theo IP/CIDR và port; muốn chặn theo quốc gia thì phải tự duy trì danh sách dải IP khổng lồ, luôn thay đổi — không khả thi." },
+      { "key": "C", "textVi": "Cấu hình AWS WAF trên Application Load Balancer trong một VPC.", "reason": "AWS WAF có geo match rule lọc request theo quốc gia nguồn và gắn trực tiếp vào ALB, nên chỉ cần cho phép quốc gia được chỉ định và chặn phần còn lại." },
+      { "key": "D", "textVi": "Cấu hình network ACL cho subnet chứa các EC2 instance.", "reason": "Network ACL lọc theo IP/CIDR và port ở mức subnet, không hiểu quốc gia, và có giới hạn số rule nhỏ nên không chứa nổi dải IP của cả một quốc gia." }
+    ],
+    "explanationVi": "Giới hạn truy cập theo quốc gia là tính năng geo match của AWS WAF, gắn được vào ALB. Security group và network ACL chỉ lọc theo IP và port, không có khái niệm vị trí địa lý. Bẫy: nghĩ rằng có thể chặn quốc gia bằng danh sách IP trong security group hay network ACL.",
+    "keyHint": "\"accessed from one specific country only\" + ALB → AWS WAF geo match rule."
+  },
+  {
+    "id": 62,
+    "stemVi": "Một công ty cần lưu dữ liệu trong Amazon S3 và phải ngăn dữ liệu bị thay đổi. Công ty muốn các object mới tải lên Amazon S3 luôn không thể thay đổi trong một khoảng thời gian không xác định, cho đến khi công ty quyết định sửa các object đó. Chỉ những user cụ thể trong AWS account của công ty mới có quyền xóa các object.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một S3 Glacier vault. Áp một vault lock policy kiểu ghi một lần, đọc nhiều lần (WORM) cho các object.", "reason": "Dữ liệu phải nằm trong Amazon S3, không phải Glacier vault; vault lock policy khi đã khóa thì không sửa được và áp cho cả vault, không linh hoạt để \"mở\" khi công ty muốn sửa object hay chỉ cho vài user xóa." },
+      { "key": "B", "textVi": "Tạo một S3 bucket bật S3 Object Lock. Bật versioning. Đặt retention period 100 năm. Dùng governance mode làm retention mode mặc định của bucket cho object mới.", "reason": "Retention period là thời hạn cố định (ở đây 100 năm), trái với yêu cầu khoảng thời gian không xác định cho đến khi công ty quyết định; muốn gỡ sớm phải bỏ qua governance cho từng object, không phải cơ chế đúng cho nhu cầu này." },
+      { "key": "C", "textVi": "Tạo một S3 bucket. Dùng AWS CloudTrail để theo dõi mọi sự kiện S3 API làm thay đổi object. Khi nhận thông báo, khôi phục object đã bị sửa từ các bản backup mà công ty có.", "reason": "CloudTrail chỉ ghi nhận sau khi thay đổi đã xảy ra, không ngăn được việc sửa hay xóa; khôi phục từ backup là phản ứng sau sự cố chứ không phải bảo vệ bất biến." },
+      { "key": "D", "textVi": "Tạo một S3 bucket bật S3 Object Lock. Bật versioning. Thêm legal hold cho các object. Thêm quyền s3:PutObjectLegalHold vào IAM policy của những user cần xóa object.", "reason": "Legal hold khóa object version không có ngày hết hạn, giữ nguyên cho đến khi được gỡ — đúng với \"thời gian không xác định\"; chỉ user có quyền s3:PutObjectLegalHold mới gỡ được hold để sửa hoặc xóa object." }
+    ],
+    "explanationVi": "S3 Object Lock có hai cơ chế: retention period (thời hạn cố định) và legal hold (không có thời hạn, giữ cho đến khi gỡ). Yêu cầu \"nonspecific amount of time until the company decides\" khớp với legal hold, còn việc chỉ cho một số user xóa được kiểm soát bằng quyền s3:PutObjectLegalHold. Bẫy: retention 100 năm vẫn là thời hạn cố định, còn CloudTrail chỉ phát hiện chứ không ngăn chặn.",
+    "keyHint": "\"unchangeable for a nonspecific amount of time until the company decides\" → S3 Object Lock legal hold + quyền s3:PutObjectLegalHold."
+  },
+  {
+    "id": 63,
+    "stemVi": "Một công ty đang chạy một ứng dụng serverless truy cập công khai, dùng Amazon API Gateway và AWS Lambda. Traffic của ứng dụng gần đây tăng vọt do các request gian lận từ botnet.",
+    "promptVi": "Solutions architect nên thực hiện những bước nào để chặn request từ người dùng không được phép? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Tạo một usage plan với API key chỉ chia sẻ cho người dùng thật.", "reason": "Khi method yêu cầu API key, request không có key hợp lệ bị API Gateway từ chối trước khi tới Lambda; usage plan còn giới hạn throttling và quota cho từng key, hạn chế lạm dụng." },
+      { "key": "B", "textVi": "Tích hợp logic trong hàm Lambda để bỏ qua request từ các địa chỉ IP gian lận.", "reason": "Request độc hại vẫn đi qua API Gateway và kích hoạt Lambda, nên vẫn tốn chi phí và tài nguyên; botnet đổi IP liên tục nên danh sách IP tự viết không theo kịp." },
+      { "key": "C", "textVi": "Triển khai một AWS WAF rule nhắm vào các request độc hại và kích hoạt hành động để lọc chúng.", "reason": "AWS WAF gắn vào API Gateway, dùng rate-based rule, IP reputation và Bot Control để chặn request từ botnet ngay tại lớp vào, trước khi chúng tới Lambda." },
+      { "key": "D", "textVi": "Chuyển API công khai hiện có thành private API. Cập nhật DNS record để chuyển hướng người dùng tới endpoint API mới.", "reason": "Private API chỉ truy cập được từ bên trong VPC qua interface endpoint, nên người dùng thật trên internet cũng không gọi được — phá vỡ ứng dụng công khai." },
+      { "key": "E", "textVi": "Tạo một IAM role cho mỗi user cố gắng truy cập API. User sẽ assume role khi gọi API.", "reason": "Người dùng công khai không có danh tính IAM trong account; tạo IAM role cho từng người không khả thi, không mở rộng được và không phải cách xác thực người dùng cuối." }
+    ],
+    "explanationVi": "Cần chặn request trái phép ở lớp vào, trước khi chúng làm tốn Lambda. Usage plan với API key chỉ cho client có key gọi API và giới hạn tần suất, còn AWS WAF lọc traffic botnet theo quy tắc. Bẫy: lọc trong code Lambda vẫn tốn tiền invoke, private API làm mất truy cập công khai, và IAM role cho từng người dùng cuối là không khả thi.",
+    "keyHint": "\"fraudulent requests from botnets\" + API Gateway công khai → AWS WAF + usage plan với API key.",
+    "review": { "reason": "Chưa chắc chắn: tài liệu API Gateway khuyến cáo không dùng API key để xác thực hay phân quyền (key được gửi trong header, dễ lộ; key hợp lệ cho một API dùng được cho mọi API trong cùng usage plan) mà nên dùng IAM, Lambda authorizer hoặc Amazon Cognito user pool. Phương án usage plan + API key vẫn hợp lý hơn các phương án còn lại, nhưng không phải cách AWS khuyến nghị để chặn người dùng trái phép." }
+  },
+  {
+    "id": 64,
+    "stemVi": "Một công ty dùng ứng dụng web ba tầng (three-tier) để đào tạo nhân viên mới. Ứng dụng chỉ được truy cập 12 giờ mỗi ngày. Công ty đang dùng một Amazon RDS for MySQL DB instance để lưu thông tin và muốn giảm tối thiểu chi phí.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình một IAM policy cho AWS Systems Manager Session Manager. Tạo IAM role cho policy đó. Cập nhật trust relationship của role. Thiết lập tự động start và stop cho DB instance.", "reason": "Session Manager dùng để mở phiên shell tới instance, không có chức năng lên lịch start/stop RDS DB instance; cấu hình IAM cho nó không tạo ra lịch tự động nào." },
+      { "key": "B", "textVi": "Tạo một Amazon ElastiCache for Redis cache cluster để người dùng truy cập dữ liệu từ cache khi DB instance bị dừng. Invalidate cache sau khi DB instance được khởi động.", "reason": "Thêm một cache cluster chạy suốt ngày làm tăng chi phí, và cache không thay thế được cơ sở dữ liệu cho việc ghi; đề cũng không cần truy cập ngoài 12 giờ sử dụng." },
+      { "key": "C", "textVi": "Khởi chạy một Amazon EC2 instance. Tạo một IAM role cấp quyền truy cập Amazon RDS. Gắn role vào EC2 instance. Cấu hình cron job để start và stop EC2 instance theo lịch mong muốn.", "reason": "Cron job như mô tả chỉ start/stop chính EC2 instance chứ không phải DB instance; kể cả sửa lại để gọi RDS thì vẫn phải trả tiền và vận hành thêm một máy chủ chỉ để chạy lịch." },
+      { "key": "D", "textVi": "Tạo các hàm AWS Lambda để start và stop DB instance. Tạo các Amazon EventBridge (Amazon CloudWatch Events) scheduled rule để gọi các hàm Lambda. Cấu hình các hàm Lambda làm target sự kiện cho các rule.", "reason": "EventBridge scheduled rule gọi Lambda start DB instance đầu giờ và stop sau 12 giờ; DB bị dừng thì không tính phí instance-hour (chỉ còn phí lưu trữ), còn Lambda và EventBridge gần như không tốn chi phí và không có máy chủ phải quản lý." }
+    ],
+    "explanationVi": "Ứng dụng chỉ dùng 12 giờ/ngày nên dừng RDS DB instance ngoài giờ giúp cắt khoảng một nửa phí instance. Cách rẻ và ít công nhất để tự động hóa là EventBridge scheduled rule gọi Lambda start/stop. Bẫy: Session Manager không lên lịch được, ElastiCache làm tăng chi phí, còn EC2 chạy cron thì thêm máy chủ phải trả tiền và quản lý.",
+    "keyHint": "\"accessed for only 12 hours every day\" + \"minimize costs\" với RDS → EventBridge scheduled rule + Lambda start/stop DB instance."
+  },
+  {
+    "id": 65,
+    "stemVi": "Một công ty chạy ứng dụng trong một private subnet phía sau một Application Load Balancer (ALB) trong một VPC. VPC có một NAT gateway và một internet gateway. Ứng dụng gọi Amazon S3 API để lưu object. Theo chính sách bảo mật của công ty, traffic từ ứng dụng không được đi qua internet.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình một S3 interface endpoint. Tạo một security group cho phép traffic đi ra tới Amazon S3.", "reason": "Interface endpoint (AWS PrivateLink) cũng giữ traffic trong mạng AWS, nhưng tính phí theo giờ cho mỗi AZ và theo lượng dữ liệu xử lý, nên đắt hơn gateway endpoint miễn phí." },
+      { "key": "B", "textVi": "Cấu hình một S3 gateway endpoint. Cập nhật VPC route table để dùng endpoint.", "reason": "Gateway endpoint cho S3 không tính phí; chỉ cần thêm route tới prefix list của S3 trong route table là traffic từ private subnet tới S3 đi trong mạng AWS, không qua internet — rẻ nhất." },
+      { "key": "C", "textVi": "Cấu hình S3 bucket policy cho phép traffic từ Elastic IP address gắn với NAT gateway.", "reason": "Traffic qua NAT gateway vẫn tới endpoint công khai của S3 như đi ra internet, trái chính sách; ngoài ra còn tốn phí xử lý dữ liệu của NAT gateway." },
+      { "key": "D", "textVi": "Tạo NAT gateway thứ hai trong cùng subnet nơi triển khai ứng dụng cũ (legacy). Cập nhật VPC route table để dùng NAT gateway thứ hai.", "reason": "Thêm NAT gateway chỉ tăng chi phí; traffic vẫn đi qua đường ra internet như trước nên không đáp ứng chính sách bảo mật." }
+    ],
+    "explanationVi": "Yêu cầu là traffic tới S3 không đi qua internet và rẻ nhất. S3 gateway endpoint miễn phí và hoạt động bằng route trong route table, nên thắng interface endpoint vốn tính phí theo giờ và theo GB. Bẫy: NAT gateway chỉ giúp instance private đi ra internet, không giữ traffic trong mạng riêng.",
+    "keyHint": "\"must not travel across the internet\" + S3 + \"MOST cost-effectively\" → S3 gateway endpoint (miễn phí) thay vì interface endpoint."
+  },
+  {
+    "id": 66,
+    "stemVi": "Một công ty dùng một hệ thống quản lý nội dung (CMS) phổ biến cho website doanh nghiệp. Tuy nhiên, việc vá và bảo trì cần thiết là gánh nặng. Công ty đang thiết kế lại website và muốn một giải pháp mới. Website sẽ được cập nhật bốn lần mỗi năm và không cần bất kỳ nội dung động nào. Giải pháp phải có khả năng mở rộng cao và bảo mật tăng cường.",
+    "promptVi": "Tổ hợp thay đổi nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình Amazon CloudFront phía trước website để dùng chức năng HTTPS.", "reason": "CloudFront cung cấp HTTPS (với chứng chỉ ACM miễn phí), cache nội dung tại edge để mở rộng gần như không giới hạn, và có sẵn Shield Standard, tích hợp AWS WAF — tăng bảo mật mà không có máy chủ nào phải vá." },
+      { "key": "B", "textVi": "Triển khai một AWS WAF web ACL phía trước website để cung cấp chức năng HTTPS.", "reason": "AWS WAF lọc request ở layer 7 nhưng không kết thúc TLS hay cung cấp HTTPS; nó phải gắn vào CloudFront, ALB hoặc API Gateway mới hoạt động." },
+      { "key": "C", "textVi": "Tạo và triển khai một hàm AWS Lambda để quản lý và phục vụ nội dung website.", "reason": "Phục vụ website tĩnh qua Lambda là thừa: phải viết và bảo trì code, thêm lớp gọi hàm, trong khi S3 phục vụ file tĩnh trực tiếp mà không cần code." },
+      { "key": "D", "textVi": "Tạo website mới và một Amazon S3 bucket. Triển khai website trên S3 bucket với static website hosting được bật.", "reason": "Website chỉ có nội dung tĩnh, cập nhật bốn lần mỗi năm, nên host trên S3 là phù hợp: không có máy chủ hay CMS phải vá, S3 tự mở rộng và có độ bền dữ liệu cao." },
+      { "key": "E", "textVi": "Tạo website mới. Triển khai website bằng một Auto Scaling group gồm các Amazon EC2 instance phía sau một Application Load Balancer.", "reason": "EC2 vẫn phải vá hệ điều hành và web server — đúng gánh nặng công ty muốn bỏ; dùng Auto Scaling và ALB cho nội dung tĩnh là tốn công và chi phí hơn nhiều." }
+    ],
+    "explanationVi": "Website tĩnh, ít cập nhật và muốn bỏ gánh nặng vá lỗi → host trên S3 và đặt CloudFront phía trước. S3 phục vụ file tĩnh không cần máy chủ, còn CloudFront bổ sung HTTPS, cache toàn cầu và bảo vệ tại edge. Bẫy: AWS WAF không cung cấp HTTPS, còn Lambda hay EC2 thêm code và máy chủ phải vận hành.",
+    "keyHint": "\"does not need to have any dynamic content\" + \"LEAST operational overhead\" + HTTPS → S3 static website hosting + CloudFront."
+  },
+  {
+    "id": 67,
+    "stemVi": "Một công ty muốn chạy ứng dụng dạng container trên AWS Cloud. Các ứng dụng này không trạng thái (stateless) và chịu được gián đoạn ở hạ tầng bên dưới. Công ty cần một giải pháp giảm tối thiểu chi phí và công vận hành.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Spot Instance trong một Amazon EC2 Auto Scaling group để chạy các container ứng dụng.", "reason": "Spot giúp giảm chi phí, nhưng chạy container trực tiếp trên Auto Scaling group thì công ty phải tự cài và vận hành lớp điều phối container, tự xử lý khi node Spot bị thu hồi — tốn công vận hành hơn." },
+      { "key": "B", "textVi": "Dùng Spot Instance trong một Amazon Elastic Kubernetes Service (Amazon EKS) managed node group.", "reason": "EKS quản lý control plane Kubernetes, managed node group tự lo vòng đời node và tự drain node khi Spot sắp bị thu hồi; Spot giảm chi phí tới khoảng 90% và hợp với ứng dụng stateless chịu được gián đoạn — thỏa cả chi phí lẫn công vận hành." },
+      { "key": "C", "textVi": "Dùng On-Demand Instance trong một Amazon EC2 Auto Scaling group để chạy các container ứng dụng.", "reason": "On-Demand đắt hơn Spot nhiều dù ứng dụng chịu được gián đoạn, và vẫn phải tự quản lý việc chạy container trên EC2." },
+      { "key": "D", "textVi": "Dùng On-Demand Instance trong một Amazon Elastic Kubernetes Service (Amazon EKS) managed node group.", "reason": "EKS managed node group giảm công vận hành, nhưng On-Demand không tận dụng được việc ứng dụng chịu gián đoạn để dùng Spot rẻ hơn — chưa giảm tối thiểu chi phí." }
+    ],
+    "explanationVi": "Hai yêu cầu: chi phí thấp nhất và ít công vận hành nhất. Ứng dụng stateless chịu được gián đoạn nên dùng Spot; dịch vụ container được quản lý (EKS với managed node group) giảm công vận hành so với tự chạy container trên EC2. Bẫy: chỉ tối ưu một yêu cầu — Spot trên Auto Scaling group tự quản lý, hoặc EKS với On-Demand.",
+    "keyHint": "\"stateless and can tolerate disruptions\" + \"minimizes cost and operational overhead\" → Spot Instance trong EKS managed node group."
+  },
+  {
+    "id": 68,
+    "stemVi": "Một công ty đang triển khai một ứng dụng nghiệp vụ mới. Ứng dụng chạy trên hai Amazon EC2 instance và dùng một Amazon S3 bucket để lưu tài liệu. Solutions architect cần đảm bảo các EC2 instance truy cập được S3 bucket.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một IAM role cấp quyền truy cập S3 bucket. Gắn role vào các EC2 instance.", "reason": "IAM role gắn vào EC2 qua instance profile cung cấp credential tạm thời, tự xoay vòng cho ứng dụng trên instance, không phải lưu access key — đây là cách chuẩn và an toàn để EC2 truy cập S3." },
+      { "key": "B", "textVi": "Tạo một IAM policy cấp quyền truy cập S3 bucket. Gắn policy vào các EC2 instance.", "reason": "IAM policy chỉ gắn được vào user, group hoặc role, không gắn trực tiếp vào EC2 instance; instance cần một role (qua instance profile) để mang policy đó." },
+      { "key": "C", "textVi": "Tạo một IAM group cấp quyền truy cập S3 bucket. Gắn group vào các EC2 instance.", "reason": "IAM group chỉ là tập hợp IAM user, không thể gắn vào EC2 instance và không cấp credential cho instance." },
+      { "key": "D", "textVi": "Tạo một IAM user cấp quyền truy cập S3 bucket. Gắn tài khoản user vào các EC2 instance.", "reason": "Không có cơ chế gắn IAM user vào instance; cách duy nhất là lưu access key dài hạn của user trên máy, dễ bị lộ và phải tự xoay vòng — trái best practice bảo mật." }
+    ],
+    "explanationVi": "EC2 cần quyền gọi S3 thì dùng IAM role gắn qua instance profile: ứng dụng tự nhận credential tạm thời từ instance metadata. Policy, group hay user đều không gắn được trực tiếp vào EC2. Bẫy: nghĩ rằng gắn policy thẳng vào instance, hoặc lưu access key của IAM user trên máy.",
+    "keyHint": "\"ensure that the EC2 instances can access the S3 bucket\" → IAM role gắn vào EC2 qua instance profile."
+  },
+  {
+    "id": 69,
+    "stemVi": "Môi trường production của một công ty gồm các Amazon EC2 On-Demand Instance chạy liên tục từ thứ Hai đến thứ Bảy. Vào Chủ nhật, các instance chỉ cần chạy 12 giờ và không chịu được gián đoạn. Công ty muốn tối ưu chi phí cho môi trường production.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Mua Scheduled Reserved Instance cho các EC2 instance chỉ chạy 12 giờ vào Chủ nhật. Mua Standard Reserved Instance cho các EC2 instance chạy liên tục từ thứ Hai đến thứ Bảy.", "reason": "Theo đáp án gốc, Scheduled Reserved Instance đặt trước capacity với giá giảm cho khung giờ lặp lại cố định (12 giờ Chủ nhật) mà không bị gián đoạn, còn Standard Reserved Instance cho mức giảm giá cao nhất với phần chạy liên tục thứ Hai–thứ Bảy." },
+      { "key": "B", "textVi": "Mua Convertible Reserved Instance cho các EC2 instance chỉ chạy 12 giờ vào Chủ nhật. Mua Standard Reserved Instance cho các EC2 instance chạy liên tục từ thứ Hai đến thứ Bảy.", "reason": "Convertible Reserved Instance tính phí cho cả kỳ hạn 24/7 dù instance chỉ chạy 12 giờ mỗi tuần, và mức giảm giá còn thấp hơn Standard — lãng phí cho phần chạy Chủ nhật." },
+      { "key": "C", "textVi": "Dùng Spot Instance cho các EC2 instance chỉ chạy 12 giờ vào Chủ nhật. Mua Standard Reserved Instance cho các EC2 instance chạy liên tục từ thứ Hai đến thứ Bảy.", "reason": "Spot Instance có thể bị thu hồi bất cứ lúc nào, trong khi phần chạy Chủ nhật không chịu được gián đoạn." },
+      { "key": "D", "textVi": "Dùng Spot Instance cho các EC2 instance chỉ chạy 12 giờ vào Chủ nhật. Mua Convertible Reserved Instance cho các EC2 instance chạy liên tục từ thứ Hai đến thứ Bảy.", "reason": "Spot không đáp ứng yêu cầu không gián đoạn, và Convertible Reserved Instance có mức giảm giá thấp hơn Standard cho phần chạy liên tục." }
+    ],
+    "explanationVi": "Phần chạy liên tục thì Standard Reserved Instance cho mức giảm giá cao nhất; phần chạy theo lịch lặp lại cố định và không chịu gián đoạn thì đáp án gốc chọn Scheduled Reserved Instance. Spot bị loại vì có thể bị thu hồi, còn Convertible Reserved Instance giảm giá ít hơn Standard. Lưu ý thực tế: AWS đã ngừng bán Scheduled Reserved Instance; ngày nay thường dùng On-Demand Capacity Reservation theo lịch kết hợp Savings Plans.",
+    "keyHint": "\"run for only 12 hours on Sunday\" + \"cannot tolerate interruptions\" → Scheduled Reserved Instance (theo đề); \"run constantly\" → Standard Reserved Instance.",
+    "review": { "reason": "Đáp án có thể sai: AWS đã ngừng bán Scheduled Reserved Instance (bài thông báo gốc được cập nhật ngày 03/09/2024: không còn capacity và không có kế hoạch mở lại; API PurchaseScheduledInstances ghi không thể mua nữa), nên phương án dùng Scheduled Reserved Instance không thực hiện được trên AWS hiện nay. Không lựa chọn nào khác thay thế đúng được (Spot bị gián đoạn, Convertible Reserved Instance tính phí 24/7 dù chỉ chạy 12 giờ mỗi tuần); thực tế nên dùng On-Demand cho 12 giờ Chủ nhật (có thể kèm On-Demand Capacity Reservation) và Standard Reserved Instance hoặc Savings Plans cho phần chạy liên tục." }
+  },
+  {
+    "id": 70,
+    "stemVi": "Một công ty cần lưu kết quả của một thử nghiệm y khoa vào một kho Amazon S3. Kho phải cho phép một vài nhà khoa học thêm file mới và phải giới hạn mọi người dùng khác chỉ có quyền đọc. Không người dùng nào được phép sửa hoặc xóa bất kỳ file nào trong kho. Công ty phải giữ mọi file trong kho tối thiểu 1 năm kể từ ngày tạo.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng S3 Object Lock ở governance mode với legal hold 1 năm.", "reason": "Legal hold không có thời hạn (không có khái niệm \"1 năm\"), và governance mode vẫn cho user có quyền s3:BypassGovernanceRetention xóa hoặc sửa object — trái yêu cầu không ai được sửa hay xóa." },
+      { "key": "B", "textVi": "Dùng S3 Object Lock ở compliance mode với retention period 365 ngày.", "reason": "Compliance mode ngăn mọi user, kể cả root user, ghi đè hay xóa object version cho đến khi hết retention period 365 ngày, và không ai rút ngắn được thời hạn — đúng yêu cầu giữ tối thiểu 1 năm; quyền thêm file và chỉ đọc được cấp bằng IAM/bucket policy." },
+      { "key": "C", "textVi": "Dùng một IAM role để cấm mọi user xóa hoặc thay đổi object trong S3 bucket. Dùng S3 bucket policy chỉ cho phép IAM role đó.", "reason": "Quyền IAM có thể bị admin hoặc root thay đổi bất cứ lúc nào, nên không bảo đảm bất biến; nó cũng không có khái niệm giữ tối thiểu 1 năm kể từ ngày tạo." },
+      { "key": "D", "textVi": "Cấu hình S3 bucket gọi một hàm AWS Lambda mỗi khi có object được thêm. Cấu hình hàm theo dõi hash của object đã lưu để object bị sửa có thể được đánh dấu tương ứng.", "reason": "Theo dõi hash chỉ phát hiện sau khi file đã bị sửa, không ngăn được việc sửa hay xóa, và không đảm bảo thời hạn lưu giữ." }
+    ],
+    "explanationVi": "\"Không ai được sửa hay xóa\" và \"giữ tối thiểu 1 năm\" là mô tả của S3 Object Lock compliance mode với retention period 365 ngày. Governance mode còn cho phép bỏ qua với quyền đặc biệt, còn legal hold không có thời hạn. Bẫy: IAM policy hay Lambda chỉ là kiểm soát mềm hoặc phát hiện, không phải WORM thực sự.",
+    "keyHint": "\"No users can have the ability to modify or delete\" + \"minimum of 1 year\" → S3 Object Lock compliance mode, retention 365 ngày."
+  },
+  {
+    "id": 71,
+    "stemVi": "Một công ty host một ứng dụng phân tích website trên một Amazon EC2 On-Demand Instance duy nhất. Ứng dụng phân tích có khả năng phục hồi cao (highly resilient) và được thiết kế để chạy ở chế độ không trạng thái (stateless). Công ty nhận thấy ứng dụng có dấu hiệu suy giảm hiệu năng trong giờ bận và trả về lỗi 5xx. Công ty cần ứng dụng mở rộng một cách liền mạch (scale seamlessly).",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Amazon Machine Image (AMI) của ứng dụng web. Dùng AMI để khởi chạy EC2 On-Demand Instance thứ hai. Dùng một Application Load Balancer để phân phối tải giữa hai EC2 instance.", "reason": "ALB phân phối tải là đúng hướng, nhưng chỉ có hai instance cố định, không tự thêm instance khi tải tăng nên không mở rộng liền mạch; cả hai đều là On-Demand nên không rẻ nhất." },
+      { "key": "B", "textVi": "Tạo một Amazon Machine Image (AMI) của ứng dụng web. Dùng AMI để khởi chạy EC2 On-Demand Instance thứ hai. Dùng Amazon Route 53 weighted routing để phân phối tải giữa hai EC2 instance.", "reason": "Vẫn là hai instance cố định không tự mở rộng; weighted routing chia tải theo tỷ lệ DNS tĩnh, phụ thuộc cache DNS, không cân bằng tải động như load balancer." },
+      { "key": "C", "textVi": "Tạo một hàm AWS Lambda để dừng EC2 instance và đổi instance type. Tạo một Amazon CloudWatch alarm để gọi hàm Lambda khi CPU utilization vượt 75%.", "reason": "Đổi instance type phải dừng instance, gây downtime đúng lúc tải cao — trái với mở rộng liền mạch; scale dọc cũng có giới hạn cỡ máy." },
+      { "key": "D", "textVi": "Tạo một Amazon Machine Image (AMI) của ứng dụng web. Áp AMI vào một launch template. Tạo một Auto Scaling group dùng launch template đó. Cấu hình launch template dùng Spot Fleet. Gắn một Application Load Balancer vào Auto Scaling group.", "reason": "Auto Scaling group sau ALB tự thêm, bớt instance theo tải nên mở rộng liền mạch; ứng dụng stateless và resilient nên chạy trên Spot được, giảm mạnh chi phí — thỏa cả mở rộng lẫn chi phí thấp nhất." }
+    ],
+    "explanationVi": "Mở rộng liền mạch nghĩa là tự thêm instance theo tải (scale ngang) sau một load balancer, không phải thêm một máy cố định hay đổi cỡ máy. Ứng dụng stateless, resilient nên dùng Spot trong Auto Scaling group để tiết kiệm chi phí nhất (MOST cost-effectively). Bẫy: hai instance cố định không tự mở rộng, còn đổi instance type thì gây gián đoạn. (Trong thực tế, Auto Scaling group dùng Spot qua mixed instances policy thay vì \"Spot Fleet\".)",
+    "keyHint": "\"stateless\" + \"scale seamlessly\" + \"MOST cost-effectively\" → AMI + launch template + Auto Scaling group sau ALB, dùng Spot."
+  },
+  {
+    "id": 72,
+    "stemVi": "Một công ty đang phát triển một ứng dụng chia sẻ file dùng Amazon S3 bucket để lưu trữ. Công ty muốn phục vụ mọi file qua một Amazon CloudFront distribution. Công ty không muốn các file truy cập được khi vào trực tiếp URL của S3.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Viết policy riêng cho từng S3 bucket để chỉ cấp quyền đọc cho truy cập từ CloudFront.", "reason": "Nếu không có danh tính riêng cho CloudFront (OAI hoặc OAC), bucket policy không có cách nào nhận diện request đến từ distribution của công ty; phương án này thiếu đúng thành phần làm cho việc giới hạn khả thi." },
+      { "key": "B", "textVi": "Tạo một IAM user. Cấp cho user quyền đọc object trong S3 bucket. Gán user cho CloudFront.", "reason": "CloudFront không dùng IAM user hay access key để lấy object từ origin; không có cơ chế gán IAM user cho distribution." },
+      { "key": "C", "textVi": "Viết một S3 bucket policy gán ID của CloudFront distribution làm Principal và gán S3 bucket đích làm Amazon Resource Name (ARN).", "reason": "Distribution ID không phải principal hợp lệ trong bucket policy; ngay cả với OAC, principal là service cloudfront.amazonaws.com còn ARN của distribution nằm trong điều kiện AWS:SourceArn." },
+      { "key": "D", "textVi": "Tạo một origin access identity (OAI). Gán OAI cho CloudFront distribution. Cấu hình quyền S3 bucket để chỉ OAI có quyền đọc.", "reason": "OAI là danh tính đặc biệt mà CloudFront dùng khi lấy object; bucket policy chỉ cho OAI quyền đọc nên file chỉ đến được người dùng qua CloudFront, còn truy cập trực tiếp URL S3 bị từ chối. (Hiện AWS khuyến nghị Origin Access Control — OAC — thay cho OAI.)" }
+    ],
+    "explanationVi": "Muốn file chỉ đi qua CloudFront, S3 bucket phải chỉ tin một danh tính của CloudFront và chặn truy cập công khai. OAI (hoặc OAC, bản kế nhiệm được khuyến nghị) cùng bucket policy chỉ cho danh tính đó quyền đọc làm được việc này. Bẫy: IAM user không gán được cho CloudFront, và distribution ID không dùng làm Principal.",
+    "keyHint": "\"serve all the files through CloudFront\" + \"not ... accessible through direct navigation to the S3 URL\" → OAI (nay là OAC) + bucket policy chỉ cho CloudFront đọc.",
+    "review": { "reason": "Chưa chắc chắn: OAI là cơ chế cũ (legacy); AWS hiện khuyến nghị Origin Access Control (OAC), trong đó bucket policy cấp quyền cho principal dịch vụ cloudfront.amazonaws.com kèm điều kiện AWS:SourceArn bằng ARN của distribution. Cách này gần với phương án viết bucket policy gắn với CloudFront distribution, dù phương án đó mô tả chưa đúng cú pháp (đặt distribution ID làm Principal). Phương án OAI vẫn chạy được và vẫn là đáp án tốt nhất theo cách viết của đề." }
+  },
+  {
+    "id": 73,
+    "stemVi": "Ban tổ chức một sự kiện toàn cầu muốn đưa các báo cáo hằng ngày lên mạng dưới dạng trang HTML tĩnh. Các trang dự kiến có hàng triệu lượt xem từ người dùng khắp thế giới. Các file được lưu trong một Amazon S3 bucket. Solutions architect được yêu cầu thiết kế một giải pháp hiệu quả.",
+    "promptVi": "Solutions architect nên thực hiện hành động nào để đạt được điều này?",
+    "options": [
+      { "key": "A", "textVi": "Tạo presigned URL cho các file.", "reason": "Presigned URL dùng để cấp quyền truy cập tạm thời cho object riêng tư; nó không cache nội dung hay giảm độ trễ cho người dùng toàn cầu, và mọi request vẫn đổ về một bucket." },
+      { "key": "B", "textVi": "Dùng cross-Region replication sang tất cả các Region.", "reason": "Sao chép sang mọi Region tốn nhiều chi phí lưu trữ và truyền dữ liệu, lại cần thêm cơ chế định tuyến người dùng tới bucket gần nhất; vẫn không cache tại edge như CDN." },
+      { "key": "C", "textVi": "Dùng tính năng geoproximity của Amazon Route 53.", "reason": "Geoproximity chỉ định tuyến DNS theo vị trí tới các tài nguyên có sẵn; với một bucket duy nhất nó không mang nội dung lại gần người dùng hay cache gì cả." },
+      { "key": "D", "textVi": "Dùng Amazon CloudFront với S3 bucket làm origin.", "reason": "CloudFront cache các trang HTML tĩnh tại edge location khắp thế giới, giảm độ trễ cho người dùng và giảm tải cho S3, chịu được hàng triệu lượt xem — hiệu quả và đơn giản." }
+    ],
+    "explanationVi": "Nội dung tĩnh, người xem toàn cầu, lượng truy cập lớn là kịch bản điển hình của CDN. CloudFront với S3 làm origin cache nội dung tại edge, vừa nhanh vừa giảm chi phí truyền dữ liệu từ S3. Bẫy: presigned URL là cơ chế cấp quyền, còn cross-Region replication và Route 53 không cache nội dung.",
+    "keyHint": "\"static HTML pages\" + \"millions of views from users around the world\" → Amazon CloudFront với S3 origin."
+  },
+  {
+    "id": 74,
+    "stemVi": "Một công ty muốn di chuyển một data center on-premises lên AWS. Data center host một SFTP server lưu dữ liệu trên một hệ thống file dựa trên NFS. Server chứa 200 GB dữ liệu cần được chuyển. Server phải được host trên một Amazon EC2 instance dùng một hệ thống file Amazon Elastic File System (Amazon EFS).",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp bước nào để tự động hóa tác vụ này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Khởi chạy EC2 instance trong cùng Availability Zone với hệ thống file EFS.", "reason": "EFS là dịch vụ theo Region với mount target ở nhiều AZ, instance ở AZ nào cũng mount được; việc chọn AZ không giúp tự động chuyển 200 GB dữ liệu." },
+      { "key": "B", "textVi": "Cài một AWS DataSync agent trong data center on-premises.", "reason": "DataSync agent đặt tại on-premises để đọc dữ liệu từ hệ thống file NFS cục bộ và truyền lên AWS một cách tự động, có mã hóa và kiểm tra toàn vẹn." },
+      { "key": "C", "textVi": "Tạo một Amazon Elastic Block Store (Amazon EBS) volume phụ trên EC2 instance để chứa dữ liệu.", "reason": "Đề yêu cầu dữ liệu nằm trên EFS; thêm EBS volume là sai đích và không tự động hóa việc chuyển dữ liệu." },
+      { "key": "D", "textVi": "Dùng thủ công lệnh copy của hệ điều hành để đẩy dữ liệu lên EC2 instance.", "reason": "Copy thủ công trái với yêu cầu tự động hóa, và không có sẵn cơ chế thử lại, kiểm tra toàn vẹn hay theo dõi tiến trình như DataSync." },
+      { "key": "E", "textVi": "Dùng AWS DataSync để tạo cấu hình location phù hợp cho SFTP server on-premises.", "reason": "DataSync task cần location nguồn (ở đây là location NFS trỏ tới hệ thống file của SFTP server on-premises) và location đích EFS; có location phù hợp thì task chạy tự động và có thể lên lịch." }
+    ],
+    "explanationVi": "Chuyển dữ liệu từ NFS on-premises lên EFS một cách tự động là việc của AWS DataSync. Cần hai bước: cài DataSync agent tại data center để truy cập nguồn, và tạo location cho nguồn on-premises (cùng location đích EFS) để task chạy. Bẫy: EBS sai đích, copy thủ công không phải tự động hóa, còn chọn AZ không liên quan tới việc chuyển dữ liệu.",
+    "keyHint": "\"NFS-based file system\" → EFS + \"automate this task\" → AWS DataSync agent on-premises + DataSync location."
+  },
+  {
+    "id": 75,
+    "stemVi": "Một công ty host một ứng dụng web dạng container trên một nhóm máy chủ on-premises xử lý các request đến. Số lượng request đang tăng nhanh. Các máy chủ on-premises không đáp ứng nổi lượng request tăng thêm. Công ty muốn chuyển ứng dụng lên AWS với ít thay đổi code nhất và ít công phát triển nhất.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Fargate trên Amazon Elastic Container Service (Amazon ECS) để chạy ứng dụng web dạng container với Service Auto Scaling. Dùng một Application Load Balancer để phân phối các request đến.", "reason": "Ứng dụng đã là container nên chạy trên ECS gần như không sửa code; Fargate là serverless nên không phải quản lý EC2, Service Auto Scaling tự tăng số task theo lượng request và ALB phân phối tải — ít công vận hành nhất." },
+      { "key": "B", "textVi": "Dùng hai Amazon EC2 instance để host ứng dụng web dạng container. Dùng một Application Load Balancer để phân phối các request đến.", "reason": "Hai instance cố định không tự mở rộng theo lượng request đang tăng nhanh, và công ty phải tự vá, quản lý EC2 cùng runtime container — nhiều công vận hành hơn." },
+      { "key": "C", "textVi": "Dùng AWS Lambda với code mới viết bằng một trong các ngôn ngữ được hỗ trợ. Tạo nhiều hàm Lambda để đáp ứng tải. Dùng Amazon API Gateway làm điểm vào cho các hàm Lambda.", "reason": "Phải viết code mới cho Lambda — trái với yêu cầu ít thay đổi code và ít công phát triển nhất." },
+      { "key": "D", "textVi": "Dùng một giải pháp điện toán hiệu năng cao (HPC) như AWS ParallelCluster để dựng một HPC cluster xử lý các request đến ở quy mô phù hợp.", "reason": "ParallelCluster dành cho các job tính toán batch/khoa học, không phải để phục vụ request web; dựng và vận hành cluster HPC tốn công và không hợp với ứng dụng web." }
+    ],
+    "explanationVi": "Ứng dụng đã container hóa, cần mở rộng nhanh, ít sửa code và ít công vận hành → ECS trên Fargate với Service Auto Scaling và ALB. Fargate loại bỏ việc quản lý máy chủ, còn container chạy nguyên như on-premises. Bẫy: EC2 phải tự vận hành và không tự mở rộng, Lambda đòi viết lại code, còn HPC không dành cho web.",
+    "keyHint": "\"containerized web application\" + \"minimum code changes\" + \"LEAST operational overhead\" → ECS trên AWS Fargate + Service Auto Scaling + ALB."
+  }
+]

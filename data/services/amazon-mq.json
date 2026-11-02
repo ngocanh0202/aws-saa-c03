@@ -1,0 +1,6 @@
+{
+  "id": "amazon-mq", "name": "Amazon MQ", "category": "Application Integration", "tier": "minor",
+  "overview": "Amazon MQ là managed message broker service tương thích với Apache ActiveMQ và RabbitMQ cho ứng dụng cần broker protocol/API hiện hữu.",
+  "examSignals": ["Lift-and-shift ứng dụng cần ActiveMQ/RabbitMQ protocol/API: Amazon MQ", "Cloud-native queue mới, đơn giản và scale managed: SQS/SNS thường phù hợp hơn"],
+  "compareWith": [{ "service": "Amazon SQS", "diff": "Amazon MQ duy trì broker compatibility/protocol; SQS là managed queue API-native, ít vận hành broker hơn." }]
+}

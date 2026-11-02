@@ -1,0 +1,20 @@
+{
+  "id": "lambda", "name": "AWS Lambda", "category": "Compute", "tier": "core",
+  "overview": "AWS Lambda chạy mã theo sự kiện mà không cần người dùng quản lý máy chủ; AWS cấp phát môi trường thực thi.",
+  "concepts": [
+    { "term": "Execution role", "desc": "IAM role cấp quyền cho mã Lambda truy cập dịch vụ AWS; áp dụng least privilege." },
+    { "term": "Event source", "desc": "Dịch vụ hoặc ứng dụng kích hoạt hàm; một số nguồn dùng polling/event source mapping." },
+    { "term": "Concurrency", "desc": "Số lần gọi đồng thời; giới hạn, throttling và reserved concurrency ảnh hưởng khả năng xử lý." }
+  ],
+  "howItWorks": "Lambda nhận invocation đồng bộ hoặc bất đồng bộ, khởi tạo môi trường thực thi khi cần, chạy handler trong giới hạn cấu hình rồi trả kết quả hoặc ghi log/ retry theo kiểu gọi.",
+  "useCases": ["Xử lý sự kiện S3, hàng đợi hoặc EventBridge", "API backend theo yêu cầu", "Tự động hóa tác vụ ngắn hạn"],
+  "pricing": "Phụ thuộc số request, thời lượng, kiến trúc và bộ nhớ; dịch vụ đi kèm như NAT Gateway, CloudWatch Logs và data transfer có chi phí riêng.",
+  "examSignals": ["Không muốn quản lý máy chủ, workload hướng sự kiện", "Tác vụ ngắn, co giãn theo request", "Xử lý hàng đợi cần retry/DLQ và kiểm soát concurrency"],
+  "compareWith": [{ "service": "Amazon EC2", "diff": "Lambda trừu tượng hóa máy chủ và chạy theo invocation; EC2 giữ quyền quản lý OS và tiến trình dài hạn." }, { "service": "AWS Fargate", "diff": "Fargate chạy container/task; Lambda tối ưu cho hàm được kích hoạt theo sự kiện." }],
+  "facts": ["Execution role là quyền của hàm; resource-based policy có thể cho principal/dịch vụ quyền gọi hàm.", "Đặt Lambda trong VPC không tự động cấp Internet access.", "Kiểu gọi quyết định cách trả lỗi và retry."],
+  "practice": {
+    "steps": ["Tạo hàm thử với runtime có sẵn và mã vô hại trả về thông điệp tĩnh.", "Dùng execution role tối thiểu, gọi bằng test event và xem log đã phát sinh.", "Không thêm VPC, quyền rộng hay trigger công khai nếu bài thử không cần."],
+    "freeTier": "Request và compute có thể được ưu đãi theo chương trình hiện hành; log, mạng, NAT và dịch vụ tích hợp có thể tính phí riêng. Kiểm tra điều kiện tài khoản trước khi chạy.",
+    "cleanup": ["Xóa function, phiên bản/alias và event source mapping thử.", "Xóa log group nếu không cần lưu.", "Xóa execution role/policy chỉ tạo riêng sau khi xác nhận không còn hàm dùng."]
+  }
+}

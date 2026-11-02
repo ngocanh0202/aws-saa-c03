@@ -1,0 +1,6 @@
+{
+  "id": "app2container", "name": "AWS App2Container", "category": "Migration and Transfer", "tier": "minor",
+  "overview": "AWS App2Container từng hỗ trợ containerize ứng dụng Java/.NET, nhưng không còn mở cho khách hàng mới từ 07/11/2025. Với kế hoạch mới, hãy đánh giá AWS Transform và các công cụ migration hiện hành.",
+  "examSignals": ["Câu hỏi cũ có thể nêu App2Container cho containerization; không xem đây là lựa chọn signup mới", "Run/manage destination containers: ECS or EKS"],
+  "compareWith": [{ "service": "AWS Application Migration Service", "diff": "App2Container targets application containerization; MGN rehosts server workloads with replication." }]
+}

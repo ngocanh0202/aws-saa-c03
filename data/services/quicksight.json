@@ -1,0 +1,6 @@
+{
+  "id": "quicksight", "name": "Amazon QuickSight", "category": "Analytics", "tier": "minor",
+  "overview": "Amazon QuickSight is a managed BI service to build dashboards, visualizations and analytics from connected data sources.",
+  "examSignals": ["Managed business intelligence dashboards and visualizations: QuickSight", "Enterprise data warehouse SQL engine: Redshift", "Query files in S3 without warehouse: Athena"],
+  "compareWith": [{ "service": "Amazon Redshift", "diff": "QuickSight visualizes/analyzes data for BI users; Redshift stores and executes data warehouse queries." }]
+}

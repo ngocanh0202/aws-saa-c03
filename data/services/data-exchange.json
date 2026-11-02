@@ -1,0 +1,6 @@
+{
+  "id": "data-exchange", "name": "AWS Data Exchange", "category": "Analytics", "tier": "minor",
+  "overview": "AWS Data Exchange giúp tìm, subscribe và sử dụng third-party datasets qua AWS marketplace/data delivery mechanisms.",
+  "examSignals": ["Discover/subscribe to third-party commercial datasets: AWS Data Exchange", "Build own data lake/catalog and ETL: S3 with Glue"],
+  "compareWith": [{ "service": "AWS Marketplace", "diff": "Data Exchange tập trung tìm/đăng ký data products; Marketplace rộng hơn gồm software và services listings." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "acm", "name": "AWS Certificate Manager", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS Certificate Manager cấp và quản lý TLS certificates để bảo vệ các dịch vụ AWS được tích hợp.",
+  "examSignals": ["Cấp/renew TLS certificate cho ALB, CloudFront hoặc API Gateway được hỗ trợ: ACM", "Private PKI nội bộ cần certificate authority: ACM Private CA"],
+  "compareWith": [{ "service": "AWS Private Certificate Authority", "diff": "ACM cấp/quản lý certificates tích hợp; Private CA tạo và vận hành private certificate authority với chi phí CA riêng." }]
+}

@@ -1,0 +1,6 @@
+{
+  "id": "cognito", "name": "Amazon Cognito", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "Amazon Cognito thêm sign-up/sign-in, user directories và identity federation cho web/mobile application users.",
+  "examSignals": ["App end users authenticate/federate with social or enterprise identity: Cognito User Pools", "Temporary AWS credentials for federated app access: Cognito Identity Pools"],
+  "compareWith": [{ "service": "AWS IAM Identity Center", "diff": "Cognito quản lý identity cho ứng dụng customers/end users; Identity Center quản lý workforce access vào AWS accounts/apps." }]
+}

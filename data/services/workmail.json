@@ -1,0 +1,6 @@
+{
+  "id": "workmail", "name": "Amazon WorkMail", "category": "Application Integration", "tier": "minor",
+  "overview": "Amazon WorkMail đã ngừng nhận khách hàng mới từ 30/04/2026 và sẽ kết thúc hỗ trợ 31/03/2027. Tài khoản hiện hữu có thể tiếp tục dùng đến ngày kết thúc; không chọn cho triển khai mới.",
+  "examSignals": ["Câu hỏi cũ về mailbox/calendar có thể nêu WorkMail; kiểm tra giới hạn khách hàng mới và ngày kết thúc hỗ trợ", "Application transactional email delivery: SES"],
+  "compareWith": [{ "service": "Amazon SES", "diff": "WorkMail provides end-user mailbox/calendar service; SES sends/receives application email at scale." }]
+}

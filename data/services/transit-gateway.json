@@ -1,0 +1,6 @@
+{
+  "id": "transit-gateway", "name": "AWS Transit Gateway", "category": "Networking and Content Delivery", "tier": "minor",
+  "overview": "AWS Transit Gateway is a regional network hub connecting VPCs and on-premises networks through attachments and route tables.",
+  "examSignals": ["Hub-and-spoke routing among many VPCs/VPN/DX: Transit Gateway", "Simple one-to-one VPC peering: VPC Peering may be sufficient", "Share supported networking resources across accounts: RAM"],
+  "compareWith": [{ "service": "AWS Direct Connect", "diff": "Transit Gateway routes traffic among network attachments; Direct Connect supplies dedicated on-premises connectivity into AWS." }]
+}

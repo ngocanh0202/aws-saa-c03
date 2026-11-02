@@ -1,0 +1,12 @@
+{
+  "id": "api-gateway", "name": "Amazon API Gateway", "category": "Networking and Content Delivery", "tier": "core",
+  "overview": "Amazon API Gateway tạo và quản lý REST, HTTP hoặc WebSocket APIs, tích hợp backend và áp dụng xác thực, throttling cùng monitoring.",
+  "concepts": [{ "term": "API type", "desc": "REST API, HTTP API và WebSocket API có tính năng, giao thức và lựa chọn chi phí khác nhau." }, { "term": "Integration", "desc": "Định tuyến request tới Lambda, HTTP backend, AWS service hoặc VPC link tùy loại API." }, { "term": "Stage/throttling", "desc": "Stage là môi trường triển khai; throttling và quota giúp bảo vệ backend." }],
+  "howItWorks": "Client gọi endpoint; API Gateway xác thực/ủy quyền, áp dụng route và mapping rồi gọi integration backend, trả response và ghi log/metrics theo cấu hình.",
+  "useCases": ["Expose HTTP API tới Lambda hoặc dịch vụ backend", "Quản lý API keys, throttling và stages", "WebSocket cho ứng dụng giao tiếp hai chiều"],
+  "pricing": "Giá phụ thuộc loại API, số request, data transfer, cache và các tính năng; backend như Lambda có giá riêng.",
+  "examSignals": ["Tạo REST endpoint serverless trước Lambda: API Gateway", "API yêu cầu giao tiếp hai chiều: WebSocket API", "Cần API managed với tính năng đầy đủ: REST API; tối ưu đơn giản/chi phí: cân nhắc HTTP API"],
+  "compareWith": [{ "service": "Application Load Balancer", "diff": "API Gateway cung cấp quản lý API/authorization/throttling; ALB cân bằng HTTP traffic tới targets." }, { "service": "AWS AppSync", "diff": "API Gateway phục vụ REST/HTTP/WebSocket; AppSync là dịch vụ GraphQL và đồng bộ dữ liệu client." }],
+  "facts": ["API key không nên được xem là cơ chế xác thực người dùng mạnh.", "Private API/VPC Link giúp kết nối private tới backend theo topology hỗ trợ.", "Throttling không thay cho kiểm soát năng lực và bảo vệ backend."],
+  "practice": { "steps": ["Tạo HTTP API thử với route đơn giản tới Lambda trả response tĩnh.", "Bật logging tối thiểu và thử request hợp lệ/sai; không đặt secrets trong URL hoặc logs.", "Không công khai backend thật; áp dụng authorization nếu expose endpoint ra Internet."], "freeTier": "API request, transfer, cache và Lambda/backend có thể tính phí; kiểm tra giá của từng loại API cùng Region trước khi thử.", "cleanup": ["Xóa stage/API thử và custom domain mapping nếu tạo.", "Xóa Lambda integration thử khi không còn dùng.", "Xóa CloudWatch log group/API key/usage plan chỉ tạo cho lab."] }
+}

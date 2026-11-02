@@ -1,0 +1,758 @@
+[
+  {
+    "id": 326,
+    "stemVi": "Một công ty cần kết nối nhiều VPC trong Region us-east-1, trải trên hàng trăm AWS account. Nhóm mạng của công ty có AWS account riêng để quản lý mạng trên cloud.",
+    "promptVi": "Giải pháp hiệu quả vận hành nhất (MOST operationally efficient) để kết nối các VPC là gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thiết lập VPC peering connection giữa từng cặp VPC. Cập nhật route table của từng subnet liên quan.",
+        "reason": "VPC peering không bắc cầu (non-transitive) nên phải tạo kết nối full-mesh; với hàng trăm VPC là hàng nghìn peering và route cần quản lý — rất tốn công."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình một NAT gateway và một internet gateway trong mỗi VPC để kết nối các VPC qua internet.",
+        "reason": "Cho traffic nội bộ đi qua internet vừa kém an toàn vừa tốn phí NAT và data transfer, lại không phải kết nối riêng giữa các VPC."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS Transit Gateway trong AWS account của nhóm mạng. Cấu hình static route từ mỗi VPC.",
+        "reason": "Transit Gateway là router trung tâm theo mô hình hub-and-spoke do AWS quản lý; đặt ở account nhóm mạng và share qua AWS RAM, mỗi VPC chỉ cần một attachment — dễ quản lý nhất với hàng trăm VPC."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai VPN gateway trong mỗi VPC. Tạo một transit VPC trong AWS account của nhóm mạng để kết nối tới từng VPC.",
+        "reason": "Transit VPC dựa trên các appliance VPN trên EC2 do công ty tự vận hành, giới hạn băng thông và cần duy trì hàng trăm tunnel — kiểu cũ đã được Transit Gateway thay thế."
+      }
+    ],
+    "explanationVi": "Kết nối hàng trăm VPC ở nhiều account cần mô hình hub-and-spoke được quản lý tập trung. Transit Gateway đặt ở account nhóm mạng, share cho các account khác, giảm số kết nối từ n² xuống n. Bẫy: VPC peering hợp với vài VPC nhưng không mở rộng được; transit VPC là giải pháp tự quản lý đời cũ.",
+    "keyHint": "\"connect several VPCs\" + \"hundreds of AWS accounts\" + \"MOST operationally efficient\" → AWS Transit Gateway."
+  },
+  {
+    "id": 327,
+    "stemVi": "Một công ty lưu dữ liệu mật trong một database Amazon Aurora PostgreSQL ở Region ap-southeast-3. Database được mã hóa bằng một AWS Key Management Service (AWS KMS) customer managed key. Công ty vừa bị mua lại và phải chia sẻ an toàn một bản backup của database với AWS account của công ty mua lại, cũng ở ap-southeast-3.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một database snapshot. Chép snapshot sang một snapshot mới không mã hóa. Chia sẻ snapshot mới với AWS account của công ty mua lại.",
+        "reason": "Không thể chép snapshot đã mã hóa thành bản không mã hóa; kể cả làm được thì dữ liệu mật bị lộ ra không mã hóa, trái yêu cầu chia sẻ an toàn."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một database snapshot. Thêm AWS account của công ty mua lại vào KMS key policy. Chia sẻ snapshot với AWS account của công ty mua lại.",
+        "reason": "Snapshot mã hóa bằng customer managed key chia sẻ được sang account khác khi account đó được cấp quyền dùng khóa trong key policy; dữ liệu luôn được mã hóa trong suốt quá trình — an toàn và đơn giản."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một database snapshot dùng một AWS managed KMS key khác. Thêm AWS account của công ty mua lại vào KMS key alias. Chia sẻ snapshot với AWS account của công ty mua lại.",
+        "reason": "Snapshot mã hóa bằng AWS managed key không chia sẻ được sang account khác vì không sửa được key policy của khóa đó; alias chỉ là tên gọi, không dùng để cấp quyền."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một database snapshot. Tải database snapshot về. Upload database snapshot lên một Amazon S3 bucket. Cập nhật S3 bucket policy cho phép AWS account của công ty mua lại truy cập.",
+        "reason": "Không tải trực tiếp snapshot Aurora về được; đưa dữ liệu ra ngoài rồi tải lên S3 vừa phức tạp vừa tăng rủi ro lộ dữ liệu."
+      }
+    ],
+    "explanationVi": "Chia sẻ snapshot mã hóa sang account khác cần hai bước: cấp quyền dùng customer managed key qua key policy, rồi share snapshot. Dữ liệu không bao giờ rời trạng thái mã hóa. Bẫy: snapshot mã hóa bằng AWS managed key không share được; alias không phải nơi cấp quyền.",
+    "keyHint": "\"encrypted with ... customer managed key\" + \"share a backup ... with the acquiring company's AWS account\" → thêm account vào KMS key policy rồi share snapshot."
+  },
+  {
+    "id": 328,
+    "stemVi": "Một công ty cần lưu giữ log AWS CloudTrail trong 3 năm. Công ty bắt buộc bật CloudTrail trên một nhóm AWS account bằng AWS Organizations từ account cha. S3 bucket đích của CloudTrail được bật S3 Versioning. Một S3 Lifecycle policy đã được thiết lập để xóa các object hiện tại (current) sau 3 năm.\n\nSau năm thứ tư sử dụng S3 bucket, metric của S3 bucket cho thấy số object vẫn tiếp tục tăng. Tuy nhiên, số log CloudTrail mới được gửi vào S3 bucket vẫn giữ ổn định.",
+    "promptVi": "Giải pháp nào xóa các object cũ hơn 3 năm một cách tiết kiệm chi phí nhất (MOST cost-effective)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình trail CloudTrail tập trung của organization để hết hạn (expire) object sau 3 năm.",
+        "reason": "CloudTrail chỉ gửi log vào bucket, không có tính năng quản lý vòng đời hay xóa object trong S3."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình S3 Lifecycle policy để xóa cả các phiên bản trước (previous version) lẫn phiên bản hiện tại.",
+        "reason": "Khi bật versioning, việc expire phiên bản hiện tại chỉ tạo delete marker và biến object thành noncurrent version vẫn còn chiếm chỗ; thêm rule NoncurrentVersionExpiration (và dọn delete marker) sẽ thực sự xóa dữ liệu cũ, tự động và không tốn thêm chi phí."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS Lambda function để liệt kê và xóa các object trong Amazon S3 cũ hơn 3 năm.",
+        "reason": "Phải tự viết code liệt kê và xóa hàng triệu object, trả tiền chạy Lambda và request LIST/DELETE, trong khi S3 Lifecycle làm việc này miễn phí."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình account cha làm chủ sở hữu của mọi object được gửi vào S3 bucket.",
+        "reason": "Quyền sở hữu object không liên quan tới việc các noncurrent version còn tồn tại; nó không xóa được object nào."
+      }
+    ],
+    "explanationVi": "Số object tăng dù log mới ổn định là dấu hiệu của versioning: rule expire chỉ biến phiên bản hiện tại thành noncurrent kèm delete marker, dữ liệu cũ vẫn nằm đó. Cách sửa rẻ nhất là bổ sung rule lifecycle để xóa noncurrent version. Bẫy: CloudTrail không quản lý vòng đời file; Lambda tự viết tốn tiền và công.",
+    "keyHint": "\"S3 Versioning enabled\" + \"delete current objects\" nhưng số object vẫn tăng → thêm rule S3 Lifecycle xóa noncurrent version."
+  },
+  {
+    "id": 329,
+    "stemVi": "Một công ty cung cấp dịch vụ trực tuyến để đăng tải video và chuyển mã (transcode) để dùng được trên mọi nền tảng di động. Kiến trúc ứng dụng dùng Amazon Elastic File System (Amazon EFS) Standard để thu thập và lưu video, nhờ đó nhiều Amazon EC2 instance Linux có thể truy cập nội dung video để xử lý. Khi dịch vụ ngày càng phổ biến, chi phí lưu trữ đã trở nên quá đắt.",
+    "promptVi": "Giải pháp lưu trữ nào tiết kiệm chi phí nhất (MOST cost-effective)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Storage Gateway cho file để lưu và xử lý nội dung video.",
+        "reason": "Storage Gateway là dịch vụ hybrid để nối hệ thống on-premises với AWS; ứng dụng đã chạy hoàn toàn trên AWS nên chỉ thêm một lớp và chi phí không cần thiết."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Storage Gateway cho volume để lưu và xử lý nội dung video.",
+        "reason": "Volume Gateway cung cấp block storage iSCSI cho máy chủ on-premises, không phù hợp với EC2 trên AWS và không làm giảm chi phí lưu trữ."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon EFS để lưu nội dung video. Sau khi xử lý xong, chuyển file sang Amazon Elastic Block Store (Amazon EBS).",
+        "reason": "Vẫn lưu video trên EFS Standard — phần đang đắt — và EBS cũng có giá mỗi GB cao hơn S3, nên không giải quyết bài toán chi phí."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon S3 để lưu nội dung video. Chuyển tạm file sang một Amazon EBS volume gắn với server để xử lý.",
+        "reason": "S3 rẻ hơn EFS Standard nhiều lần mỗi GB và rất bền; chỉ chép tạm file cần xử lý sang EBS rồi đưa kết quả về S3, nên dung lượng lưu trữ đắt tiền luôn ở mức nhỏ."
+      }
+    ],
+    "explanationVi": "Chi phí lưu trữ là vấn đề chính, nên phải chuyển kho video sang lớp lưu trữ rẻ nhất là S3. Phần xử lý chỉ cần chỗ tạm trên EBS gắn với instance. Bẫy: Storage Gateway dành cho môi trường hybrid; giữ EFS hay chuyển sang EBS để lưu lâu dài vẫn đắt.",
+    "keyHint": "\"storage costs have become too expensive\" với kho video lớn → lưu trên Amazon S3, chỉ dùng EBS tạm khi xử lý."
+  },
+  {
+    "id": 330,
+    "stemVi": "Một công ty đang phát triển một ứng dụng game di động trong một AWS Region. Ứng dụng chạy trên nhiều Amazon EC2 instance trong một Auto Scaling group. Công ty lưu dữ liệu ứng dụng trong Amazon DynamoDB. Ứng dụng giao tiếp bằng traffic TCP và UDP giữa người dùng và server. Ứng dụng sẽ được dùng trên toàn cầu. Công ty muốn bảo đảm độ trễ thấp nhất có thể cho mọi người dùng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Global Accelerator để tạo một accelerator. Tạo một Application Load Balancer (ALB) phía sau một accelerator endpoint dùng tích hợp Global Accelerator và lắng nghe trên các cổng TCP và UDP. Cập nhật Auto Scaling group để đăng ký instance vào ALB.",
+        "reason": "ALB chỉ hỗ trợ HTTP/HTTPS (tầng 7), không lắng nghe được UDP, nên không phục vụ được traffic game TCP/UDP."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Global Accelerator để tạo một accelerator. Tạo một Network Load Balancer (NLB) phía sau một accelerator endpoint dùng tích hợp Global Accelerator và lắng nghe trên các cổng TCP và UDP. Cập nhật Auto Scaling group để đăng ký instance vào NLB.",
+        "reason": "Global Accelerator đưa người dùng vào mạng toàn cầu của AWS tại edge gần nhất qua anycast IP, giảm độ trễ cho cả TCP lẫn UDP; NLB ở tầng 4 hỗ trợ cả TCP và UDP và phân phối tới Auto Scaling group."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon CloudFront content delivery network (CDN) endpoint. Tạo một Network Load Balancer (NLB) phía sau endpoint và lắng nghe trên các cổng TCP và UDP. Cập nhật Auto Scaling group để đăng ký instance vào NLB. Cập nhật CloudFront dùng NLB làm origin.",
+        "reason": "CloudFront chỉ phục vụ HTTP/HTTPS (và WebSocket), không chuyển tiếp được traffic TCP/UDP tùy ý của game."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon CloudFront content delivery network (CDN) endpoint. Tạo một Application Load Balancer (ALB) phía sau endpoint và lắng nghe trên các cổng TCP và UDP. Cập nhật Auto Scaling group để đăng ký instance vào ALB. Cập nhật CloudFront dùng ALB làm origin.",
+        "reason": "Cả CloudFront lẫn ALB đều chỉ làm việc với HTTP/HTTPS; ALB không lắng nghe UDP nên phương án không khả thi."
+      }
+    ],
+    "explanationVi": "Traffic TCP và UDP cho người dùng toàn cầu → Global Accelerator (tăng tốc mọi giao thức tầng 4) kết hợp NLB (load balancer duy nhất hỗ trợ UDP trong số các lựa chọn). Bẫy: CloudFront là CDN cho HTTP/HTTPS; ALB chỉ xử lý HTTP/HTTPS.",
+    "keyHint": "\"TCP traffic and UDP traffic\" + \"used globally\" + \"lowest possible latency\" → AWS Global Accelerator + Network Load Balancer."
+  },
+  {
+    "id": 331,
+    "stemVi": "Một công ty cần lưu hồ sơ kế toán trong Amazon S3. Hồ sơ phải truy cập được ngay lập tức trong 1 năm, sau đó phải được lưu trữ lâu dài (archive) thêm 9 năm. Không ai trong công ty, kể cả người dùng quản trị và root user, được phép xóa hồ sơ trong suốt thời gian 10 năm. Hồ sơ phải được lưu với khả năng phục hồi (resiliency) cao nhất.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lưu hồ sơ trong S3 Glacier trong toàn bộ 10 năm. Dùng một access control policy để từ chối xóa hồ sơ trong 10 năm.",
+        "reason": "Lưu Glacier ngay từ đầu thì năm đầu không truy cập tức thì được; access control policy có thể bị quản trị viên hoặc root sửa nên không chặn được việc xóa."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu hồ sơ bằng S3 Intelligent-Tiering. Dùng một IAM policy để từ chối xóa hồ sơ. Sau 10 năm, đổi IAM policy để cho phép xóa.",
+        "reason": "IAM policy không áp dụng lên root user và quản trị viên có thể tự sửa policy, nên không bảo đảm không ai xóa được; Intelligent-Tiering cũng không tự chuyển vào lớp archive theo đúng mốc 1 năm."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng một S3 Lifecycle policy để chuyển hồ sơ từ S3 Standard sang S3 Glacier Deep Archive sau 1 năm. Dùng S3 Object Lock ở compliance mode trong thời hạn 10 năm.",
+        "reason": "S3 Standard cho truy cập ngay trong năm đầu, lifecycle chuyển sang Glacier Deep Archive để lưu trữ rẻ 9 năm còn lại; Object Lock compliance mode không cho ai kể cả root xóa trong 10 năm; cả hai lớp đều lưu dữ liệu trên nhiều AZ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng một S3 Lifecycle policy để chuyển hồ sơ từ S3 Standard sang S3 One Zone-Infrequent Access (S3 One Zone-IA) sau 1 năm. Dùng S3 Object Lock ở governance mode trong thời hạn 10 năm.",
+        "reason": "One Zone-IA chỉ lưu trong một AZ, không đạt resiliency cao nhất; governance mode cho phép user có quyền đặc biệt gỡ lock và xóa."
+      }
+    ],
+    "explanationVi": "Bốn yêu cầu: truy cập ngay năm đầu, archive 9 năm, không ai xóa được kể cả root, và resiliency cao nhất. Lifecycle Standard → Glacier Deep Archive cùng Object Lock compliance mode thỏa tất cả. Bẫy: IAM policy hay governance mode đều có thể bị người có quyền vượt qua; One Zone-IA chỉ ở một AZ.",
+    "keyHint": "\"including administrative users and root users\" không được xóa + \"maximum resiliency\" → S3 Object Lock compliance mode + lifecycle sang Glacier Deep Archive."
+  },
+  {
+    "id": 332,
+    "stemVi": "Một công ty dùng Amazon EC2 instance và AWS Lambda function để chạy ứng dụng. Công ty có các VPC với public subnet và private subnet trong AWS account. Các EC2 instance chạy trong một private subnet thuộc một trong các VPC. Các Lambda function cần truy cập mạng trực tiếp tới các EC2 instance để ứng dụng hoạt động.\n\nỨng dụng sẽ chạy ít nhất 1 năm. Công ty dự kiến số Lambda function ứng dụng dùng sẽ tăng trong thời gian đó. Công ty muốn tiết kiệm tối đa trên mọi tài nguyên của ứng dụng và giữ độ trễ mạng giữa các dịch vụ ở mức thấp.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mua một EC2 Instance Savings Plan. Tối ưu thời gian chạy, mức dùng bộ nhớ và số lần gọi của các Lambda function. Kết nối các Lambda function vào private subnet chứa các EC2 instance.",
+        "reason": "EC2 Instance Savings Plan chỉ giảm giá cho EC2, không áp dụng cho Lambda nên không tiết kiệm trên mọi tài nguyên; cũng bỏ qua tối ưu lượng dữ liệu truyền."
+      },
+      {
+        "key": "B",
+        "textVi": "Mua một EC2 Instance Savings Plan. Tối ưu thời gian chạy, mức dùng bộ nhớ, số lần gọi của các Lambda function và lượng dữ liệu được truyền. Kết nối các Lambda function vào một public subnet trong cùng VPC chứa các EC2 instance.",
+        "reason": "Savings Plan này không áp dụng cho Lambda; gắn Lambda vào public subnet cũng không cho nó public IP hay lợi ích gì, cách chuẩn là gắn vào private subnet."
+      },
+      {
+        "key": "C",
+        "textVi": "Mua một Compute Savings Plan. Tối ưu thời gian chạy, mức dùng bộ nhớ, số lần gọi của các Lambda function và lượng dữ liệu được truyền. Kết nối các Lambda function vào private subnet chứa các EC2 instance.",
+        "reason": "Compute Savings Plan giảm giá cho cả EC2, Fargate và Lambda nên tiết kiệm trên mọi tài nguyên, kể cả khi số Lambda tăng; gắn Lambda vào chính private subnet của EC2 cho truy cập trực tiếp với độ trễ thấp."
+      },
+      {
+        "key": "D",
+        "textVi": "Mua một Compute Savings Plan. Tối ưu thời gian chạy, mức dùng bộ nhớ, số lần gọi của các Lambda function và lượng dữ liệu được truyền. Giữ các Lambda function trong VPC của dịch vụ Lambda.",
+        "reason": "Lambda không gắn vào VPC của công ty thì không truy cập được IP private của EC2 trong private subnet, vi phạm yêu cầu truy cập mạng trực tiếp."
+      }
+    ],
+    "explanationVi": "Muốn tiết kiệm cho cả EC2 lẫn Lambda thì chỉ Compute Savings Plan đáp ứng; muốn Lambda nói chuyện trực tiếp với EC2 trong private subnet thì phải gắn Lambda vào VPC, đúng private subnet đó. Bẫy: EC2 Instance Savings Plan không áp dụng cho Lambda; để Lambda ngoài VPC thì không tới được tài nguyên private.",
+    "keyHint": "\"maximize its savings on all application resources\" (EC2 + Lambda) + \"direct network access\" → Compute Savings Plan + Lambda gắn vào private subnet."
+  },
+  {
+    "id": 333,
+    "stemVi": "Một công ty telemarketing đang thiết kế chức năng tổng đài chăm sóc khách hàng trên AWS. Công ty cần giải pháp nhận diện được nhiều người nói (multiple speaker recognition) và tạo ra các file transcript (bản ghi lời thoại). Công ty muốn truy vấn các file transcript để phân tích các xu hướng kinh doanh. Các file transcript phải được lưu trữ 7 năm cho mục đích kiểm toán.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon Rekognition để nhận diện nhiều người nói. Lưu các file transcript trong Amazon S3. Dùng các mô hình machine learning để phân tích file transcript.",
+        "reason": "Rekognition phân tích ảnh và video, không chuyển giọng nói thành văn bản; tự xây mô hình machine learning để phân tích transcript cũng tốn công không cần thiết."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon Transcribe để nhận diện nhiều người nói. Dùng Amazon Athena để phân tích file transcript.",
+        "reason": "Transcribe chuyển giọng nói thành văn bản và có speaker diarization phân biệt từng người nói, xuất transcript ra S3 để lưu lâu dài; Athena truy vấn SQL trực tiếp trên các file đó để phân tích xu hướng."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Translate để nhận diện nhiều người nói. Lưu các file transcript trong Amazon Redshift. Dùng truy vấn SQL để phân tích file transcript.",
+        "reason": "Translate chỉ dịch văn bản giữa các ngôn ngữ, không nhận diện người nói hay tạo transcript; lưu file 7 năm trong Redshift cũng đắt hơn S3."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon Rekognition để nhận diện nhiều người nói. Lưu các file transcript trong Amazon S3. Dùng Amazon Textract để phân tích file transcript.",
+        "reason": "Rekognition không xử lý âm thanh; Textract trích xuất chữ từ ảnh/tài liệu scan, không phải công cụ truy vấn phân tích transcript."
+      }
+    ],
+    "explanationVi": "Giọng nói → văn bản có phân biệt người nói là việc của Amazon Transcribe (speaker diarization). Transcript lưu trên S3 (rẻ, bền cho 7 năm) và Athena truy vấn trực tiếp bằng SQL. Bẫy: Rekognition (ảnh/video), Translate (dịch) và Textract (tài liệu) có tên dễ gây nhầm nhưng không xử lý giọng nói.",
+    "keyHint": "\"multiple speaker recognition\" + \"generates transcript files\" + \"query\" → Amazon Transcribe (speaker diarization) + Athena trên S3."
+  },
+  {
+    "id": 334,
+    "stemVi": "Một ứng dụng chạy trên các Amazon EC2 instance cần truy cập một Amazon S3 bucket. Traffic không được đi qua internet.",
+    "promptVi": "Solutions architect nên cấu hình truy cập như thế nào để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một private hosted zone bằng Amazon Route 53.",
+        "reason": "Private hosted zone chỉ phân giải tên DNS trong VPC, không thay đổi đường đi của traffic tới S3."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một gateway VPC endpoint cho Amazon S3 trong VPC.",
+        "reason": "Gateway endpoint cho S3 thêm route trong route table để traffic tới S3 đi qua mạng riêng của AWS, không qua internet, và không tính phí."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình các EC2 instance dùng một NAT gateway để truy cập S3 bucket.",
+        "reason": "NAT gateway đưa traffic ra endpoint public của S3 qua internet gateway, trái yêu cầu, lại tốn phí xử lý dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Thiết lập một kết nối AWS Site-to-Site VPN giữa VPC và S3 bucket.",
+        "reason": "Site-to-Site VPN nối VPC với mạng on-premises; không thể tạo VPN tới một S3 bucket."
+      }
+    ],
+    "explanationVi": "EC2 truy cập S3 mà không qua internet → VPC endpoint cho S3; gateway endpoint là cách đơn giản và miễn phí. Bẫy: NAT gateway vẫn đi ra internet; VPN không có đầu cuối ở S3; Route 53 chỉ lo DNS.",
+    "keyHint": "\"access an Amazon S3 bucket\" + \"must not traverse the internet\" → gateway VPC endpoint cho S3."
+  },
+  {
+    "id": 335,
+    "stemVi": "Một công ty muốn đưa chi phí sử dụng AWS hiện tại vào dashboard chi phí vận hành của mình. Solutions architect cần đề xuất giải pháp cho phép công ty truy cập chi phí sử dụng bằng lập trình (programmatically). Công ty phải truy cập được dữ liệu chi phí của năm hiện tại và dự báo chi phí cho 12 tháng tới.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Truy cập dữ liệu liên quan tới chi phí sử dụng bằng AWS Cost Explorer API có phân trang (pagination).",
+        "reason": "Cost Explorer API cho lấy dữ liệu chi phí lịch sử (GetCostAndUsage) và dự báo (GetCostForecast) bằng lập trình, đưa thẳng vào dashboard; phân trang xử lý tập kết quả lớn — không cần bước thủ công."
+      },
+      {
+        "key": "B",
+        "textVi": "Truy cập dữ liệu liên quan tới chi phí sử dụng bằng các file báo cáo .csv tải về từ AWS Cost Explorer.",
+        "reason": "Tải file CSV là thao tác thủ công trên console, không phải truy cập bằng lập trình, và phải lặp lại mỗi lần cập nhật dashboard."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình AWS Budgets action để gửi dữ liệu chi phí sử dụng cho công ty qua FTP.",
+        "reason": "Budgets action dùng để áp IAM/SCP policy hoặc dừng instance khi vượt ngân sách; nó không gửi dữ liệu chi phí qua FTP."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo các AWS Budgets report cho dữ liệu chi phí sử dụng. Gửi dữ liệu cho công ty qua SMTP.",
+        "reason": "Budgets report là email tóm tắt ngân sách định kỳ; dashboard không đọc dữ liệu qua email được, và không có dự báo 12 tháng đầy đủ để tích hợp."
+      }
+    ],
+    "explanationVi": "Từ khóa là \"programmatically\" cùng dữ liệu hiện tại và dự báo. Cost Explorer API cung cấp cả hai qua API, tích hợp trực tiếp với dashboard. Bẫy: CSV tải tay không phải lập trình; AWS Budgets dành cho cảnh báo và hành động theo ngân sách, không phải nguồn dữ liệu cho dashboard.",
+    "keyHint": "\"access to its usage cost programmatically\" + \"forecast costs for the next 12 months\" → AWS Cost Explorer API."
+  },
+  {
+    "id": 336,
+    "stemVi": "Một công ty dùng hệ thống xử lý thanh toán yêu cầu các message của một payment ID cụ thể phải được nhận đúng theo thứ tự đã gửi. Nếu không, các khoản thanh toán có thể bị xử lý sai.",
+    "promptVi": "Solutions architect nên thực hiện những hành động nào để đáp ứng yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Ghi các message vào một bảng Amazon DynamoDB với payment ID làm partition key.",
+        "reason": "DynamoDB là cơ sở dữ liệu key-value, không phải hàng đợi hay luồng message; nó không có cơ chế giao message cho consumer theo đúng thứ tự đã gửi."
+      },
+      {
+        "key": "B",
+        "textVi": "Ghi các message vào một Amazon Kinesis data stream với payment ID làm partition key.",
+        "reason": "Kinesis Data Streams giữ thứ tự record trong mỗi shard; dùng payment ID làm partition key thì mọi message của cùng một payment vào cùng một shard và được đọc đúng thứ tự đã ghi."
+      },
+      {
+        "key": "C",
+        "textVi": "Ghi các message vào một Amazon ElastiCache for Memcached cluster với payment ID làm key.",
+        "reason": "Memcached là cache key-value trong bộ nhớ, không bền và không có khái niệm thứ tự message; ghi cùng key sẽ đè giá trị cũ."
+      },
+      {
+        "key": "D",
+        "textVi": "Ghi các message vào một Amazon Simple Queue Service (Amazon SQS) queue. Đặt message attribute dùng payment ID.",
+        "reason": "SQS standard queue chỉ giao theo kiểu best-effort ordering, có thể đổi thứ tự và giao trùng; message attribute chỉ là metadata, không tạo ra bảo đảm thứ tự."
+      },
+      {
+        "key": "E",
+        "textVi": "Ghi các message vào một Amazon Simple Queue Service (Amazon SQS) FIFO queue. Đặt message group dùng payment ID.",
+        "reason": "SQS FIFO queue bảo đảm thứ tự và xử lý đúng một lần trong mỗi message group; dùng payment ID làm message group ID thì các message của một payment được nhận đúng thứ tự, còn các payment khác nhau vẫn xử lý song song."
+      }
+    ],
+    "explanationVi": "Cần thứ tự theo từng payment ID: hai dịch vụ có bảo đảm thứ tự theo khóa là Kinesis Data Streams (thứ tự trong shard, chọn shard bằng partition key) và SQS FIFO (thứ tự trong message group). Đặt payment ID làm partition key hoặc message group ID. Bẫy: SQS standard không bảo đảm thứ tự; DynamoDB và Memcached là kho dữ liệu, không phải kênh message.",
+    "keyHint": "\"received in the same order that they were sent\" theo \"payment ID\" → Kinesis Data Streams (partition key) hoặc SQS FIFO (message group ID)."
+  },
+  {
+    "id": 337,
+    "stemVi": "Một công ty host ứng dụng trên AWS. Công ty dùng Amazon Cognito để quản lý người dùng. Khi người dùng đăng nhập vào ứng dụng, ứng dụng lấy dữ liệu cần thiết từ Amazon DynamoDB qua một REST API được host trên Amazon API Gateway. Công ty muốn một giải pháp do AWS quản lý để kiểm soát truy cập vào REST API nhằm giảm công phát triển.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình một AWS Lambda function làm authorizer trong API Gateway để xác thực người dùng nào đã gửi request.",
+        "reason": "Lambda authorizer làm được nhưng phải tự viết và bảo trì code xác thực token, không phải giải pháp do AWS quản lý như đề yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo và gán cho mỗi người dùng một API key phải gửi kèm mỗi request. Xác thực key bằng một AWS Lambda function.",
+        "reason": "API key dùng cho usage plan và throttling, không phải cơ chế xác thực người dùng; quản lý key cho từng người và tự viết Lambda kiểm tra rất tốn công."
+      },
+      {
+        "key": "C",
+        "textVi": "Gửi địa chỉ email của người dùng trong header của mọi request. Gọi một AWS Lambda function để kiểm tra người dùng có email đó có quyền phù hợp hay không.",
+        "reason": "Email trong header dễ bị giả mạo nên không an toàn, và vẫn phải tự viết Lambda kiểm tra."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình một Amazon Cognito user pool authorizer trong API Gateway để Amazon Cognito xác thực từng request.",
+        "reason": "Cognito user pool authorizer có sẵn trong API Gateway, tự kiểm tra token JWT mà Cognito cấp khi người dùng đăng nhập — do AWS quản lý, không cần viết code."
+      }
+    ],
+    "explanationVi": "Công ty đã dùng Cognito để quản lý người dùng, nên cách ít công nhất là để API Gateway dùng chính Cognito user pool làm authorizer, kiểm tra token tự động. Bẫy: Lambda authorizer linh hoạt nhưng phải tự viết code; API key không phải cơ chế xác thực người dùng.",
+    "keyHint": "\"uses Amazon Cognito to manage users\" + \"AWS managed solution\" kiểm soát truy cập REST API → Cognito user pool authorizer trong API Gateway."
+  },
+  {
+    "id": 338,
+    "stemVi": "Một solutions architect phải lập kế hoạch khôi phục sau thảm họa (disaster recovery, DR) cho một nền tảng software as a service (SaaS) có khối lượng lớn. Toàn bộ dữ liệu của nền tảng được lưu trong một Amazon Aurora MySQL DB cluster. Kế hoạch DR phải sao chép dữ liệu sang một AWS Region phụ.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng MySQL binary log replication tới một Aurora cluster ở Region phụ. Cấp một DB instance cho Aurora cluster ở Region phụ.",
+        "reason": "Binlog replication cần một DB instance chạy liên tục ở Region phụ để nhận dữ liệu, vừa tốn chi phí compute vừa có độ trễ cao hơn và ảnh hưởng hiệu năng cluster chính khi tải lớn."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một Aurora global database cho DB cluster. Khi thiết lập xong, xóa DB instance khỏi Region phụ.",
+        "reason": "Aurora Global Database sao chép ở tầng storage nên cluster phụ có thể không có DB instance nào (headless); chỉ trả tiền storage và replication, khi cần DR thì thêm instance — rẻ nhất mà vẫn sao chép dữ liệu sang Region phụ."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Database Migration Service (AWS DMS) để sao chép dữ liệu liên tục sang một Aurora cluster ở Region phụ. Xóa DB instance khỏi Region phụ.",
+        "reason": "DMS cần endpoint đích có DB instance đang chạy để ghi dữ liệu; xóa instance thì replication dừng, lại còn tốn phí replication instance."
+      },
+      {
+        "key": "D",
+        "textVi": "Thiết lập một Aurora global database cho DB cluster. Chỉ định tối thiểu một DB instance ở Region phụ.",
+        "reason": "Đáp ứng DR với failover nhanh hơn, nhưng phải trả tiền một DB instance chạy liên tục ở Region phụ nên kém tiết kiệm hơn cluster phụ không có instance."
+      }
+    ],
+    "explanationVi": "Aurora Global Database sao chép dữ liệu cross-Region ở tầng storage, không cần instance ở Region phụ để nhận dữ liệu. Bỏ instance ở cluster phụ (headless) cắt chi phí compute, đổi lại RTO dài hơn một chút vì phải thêm instance khi failover. Bẫy: binlog replication và DMS đều cần instance đích chạy liên tục.",
+    "keyHint": "\"replicate data to a secondary AWS Region\" + \"MOST cost-effectively\" với Aurora → Aurora Global Database với cluster phụ không có DB instance (headless)."
+  },
+  {
+    "id": 339,
+    "stemVi": "Một công ty muốn cho người dùng upload ảnh vào một ứng dụng được host trên AWS Cloud. Công ty cần giải pháp tự động thay đổi kích thước (resize) ảnh để hiển thị được trên nhiều loại thiết bị. Ứng dụng có lưu lượng không đoán trước trong suốt ngày. Công ty muốn một giải pháp có tính sẵn sàng cao (highly available) và khả năng mở rộng tối đa.",
+    "promptVi": "Solutions architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một website tĩnh host trên Amazon S3, gọi các AWS Lambda function để resize ảnh và lưu ảnh vào một Amazon S3 bucket.",
+        "reason": "S3 và Lambda đều serverless, sẵn sàng cao sẵn có và tự co giãn theo lưu lượng không đoán trước; Lambda resize ảnh khi được gọi và lưu kết quả lại S3 — không có server nào phải quản lý."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một website tĩnh host trên Amazon CloudFront, gọi AWS Step Functions để resize ảnh và lưu ảnh vào một Amazon RDS database.",
+        "reason": "Lưu file ảnh trong RDS là anti-pattern: đắt, khó co giãn và giới hạn dung lượng; Step Functions chỉ điều phối, tự nó không resize ảnh."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một website động host trên web server chạy trên một Amazon EC2 instance. Cấu hình một tiến trình chạy trên EC2 instance để resize ảnh và lưu ảnh vào một Amazon S3 bucket.",
+        "reason": "Một EC2 instance duy nhất là single point of failure và không tự co giãn theo lưu lượng đột biến."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một website động host trên một Amazon Elastic Container Service (Amazon ECS) cluster tự co giãn, tạo các job resize trong Amazon Simple Queue Service (Amazon SQS). Thiết lập một chương trình resize ảnh chạy trên một EC2 instance để xử lý các job.",
+        "reason": "Phần web co giãn được, nhưng khâu resize chạy trên một EC2 instance duy nhất nên vừa là điểm lỗi đơn vừa là nút thắt khi tải tăng."
+      }
+    ],
+    "explanationVi": "Lưu lượng không đoán trước cộng yêu cầu sẵn sàng cao và co giãn tối đa → kiến trúc serverless. S3 lưu ảnh và host web, Lambda resize ảnh, cả hai tự co giãn và có sẵn HA. Bẫy: mọi phương án có một EC2 instance đơn lẻ đều là nút thắt; lưu ảnh trong RDS không phù hợp.",
+    "keyHint": "\"automatically resizes the images\" + \"unpredictable traffic\" + \"maximizes scalability\" → S3 + Lambda (serverless)."
+  },
+  {
+    "id": 340,
+    "stemVi": "Một công ty có ứng dụng web bán vé du lịch. Ứng dụng dựa trên một database chạy trong một data center duy nhất ở Bắc Mỹ. Công ty muốn mở rộng ứng dụng để phục vụ người dùng toàn cầu. Công ty cần triển khai ứng dụng ra nhiều AWS Region. Độ trễ trung bình khi cập nhật database đặt chỗ phải dưới 1 giây.\n\nCông ty muốn có các bản triển khai riêng của nền tảng web ở nhiều Region. Tuy nhiên, công ty phải duy trì một database đặt chỗ chính duy nhất, nhất quán trên toàn cầu.",
+    "promptVi": "Solutions architect nên đề xuất giải pháp nào để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển ứng dụng sang dùng Amazon DynamoDB. Dùng global table cho bảng đặt chỗ trung tâm. Dùng đúng Regional endpoint trong mỗi bản triển khai theo Region.",
+        "reason": "DynamoDB global table là một bảng logic duy nhất có bản sao ở nhiều Region, mỗi bản triển khai đọc ghi vào endpoint gần mình với độ trễ thấp, còn thay đổi được sao chép sang Region khác thường trong vòng dưới 1 giây."
+      },
+      {
+        "key": "B",
+        "textVi": "Di chuyển database sang Amazon Aurora MySQL. Triển khai Aurora Read Replica ở mỗi Region. Dùng đúng Regional endpoint trong mỗi bản triển khai theo Region để truy cập database.",
+        "reason": "Read replica chỉ cho đọc; mọi cập nhật đặt chỗ từ Region khác phải đi xa về Region chính, khó bảo đảm độ trễ cập nhật dưới 1 giây cho người dùng toàn cầu."
+      },
+      {
+        "key": "C",
+        "textVi": "Di chuyển database sang Amazon RDS for MySQL. Triển khai MySQL read replica ở mỗi Region. Dùng đúng Regional endpoint trong mỗi bản triển khai theo Region để truy cập database.",
+        "reason": "Read replica cross-Region của RDS là bất đồng bộ, chỉ đọc và có thể trễ nhiều giây; ghi vẫn phải về một Region nên không đáp ứng độ trễ cập nhật."
+      },
+      {
+        "key": "D",
+        "textVi": "Di chuyển ứng dụng sang database Amazon Aurora Serverless. Triển khai các database instance ở mỗi Region. Dùng đúng Regional endpoint trong mỗi bản triển khai theo Region để truy cập database. Dùng AWS Lambda function xử lý event stream ở mỗi Region để đồng bộ các database.",
+        "reason": "Tạo nhiều database độc lập rồi tự đồng bộ bằng Lambda thì không còn là một database chính duy nhất, dễ xung đột dữ liệu và rất tốn công vận hành."
+      }
+    ],
+    "explanationVi": "Đề cần ứng dụng ở nhiều Region, độ trễ cập nhật dưới 1 giây và một database đặt chỗ thống nhất. Theo đáp án gốc, DynamoDB global table đáp ứng: một bảng logic, ghi ở Region gần nhất, replication giữa các Region thường dưới 1 giây. Bẫy: read replica của Aurora/RDS chỉ cho đọc, ghi vẫn phải về Region chính; tự đồng bộ bằng Lambda thì phức tạp và dễ sai.",
+    "keyHint": "\"multiple AWS Regions\" + \"latency must be less than 1 second on updates\" + \"single primary reservation database\" → DynamoDB global table.",
+    "review": {
+      "reason": "Chưa chắc chắn: đề đòi \"a single primary reservation database\", khớp với mô hình một Region ghi chính và read replica ở các Region khác (phương án Aurora MySQL với Aurora Read Replicas ở mỗi Region). DynamoDB global table mặc định là multi-active, eventually consistent (MREC: sao chép thường dưới 1 giây, xung đột xử lý theo \"last writer wins\"), tức không có một bản chính duy nhất; chế độ multi-Region strong consistency (MRSC) có từ 2025 nhưng chỉ chạy đúng 3 Region và độ trễ ghi cao hơn. Hai cách đọc đề đều bảo vệ được."
+    }
+  },
+  {
+    "id": 341,
+    "stemVi": "Một solutions architect đang thiết kế một REST API trong Amazon API Gateway cho dịch vụ hoàn tiền (cash payback). Ứng dụng cần 1 GB bộ nhớ và 2 GB dung lượng lưu trữ cho tài nguyên tính toán. Ứng dụng yêu cầu dữ liệu ở dạng quan hệ (relational).",
+    "promptVi": "Tổ hợp dịch vụ AWS bổ sung nào đáp ứng các yêu cầu này với ít công quản trị nhất (LEAST administrative effort)? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon EC2",
+        "reason": "Đáp ứng được bộ nhớ và dung lượng, nhưng phải tự quản lý instance, vá hệ điều hành và co giãn — nhiều công quản trị hơn Lambda."
+      },
+      {
+        "key": "B",
+        "textVi": "AWS Lambda",
+        "reason": "Lambda tích hợp sẵn với API Gateway, cấu hình được 1 GB bộ nhớ và tới 10 GB ephemeral storage (/tmp), nên đáp ứng 2 GB lưu trữ mà không phải quản lý server."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon RDS",
+        "reason": "RDS là database quan hệ được quản lý, đáp ứng yêu cầu dữ liệu dạng quan hệ; AWS lo backup, vá lỗi và hạ tầng."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon DynamoDB",
+        "reason": "DynamoDB là NoSQL key-value/document, không phải database quan hệ."
+      },
+      {
+        "key": "E",
+        "textVi": "Amazon Elastic Kubernetes Services (Amazon EKS)",
+        "reason": "Vận hành Kubernetes cluster, node và manifest là nhiều công quản trị nhất trong các lựa chọn compute."
+      }
+    ],
+    "explanationVi": "Cần một lớp compute sau API Gateway với 1 GB bộ nhớ và 2 GB lưu trữ, cộng một database quan hệ, đều ít công quản trị. Lambda (serverless, ephemeral storage tới 10 GB) và RDS (database quan hệ được quản lý) là cặp phù hợp. Bẫy: DynamoDB không phải quan hệ; EC2 và EKS tốn công quản trị.",
+    "keyHint": "\"1 GB of memory and 2 GB of storage\" + \"relational format\" + \"LEAST administrative effort\" → AWS Lambda + Amazon RDS."
+  },
+  {
+    "id": 342,
+    "stemVi": "Một công ty có một database MySQL on-premises được đội ngũ bán hàng toàn cầu dùng với tần suất truy cập không thường xuyên. Đội bán hàng yêu cầu database có downtime tối thiểu. Một quản trị viên database muốn di chuyển database này lên AWS mà không phải chọn một loại instance cụ thể, vì dự kiến sẽ có thêm người dùng trong tương lai.",
+    "promptVi": "Solutions architect nên đề xuất dịch vụ nào?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon Aurora MySQL",
+        "reason": "Aurora provisioned vẫn bắt buộc chọn instance class và trả tiền instance chạy liên tục, không hợp với yêu cầu không chọn instance type và tải không thường xuyên."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon Aurora Serverless for MySQL",
+        "reason": "Aurora Serverless tự co giãn capacity theo tải trong khoảng min/max nên không phải chọn instance type, hợp với tải không thường xuyên và tăng dần, đồng thời kế thừa storage nhiều AZ của Aurora để giảm downtime."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon Redshift Spectrum",
+        "reason": "Redshift Spectrum truy vấn dữ liệu trên S3 cho phân tích, không phải database MySQL giao dịch cho ứng dụng."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon RDS for MySQL",
+        "reason": "RDS for MySQL phải chọn instance class và đổi cỡ thủ công khi người dùng tăng, trái yêu cầu không chọn instance type."
+      }
+    ],
+    "explanationVi": "Từ khóa là \"without selecting a particular instance type\" cùng tải không thường xuyên và sẽ tăng: đây là hồ sơ của Aurora Serverless, tự điều chỉnh capacity mà không cần chọn instance. Bẫy: Aurora và RDS provisioned đều phải chọn instance class; Redshift Spectrum dành cho phân tích.",
+    "keyHint": "\"infrequent access patterns\" + \"without selecting a particular instance type\" → Amazon Aurora Serverless (MySQL)."
+  },
+  {
+    "id": 343,
+    "stemVi": "Một công ty game đang chuyển bảng xếp hạng (scoreboard) công khai từ data center lên AWS Cloud. Công ty dùng các Amazon EC2 instance chạy Windows Server phía sau một Application Load Balancer để host ứng dụng động. Công ty cần một giải pháp lưu trữ có tính sẵn sàng cao (highly available) cho ứng dụng. Ứng dụng gồm các file tĩnh và code động chạy phía server.",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp bước nào để đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lưu các file tĩnh trên Amazon S3. Dùng Amazon CloudFront để cache object tại edge.",
+        "reason": "S3 lưu file tĩnh với độ bền và tính sẵn sàng cao, CloudFront cache tại edge để phân phối nhanh và giảm tải cho EC2."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu các file tĩnh trên Amazon S3. Dùng Amazon ElastiCache để cache object tại edge.",
+        "reason": "ElastiCache là cache in-memory nằm trong VPC, không chạy tại edge location và không phải CDN."
+      },
+      {
+        "key": "C",
+        "textVi": "Lưu code phía server trên Amazon Elastic File System (Amazon EFS). Mount EFS volume trên từng EC2 instance để chia sẻ file.",
+        "reason": "EFS dùng giao thức NFS và chỉ hỗ trợ instance Linux, không mount được trên EC2 Windows Server."
+      },
+      {
+        "key": "D",
+        "textVi": "Lưu code phía server trên Amazon FSx for Windows File Server. Mount FSx for Windows File Server volume trên từng EC2 instance để chia sẻ file.",
+        "reason": "FSx for Windows File Server cung cấp share SMB dùng chung cho mọi instance Windows, có triển khai Multi-AZ cho tính sẵn sàng cao."
+      },
+      {
+        "key": "E",
+        "textVi": "Lưu code phía server trên một Amazon Elastic Block Store (Amazon EBS) volume General Purpose SSD (gp2). Mount EBS volume trên từng EC2 instance để chia sẻ file.",
+        "reason": "EBS gp2 chỉ gắn được vào một instance tại một thời điểm (Multi-Attach chỉ có ở io1/io2) và nằm trong một AZ, nên không chia sẻ được và không sẵn sàng cao."
+      }
+    ],
+    "explanationVi": "Tách hai loại nội dung: file tĩnh → S3 + CloudFront; code phía server dùng chung cho nhiều EC2 Windows → FSx for Windows File Server (SMB, Multi-AZ). Bẫy: EFS rất hay xuất hiện cho file chia sẻ nhưng chỉ dành cho Linux; ElastiCache không phải CDN.",
+    "keyHint": "\"EC2 Windows Server instances\" + file dùng chung → FSx for Windows File Server; \"static files\" → S3 + CloudFront."
+  },
+  {
+    "id": 344,
+    "stemVi": "Một công ty mạng xã hội chạy ứng dụng trên các Amazon EC2 instance phía sau một Application Load Balancer (ALB). ALB là origin của một Amazon CloudFront distribution. Ứng dụng có hơn một tỷ ảnh lưu trong một Amazon S3 bucket và xử lý hàng nghìn ảnh mỗi giây. Công ty muốn resize ảnh động và trả về định dạng phù hợp cho từng client.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cài một thư viện xử lý ảnh bên ngoài trên một EC2 instance. Dùng thư viện đó để xử lý ảnh.",
+        "reason": "Phải tự quản lý, co giãn và vá EC2 để xử lý hàng nghìn ảnh mỗi giây; một instance còn là nút thắt và điểm lỗi đơn."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một CloudFront origin request policy. Dùng policy để tự động resize ảnh và trả về định dạng phù hợp dựa trên HTTP header User-Agent trong request.",
+        "reason": "Origin request policy chỉ quy định header, cookie, query string nào được chuyển tới origin; nó không chạy được logic resize hay đổi định dạng ảnh."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng một Lambda@Edge function với một thư viện xử lý ảnh bên ngoài. Gắn Lambda@Edge function với các CloudFront behavior phục vụ ảnh.",
+        "reason": "Lambda@Edge chạy code tại các edge của CloudFront, dùng thư viện xử lý ảnh để resize và đổi định dạng theo request, kết quả được CloudFront cache; serverless và tự co giãn nên ít công vận hành."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một CloudFront response headers policy. Dùng policy để tự động resize ảnh và trả về định dạng phù hợp dựa trên HTTP header User-Agent trong request.",
+        "reason": "Response headers policy chỉ thêm hoặc sửa header trong response (CORS, security header…), không xử lý được nội dung ảnh."
+      }
+    ],
+    "explanationVi": "Resize ảnh động ngay trên đường phân phối của CloudFront, quy mô hàng nghìn ảnh mỗi giây, ít công vận hành → Lambda@Edge với thư viện xử lý ảnh. Bẫy: các loại policy của CloudFront chỉ điều khiển header/cache key, không chạy code; EC2 tự quản lý thì tốn công.",
+    "keyHint": "\"resize the images dynamically\" + CloudFront + \"LEAST operational overhead\" → Lambda@Edge gắn với cache behavior của ảnh."
+  },
+  {
+    "id": 345,
+    "stemVi": "Một công ty thương mại điện tử lưu hàng terabyte dữ liệu khách hàng trên AWS Cloud. Dữ liệu có chứa thông tin nhận dạng cá nhân (personally identifiable information, PII). Công ty muốn dùng dữ liệu trong ba ứng dụng. Chỉ một trong số đó cần xử lý PII. PII phải được loại bỏ trước khi hai ứng dụng còn lại xử lý dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lưu dữ liệu trong một bảng Amazon DynamoDB. Tạo một lớp ứng dụng proxy để chặn và xử lý dữ liệu mà mỗi ứng dụng yêu cầu.",
+        "reason": "Phải tự xây dựng, co giãn và vận hành một lớp proxy riêng — nhiều công phát triển và vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu dữ liệu trong một Amazon S3 bucket. Xử lý và biến đổi dữ liệu bằng S3 Object Lambda trước khi trả dữ liệu về ứng dụng yêu cầu.",
+        "reason": "S3 Object Lambda chạy Lambda function ngay trên đường đọc GET, nên giữ một bản dữ liệu gốc duy nhất và trả về bản đã xóa PII cho hai ứng dụng kia, còn ứng dụng cần PII đọc trực tiếp — không phải nhân bản dữ liệu."
+      },
+      {
+        "key": "C",
+        "textVi": "Xử lý dữ liệu và lưu dữ liệu đã biến đổi vào ba Amazon S3 bucket riêng để mỗi ứng dụng có bộ dữ liệu riêng. Trỏ mỗi ứng dụng tới S3 bucket tương ứng.",
+        "reason": "Nhân bản hàng terabyte dữ liệu thành ba bản tốn chi phí lưu trữ và phải duy trì pipeline đồng bộ mỗi khi dữ liệu thay đổi."
+      },
+      {
+        "key": "D",
+        "textVi": "Xử lý dữ liệu và lưu dữ liệu đã biến đổi vào ba bảng Amazon DynamoDB riêng để mỗi ứng dụng có bộ dữ liệu riêng. Trỏ mỗi ứng dụng tới bảng DynamoDB tương ứng.",
+        "reason": "Giống cách dùng ba bucket nhưng còn đắt hơn với hàng terabyte trong DynamoDB, vẫn phải tự xử lý và đồng bộ ba bản dữ liệu."
+      }
+    ],
+    "explanationVi": "Cần một nguồn dữ liệu duy nhất nhưng trả về khác nhau tùy ứng dụng (có hoặc không có PII). S3 Object Lambda biến đổi dữ liệu ngay khi đọc nên không phải tạo bản sao hay dựng proxy. Bẫy: tạo nhiều bản sao dữ liệu trông đơn giản nhưng tốn lưu trữ và công đồng bộ.",
+    "keyHint": "\"PII must be removed before the other two applications process the data\" + \"LEAST operational overhead\" → S3 Object Lambda.",
+    "review": {
+      "reason": "Đáp án có thể sai: từ 07/11/2025, S3 Object Lambda chỉ còn dành cho khách hàng đang dùng và một số APN partner; tài khoản mới không tạo được Object Lambda Access Point. Theo ý đồ đề thi (giữ một bản dữ liệu, biến đổi lúc đọc) thì đáp án gốc hợp lý, nhưng với tài khoản mới, phương án triển khai được là xử lý trước rồi lưu dữ liệu đã loại PII vào các bucket S3 riêng cho từng ứng dụng."
+    }
+  },
+  {
+    "id": 346,
+    "stemVi": "Một công ty muốn tạo ứng dụng lưu dữ liệu nhân viên theo cấu trúc quan hệ phân cấp (hierarchical). Công ty cần phản hồi với độ trễ tối thiểu cho các truy vấn lưu lượng cao trên dữ liệu nhân viên và phải bảo vệ mọi dữ liệu nhạy cảm. Công ty cũng cần nhận email hằng tháng nếu có thông tin tài chính trong dữ liệu nhân viên.",
+    "promptVi": "Solutions architect nên thực hiện tổ hợp bước nào để đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon Redshift để lưu dữ liệu nhân viên theo cấu trúc phân cấp. Unload dữ liệu sang Amazon S3 hằng tháng.",
+        "reason": "Redshift là data warehouse cho truy vấn phân tích, không tối ưu cho truy vấn ứng dụng lưu lượng cao cần độ trễ mili giây."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon DynamoDB để lưu dữ liệu nhân viên theo cấu trúc phân cấp. Export dữ liệu sang Amazon S3 hằng tháng.",
+        "reason": "DynamoDB cho độ trễ mili giây ổn định ở lưu lượng cao và mô hình hóa được dữ liệu phân cấp (qua sort key); export sang S3 hằng tháng để Macie quét tìm dữ liệu nhạy cảm."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình Amazon Macie cho AWS account. Tích hợp Macie với Amazon EventBridge để gửi event hằng tháng tới AWS Lambda.",
+        "reason": "Macie phát hiện dữ liệu nhạy cảm, nhưng gửi event tới Lambda thì vẫn phải tự viết code gửi email; thêm một bước không cần thiết so với dùng SNS."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon Athena để phân tích dữ liệu nhân viên trong Amazon S3. Tích hợp Athena với Amazon QuickSight để công bố dashboard phân tích và chia sẻ dashboard với người dùng.",
+        "reason": "Athena và QuickSight phục vụ phân tích và trực quan hóa, không tự phát hiện thông tin tài chính hay gửi email cảnh báo."
+      },
+      {
+        "key": "E",
+        "textVi": "Cấu hình Amazon Macie cho AWS account. Tích hợp Macie với Amazon EventBridge để gửi thông báo hằng tháng qua một subscription Amazon Simple Notification Service (Amazon SNS).",
+        "reason": "Macie quét dữ liệu export trên S3 và tạo finding khi thấy thông tin tài chính; EventBridge chuyển finding tới SNS topic có subscription email — nhận thông báo mà không cần code."
+      }
+    ],
+    "explanationVi": "Hai phần việc: lưu trữ cho truy vấn độ trễ thấp ở lưu lượng cao (DynamoDB) và phát hiện thông tin tài chính để gửi email (Macie quét S3 → EventBridge → SNS email). Export DynamoDB sang S3 hằng tháng nối hai phần lại. Bẫy: Redshift không dành cho truy vấn ứng dụng độ trễ thấp; đi qua Lambda để gửi email là thừa khi SNS làm được trực tiếp.",
+    "keyHint": "\"minimum-latency response to high-traffic queries\" → DynamoDB; \"financial information\" + \"monthly email\" → Macie + EventBridge + SNS."
+  },
+  {
+    "id": 347,
+    "stemVi": "Một công ty muốn chuyển từ nhiều AWS account độc lập sang kiến trúc nhiều account được hợp nhất (consolidated, multi-account). Công ty dự định tạo nhiều AWS account mới cho các đơn vị kinh doanh khác nhau. Công ty cần xác thực truy cập vào các AWS account này bằng một dịch vụ thư mục doanh nghiệp (corporate directory service) tập trung.",
+    "promptVi": "Solutions architect nên đề xuất tổ hợp hành động nào để đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một organization mới trong AWS Organizations với tất cả tính năng được bật. Tạo các AWS account mới trong organization.",
+        "reason": "AWS Organizations ở chế độ all features cho quản lý tập trung nhiều account và là điều kiện để bật IAM Identity Center cho toàn tổ chức; tạo account mới ngay trong organization."
+      },
+      {
+        "key": "B",
+        "textVi": "Thiết lập một Amazon Cognito identity pool. Cấu hình AWS IAM Identity Center (AWS Single Sign-On) chấp nhận xác thực từ Amazon Cognito.",
+        "reason": "Cognito dành cho người dùng của ứng dụng web/mobile, không phải nguồn danh tính cho IAM Identity Center để đăng nhập vào AWS account."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình một service control policy (SCP) để quản lý các AWS account. Thêm AWS IAM Identity Center (AWS Single Sign-On) vào AWS Directory Service.",
+        "reason": "SCP chỉ giới hạn quyền tối đa, không xác thực người dùng; IAM Identity Center không được \"thêm vào\" Directory Service, mà ngược lại Identity Center kết nối tới thư mục làm nguồn danh tính."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một organization mới trong AWS Organizations. Cấu hình cơ chế xác thực của organization dùng trực tiếp AWS Directory Service.",
+        "reason": "AWS Organizations không có cơ chế xác thực riêng để trỏ thẳng tới Directory Service; việc xác thực tập trung phải đi qua IAM Identity Center."
+      },
+      {
+        "key": "E",
+        "textVi": "Thiết lập AWS IAM Identity Center (AWS Single Sign-On) trong organization. Cấu hình IAM Identity Center và tích hợp với dịch vụ thư mục doanh nghiệp của công ty.",
+        "reason": "IAM Identity Center cung cấp đăng nhập một lần vào mọi account trong organization và dùng thư mục doanh nghiệp (AD hoặc IdP bên ngoài) làm nguồn danh tính — đúng yêu cầu xác thực tập trung."
+      }
+    ],
+    "explanationVi": "Kiến trúc nhiều account → AWS Organizations (all features). Xác thực tập trung bằng thư mục doanh nghiệp cho mọi account → IAM Identity Center tích hợp với thư mục đó. Bẫy: Cognito là cho người dùng ứng dụng; SCP là guardrail quyền, không phải xác thực; Organizations không tự xác thực người dùng.",
+    "keyHint": "\"multi-account architecture\" + \"centralized corporate directory service\" → AWS Organizations (all features) + IAM Identity Center tích hợp thư mục."
+  },
+  {
+    "id": 348,
+    "stemVi": "Một công ty có ứng dụng chạy trên các Amazon EC2 instance. Solutions architect đã chuẩn hóa công ty trên một instance family nhất định với nhiều kích thước instance khác nhau dựa trên nhu cầu hiện tại.\n\nCông ty muốn tiết kiệm chi phí tối đa cho ứng dụng trong 3 năm tới. Công ty cần có thể thay đổi instance family và kích thước trong 6 tháng tới tùy theo mức độ phổ biến và mức sử dụng ứng dụng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này một cách tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Compute Savings Plan",
+        "reason": "Compute Savings Plan cam kết mức chi theo giờ trong 3 năm nhưng áp dụng cho mọi instance family, size, Region và OS, nên đổi family hay size vẫn được giảm giá — đáp ứng cả tiết kiệm lẫn linh hoạt."
+      },
+      {
+        "key": "B",
+        "textVi": "EC2 Instance Savings Plan",
+        "reason": "EC2 Instance Savings Plan giảm giá sâu hơn một chút nhưng gắn với một instance family trong một Region; đổi family thì mất giảm giá."
+      },
+      {
+        "key": "C",
+        "textVi": "Zonal Reserved Instances",
+        "reason": "Zonal RI gắn với instance type cụ thể trong một AZ, không cho đổi family hay size."
+      },
+      {
+        "key": "D",
+        "textVi": "Standard Reserved Instances",
+        "reason": "Standard RI không đổi được instance family (chỉ đổi được size trong cùng family với regional RI Linux), nên không đáp ứng nhu cầu đổi family."
+      }
+    ],
+    "explanationVi": "Từ khóa: cam kết 3 năm để tiết kiệm tối đa nhưng phải đổi được instance family. Chỉ Compute Savings Plan cho phép đổi family mà vẫn giữ giảm giá. Bẫy: EC2 Instance Savings Plan và Standard RI rẻ hơn một chút nhưng khóa vào một family.",
+    "keyHint": "\"change the instance family and sizes\" + cam kết \"3 years\" → Compute Savings Plan."
+  },
+  {
+    "id": 349,
+    "stemVi": "Một công ty truyền thông thu thập và phân tích dữ liệu hoạt động của người dùng tại on-premises. Công ty muốn chuyển khả năng này lên AWS. Kho dữ liệu hoạt động người dùng sẽ tiếp tục tăng và sẽ có kích thước hàng petabyte. Công ty cần xây dựng một giải pháp thu nạp (ingestion) dữ liệu có tính sẵn sàng cao (highly available), hỗ trợ phân tích theo yêu cầu (on-demand) bằng SQL trên cả dữ liệu hiện có lẫn dữ liệu mới.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Gửi dữ liệu hoạt động tới một Amazon Kinesis data stream. Cấu hình stream để gửi dữ liệu tới một Amazon S3 bucket.",
+        "reason": "Kinesis Data Streams không tự gửi dữ liệu vào S3, cần thêm consumer hoặc Firehose; phương án cũng không có công cụ phân tích SQL nào."
+      },
+      {
+        "key": "B",
+        "textVi": "Gửi dữ liệu hoạt động tới một Amazon Kinesis Data Firehose delivery stream. Cấu hình stream để gửi dữ liệu tới một Amazon Redshift cluster.",
+        "reason": "Firehose là dịch vụ ingestion được quản lý hoàn toàn, sẵn sàng cao, tự nạp dữ liệu vào Redshift; Redshift là data warehouse cỡ petabyte cho phân tích SQL theo yêu cầu trên cả dữ liệu cũ và mới."
+      },
+      {
+        "key": "C",
+        "textVi": "Đặt dữ liệu hoạt động vào một Amazon S3 bucket. Cấu hình Amazon S3 chạy một AWS Lambda function trên dữ liệu khi dữ liệu tới S3 bucket.",
+        "reason": "Lambda chỉ xử lý từng file khi tới, không phải công cụ phân tích SQL theo yêu cầu; phương án cũng không có cơ chế thu nạp dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một dịch vụ ingestion trên các Amazon EC2 instance trải trên nhiều Availability Zone. Cấu hình dịch vụ chuyển dữ liệu tới một Amazon RDS Multi-AZ database.",
+        "reason": "Tự xây dịch vụ ingestion trên EC2 tốn công vận hành, và RDS không phải nơi phù hợp để phân tích hàng petabyte dữ liệu."
+      }
+    ],
+    "explanationVi": "Cần ingestion được quản lý và sẵn sàng cao, cộng nơi phân tích SQL cho dữ liệu cỡ petabyte. Kinesis Data Firehose → Amazon Redshift đáp ứng cả hai với ít công vận hành. Bẫy: Kinesis Data Streams không tự giao dữ liệu vào S3; RDS không dành cho phân tích petabyte.",
+    "keyHint": "\"petabytes\" + \"highly available data ingestion\" + \"analytics ... with SQL\" → Kinesis Data Firehose nạp vào Amazon Redshift."
+  },
+  {
+    "id": 350,
+    "stemVi": "Một công ty dùng AWS Organizations để chạy workload trong nhiều AWS account. Một tagging policy thêm tag phòng ban (department) vào tài nguyên AWS khi công ty tạo tag.\n\nMột nhóm kế toán cần xác định chi tiêu cho việc sử dụng Amazon EC2. Nhóm kế toán phải xác định phòng ban nào chịu trách nhiệm cho các chi phí, bất kể thuộc AWS account nào. Nhóm kế toán có quyền truy cập AWS Cost Explorer cho mọi AWS account trong organization và cần truy cập mọi báo cáo từ Cost Explorer.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này theo cách hiệu quả vận hành nhất (MOST operationally efficient)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Từ billing console của management account trong Organizations, kích hoạt một user-defined cost allocation tag tên department. Tạo một báo cáo chi phí trong Cost Explorer nhóm theo tên tag và lọc theo EC2.",
+        "reason": "Tag department do công ty tự tạo nên là user-defined cost allocation tag; kích hoạt ở management account thì áp dụng cho dữ liệu billing của mọi account, và một báo cáo Cost Explorer nhóm theo tag, lọc EC2 là đủ."
+      },
+      {
+        "key": "B",
+        "textVi": "Từ billing console của management account trong Organizations, kích hoạt một AWS-defined cost allocation tag tên department. Tạo một báo cáo chi phí trong Cost Explorer nhóm theo tên tag và lọc theo EC2.",
+        "reason": "AWS-defined tag là tag do AWS tự sinh (tiền tố aws:, ví dụ aws:createdBy); tag department do công ty tạo nên không phải loại này."
+      },
+      {
+        "key": "C",
+        "textVi": "Từ billing console của một member account trong Organizations, kích hoạt một user-defined cost allocation tag tên department. Tạo một báo cáo chi phí trong Cost Explorer nhóm theo tên tag và lọc theo EC2.",
+        "reason": "Trong organization dùng consolidated billing, chỉ management account kích hoạt được cost allocation tag cho cả tổ chức; làm từ member account không bao quát mọi account."
+      },
+      {
+        "key": "D",
+        "textVi": "Từ billing console của một member account trong Organizations, kích hoạt một AWS-defined cost allocation tag tên department. Tạo một báo cáo chi phí trong Cost Explorer nhóm theo tên tag và lọc theo EC2.",
+        "reason": "Sai cả hai chỗ: department là tag do người dùng định nghĩa, và việc kích hoạt cho toàn tổ chức phải làm từ management account."
+      }
+    ],
+    "explanationVi": "Muốn phân bổ chi phí theo phòng ban trên mọi account cần hai điều: đúng loại tag (user-defined vì công ty tự tạo) và kích hoạt ở đúng chỗ (management account, nơi quản lý billing hợp nhất). Sau đó chỉ cần một báo cáo Cost Explorer nhóm theo tag, lọc EC2. Bẫy: nhầm AWS-defined tag với tag do công ty tạo; kích hoạt từ member account.",
+    "keyHint": "\"department tags\" do công ty tạo + \"regardless of AWS account\" → kích hoạt user-defined cost allocation tag từ management account."
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "id": "ecr", "name": "Amazon Elastic Container Registry", "category": "Containers", "tier": "minor",
+  "overview": "Amazon ECR là managed container image registry để lưu trữ, version và kiểm soát quyền truy cập container images.",
+  "examSignals": ["Store/scan private Docker/OCI images for ECS/EKS: ECR", "Run/schedule container tasks: ECS", "Artifact CI/CD pipeline broadly: Code services or external tooling"],
+  "compareWith": [{ "service": "Amazon ECS", "diff": "ECR lưu container images; ECS kéo image và điều phối container tasks/services." }]
+}

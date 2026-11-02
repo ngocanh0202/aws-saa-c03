@@ -1,0 +1,6 @@
+{
+  "id": "cloudhsm", "name": "AWS CloudHSM", "category": "Security, Identity, and Compliance", "tier": "minor",
+  "overview": "AWS CloudHSM cung cấp dedicated HSM clusters để khách hàng kiểm soát cryptographic operations/key material trong hardware security boundary.",
+  "examSignals": ["Dedicated HSM, customer control over HSM users/keys: CloudHSM", "Managed key service integrated with AWS services and IAM: KMS"],
+  "compareWith": [{ "service": "AWS Key Management Service", "diff": "CloudHSM cho quyền quản trị HSM cluster sâu hơn; KMS đơn giản hóa key lifecycle/API và tích hợp AWS rộng." }]
+}

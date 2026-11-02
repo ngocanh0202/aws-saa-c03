@@ -1,0 +1,6 @@
+{
+  "id": "resource-groups", "name": "AWS Resource Groups", "category": "Management and Governance", "tier": "minor",
+  "overview": "AWS Resource Groups organize related AWS resources using tag-based or supported query criteria for operational tasks.",
+  "examSignals": ["Group resources by tags for coordinated operations: Resource Groups", "Enforce required/allowed tags and detect compliance: AWS Config tag policies/rules"],
+  "compareWith": [{ "service": "AWS Config", "diff": "Resource Groups query/organize resources; Config tracks resource state and evaluates compliance." }]
+}
