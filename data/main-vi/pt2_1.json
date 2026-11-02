@@ -669,5 +669,648 @@
     ],
     "explanationVi": "Yêu cầu là tập trung dữ liệu bảo mật từ nhiều account và dịch vụ với ít code nhất. Amazon Security Lake được xây đúng cho việc này: tự thu thập, chuẩn hóa theo Open Cybersecurity Schema Framework (OCSF) và lưu trong S3 để các công cụ phân tích dùng chung. Các phương án Lake Formation + Glue, Lambda tự viết hay Athena đều đòi tự xây phần thu thập và chuẩn hóa.",
     "keyHint": "\"centralize its security event data\" từ nhiều account + \"least development effort\" → Amazon Security Lake."
+  },
+  {
+    "id": 10323,
+    "stemVi": "Một developer cần triển khai một AWS Lambda function trong AWS account A để truy cập một Amazon Simple Storage Service (Amazon S3) bucket nằm trong AWS account B.",
+    "promptVi": "Với vai trò Solutions Architect, bạn đề xuất cách nào sau đây để đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "AWS Lambda không truy cập được tài nguyên giữa các AWS account. Dùng Identity federation để vượt qua giới hạn này của Lambda.",
+        "reason": "Phát biểu sai: Lambda truy cập được tài nguyên ở account khác qua execution role cùng resource-based policy; identity federation dành cho người dùng bên ngoài đăng nhập, không liên quan ở đây."
+      },
+      {
+        "key": "B",
+        "textVi": "Chủ S3 bucket nên đặt bucket ở chế độ public để Lambda function ở account kia truy cập được.",
+        "reason": "Mở public bucket làm lộ dữ liệu cho bất kỳ ai, là thực hành bảo mật kém, trong khi có cách cấp quyền riêng cho đúng role."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo IAM role cho Lambda function cấp quyền truy cập S3 bucket. Đặt IAM role đó làm execution role của Lambda function. Bảo đảm bucket policy cũng cấp quyền cho execution role của Lambda function.",
+        "reason": "Truy cập chéo account cần cấp quyền ở cả hai phía: identity policy của execution role ở account A cho phép thao tác S3, và bucket policy ở account B cho phép chính role đó."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo IAM role cho Lambda function cấp quyền truy cập S3 bucket. Đặt IAM role đó làm execution role của Lambda function, như vậy là đủ để Lambda function truy cập chéo account tới S3 bucket.",
+        "reason": "Chưa đủ: khi role và bucket ở hai account khác nhau, bucket policy ở account B cũng phải cho phép role đó; chỉ có quyền phía role thì request vẫn bị từ chối."
+      }
+    ],
+    "explanationVi": "Với truy cập chéo account, AWS đánh giá quyền ở cả hai account: phía gọi (identity policy của execution role) và phía tài nguyên (bucket policy). Cùng account thì chỉ cần quyền trên role (miễn bucket policy không deny), nhưng khác account thì bucket policy phải cho phép role một cách tường minh. Bẫy: nghĩ chỉ cần execution role là đủ.",
+    "keyHint": "\"Lambda function in AWS account A\" + \"S3 bucket in AWS account B\" → execution role có quyền S3 + bucket policy cho phép role đó."
+  },
+  {
+    "id": 10324,
+    "stemVi": "Một startup ở Silicon Valley có kiến trúc hai tầng dùng Amazon EC2 instance cho ứng dụng chủ lực. Các web server (lắng nghe trên cổng 443), được gán security group A, nằm trong các public subnet trên hai Availability Zone (AZ); các database instance chạy MSSQL (lắng nghe trên cổng 1433), được gán security group B, nằm trong hai private subnet trên hai AZ. Nhóm DevOps muốn rà soát cấu hình bảo mật của kiến trúc ứng dụng.",
+    "promptVi": "Với vai trò solutions architect, bạn chọn những cấu hình nào là AN TOÀN NHẤT (MOST secure)? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Với security group A: thêm inbound rule cho phép lưu lượng từ mọi nguồn trên cổng 443. Thêm outbound rule có đích là security group B trên cổng 1433.",
+        "reason": "Web server phải nhận HTTPS từ Internet trên 443, và chỉ được gửi ra tới database trong security group B trên đúng cổng MSSQL 1433 — hẹp nhất mà vẫn chạy được."
+      },
+      {
+        "key": "B",
+        "textVi": "Với security group A: thêm inbound rule cho phép lưu lượng từ mọi nguồn trên cổng 443. Thêm outbound rule có đích là security group B trên cổng 443.",
+        "reason": "Database lắng nghe trên 1433, nên outbound tới security group B trên cổng 443 không cho web server kết nối được tới MSSQL."
+      },
+      {
+        "key": "C",
+        "textVi": "Với security group B: thêm inbound rule chỉ cho phép lưu lượng từ security group A trên cổng 1433.",
+        "reason": "Database chỉ nhận kết nối MSSQL từ các web server trong security group A — đúng nguyên tắc least privilege."
+      },
+      {
+        "key": "D",
+        "textVi": "Với security group B: thêm inbound rule chỉ cho phép lưu lượng từ security group A trên cổng 443.",
+        "reason": "Sai cổng: MSSQL lắng nghe trên 1433, nên mở 443 vừa không cho kết nối database vừa mở thừa một cổng."
+      },
+      {
+        "key": "E",
+        "textVi": "Với security group B: thêm inbound rule cho phép lưu lượng từ mọi nguồn trên cổng 1433.",
+        "reason": "Cho mọi nguồn truy cập cổng database là mở rộng không cần thiết; chỉ web server mới cần kết nối tới database."
+      }
+    ],
+    "explanationVi": "Cấu hình an toàn nhất mở đúng cổng cho đúng nguồn ở từng chặng: Internet → web server trên 443, web server → database trên 1433. Tham chiếu security group (thay vì dải IP) giúp database chỉ nhận kết nối từ các web server. Bẫy: nhầm cổng 443 với 1433 ở chặng web → database, hoặc mở database cho mọi nguồn.",
+    "keyHint": "\"MOST secure\" + web 443 / MSSQL 1433 → SG A: vào 443 từ mọi nơi, ra 1433 tới SG B; SG B: vào 1433 chỉ từ SG A."
+  },
+  {
+    "id": 10325,
+    "stemVi": "Một chuyên gia tư vấn bảo mật đang thiết kế giải pháp cho một công ty muốn cấp cho từng developer một AWS account riêng qua AWS Organizations, đồng thời vẫn duy trì các kiểm soát bảo mật chuẩn. Vì mỗi developer có quyền ở mức root user trên account của mình, chuyên gia muốn bảo đảm cấu hình AWS CloudTrail bắt buộc được áp cho account developer mới không bị sửa đổi.",
+    "promptVi": "Hành động nào sau đây đáp ứng các yêu cầu đã nêu?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một service control policy (SCP) cấm thay đổi AWS CloudTrail và gắn vào các account developer.",
+        "reason": "SCP giới hạn quyền tối đa của mọi principal trong member account, kể cả root user, nên developer không thể sửa hay tắt CloudTrail dù có quyền root."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một service-linked role cho AWS CloudTrail với điều kiện policy chỉ cho phép thay đổi từ một Amazon Resource Name (ARN) trong master account.",
+        "reason": "Service-linked role do chính dịch vụ định nghĩa và chỉ dịch vụ đó assume được; không thể dùng nó để chặn root user của account sửa CloudTrail."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một IAM policy cấm thay đổi AWS CloudTrail và gắn vào root user.",
+        "reason": "Không gắn được IAM policy để giới hạn root user; root user có toàn quyền trong account và có thể gỡ bất kỳ policy nào."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình một trail mới trong AWS CloudTrail từ bên trong các account developer, có bật tùy chọn organization trails.",
+        "reason": "Organization trail chỉ tạo được từ management account (hoặc delegated admin), và trail tạo trong account developer vẫn có thể bị root user ở đó sửa."
+      }
+    ],
+    "explanationVi": "Chỉ SCP mới giới hạn được cả root user của member account trong AWS Organizations. Một SCP deny các hành động sửa/xóa/dừng CloudTrail gắn vào account (hoặc OU) developer sẽ khóa cấu hình CloudTrail dù developer có quyền root. Bẫy: IAM policy không giới hạn được root user, còn service-linked role chỉ phục vụ chính dịch vụ.",
+    "keyHint": "\"root user-level access\" + AWS Organizations + \"not modified\" → Service control policy (SCP) deny thay đổi CloudTrail."
+  },
+  {
+    "id": 10326,
+    "stemVi": "Bạn có nhiều AWS account trong một AWS Region, được quản lý bởi AWS Organizations, và muốn mọi Amazon EC2 instance trong các account này giao tiếp riêng tư (privately) với nhau.",
+    "promptVi": "Giải pháp nào sau đây cung cấp khả năng này với chi phí RẺ NHẤT (CHEAPEST)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo VPC peering connection giữa tất cả các virtual private cloud (VPC).",
+        "reason": "Chạy được, nhưng số peering tăng nhanh theo số VPC, phải quản lý route ở từng VPC, và có phí truyền dữ liệu giữa các AZ; không mở rộng tốt khi thêm account."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một AWS Transit Gateway và nối tất cả VPC trong mọi account vào đó.",
+        "reason": "Chạy được nhưng Transit Gateway tính phí theo giờ cho mỗi attachment và theo lượng dữ liệu xử lý — đắt hơn giải pháp không tốn phí."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo Private Link giữa tất cả Amazon EC2 instance.",
+        "reason": "PrivateLink dùng để công khai một dịch vụ (sau NLB) cho VPC khác qua interface endpoint, không phải để nối mạng mọi instance với nhau; lại tính phí theo giờ và theo dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một virtual private cloud (VPC) trong một account và chia sẻ một hoặc nhiều subnet của nó với các account khác bằng Resource Access Manager.",
+        "reason": "Chia sẻ subnet qua AWS RAM (VPC sharing) cho instance của nhiều account chạy trong cùng một VPC nên giao tiếp riêng tư trực tiếp; RAM không tính phí, không cần peering hay gateway."
+      }
+    ],
+    "explanationVi": "VPC sharing qua AWS Resource Access Manager cho phép nhiều account trong cùng Organization đặt tài nguyên vào các subnet dùng chung của một VPC. Khi đó các EC2 instance nằm cùng một mạng và nói chuyện riêng tư mà không cần thêm thành phần kết nối nào, và RAM miễn phí. Peering và Transit Gateway đều làm được nhưng tốn phí hoặc công quản lý hơn.",
+    "keyHint": "\"multiple AWS accounts\" + \"single AWS Region\" + \"CHEAPEST\" → VPC sharing (chia sẻ subnet qua AWS RAM)."
+  },
+  {
+    "id": 10327,
+    "stemVi": "Xét policy sau được gắn với một IAM group gồm nhiều user:\n\n{\n    \"Version\":\"2012-10-17\",\n    \"Id\":\"EC2TerminationPolicy\",\n    \"Statement\":[\n        {\n            \"Effect\":\"Deny\",\n            \"Action\":\"ec2:*\",\n            \"Resource\":\"*\",\n            \"Condition\":{\n                \"StringNotEquals\":{\n                    \"ec2:Region\":\"us-west-1\"\n                }\n            }\n        },\n        {\n            \"Effect\":\"Allow\",\n            \"Action\":\"ec2:TerminateInstances\",\n            \"Resource\":\"*\",\n            \"Condition\":{\n                \"IpAddress\":{\n                    \"aws:SourceIp\":\"10.200.200.0/24\"\n                }\n            }\n        }\n    ]\n}",
+    "promptVi": "Lựa chọn nào sau đây đúng?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "User thuộc IAM user group không thể terminate Amazon EC2 instance ở region us-west-1 khi IP nguồn của user là 10.200.200.200.",
+        "reason": "Sai: ở us-west-1 thì câu lệnh Deny không áp dụng, còn IP 10.200.200.200 nằm trong dải 10.200.200.0/24 nên câu lệnh Allow cho phép terminate."
+      },
+      {
+        "key": "B",
+        "textVi": "User thuộc IAM user group có thể terminate Amazon EC2 instance ở region us-west-1 khi IP nguồn của user là 10.200.200.200.",
+        "reason": "Đúng: Deny chỉ chặn hành động EC2 ngoài us-west-1; trong us-west-1, Allow cho TerminateInstances khi aws:SourceIp thuộc 10.200.200.0/24, mà 10.200.200.200 thuộc dải này."
+      },
+      {
+        "key": "C",
+        "textVi": "User thuộc IAM user group có thể terminate Amazon EC2 instance ở region us-west-1 khi địa chỉ IP của EC2 instance là 10.200.200.200.",
+        "reason": "Sai: aws:SourceIp là IP của bên gửi request (user), không phải IP của instance bị terminate."
+      },
+      {
+        "key": "D",
+        "textVi": "User thuộc IAM user group có thể terminate Amazon EC2 instance ở bất kỳ region nào trừ us-west-1 khi IP nguồn của user là 10.200.200.200.",
+        "reason": "Sai và ngược lại: mọi hành động EC2 ngoài us-west-1 đều bị Deny tường minh, và Deny luôn thắng Allow."
+      }
+    ],
+    "explanationVi": "Đọc policy theo hai câu lệnh: Deny mọi hành động ec2:* khi region khác us-west-1, và Allow ec2:TerminateInstances khi IP nguồn của request thuộc 10.200.200.0/24. Vì vậy chỉ ở us-west-1 và từ IP trong dải đó, user mới terminate được instance. Bẫy: nhầm aws:SourceIp là IP của instance, hoặc quên rằng Deny tường minh luôn thắng Allow.",
+    "keyHint": "\"StringNotEquals ec2:Region\" Deny + \"aws:SourceIp\" Allow → chỉ terminate được ở us-west-1 khi request đến từ dải IP cho phép."
+  },
+  {
+    "id": 10328,
+    "stemVi": "Một công ty IT muốn tối ưu chi phí cho đội 100 Amazon EC2 instance trong năm tới. Theo phân tích lịch sử, nhóm kỹ sư thấy 70 instance xử lý dịch vụ tính toán của ứng dụng chủ lực và luôn phải sẵn sàng. 30 instance còn lại chạy các batch job có thể chấp nhận xử lý chậm.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp nào tối ưu chi phí nhất (MOST cost-optimal)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mua 70 reserved instance (RI) và 30 spot instance.",
+        "reason": "70 instance chạy liên tục cả năm hợp với RI một năm để được giảm giá sâu; 30 instance cho batch job chịu được gián đoạn nên dùng spot rẻ nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Mua 70 reserved instance và 30 on-demand instance.",
+        "reason": "Phần RI đúng, nhưng batch job chịu được trễ mà trả giá on-demand thì đắt hơn spot không cần thiết."
+      },
+      {
+        "key": "C",
+        "textVi": "Mua 70 on-demand instance và 30 reserved instance.",
+        "reason": "Đảo ngược: phần chạy liên tục lại trả giá on-demand đắt, còn phần batch không cần luôn sẵn sàng lại cam kết RI."
+      },
+      {
+        "key": "D",
+        "textVi": "Mua 70 on-demand instance và 30 spot instance.",
+        "reason": "Spot cho batch là hợp lý, nhưng 70 instance chạy cả năm mà dùng on-demand thì đắt hơn RI."
+      }
+    ],
+    "explanationVi": "Ghép đúng kiểu mua với đặc điểm tải: tải chạy liên tục, dự đoán được trong một năm → Reserved Instances; tải batch chịu được gián đoạn và trễ → Spot Instances, rẻ nhất. On-demand chỉ đáng dùng cho tải ngắn hạn, không đoán trước và không chịu được gián đoạn.",
+    "keyHint": "\"need to be always available\" → Reserved; \"batch jobs that can afford a delay\" → Spot."
+  },
+  {
+    "id": 10329,
+    "stemVi": "Một hãng phim Hollywood lên kế hoạch cho một loạt sự kiện quảng bá trước khi ra mắt trailer của bộ phim khoa học viễn tưởng giật gân sắp tới. Ban lãnh đạo muốn làm một website tĩnh với nhiều hoạt ảnh theo chủ đề của phim. Hãng thuê bạn làm solutions architect để xây một giải pháp serverless có khả năng mở rộng (scalable).",
+    "promptVi": "Giải pháp nào sau đây tối ưu chi phí nhất (MOST cost-optimal) và có hiệu năng cao?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Host website trên AWS Lambda. Tạo một Amazon CloudFront distribution với Lambda làm origin.",
+        "reason": "Lambda dùng để chạy code, không phải nơi lưu và phục vụ file tĩnh; dùng Lambda trả từng file HTML, ảnh, hoạt ảnh vừa phức tạp vừa tốn chi phí hơn S3."
+      },
+      {
+        "key": "B",
+        "textVi": "Host website trên một Amazon EC2 instance. Tạo một Amazon CloudFront distribution với EC2 instance làm custom origin.",
+        "reason": "EC2 không phải serverless như đề yêu cầu, lại phải trả tiền chạy liên tục và tự quản lý máy chủ."
+      },
+      {
+        "key": "C",
+        "textVi": "Xây website dạng website tĩnh host trên Amazon S3. Tạo một Amazon CloudFront distribution với Amazon S3 làm origin. Dùng Amazon Route 53 tạo alias record trỏ tới CloudFront distribution.",
+        "reason": "S3 lưu và phục vụ nội dung tĩnh với chi phí thấp, serverless; CloudFront cache tại edge location giúp tải nhanh cho người xem toàn cầu; Route 53 alias gắn tên miền vào distribution."
+      },
+      {
+        "key": "D",
+        "textVi": "Host website trên một máy chủ trong trung tâm dữ liệu on-premises của hãng. Tạo một Amazon CloudFront distribution với máy chủ này làm custom origin.",
+        "reason": "Máy chủ on-premises không phải serverless, hãng phải tự vận hành và khó mở rộng khi lượng truy cập tăng mạnh."
+      }
+    ],
+    "explanationVi": "Website tĩnh + serverless + rẻ + hiệu năng cao là mẫu kinh điển: nội dung để trong S3, phân phối qua CloudFront để cache gần người dùng, và Route 53 alias record trỏ tên miền vào CloudFront. Các phương án dùng EC2 hay máy chủ on-premises không phải serverless; Lambda không phải nơi host file tĩnh.",
+    "keyHint": "\"static website\" + \"serverless\" + \"MOST cost-optimal and high-performance\" → S3 + CloudFront + Route 53 alias."
+  },
+  {
+    "id": 10330,
+    "stemVi": "Công ty bạn có một workload big data chạy hằng tháng, mỗi lần khoảng 2 giờ, có thể phân phối hiệu quả trên nhiều máy chủ với kích cỡ và số CPU khác nhau. Giải pháp cho workload này phải chịu được việc máy chủ bị hỏng.",
+    "promptVi": "Giải pháp nào tối ưu chi phí nhất (MOST cost-optimal) cho workload này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chạy workload trên một Spot Fleet.",
+        "reason": "Spot Fleet tự chọn các Spot pool rẻ nhất trên nhiều loại instance (ví dụ chiến lược lowestPrice) và tự khởi chạy instance thay thế khi bị thu hồi để giữ target capacity — vừa rẻ vừa chịu được lỗi."
+      },
+      {
+        "key": "B",
+        "textVi": "Chạy workload trên Dedicated Hosts.",
+        "reason": "Dedicated Host là máy chủ vật lý riêng, dùng cho license hoặc tuân thủ; rất đắt và không cần cho workload này."
+      },
+      {
+        "key": "C",
+        "textVi": "Chạy workload trên Reserved Instances (RI).",
+        "reason": "RI cần cam kết 1–3 năm, chỉ có lợi khi chạy liên tục; workload chỉ 2 giờ mỗi tháng nên phần lớn thời gian trả tiền mà không dùng."
+      },
+      {
+        "key": "D",
+        "textVi": "Chạy workload trên Spot Instances.",
+        "reason": "Spot rẻ, nhưng request spot đơn lẻ phải chọn trước loại instance và không tự duy trì capacity khi instance bị thu hồi như Spot Fleet."
+      }
+    ],
+    "explanationVi": "Workload ngắn, không thường xuyên, phân tán được và chịu lỗi là ứng viên lý tưởng cho Spot. Điểm khác biệt là Spot Fleet: nó đa dạng hóa trên nhiều loại instance và kích cỡ, chọn pool rẻ nhất và tự thay instance bị thu hồi để giữ capacity mục tiêu. RI và Dedicated Hosts đều đắt với tải chỉ 2 giờ mỗi tháng.",
+    "keyHint": "\"servers of various sizes\" + \"withstand server failures\" + \"MOST cost-optimal\" → Spot Fleet."
+  },
+  {
+    "id": 10331,
+    "stemVi": "Một nhóm nghiên cứu Machine Learning dùng ứng dụng thị giác máy tính độc quyền chạy trên một Amazon EC2 instance. Mỗi lần instance bị dừng rồi khởi động lại, ứng dụng mất khoảng 3 phút để khởi động vì phải chạy một số chương trình phụ trợ trước. Nhóm muốn giảm tối đa thời gian khởi động (bootstrap) của ứng dụng mỗi khi hệ thống phải dừng rồi bật lại sau đó.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp nào cho trường hợp này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Machine Image (AMI) và khởi chạy Amazon EC2 instance từ AMI đó.",
+        "reason": "AMI giúp có sẵn phần mềm và phụ thuộc, nhưng khi boot lại các chương trình phụ trợ vẫn phải chạy, nên không rút ngắn 3 phút khởi động."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon EC2 User-Data.",
+        "reason": "User data chỉ giúp tự động chạy lệnh lúc khởi động, không làm các lệnh chạy nhanh hơn."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon EC2 Instance Hibernate.",
+        "reason": "Hibernate lưu nội dung RAM xuống EBS root volume; khi bật lại, RAM được nạp lại và các tiến trình đang chạy tiếp tục ngay, nên ứng dụng không phải khởi động lại từ đầu."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon EC2 Meta-Data.",
+        "reason": "Instance metadata chỉ là thông tin về instance (hostname, security group…), không liên quan tới thời gian khởi động ứng dụng."
+      }
+    ],
+    "explanationVi": "Muốn bỏ qua thời gian khởi động ứng dụng sau khi dừng và bật lại, cần giữ nguyên trạng thái bộ nhớ. EC2 Hibernate ghi RAM xuống EBS root volume (phải mã hóa) và khôi phục khi start, nên các tiến trình chạy tiếp như chưa từng dừng. AMI, user data hay metadata đều không tránh được việc chạy lại các chương trình phụ trợ.",
+    "keyHint": "\"minimize the application bootstrap time\" sau khi stop/start → EC2 Hibernate (giữ nội dung RAM)."
+  },
+  {
+    "id": 10332,
+    "stemVi": "Một công ty dịch vụ tài chính đã triển khai ứng dụng chủ lực trên các Amazon EC2 instance. Vì ứng dụng xử lý dữ liệu khách hàng nhạy cảm, nhóm bảo mật muốn bảo đảm mọi chứng chỉ SSL/TLS (Secure Sockets Layer/Transport Layer Security) của bên thứ ba được cấu hình trên EC2 qua AWS Certificate Manager (ACM) được gia hạn trước ngày hết hạn. Công ty thuê bạn với vai trò AWS Certified Solutions Architect Associate để xây giải pháp báo cho nhóm bảo mật 30 ngày trước khi chứng chỉ hết hạn. Giải pháp phải cần ít script và công bảo trì nhất.",
+    "promptVi": "Bạn đề xuất gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Theo dõi metric Amazon CloudWatch \"days to expiry\" cho các chứng chỉ được import vào ACM. Tạo CloudWatch alarm theo dõi các chứng chỉ này dựa trên metric days to expiry rồi kích hoạt một custom action báo cho nhóm bảo mật.",
+        "reason": "Đúng đối tượng (chứng chỉ import) và làm được, nhưng phải tự dựng alarm và custom action cho thông báo — nhiều cấu hình hơn so với dùng rule có sẵn."
+      },
+      {
+        "key": "B",
+        "textVi": "Theo dõi metric Amazon CloudWatch \"days to expiry\" cho các chứng chỉ được tạo qua ACM. Tạo CloudWatch alarm theo dõi các chứng chỉ này dựa trên metric days to expiry rồi kích hoạt một custom action báo cho nhóm bảo mật.",
+        "reason": "Chứng chỉ do ACM cấp được ACM tự gia hạn, nên theo dõi chúng không giải quyết được nhu cầu về chứng chỉ của bên thứ ba."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Config managed rule kiểm tra các chứng chỉ SSL/TLS được tạo qua ACM có sắp hết hạn trong 30 ngày không. Cấu hình rule gửi thông báo Amazon SNS cho nhóm bảo mật nếu có chứng chỉ hết hạn trong 30 ngày.",
+        "reason": "Nhắm sai đối tượng: chứng chỉ do ACM cấp được tự gia hạn; rủi ro nằm ở chứng chỉ bên thứ ba được import vào ACM."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Config managed rule kiểm tra các chứng chỉ SSL/TLS của bên thứ ba được import vào ACM có sắp hết hạn trong 30 ngày không. Cấu hình rule gửi thông báo Amazon SNS cho nhóm bảo mật nếu có chứng chỉ hết hạn trong 30 ngày.",
+        "reason": "ACM không tự gia hạn chứng chỉ import; managed rule acm-certificate-expiration-check có sẵn, chỉ cần đặt ngưỡng 30 ngày và gửi qua SNS — đúng đối tượng, gần như không phải viết script."
+      }
+    ],
+    "explanationVi": "Hai ý cần nắm: ACM tự gia hạn chứng chỉ do ACM cấp nhưng không gia hạn chứng chỉ bên thứ ba được import, nên chỉ chứng chỉ import mới cần theo dõi. Để ít script nhất, dùng AWS Config managed rule acm-certificate-expiration-check (đặt số ngày là 30) và gửi thông báo qua SNS. CloudWatch alarm trên metric DaysToExpiry cũng làm được nhưng cần cấu hình nhiều hơn.",
+    "keyHint": "\"third-party ... certificates\" (import vào ACM) + \"least amount of scripting\" → AWS Config managed rule kiểm tra hết hạn + SNS."
+  },
+  {
+    "id": 10333,
+    "stemVi": "Một công ty giải pháp y tế muốn chạy ứng dụng trên phần cứng single-tenant (dành riêng cho một khách hàng) để đáp ứng quy định.",
+    "promptVi": "Cách nào sau đây tiết kiệm chi phí nhất (MOST cost-effective) để cô lập các Amazon Elastic Compute Cloud (Amazon EC2) instance trên phần cứng single-tenant?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dedicated Instances",
+        "reason": "Dedicated Instance chạy trên phần cứng dành riêng cho một khách hàng, cách ly vật lý với account khác — đáp ứng yêu cầu single-tenant với chi phí thấp hơn Dedicated Host."
+      },
+      {
+        "key": "B",
+        "textVi": "Dedicated Hosts",
+        "reason": "Cũng là phần cứng riêng và cho thêm quyền kiểm soát việc đặt instance (hữu ích cho license theo socket/core), nhưng đắt hơn — đề không cần các khả năng đó."
+      },
+      {
+        "key": "C",
+        "textVi": "On-Demand Instances",
+        "reason": "On-Demand mặc định chạy trên phần cứng dùng chung (shared tenancy), không bảo đảm single-tenant."
+      },
+      {
+        "key": "D",
+        "textVi": "Spot Instances",
+        "reason": "Spot rẻ nhưng chạy trên phần cứng dùng chung và có thể bị thu hồi, không đáp ứng yêu cầu single-tenant."
+      }
+    ],
+    "explanationVi": "Cả Dedicated Instances và Dedicated Hosts đều cho phần cứng single-tenant. Dedicated Host phù hợp khi cần biết và kiểm soát máy chủ vật lý (ví dụ mang license theo socket/core), còn chỉ cần cách ly phần cứng thì Dedicated Instances rẻ hơn. On-Demand và Spot là kiểu mua, mặc định chạy trên phần cứng dùng chung.",
+    "keyHint": "\"single-tenant hardware\" + \"MOST cost-effective\" → Dedicated Instances (Dedicated Hosts khi cần kiểm soát license/máy chủ)."
+  },
+  {
+    "id": 10334,
+    "stemVi": "Một tổ chức tài chính đang chuyển các hệ thống back-office quan trọng lên AWS. Các hệ thống này hiện dựa vào cơ sở dữ liệu Microsoft SQL Server chạy trên hạ tầng on-premises. Dữ liệu rất nhạy cảm và phải tuân thủ quy định. Tổ chức muốn tăng cường bảo mật và giảm tối đa công quản trị cơ sở dữ liệu trong quá trình di chuyển.",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các mục tiêu này với ít gánh nặng vận hành nhất?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Di chuyển cơ sở dữ liệu SQL Server sang Amazon RDS for SQL Server triển khai Multi-AZ. Bật mã hóa at rest bằng khóa do AWS Key Management Service (AWS KMS) quản lý.",
+        "reason": "RDS tự động hóa sao lưu, vá lỗi và giám sát; Multi-AZ cho failover tự động; mã hóa at rest bằng KMS bật dễ dàng — giữ nguyên SQL Server, an toàn và ít công vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển dữ liệu SQL Server sang Amazon Timestream để có phân tích chuỗi thời gian. Dùng AWS CloudTrail để giám sát truy cập dữ liệu.",
+        "reason": "Timestream là cơ sở dữ liệu chuỗi thời gian cho telemetry/metric, không thay được cơ sở dữ liệu quan hệ SQL Server của hệ thống tài chính."
+      },
+      {
+        "key": "C",
+        "textVi": "Di chuyển cơ sở dữ liệu SQL Server sang các Amazon EC2 instance với EBS volume được mã hóa. Dùng AWS KMS customer managed key để mã hóa.",
+        "reason": "Bảo mật được nhưng tổ chức phải tự vá hệ điều hành và SQL Server, tự sao lưu và dựng tính sẵn sàng cao — trái yêu cầu giảm công quản trị."
+      },
+      {
+        "key": "D",
+        "textVi": "Xuất cơ sở dữ liệu SQL Server ra định dạng CSV và lưu vào Amazon S3 với bucket policy để kiểm soát truy cập. Dùng AWS Backup để bảo vệ dữ liệu.",
+        "reason": "File CSV trên S3 mất cấu trúc quan hệ, giao dịch và khả năng truy vấn của cơ sở dữ liệu, không chạy được hệ thống nghiệp vụ đang hoạt động."
+      }
+    ],
+    "explanationVi": "Yêu cầu là giữ SQL Server, tăng bảo mật và giảm công quản trị. Amazon RDS for SQL Server là dịch vụ được quản lý (sao lưu, vá lỗi, giám sát tự động), Multi-AZ cho tính sẵn sàng cao, và mã hóa at rest bằng KMS đáp ứng tuân thủ. Tự chạy trên EC2 tốn công vận hành, còn Timestream hay CSV trên S3 không thay được cơ sở dữ liệu quan hệ.",
+    "keyHint": "\"Microsoft SQL Server\" + \"minimize database management tasks\" + bảo mật → RDS for SQL Server Multi-AZ + mã hóa KMS."
+  },
+  {
+    "id": 10335,
+    "stemVi": "Một công ty dịch vụ tài chính đã xây ứng dụng chủ lực trên AWS Cloud với yêu cầu bảo mật dữ liệu là khóa mã hóa phải được lưu trong một ứng dụng tùy chỉnh chạy on-premises. Công ty muốn giao cả việc lưu trữ dữ liệu lẫn quá trình mã hóa cho Amazon S3 nhưng vẫn dùng khóa mã hóa hiện có.",
+    "promptVi": "Tùy chọn mã hóa Amazon S3 nào sau đây cho phép công ty dùng Amazon S3 để lưu dữ liệu với các ràng buộc đã nêu?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Server-Side Encryption với khóa AWS Key Management Service (AWS KMS) (SSE-KMS)",
+        "reason": "Khóa nằm trong AWS KMS chứ không ở ứng dụng on-premises của công ty, nên vi phạm yêu cầu giữ khóa tại chỗ."
+      },
+      {
+        "key": "B",
+        "textVi": "Client-Side Encryption, dữ liệu được mã hóa ở phía client trước khi gửi lên Amazon S3",
+        "reason": "Giữ được khóa ở on-premises nhưng công ty phải tự làm việc mã hóa, trái với mong muốn giao quá trình mã hóa cho S3."
+      },
+      {
+        "key": "C",
+        "textVi": "Server-Side Encryption với khóa do khách hàng cung cấp (SSE-C)",
+        "reason": "Công ty gửi khóa của mình kèm mỗi request, S3 dùng khóa đó để mã hóa/giải mã rồi không lưu khóa — vừa giữ khóa ở on-premises vừa giao việc mã hóa cho S3."
+      },
+      {
+        "key": "D",
+        "textVi": "Server-Side Encryption với khóa do Amazon S3 quản lý (SSE-S3)",
+        "reason": "S3 tự tạo và quản lý khóa, công ty không dùng được khóa hiện có của mình."
+      }
+    ],
+    "explanationVi": "Hai ràng buộc: khóa phải do công ty giữ ở on-premises, và việc mã hóa giao cho S3. SSE-C đáp ứng đúng cả hai: khóa đi kèm từng request qua HTTPS, S3 mã hóa phía server và không lưu khóa. Client-side encryption giữ được khóa nhưng công ty phải tự mã hóa; SSE-S3 và SSE-KMS thì khóa nằm ở AWS.",
+    "keyHint": "\"key must be stored in a custom application running on-premises\" + \"offload ... the encryption process to Amazon S3\" → SSE-C."
+  },
+  {
+    "id": 10336,
+    "stemVi": "Một ứng dụng di động cho người dùng gửi ảnh, ảnh được lưu trong một Amazon S3 bucket. Hiện tại, mỗi đêm một lô Amazon EC2 Spot Instance được khởi chạy để xử lý toàn bộ ảnh tải lên trong ngày. Mỗi ảnh cần khoảng 3 phút và 512 MB bộ nhớ để xử lý. Để phản hồi nhanh hơn và giảm chi phí, công ty muốn chuyển sang xử lý ảnh gần thời gian thực, bắt đầu ngay khi ảnh được tải lên.",
+    "promptVi": "Giải pháp nào cho kiến trúc tiết kiệm chi phí nhất (MOST cost-effective) và có khả năng mở rộng để đáp ứng các yêu cầu mới?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Amazon S3 đẩy sự kiện vào một hàng đợi Amazon SQS. Chạy một EC2 Reserved Instance liên tục poll hàng đợi và xử lý từng ảnh khi nhận được.",
+        "reason": "Một instance chạy liên tục tốn tiền cả lúc rảnh và không tự mở rộng khi lượng ảnh tăng, có thể bị nghẽn."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình S3 kích hoạt trực tiếp một dịch vụ AWS App Runner. Triển khai ứng dụng xử lý ảnh dạng container lên App Runner để tự xử lý mỗi lần tải lên.",
+        "reason": "S3 không gọi trực tiếp App Runner được; App Runner dành cho web service và giữ container chạy sẵn, kém tiết kiệm cho tác vụ nền ngắn, rải rác."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình Amazon S3 gửi event notification vào một hàng đợi Amazon SQS mỗi khi có ảnh tải lên. Thiết lập một AWS Lambda function poll hàng đợi và xử lý ảnh bất đồng bộ.",
+        "reason": "Mỗi ảnh tải lên tạo một message trong SQS (bộ đệm bền), Lambda tự lấy và xử lý ngay; 3 phút và 512 MB nằm trong giới hạn của Lambda, trả tiền theo lần chạy và tự mở rộng."
+      },
+      {
+        "key": "D",
+        "textVi": "Bật S3 event notification để kích hoạt một Amazon EventBridge rule. Cấu hình một AWS Step Functions workflow khởi chạy Fargate task trong Amazon ECS để xử lý ảnh.",
+        "reason": "Làm được nhưng thêm nhiều thành phần (EventBridge, Step Functions, task definition ECS) và chi phí khởi chạy task cho mỗi ảnh — phức tạp và đắt hơn Lambda với tác vụ ngắn."
+      }
+    ],
+    "explanationVi": "Tác vụ ngắn (3 phút, 512 MB), kích hoạt theo sự kiện và không đều → Lambda là lựa chọn rẻ và tự mở rộng. Đặt SQS giữa S3 và Lambda giúp đệm sự kiện bền vững và thử lại khi lỗi. Bẫy: EC2 chạy liên tục tốn tiền lúc rảnh; Step Functions + Fargate làm được nhưng quá phức tạp cho xử lý một bước.",
+    "keyHint": "\"as soon as an image is uploaded\" + \"3 minutes and 512 MB\" + \"MOST cost-effective\" → S3 event → SQS → Lambda."
+  },
+  {
+    "id": 10337,
+    "stemVi": "Một công ty IT có ứng dụng Access Control Management (ACM) dùng Amazon RDS for MySQL nhưng đang gặp vấn đề hiệu năng dù đã dùng Read Replica. Công ty thuê bạn làm solutions architect để giải quyết các thách thức về hiệu năng mà không rời bỏ schema cơ sở dữ liệu quan hệ hiện tại. Công ty có văn phòng chi nhánh khắp thế giới và cần giải pháp hoạt động ở quy mô toàn cầu.",
+    "promptVi": "Bạn đề xuất giải pháp nào tiết kiệm chi phí nhất (MOST cost-effective) và hiệu năng cao?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon DynamoDB Global Tables để có hiệu năng đọc và ghi nhanh, cục bộ ở mỗi region.",
+        "reason": "DynamoDB là NoSQL, buộc phải bỏ schema quan hệ hiện tại — trái yêu cầu của đề."
+      },
+      {
+        "key": "B",
+        "textVi": "Chạy Amazon EC2 instance ở mỗi AWS region, cài cơ sở dữ liệu MySQL và di chuyển dữ liệu hiện có sang các cơ sở dữ liệu mới này.",
+        "reason": "Tự vận hành MySQL ở nhiều region, tự lo sao chép dữ liệu giữa chúng là gánh nặng lớn và tốn kém."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Aurora Global Database để có đọc cục bộ nhanh, độ trễ thấp ở mỗi region.",
+        "reason": "Aurora tương thích MySQL nên giữ được schema; Global Database sao chép dữ liệu sang nhiều region ở tầng storage với độ trễ thấp, cho đọc cục bộ nhanh ở từng region và hỗ trợ khôi phục khi cả region gặp sự cố."
+      },
+      {
+        "key": "D",
+        "textVi": "Chạy một Amazon Redshift cluster ở mỗi AWS region. Di chuyển dữ liệu hiện có sang các Redshift cluster.",
+        "reason": "Redshift là data warehouse cho phân tích, không phải cơ sở dữ liệu giao dịch cho ứng dụng quản lý truy cập."
+      }
+    ],
+    "explanationVi": "Yêu cầu: giữ mô hình quan hệ (MySQL), cải thiện hiệu năng và phục vụ người dùng toàn cầu. Aurora Global Database tương thích MySQL, sao chép sang các region phụ với độ trễ thường dưới một giây mà không ảnh hưởng hiệu năng của cluster chính, nên văn phòng ở mỗi nơi đọc cục bộ nhanh. Bẫy: DynamoDB Global Tables nhanh nhưng không phải quan hệ.",
+    "keyHint": "\"without moving away from the underlying relational database schema\" + \"global scale\" → Amazon Aurora Global Database."
+  },
+  {
+    "id": 10338,
+    "stemVi": "Xét IAM policy sau:\n\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"Mystery Policy\",\n      \"Action\": [\n        \"ec2:RunInstances\"\n      ],\n      \"Effect\": \"Allow\",\n      \"Resource\": \"*\",\n      \"Condition\": {\n        \"StringEquals\": {\n          \"aws:RequestedRegion\": \"eu-west-1\"\n        }\n      }\n    }\n  ]\n}",
+    "promptVi": "IAM policy này làm gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cho phép chạy Amazon EC2 instance chỉ ở region eu-west-1, và lệnh gọi API có thể thực hiện từ bất kỳ đâu trên thế giới.",
+        "reason": "aws:RequestedRegion là region đích của lệnh gọi API, nên policy chỉ cho RunInstances ở eu-west-1 và không ràng buộc nơi gửi request."
+      },
+      {
+        "key": "B",
+        "textVi": "Cho phép chạy Amazon EC2 instance ở mọi nơi trừ region eu-west-1.",
+        "reason": "Ngược nghĩa: điều kiện StringEquals chỉ cho phép khi region đích đúng là eu-west-1."
+      },
+      {
+        "key": "C",
+        "textVi": "Cho phép chạy Amazon EC2 instance ở bất kỳ region nào khi lệnh gọi API xuất phát từ region eu-west-1.",
+        "reason": "aws:RequestedRegion không mô tả nơi xuất phát request mà là region mà request nhắm tới."
+      },
+      {
+        "key": "D",
+        "textVi": "Cho phép chạy Amazon EC2 instance ở region eu-west-1 khi lệnh gọi API được thực hiện từ region eu-west-1.",
+        "reason": "Policy không có điều kiện nào về nơi gửi request; người dùng ở bất kỳ đâu cũng gọi được, miễn region đích là eu-west-1."
+      }
+    ],
+    "explanationVi": "Global condition key aws:RequestedRegion so sánh region mà lệnh gọi API nhắm tới với giá trị trong policy. Ở đây Allow ec2:RunInstances chỉ khi region đích là eu-west-1, còn nơi gửi request thì không bị giới hạn. Bẫy: hiểu nhầm RequestedRegion là vị trí của người gọi.",
+    "keyHint": "\"aws:RequestedRegion\" → region đích của API call, không phải nơi gửi request."
+  },
+  {
+    "id": 10339,
+    "stemVi": "Sau một đợt rà soát bảo mật AWS account, chuyên gia tư vấn AWS phát hiện vài cơ sở dữ liệu Amazon RDS chưa được mã hóa.",
+    "promptVi": "Với vai trò Solutions Architect, cần thực hiện những bước nào để mã hóa các cơ sở dữ liệu Amazon RDS này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật Multi-AZ cho cơ sở dữ liệu và bảo đảm standby instance được mã hóa. Dừng cơ sở dữ liệu chính để standby tiếp quản, rồi tắt Multi-AZ.",
+        "reason": "Multi-AZ phục vụ tính sẵn sàng cao; standby dùng cùng cấu hình mã hóa với instance chính nên không thể có standby mã hóa cho instance chưa mã hóa."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo snapshot của cơ sở dữ liệu, sao chép thành snapshot được mã hóa, rồi khôi phục cơ sở dữ liệu từ snapshot mã hóa. Xóa cơ sở dữ liệu cũ.",
+        "reason": "Không bật được mã hóa trên DB instance đã tạo, nhưng có thể mã hóa bản copy của snapshot; khôi phục từ snapshot mã hóa cho DB instance mới đã mã hóa, rồi chuyển ứng dụng sang và xóa bản cũ."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Read Replica của cơ sở dữ liệu và mã hóa read replica. Promote read replica thành cơ sở dữ liệu độc lập, rồi xóa cơ sở dữ liệu cũ.",
+        "reason": "Instance nguồn chưa mã hóa thì không tạo được read replica mã hóa (cùng region), nên cách này không làm được."
+      },
+      {
+        "key": "D",
+        "textVi": "Bật mã hóa trên cơ sở dữ liệu Amazon RDS bằng AWS Console.",
+        "reason": "Mã hóa chỉ chọn được lúc tạo DB instance; không có tùy chọn bật mã hóa trực tiếp cho instance đang chạy."
+      }
+    ],
+    "explanationVi": "Mã hóa RDS chỉ bật được khi tạo DB instance. Cách chuẩn để mã hóa một instance có sẵn: tạo snapshot → copy snapshot với tùy chọn mã hóa (chọn KMS key) → restore ra instance mới đã mã hóa → chuyển ứng dụng sang và xóa instance cũ. Bẫy: read replica và standby Multi-AZ đều theo trạng thái mã hóa của instance chính.",
+    "keyHint": "\"RDS databases are unencrypted\" → snapshot → copy có mã hóa → restore instance mới."
+  },
+  {
+    "id": 10340,
+    "stemVi": "Một công ty muốn lưu các file ít được truy cập trên AWS, và các file này phải được hàng trăm Amazon EC2 instance truy cập đồng thời. Công ty cần dịch vụ lưu trữ file tiết kiệm chi phí nhất mà vẫn truy cập dữ liệu ngay lập tức khi cần.",
+    "promptVi": "Lựa chọn nào sau đây là giải pháp tốt nhất cho các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Storage class Amazon S3 Standard-Infrequent Access (S3 Standard-IA)",
+        "reason": "S3 là object storage truy cập qua API, không phải file storage có ngữ nghĩa file system để nhiều instance mount chung như đề yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Storage class Amazon Elastic File System (EFS) Standard",
+        "reason": "Đáp ứng truy cập đồng thời, nhưng Standard dành cho file truy cập thường xuyên nên đắt hơn với dữ liệu ít dùng."
+      },
+      {
+        "key": "C",
+        "textVi": "Storage class Amazon Elastic File System (EFS) Standard–IA",
+        "reason": "EFS cho hàng nghìn EC2 instance mount đồng thời; lớp Infrequent Access giảm mạnh chi phí lưu trữ cho file ít dùng mà vẫn truy cập ngay khi cần."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon Elastic Block Store (EBS)",
+        "reason": "EBS là block storage gắn vào một instance (Multi-Attach chỉ giới hạn ít instance cùng AZ), không phải file storage cho hàng trăm instance dùng chung."
+      }
+    ],
+    "explanationVi": "Ba yêu cầu: file storage dùng chung cho hàng trăm EC2 instance, dữ liệu ít truy cập, và truy cập ngay khi cần với chi phí thấp nhất. Amazon EFS đáp ứng phần dùng chung; lớp Infrequent Access (trước gọi là Standard-IA) giảm chi phí lưu trữ cho file ít dùng mà vẫn đọc được tức thì. S3 không phải file storage, còn EBS không chia sẻ được cho hàng trăm instance.",
+    "keyHint": "\"concurrently accessed by hundreds of EC2 instances\" + \"less frequently accessed\" → Amazon EFS lớp Infrequent Access."
+  },
+  {
+    "id": 10341,
+    "stemVi": "Một nền tảng hội nghị truyền hình phục vụ người dùng toàn cầu bằng các Amazon EC2 instance phía sau Network Load Balancer (NLB) ở nhiều AWS Region. Kiến trúc hiện tại cho client kết nối tới bất kỳ Region nào qua endpoint công khai, tùy cách DNS phân giải. Tuy nhiên, người dùng ở xa load balancer thường gặp độ trễ cao và thời gian kết nối chậm, nhất là lúc khởi tạo phiên. Công ty muốn tối ưu trải nghiệm cho người dùng toàn cầu bằng cách giảm độ trễ đầu-cuối và thời gian tải, trong khi vẫn giữ các NLB và hạ tầng ứng dụng chạy trên EC2 hiện có.",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thay mọi Network Load Balancer (NLB) bằng Application Load Balancer (ALB) ở từng Region. Đăng ký EC2 instance làm target sau ALB và dùng cross-zone load balancing để phân phối theo độ trễ.",
+        "reason": "Trái yêu cầu giữ NLB; ALB chỉ hỗ trợ HTTP/HTTPS có thể không hợp với lưu lượng thời gian thực, và cross-zone chỉ hoạt động trong một Region nên không giảm độ trễ toàn cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình Amazon Route 53 với latency-based routing để đưa người dùng tới Region có thời gian phản hồi thấp nhất. Dùng health check để failover sang Region khác nếu một NLB không khỏe.",
+        "reason": "Chọn Region tốt hơn nhưng lưu lượng vẫn đi trên Internet công cộng và phụ thuộc DNS caching; không tăng tốc ở tầng mạng như AWS global network."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai Amazon CloudFront có bật HTTP caching phía trước các NLB. Dùng edge location của CloudFront để phục vụ request nhanh hơn và giảm tải cho EC2 phía sau.",
+        "reason": "CloudFront tối ưu cho nội dung HTTP có thể cache; lưu lượng hội nghị truyền hình thời gian thực (TCP/UDP) không cache được và CloudFront không chuyển tiếp UDP."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai một standard accelerator trong AWS Global Accelerator và đăng ký các NLB theo Region làm endpoint. Dùng accelerator để chuyển request của người dùng qua mạng edge toàn cầu của AWS tới NLB khỏe gần nhất.",
+        "reason": "Global Accelerator cấp IP anycast tĩnh, đón người dùng ở edge gần nhất rồi đi trên mạng AWS tới NLB khỏe gần nhất; hỗ trợ TCP/UDP và giữ nguyên NLB, EC2 hiện có."
+      }
+    ],
+    "explanationVi": "Ứng dụng thời gian thực dùng NLB (TCP/UDP) ở nhiều Region, cần giảm độ trễ toàn cầu mà không đổi hạ tầng. AWS Global Accelerator nhận lưu lượng ở edge location gần người dùng và đưa đi trên mạng backbone của AWS tới endpoint NLB khỏe gần nhất, kèm failover nhanh không phụ thuộc DNS. Bẫy: CloudFront dành cho HTTP có thể cache, còn Route 53 vẫn đi trên Internet công cộng.",
+    "keyHint": "\"NLBs in several AWS Regions\" + \"reducing end-to-end latency\" + giữ hạ tầng → AWS Global Accelerator với endpoint là NLB."
+  },
+  {
+    "id": 10342,
+    "stemVi": "Một ứng dụng thương mại điện tử dùng Amazon Aurora triển khai Multi-AZ cho cơ sở dữ liệu. Khi phân tích metric hiệu năng, nhóm kỹ sư thấy các thao tác đọc gây I/O cao và làm tăng độ trễ cho các request ghi.",
+    "promptVi": "Với vai trò AWS Certified Solutions Architect Associate, bạn đề xuất gì để tách request đọc khỏi request ghi?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo thêm một cơ sở dữ liệu Amazon Aurora khác và liên kết nó với cơ sở dữ liệu chính như một read replica.",
+        "reason": "Không thể lấy một Aurora database độc lập rồi gắn vào làm replica; Aurora Replica được thêm như reader instance trong cùng cluster."
+      },
+      {
+        "key": "B",
+        "textVi": "Bật read-through caching trên cơ sở dữ liệu Amazon Aurora.",
+        "reason": "Aurora không có tính năng read-through caching tích hợp để bật; muốn cache phải thêm ElastiCache và sửa ứng dụng."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một read replica và sửa ứng dụng để dùng endpoint phù hợp.",
+        "reason": "Aurora Replica dùng chung cluster volume và nhận đọc; ứng dụng gửi đọc tới reader endpoint, ghi tới cluster (writer) endpoint, nhờ đó tải đọc không còn đè lên instance ghi."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình ứng dụng đọc từ standby instance của Multi-AZ.",
+        "reason": "Aurora không có khái niệm standby kiểu RDS Multi-AZ; với RDS Multi-AZ instance truyền thống, standby cũng không nhận đọc."
+      }
+    ],
+    "explanationVi": "Tách đọc khỏi ghi trong Aurora: thêm Aurora Replica (reader) và cho ứng dụng dùng reader endpoint cho truy vấn đọc, cluster endpoint cho ghi. Reader endpoint tự cân bằng kết nối giữa các replica, và replica cũng là đích failover. Bẫy: standby và read-through caching là khái niệm không áp dụng cho Aurora.",
+    "keyHint": "\"separate the read requests from the write requests\" trên Aurora → Aurora Replica + reader endpoint."
+  },
+  {
+    "id": 10343,
+    "stemVi": "Một công ty trước nay chỉ hoạt động ở region us-east-1 và lưu dữ liệu mã hóa trong Amazon S3 bằng SSE-KMS. Để tăng cường bảo mật và cải thiện kiến trúc sao lưu, khôi phục, công ty muốn dữ liệu mã hóa trong Amazon S3 được sao chép (replicate) sang AWS region us-west-1. Chính sách bảo mật yêu cầu dữ liệu phải được mã hóa và giải mã bằng cùng một khóa ở cả hai region.",
+    "promptVi": "Giải pháp nào sau đây đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon S3 bucket mới ở us-east-1, bật replication từ bucket mới này sang một bucket khác ở us-west-1. Bật mã hóa SSE-KMS trên bucket mới ở us-east-1 bằng AWS KMS multi-region key. Chép dữ liệu hiện có từ bucket cũ ở us-east-1 sang bucket mới ở us-east-1.",
+        "reason": "Multi-region key có cùng key material và key ID ở cả hai region nên đáp ứng yêu cầu cùng một khóa; chép lại dữ liệu vào bucket mới giúp mọi object được mã hóa bằng khóa mới và được replicate sang us-west-1."
+      },
+      {
+        "key": "B",
+        "textVi": "Bật replication cho bucket hiện tại ở us-east-1 sang một bucket ở us-west-1. Chia sẻ AWS KMS key hiện có từ us-east-1 sang us-west-1.",
+        "reason": "KMS key thông thường chỉ tồn tại trong một region, không \"chia sẻ\" sang region khác được."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển AWS KMS single-region key đang dùng cho bucket hiện tại thành AWS KMS multi-region key. Bật Amazon S3 batch replication cho dữ liệu hiện có từ bucket ở us-east-1 sang bucket ở us-west-1.",
+        "reason": "Không thể chuyển một single-Region key có sẵn thành multi-Region key; multi-Region key phải tạo mới."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon CloudWatch scheduled rule gọi AWS Lambda function chép dữ liệu hằng ngày từ bucket nguồn ở us-east-1 sang bucket đích ở us-west-1. Cấp quyền AWS KMS key cho Lambda function để mã hóa và giải mã dữ liệu ở cả hai bucket.",
+        "reason": "Chép theo ngày có thể mất tới một ngày dữ liệu khi có sự cố, lại phải tự viết và duy trì code sao chép; vẫn không giải quyết được việc dùng cùng một khóa ở hai region."
+      }
+    ],
+    "explanationVi": "\"Cùng một khóa ở hai region\" chỉ đạt được bằng AWS KMS multi-Region key (cùng key material, cùng key ID). Vì không thể đổi key single-Region có sẵn thành multi-Region, cần tạo multi-Region key mới, dùng nó cho bucket có bật replication sang us-west-1, rồi chép dữ liệu cũ vào để mã hóa lại. Bẫy: KMS key không chia sẻ sang region khác, và Lambda chép theo lịch thì vừa tốn công vừa có RPO cao.",
+    "keyHint": "\"same key in both AWS regions\" + S3 replication → AWS KMS multi-Region key (tạo mới, không chuyển đổi key cũ được)."
+  },
+  {
+    "id": 10344,
+    "stemVi": "Một công ty phân tích dữ liệu sản xuất có nhiều script tự động làm sạch dữ liệu, kiểm tra hợp lệ và tích hợp hệ thống. Các script này hiện chạy bằng cron scheduler trên một máy Linux cục bộ, mỗi lần chạy tới 30 phút. Công ty muốn di chuyển các script lên AWS mà không thay đổi nhiều, ưu tiên kiến trúc container serverless tự mở rộng và sau này có thể phản hồi theo trigger sự kiện. Giải pháp phải giảm tối đa việc quản lý hạ tầng.",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các yêu cầu này với ít refactor và ít công vận hành nhất?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Đóng gói các script thành một container image. Dùng Amazon EventBridge Scheduler định nghĩa lịch chạy định kỳ dạng cron. Cấu hình EventBridge Scheduler gọi các AWS Fargate task qua Amazon ECS.",
+        "reason": "Container giữ nguyên script; EventBridge Scheduler serverless thay cron và hỗ trợ trigger sự kiện về sau; Fargate chạy task không giới hạn 15 phút và không phải quản lý máy chủ."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một container image cho mỗi script. Dùng AWS Step Functions định nghĩa một workflow cho mọi tác vụ theo lịch. Dùng Wait state để trì hoãn việc chạy và chạy task bằng tích hợp RunTask của Step Functions với ECS Fargate.",
+        "reason": "Dùng Wait state để giả lập lịch cron là phức tạp không cần thiết; Step Functions hợp với workflow nhiều bước, không phải job định kỳ đơn lẻ."
+      },
+      {
+        "key": "C",
+        "textVi": "Đóng gói các script thành một container image. Triển khai image lên AWS Batch với managed compute environment trên Amazon EC2. Định nghĩa scheduling policy trong AWS Batch để kích hoạt job theo biểu thức cron.",
+        "reason": "Batch hướng tới job tính toán theo hàng đợi; compute environment trên EC2 thêm việc quản lý hạ tầng, trái yêu cầu serverless; scheduling policy của Batch dùng để chia sẻ tài nguyên công bằng, không phải lập lịch cron."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển mỗi script thành một Lambda function và đóng gói dạng file zip. Dùng Amazon EventBridge Scheduler chạy các function theo lịch cố định. Dùng Amazon S3 lưu kết quả và log của function.",
+        "reason": "Lambda giới hạn 15 phút mỗi lần chạy, không đủ cho script chạy tới 30 phút; viết lại mỗi script thành function cũng là refactor đáng kể."
+      }
+    ],
+    "explanationVi": "Các ràng buộc then chốt: script chạy tới 30 phút (loại Lambda), muốn container serverless (loại EC2/Batch trên EC2), ít refactor và lập lịch kiểu cron có thể mở rộng sang trigger sự kiện. EventBridge Scheduler gọi ECS Fargate task theo cron đáp ứng tất cả. Bẫy: Lambda có giới hạn 15 phút; Step Functions với Wait state là dùng sai công cụ.",
+    "keyHint": "\"up to 30 minutes\" + \"containerized, serverless\" + cron → EventBridge Scheduler + ECS Fargate task."
   }
 ]
