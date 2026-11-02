@@ -646,5 +646,689 @@
     ],
     "explanationVi": "Điểm mấu chốt: SSE-S3 vốn đã mã hóa mỗi object bằng một khóa dữ liệu duy nhất (envelope encryption với root key xoay vòng). Vì vậy chỉ cần một bucket với SSE-S3 là đạt \"mỗi file một khóa\" mà không phải chia dữ liệu. Bẫy là nghĩ phải dùng KMS với encryption context hoặc client-side encryption mới có khóa riêng cho từng file.",
     "keyHint": "\"encrypt each file with a different encryption key\" + \"without ... splitting the data\" → một bucket + SSE-S3 (mỗi object một khóa riêng)."
+  },
+  {
+    "id": 10523,
+    "stemVi": "Một công ty dược phẩm toàn cầu muốn chuyển phần lớn dữ liệu on-premises sang Amazon S3, Amazon Elastic File System (Amazon EFS) và Amazon FSx for Windows File Server một cách dễ dàng, nhanh chóng và tiết kiệm chi phí.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây là PHÙ HỢP NHẤT (BEST fit) để tự động hóa và tăng tốc việc truyền dữ liệu trực tuyến tới các dịch vụ lưu trữ AWS này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng File Gateway để tự động hóa và tăng tốc việc truyền dữ liệu trực tuyến tới các dịch vụ lưu trữ AWS đã nêu",
+        "reason": "File Gateway cung cấp share file on-premises với dữ liệu nằm trên S3 (hoặc FSx), không phải công cụ di chuyển dữ liệu hàng loạt và không ghi vào EFS."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Transfer Family để tự động hóa và tăng tốc việc truyền dữ liệu trực tuyến tới các dịch vụ lưu trữ AWS đã nêu",
+        "reason": "Transfer Family cung cấp endpoint SFTP/FTPS/FTP cho đối tác trao đổi file với S3 hoặc EFS; nó không hỗ trợ FSx for Windows File Server và không phải dịch vụ tăng tốc di chuyển dữ liệu."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng thiết bị AWS Snowball Edge Storage Optimized để tự động hóa và tăng tốc việc truyền dữ liệu trực tuyến tới các dịch vụ lưu trữ AWS đã nêu",
+        "reason": "Snowball Edge là thiết bị chuyển dữ liệu offline (gửi thiết bị vật lý), không phải truyền trực tuyến như đề yêu cầu; dịch vụ này cũng đã ngừng nhận khách hàng mới."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS DataSync để tự động hóa và tăng tốc việc truyền dữ liệu trực tuyến tới các dịch vụ lưu trữ AWS đã nêu",
+        "reason": "DataSync là dịch vụ truyền dữ liệu trực tuyến, tự động hóa và tăng tốc việc sao chép lượng lớn dữ liệu qua internet hoặc Direct Connect, tích hợp sẵn với S3, EFS và FSx for Windows File Server."
+      }
+    ],
+    "explanationVi": "Từ khóa là \"automate and accelerate online data transfers\" tới S3, EFS và FSx for Windows File Server. AWS DataSync được thiết kế đúng cho việc này: nhanh hơn nhiều lần so với công cụ dòng lệnh, có lập lịch, kiểm tra toàn vẹn và hỗ trợ cả ba đích. Snowball là truyền offline; File Gateway và Transfer Family phục vụ truy cập file liên tục, không phải di chuyển dữ liệu hàng loạt.",
+    "keyHint": "\"automate and accelerate online data transfers\" tới S3/EFS/FSx → AWS DataSync."
+  },
+  {
+    "id": 10524,
+    "stemVi": "Nhóm kỹ thuật của một công ty thương mại điện tử muốn chuyển từ Amazon Simple Queue Service (Amazon SQS) Standard queue sang FIFO (First-In-First-Out) queue có dùng batching.",
+    "promptVi": "Là solutions architect, bạn sẽ đưa những bước nào sau đây vào danh sách kiểm tra cho việc chuyển đổi? (Chọn ba.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bảo đảm thông lượng của FIFO (First-In-First-Out) queue đích không vượt quá 3.000 tin nhắn mỗi giây",
+        "reason": "Theo đáp án gốc, FIFO queue (không bật high throughput) xử lý tối đa 300 lần gọi API mỗi giây, và với batching tối đa 10 tin nhắn mỗi lần gọi thì giới hạn là 3.000 tin nhắn mỗi giây."
+      },
+      {
+        "key": "B",
+        "textVi": "Bảo đảm tên của FIFO (First-In-First-Out) queue kết thúc bằng hậu tố .fifo",
+        "reason": "SQS bắt buộc tên FIFO queue phải kết thúc bằng .fifo; đây là bước không thể bỏ qua khi tạo queue mới."
+      },
+      {
+        "key": "C",
+        "textVi": "Chuyển đổi Standard queue hiện có thành FIFO (First-In-First-Out) queue",
+        "reason": "Không thể đổi loại của một queue sau khi tạo; Standard queue không chuyển thẳng thành FIFO queue được."
+      },
+      {
+        "key": "D",
+        "textVi": "Bảo đảm thông lượng của FIFO (First-In-First-Out) queue đích không vượt quá 300 tin nhắn mỗi giây",
+        "reason": "300 là giới hạn khi không dùng batching; đề nói rõ có dùng batching nên giới hạn tương ứng là 3.000 tin nhắn mỗi giây."
+      },
+      {
+        "key": "E",
+        "textVi": "Xóa Standard queue hiện có và tạo lại dưới dạng FIFO (First-In-First-Out) queue",
+        "reason": "Vì không đổi được loại queue, cách duy nhất là tạo FIFO queue mới (và bỏ Standard queue cũ) rồi chuyển ứng dụng sang dùng nó."
+      },
+      {
+        "key": "F",
+        "textVi": "Bảo đảm tên của FIFO (First-In-First-Out) queue giống với tên Standard queue",
+        "reason": "Tên FIFO queue phải có hậu tố .fifo nên không thể trùng tên với Standard queue cũ."
+      }
+    ],
+    "explanationVi": "Ba điểm cần nhớ khi chuyển sang FIFO: không đổi được loại của queue có sẵn nên phải tạo lại; tên FIFO queue bắt buộc kết thúc bằng .fifo; và thông lượng FIFO mặc định là 300 tin nhắn/giây, hoặc 3.000 tin nhắn/giây khi dùng batching. Đề nhắc \"with batching\" nên con số đúng là 3.000 chứ không phải 300.",
+    "keyHint": "\"FIFO queues with batching\" → tạo lại queue, tên có hậu tố \".fifo\", giới hạn 3.000 tin nhắn/giây.",
+    "review": {
+      "reason": "Chưa chắc chắn: giới hạn 3.000 tin nhắn/giây chỉ đúng với FIFO queue thường dùng batching. Từ 2021 SQS có chế độ high throughput cho FIFO queue với hạn mức cao hơn nhiều (hàng chục nghìn giao dịch mỗi giây, tùy Region), nên bước \"bảo đảm không vượt 3.000 tin nhắn/giây\" không còn là ràng buộc bắt buộc khi chuyển đổi. Khi đi thi, nếu đề không nhắc high throughput thì vẫn chọn theo giới hạn 3.000."
+    }
+  },
+  {
+    "id": 10525,
+    "stemVi": "Một công ty thương mại điện tử triển khai ứng dụng trên nhiều Amazon EC2 instance đặt trong một private subnet dùng IPv4. Các EC2 instance này đọc và ghi khối lượng dữ liệu rất lớn tới Amazon S3 trong cùng AWS Region. Công ty đã cấu hình định tuyến subnet để mọi lưu lượng ra internet đi qua một Network Address Translation gateway (NAT gateway). Công ty muốn xây giải pháp tối ưu chi phí nhất mà không ảnh hưởng khả năng giao tiếp của ứng dụng với Amazon S3 hay với internet.",
+    "promptVi": "Là AWS Certified Solutions Architect Associate, bạn khuyên dùng phương án nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một egress-only internet gateway trong public subnet. Cập nhật route table của private subnet để chuyển lưu lượng tới internet gateway. Cập nhật network ACL để cho phép lưu lượng tới S3",
+        "reason": "Egress-only internet gateway chỉ dùng cho IPv6, trong khi các instance dùng IPv4; nó cũng gắn ở cấp VPC chứ không đặt trong subnet."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một VPC gateway endpoint cho Amazon S3. Gắn endpoint policy vào endpoint. Cập nhật route table để chuyển lưu lượng tới S3 sang VPC endpoint",
+        "reason": "Gateway endpoint cho S3 miễn phí, đưa lưu lượng S3 đi thẳng trong mạng AWS thay vì qua NAT gateway (vốn tính phí theo GB xử lý), còn lưu lượng internet khác vẫn đi qua NAT gateway như cũ."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một internet gateway. Cập nhật route table của private subnet để chuyển lưu lượng tới internet gateway. Cập nhật network ACL (NACL) để cho phép lưu lượng tới S3",
+        "reason": "Route ra internet gateway biến private subnet thành public subnet, và các instance không có public IP thì cũng không ra được internet qua đó — vừa giảm bảo mật vừa làm hỏng kết nối."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Gateway Load Balancer (GWLB) endpoint cho Amazon S3. Cập nhật route table của private subnet để chuyển lưu lượng tới S3 qua Gateway Load Balancer (GWLB) endpoint",
+        "reason": "GWLB endpoint dùng để đưa lưu lượng qua các appliance bảo mật bên thứ ba, không phải endpoint riêng tới S3, và không giảm chi phí truyền dữ liệu S3."
+      }
+    ],
+    "explanationVi": "Khối lượng lớn dữ liệu S3 đi qua NAT gateway bị tính phí xử lý theo GB. Gateway endpoint cho S3 không tính phí và giữ lưu lượng S3 trong mạng AWS, chỉ cần thêm route vào route table; lưu lượng internet còn lại vẫn qua NAT gateway nên không ảnh hưởng ứng dụng. Bẫy: egress-only internet gateway chỉ dành cho IPv6, GWLB endpoint dành cho appliance kiểm tra lưu lượng.",
+    "keyHint": "\"huge volume of data\" tới S3 qua \"NAT gateway\" + \"most cost-optimal\" → VPC gateway endpoint cho S3."
+  },
+  {
+    "id": 10526,
+    "stemVi": "Một công ty muốn cải thiện ứng dụng game bằng cách thêm bảng xếp hạng (leaderboard) dùng thuật toán độc quyền phức tạp dựa trên chỉ số thành tích của người chơi để xác định những người dẫn đầu theo thời gian thực. Yêu cầu kỹ thuật đòi hỏi độ co giãn cao, độ trễ thấp và xử lý thời gian thực để cung cấp dữ liệu người dùng tùy biến cho cộng đồng người chơi. Bảng xếp hạng sẽ được hàng triệu người dùng truy cập đồng thời.",
+    "promptVi": "Những lựa chọn nào sau đây ủng hộ việc dùng Amazon ElastiCache để đáp ứng các yêu cầu đã nêu? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon ElastiCache để chạy các truy vấn JOIN rất phức tạp",
+        "reason": "ElastiCache là kho key-value trong bộ nhớ, không có engine SQL để chạy JOIN; JOIN phức tạp là việc của cơ sở dữ liệu quan hệ."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon ElastiCache để cải thiện hiệu năng các workload Extract-Transform-Load (ETL)",
+        "reason": "ETL là xử lý batch khối lượng lớn, thường dùng AWS Glue hay Amazon EMR; cache trong bộ nhớ không phải công cụ cho việc này."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon ElastiCache để cải thiện độ trễ và thông lượng cho các ứng dụng ghi nhiều (write-heavy)",
+        "reason": "Lợi ích chính của cache là phục vụ dữ liệu được đọc lặp lại; với ứng dụng ghi nhiều, mọi lần ghi vẫn phải xuống cơ sở dữ liệu nên cache không giúp đáng kể."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon ElastiCache để cải thiện độ trễ và thông lượng cho các ứng dụng đọc nhiều (read-heavy)",
+        "reason": "Bảng xếp hạng được hàng triệu người cùng đọc; ElastiCache phục vụ dữ liệu từ bộ nhớ với độ trễ dưới mili giây, giảm tải cho cơ sở dữ liệu — đúng loại workload đọc nhiều."
+      },
+      {
+        "key": "E",
+        "textVi": "Dùng Amazon ElastiCache để cải thiện hiệu năng các workload tính toán nặng (compute-intensive)",
+        "reason": "Kết quả của thuật toán xếp hạng phức tạp có thể được tính một lần rồi lưu trong ElastiCache (ví dụ sorted set của Redis), tránh phải tính lại cho mỗi request."
+      }
+    ],
+    "explanationVi": "AWS mô tả ElastiCache giúp cải thiện độ trễ và thông lượng cho workload đọc nhiều (mạng xã hội, game, leaderboard) và workload tính toán nặng (như recommendation engine) bằng cách lưu dữ liệu và kết quả tính toán trong bộ nhớ. Leaderboard với thuật toán phức tạp và hàng triệu người đọc rơi vào cả hai trường hợp. ElastiCache không chạy JOIN, không phục vụ ETL và không phải giải pháp cho workload ghi nhiều.",
+    "keyHint": "\"leaderboard\" + \"accessed by millions of users\" + \"complex proprietary algorithm\" → ElastiCache cho workload read-heavy và compute-intensive."
+  },
+  {
+    "id": 10527,
+    "stemVi": "Một startup vừa chuyển ứng dụng web nguyên khối (monolithic) lên AWS Cloud. Ứng dụng chạy trên một Amazon EC2 instance duy nhất. Hiện số người dùng còn ít và startup không muốn tốn công cho chiến lược khôi phục thảm họa (disaster recovery) phức tạp hay Auto Scaling Group. Ứng dụng chấp nhận thời gian ngừng tối đa 10 phút.",
+    "promptVi": "Khi có sự cố, bạn đề xuất lựa chọn nào sau đây làm quy trình khôi phục instance tự động và tiết kiệm chi phí?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình AWS Trusted Advisor để theo dõi health check của Amazon EC2 instance và đưa ra hành động khắc phục khi phát hiện cờ unhealthy",
+        "reason": "Trusted Advisor chỉ đưa ra khuyến nghị về chi phí, bảo mật, hiệu năng; nó không theo dõi health check thời gian thực hay tự khôi phục instance."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình Amazon EventBridge event để kích hoạt việc khôi phục Amazon EC2 instance khi instance hoặc ứng dụng bị lỗi",
+        "reason": "EventBridge không có hành động recover EC2 tích hợp sẵn; muốn vậy phải tự viết thêm Lambda hay automation, và nó cũng không tự phát hiện lỗi ứng dụng."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình Amazon CloudWatch alarm kích hoạt việc khôi phục Amazon EC2 instance khi instance gặp lỗi. Tuy nhiên, instance chỉ được dùng Amazon EBS volume",
+        "reason": "CloudWatch alarm với hành động recover tự chuyển instance sang phần cứng mới khi system status check lỗi, gần như không tốn thêm chi phí; hành động này chỉ hỗ trợ instance dùng EBS, không có instance store volume."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình Amazon CloudWatch alarm kích hoạt việc khôi phục Amazon EC2 instance khi instance gặp lỗi. Instance có thể dùng Amazon Elastic Block Store (Amazon EBS) hoặc instance store volume",
+        "reason": "Hành động recover không hỗ trợ instance có instance store volume, vì dữ liệu trên instance store không thể chuyển sang host mới."
+      }
+    ],
+    "explanationVi": "Với một instance duy nhất và chấp nhận vài phút ngừng, cách rẻ và tự động là CloudWatch alarm theo dõi system status check với hành động recover. Điều kiện cần nhớ: recovery chỉ áp dụng cho instance chỉ dùng EBS (không có instance store) và chỉ cho lỗi system status check. Trusted Advisor và EventBridge không tự khôi phục instance.",
+    "keyHint": "\"single Amazon EC2 instance\" + \"cost-effective and automatic recovery\" → CloudWatch alarm recover, chỉ với instance dùng EBS."
+  },
+  {
+    "id": 10528,
+    "stemVi": "Một developer đã cấu hình cho phép lưu lượng inbound trên các port cần thiết ở cả Security Group của Amazon EC2 instance lẫn Network Access Control List (Network ACL) của subnet chứa instance đó. Tuy vậy, developer vẫn không kết nối được tới service đang chạy trên Amazon EC2 instance.",
+    "promptVi": "Là solutions architect, bạn sẽ khắc phục vấn đề này thế nào?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Network ACL là stateful, nên cho phép lưu lượng inbound tới các port cần thiết là đủ để kết nối. Security Group là stateless, nên phải cho phép cả lưu lượng inbound lẫn outbound",
+        "reason": "Phát biểu này đảo ngược bản chất hai lớp: Security Group mới là stateful, còn Network ACL là stateless."
+      },
+      {
+        "key": "B",
+        "textVi": "Security Group là stateful, nên cho phép lưu lượng inbound tới các port cần thiết là đủ để kết nối. Network ACL là stateless, nên phải cho phép cả lưu lượng inbound lẫn outbound",
+        "reason": "Security Group tự cho phép phản hồi của kết nối đã được cho vào, nhưng Network ACL thì không; vì developer mới mở inbound, cần thêm rule outbound trên Network ACL cho dải ephemeral port (1024-65535) để phản hồi đi ra được."
+      },
+      {
+        "key": "C",
+        "textVi": "Rule của Network ACL không bao giờ được sửa từ dòng lệnh. Sửa rule từ dòng lệnh sẽ khóa rule và gây hành vi thất thường",
+        "reason": "Không có giới hạn nào như vậy: rule của Network ACL sửa được bằng console, CLI hay API như nhau."
+      },
+      {
+        "key": "D",
+        "textVi": "IAM Role định nghĩa trong Security Group khác với IAM Role được cấp quyền trong Network ACL",
+        "reason": "Security Group và Network ACL lọc lưu lượng theo IP, port và giao thức; chúng không chứa hay dùng IAM Role."
+      }
+    ],
+    "explanationVi": "Security Group là stateful: cho phép inbound thì phản hồi tự được phép đi ra. Network ACL là stateless: phải có rule riêng cho cả chiều vào và chiều ra, trong đó chiều ra là phản hồi tới ephemeral port của client. Developer mới mở inbound ở cả hai nơi nên phản hồi bị Network ACL chặn. Bẫy là phương án đảo ngược stateful/stateless.",
+    "keyHint": "\"configured inbound traffic\" ở cả Security Group và Network ACL nhưng vẫn \"unable to connect\" → Network ACL stateless, cần mở thêm outbound (ephemeral port)."
+  },
+  {
+    "id": 10529,
+    "stemVi": "Một startup y tế đang hiện đại hóa ứng dụng phân tích nguyên khối viết bằng Python bằng cách chuyển sang kiến trúc microservices trên AWS. Để thử nghiệm, nhóm muốn tách một module thành microservice độc lập có thể xử lý hàng trăm request mỗi giây. Họ tìm một giải pháp AWS-native hỗ trợ Python, tự mở rộng theo lưu lượng, và cần ít công quản lý hạ tầng cũng như ít công vận hành nhất để build, test và triển khai service hiệu quả.",
+    "promptVi": "Giải pháp AWS nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai microservice trong một AWS Fargate task dùng Amazon ECS. Đóng gói mã trong Docker container image có runtime Python và cấu hình ECS Service Auto Scaling theo metric CPU utilization",
+        "reason": "Fargate bỏ được việc quản lý máy chủ nhưng nhóm vẫn phải dựng, duy trì container image, task definition, service và chính sách scaling — nhiều công vận hành hơn Lambda."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS App Runner để build và triển khai ứng dụng Python trực tiếp từ GitHub repository. Để App Runner quản lý việc mở rộng theo lưu lượng và triển khai",
+        "reason": "Theo đáp án gốc, App Runner hợp với ứng dụng web chạy lâu dài hơn là service hướng sự kiện, vẫn tính phí khi không có request, và cần thiết lập cấu hình build và triển khai."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Lambda để chạy microservice viết bằng Python. Tích hợp với Amazon API Gateway để truy cập qua HTTP và bật provisioned concurrency để có hiệu năng tốt lúc cao điểm",
+        "reason": "Lambda hỗ trợ sẵn Python, tự mở rộng theo số request, không cần quản lý máy chủ; API Gateway cung cấp endpoint HTTP và provisioned concurrency giảm cold start khi tải cao."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon EC2 Spot Instance trong một Auto Scaling group. Chạy ứng dụng Python như một background service và cài mọi dependency khi instance khởi động",
+        "reason": "Phải tự quản lý EC2, AMI, dependency và xử lý Spot bị thu hồi — trái với yêu cầu ít công quản lý hạ tầng."
+      }
+    ],
+    "explanationVi": "Đề nhấn mạnh hỗ trợ Python, tự mở rộng và ít công quản lý hạ tầng. Theo đáp án gốc, Lambda kết hợp API Gateway là cách serverless nhất: không có máy chủ hay container phải duy trì, mở rộng theo từng request, và provisioned concurrency xử lý cold start khi cao điểm. Fargate và EC2 Spot đều thêm phần hạ tầng phải lo.",
+    "keyHint": "\"supports Python\" + \"scales automatically\" + \"minimal infrastructure management\" → Lambda + API Gateway.",
+    "review": {
+      "reason": "Chưa chắc chắn: phương án AWS App Runner cũng đáp ứng gần như mọi yêu cầu — có runtime Python được quản lý, tự build và triển khai từ GitHub (đúng ý \"build, test, and deploy\"), tự mở rộng theo lưu lượng và không phải quản lý hạ tầng. Lý do loại App Runner chủ yếu là sở thích kiến trúc chứ không phải vi phạm yêu cầu cụ thể nào trong đề."
+    }
+  },
+  {
+    "id": 10530,
+    "stemVi": "Nhóm kỹ thuật của một công ty đang chuyển nội dung tĩnh của website logistics từ các Amazon EC2 instance sang một Amazon S3 bucket. Nhóm muốn dùng Amazon CloudFront distribution để phân phối nội dung tĩnh. Security group của các EC2 instance chỉ cho phép một số dải IP của các nhà cung cấp của công ty truy cập website. Sau khi chuyển sang Amazon CloudFront, nội dung tĩnh cũng chỉ được phép truy cập từ các địa chỉ IP nói trên.",
+    "promptVi": "Bạn sẽ kết hợp những lựa chọn nào để xây giải pháp đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một NACL mới cho phép lưu lượng từ cùng các IP như trong security group hiện tại của Amazon EC2. Gắn NACL mới này vào Amazon CloudFront distribution",
+        "reason": "NACL gắn với subnet trong VPC, không gắn được vào CloudFront distribution."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một security group mới cho phép lưu lượng từ cùng các IP như trong security group hiện tại của Amazon EC2. Gắn security group mới này vào Amazon CloudFront distribution",
+        "reason": "Security group gắn với network interface trong VPC, không gắn được vào CloudFront distribution."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS Web Application Firewall (AWS WAF) ACL dùng điều kiện IP match để chỉ cho phép lưu lượng từ các IP được phép trong security group của Amazon EC2. Gắn AWS WAF ACL mới này vào bucket policy của Amazon S3",
+        "reason": "Web ACL của WAF gắn vào CloudFront, ALB, API Gateway…, không gắn được vào S3 bucket policy."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một AWS WAF ACL dùng điều kiện IP match để chỉ cho phép lưu lượng từ các IP được phép trong security group của Amazon EC2. Gắn AWS WAF ACL mới này vào Amazon CloudFront distribution",
+        "reason": "WAF web ACL gắn vào CloudFront với rule IP set chỉ cho các dải IP của nhà cung cấp truy cập nội dung, chặn mọi IP khác ngay tại edge."
+      },
+      {
+        "key": "E",
+        "textVi": "Cấu hình một origin access identity (OAI) và gắn với Amazon CloudFront distribution. Thiết lập quyền trong bucket policy của Amazon S3 để chỉ OAI được đọc object",
+        "reason": "OAI cùng bucket policy bảo đảm S3 chỉ cho CloudFront đọc object, nên không ai vượt qua được giới hạn IP của WAF bằng cách truy cập thẳng vào bucket."
+      }
+    ],
+    "explanationVi": "Cần hai lớp: giới hạn IP ở cửa vào CloudFront và chặn đường truy cập thẳng vào S3. WAF web ACL với IP match gắn vào CloudFront lo lớp thứ nhất; OAI (hoặc OAC hiện nay) cùng bucket policy chỉ cho phép CloudFront đọc bucket lo lớp thứ hai. Security group và NACL chỉ dùng trong VPC nên không gắn vào CloudFront được.",
+    "keyHint": "\"only be allowed from the aforementioned IP addresses\" qua \"CloudFront\" với origin \"S3\" → WAF IP match trên CloudFront + OAI/OAC."
+  },
+  {
+    "id": 10531,
+    "stemVi": "Một startup về media đang định chạy ứng dụng web trên AWS Cloud. Người dùng ở nhiều khu vực địa lý trên thế giới sẽ truy cập ứng dụng để tải lên và tải xuống các file video có kích thước tối đa 10 gigabyte. Startup muốn giải pháp tiết kiệm chi phí, có khả năng mở rộng (scalable) với độ trễ thấp nhất có thể để có trải nghiệm người dùng tốt.",
+    "promptVi": "Là Solutions Architect, bạn đề xuất giải pháp tối ưu nào sau đây để đáp ứng các yêu cầu đã nêu?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon S3 để chạy ứng dụng web và dùng Amazon S3 Transfer Acceleration (Amazon S3TA) để giảm độ trễ mà người dùng ở các vị trí địa lý phân tán có thể gặp",
+        "reason": "S3 Transfer Acceleration đưa dữ liệu qua edge location gần người dùng rồi đi trên mạng AWS về bucket, tăng tốc cả tải lên lẫn tải xuống file lớn ở khoảng cách xa; S3 vừa rẻ vừa tự mở rộng."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon S3 để chạy ứng dụng web và dùng Amazon CloudFront để phân phối nội dung nhanh hơn tới người dùng ở các vị trí địa lý phân tán",
+        "reason": "CloudFront chủ yếu cache nội dung để tải xuống, còn các file video lớn do người dùng tải lên thì không hưởng lợi từ cache; S3TA tối ưu cho việc truyền file lớn hai chiều."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon EC2 với Amazon ElastiCache để phân phối nội dung nhanh hơn, còn Amazon S3 dùng làm dịch vụ lưu trữ",
+        "reason": "ElastiCache là cache trong bộ nhớ ở một Region, không giảm độ trễ mạng cho người dùng ở xa và không hợp để chứa file video 10 GB; EC2 còn thêm chi phí và công quản lý."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon EC2 với AWS Global Accelerator để phân phối nội dung nhanh hơn, trong khi dùng Amazon S3 làm dịch vụ lưu trữ",
+        "reason": "Global Accelerator cải thiện đường mạng tới EC2 nhưng vẫn phải chạy và trả tiền cho máy chủ EC2 trung gian, tốn hơn so với tải trực tiếp vào S3 qua S3TA."
+      }
+    ],
+    "explanationVi": "Người dùng toàn cầu cần tải lên và tải xuống file tới 10 GB. S3 Transfer Acceleration dùng edge location của CloudFront làm điểm vào rồi đi trên mạng AWS về bucket, có thể nhanh hơn 50–500% với file lớn ở xa, cho cả hai chiều. Bẫy là CloudFront: mạnh khi phân phối nội dung được tải xuống nhiều lần, nhưng không phải lựa chọn tối ưu cho việc tải lên file lớn.",
+    "keyHint": "\"upload and download video files\" tới \"10 gigabytes\" từ \"different geographic regions\" → S3 Transfer Acceleration."
+  },
+  {
+    "id": 10532,
+    "stemVi": "Một công ty phần mềm quản lý một nhóm Amazon EC2 instance phục vụ các ứng dụng phân tích nội bộ. Các instance này dùng một IAM role với custom policy để kết nối tới Amazon RDS và AWS Secrets Manager, nhằm truy cập an toàn thông tin đăng nhập và endpoint cơ sở dữ liệu. Nhóm vận hành IT muốn triển khai giải pháp quản lý bản vá tập trung để đơn giản hóa các công việc tuân thủ và bảo mật. Mục tiêu là tự động vá hệ điều hành trên các EC2 instance mà không làm gián đoạn các ứng dụng đang chạy.",
+    "promptVi": "Cách nào giúp công ty đạt các mục tiêu này với ít công quản trị nhất (least administrative overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Gỡ IAM role hiện tại khỏi mọi EC2 instance. Thay bằng một role mới có cả các quyền ban đầu và policy AmazonSSMManagedInstanceCore để bật các tính năng của Systems Manager",
+        "reason": "Thay role trên từng instance vừa tốn công, vừa có nguy cơ làm gián đoạn quyền truy cập RDS và Secrets Manager của ứng dụng đang chạy."
+      },
+      {
+        "key": "B",
+        "textVi": "Tự cài Systems Manager Agent (SSM Agent) trên từng EC2 instance. Lập lịch các job vá hằng ngày bằng script cron",
+        "reason": "Cài thủ công và dùng cron trên từng máy là cách quản lý phân tán, không tập trung, tốn nhiều công quản trị; cài agent cũng chưa cấp quyền để Systems Manager quản lý instance."
+      },
+      {
+        "key": "C",
+        "textVi": "Bật Default Host Management Configuration trong AWS Systems Manager Quick Setup",
+        "reason": "Default Host Management Configuration cho phép Systems Manager quản lý mọi EC2 instance trong tài khoản và Region mà không phải sửa IAM role hiện có của instance, từ đó dùng Patch Manager để vá tập trung — ít công nhất và không ảnh hưởng ứng dụng."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo IAM role thứ hai có policy AmazonSSMManagedInstanceCore và gắn cả role mới lẫn role hiện có vào từng EC2 instance bằng Systems Manager Hybrid Activation",
+        "reason": "Một EC2 instance chỉ gắn được một instance profile (một role) tại một thời điểm; Hybrid Activation dành cho máy on-premises, không phải EC2."
+      }
+    ],
+    "explanationVi": "Vấn đề là cho Systems Manager quản lý (và vá) các instance mà không đụng tới IAM role đang phục vụ ứng dụng. Default Host Management Configuration trong Quick Setup cấp quyền cho Systems Manager ở cấp tài khoản, không cần sửa instance profile. Bẫy: một instance không gắn được hai role, và Hybrid Activation chỉ dành cho máy ngoài EC2.",
+    "keyHint": "\"centralized patch management\" + instance đã có \"IAM role with custom policies\" + \"least administrative overhead\" → Systems Manager Default Host Management Configuration."
+  },
+  {
+    "id": 10533,
+    "stemVi": "Một công ty bán lẻ dùng AWS Cloud để quản lý hạ tầng IT. Công ty đã thiết lập AWS Organizations để quản lý nhiều phòng ban, mỗi phòng ban có tài khoản AWS riêng và dùng các tài nguyên như Amazon EC2 instance và cơ sở dữ liệu Amazon RDS. Công ty muốn cung cấp các VPC dùng chung, được quản lý tập trung cho mọi phòng ban có ứng dụng cần mức kết nối lẫn nhau cao.",
+    "promptVi": "Là solutions architect, bạn chọn lựa chọn nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng VPC sharing để chia sẻ một hoặc nhiều subnet với các tài khoản AWS khác thuộc cùng tổ chức trong AWS Organizations",
+        "reason": "VPC sharing (qua AWS RAM) để tài khoản sở hữu VPC chia sẻ subnet cho các tài khoản khác trong cùng tổ chức; các tài khoản này tạo tài nguyên ngay trong VPC dùng chung, được quản lý tập trung."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng VPC peering để chia sẻ một hoặc nhiều subnet với các tài khoản AWS khác thuộc cùng tổ chức trong AWS Organizations",
+        "reason": "VPC peering kết nối hai VPC riêng biệt, không chia sẻ subnet; mỗi phòng ban vẫn phải có VPC riêng, không phải VPC dùng chung."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng VPC sharing để chia sẻ một VPC với các tài khoản AWS khác thuộc cùng tổ chức trong AWS Organizations",
+        "reason": "Đơn vị được chia sẻ trong VPC sharing là subnet, không phải toàn bộ VPC."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng VPC peering để chia sẻ một VPC với các tài khoản AWS khác thuộc cùng tổ chức trong AWS Organizations",
+        "reason": "VPC peering không chia sẻ VPC mà chỉ định tuyến giữa hai VPC, lại không có định tuyến bắc cầu nên khó dùng khi nhiều phòng ban cần kết nối lẫn nhau."
+      }
+    ],
+    "explanationVi": "Yêu cầu là VPC dùng chung, quản lý tập trung cho nhiều tài khoản trong cùng tổ chức. VPC sharing đáp ứng đúng: tài khoản sở hữu chia sẻ subnet qua AWS Resource Access Manager, các tài khoản tham gia tạo tài nguyên trong đó. Bẫy: đơn vị chia sẻ là subnet chứ không phải cả VPC, và VPC peering chỉ nối các VPC riêng biệt.",
+    "keyHint": "\"shared and centrally-managed VPCs\" + \"AWS Organizations\" → VPC sharing (chia sẻ subnet qua AWS RAM)."
+  },
+  {
+    "id": 10534,
+    "stemVi": "Một công ty thương mại điện tử chạy ứng dụng web trên các Amazon EC2 instance trong một Auto Scaling group, được cấu hình để xử lý đơn hàng của khách nằm trong một hàng đợi Amazon Simple Queue Service (Amazon SQS) cho bước xử lý phía sau. Nhóm DevOps nhận thấy hiệu năng ứng dụng giảm khi số đơn hàng tăng đột biến.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng target tracking scaling policy dựa trên một custom metric của hàng đợi Amazon SQS",
+        "reason": "Target tracking giữ một metric tùy chỉnh như backlog per instance (số tin nhắn chờ chia cho số instance) ở mức mục tiêu, tự thêm hoặc bớt instance tương ứng với độ dài hàng đợi — phản ứng tốt với các đợt tăng đột biến."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng step scaling policy dựa trên một custom metric của hàng đợi Amazon SQS",
+        "reason": "Step scaling chạy được nhưng phải tự định nghĩa ngưỡng alarm và từng bước tăng giảm; AWS khuyên dùng target tracking với metric backlog per instance cho trường hợp này vì bám đường cầu tốt hơn."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng scheduled scaling policy dựa trên một custom metric của hàng đợi Amazon SQS",
+        "reason": "Scheduled scaling mở rộng theo lịch cố định, không dựa vào metric, nên không phản ứng được với các đợt tăng đơn hàng bất ngờ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng simple scaling policy dựa trên một custom metric của hàng đợi Amazon SQS",
+        "reason": "Simple scaling chỉ thực hiện một lần điều chỉnh rồi chờ hết cooldown mới phản ứng tiếp, nên chậm theo kịp khi đơn hàng tăng vọt."
+      }
+    ],
+    "explanationVi": "Khi worker lấy việc từ SQS, cách AWS khuyên là tính metric backlog per instance (tin nhắn chờ chia số instance) và dùng target tracking giữ metric này ở mức chấp nhận được. Target tracking tự tính số instance cần thêm hay bớt nên bám sát đường cầu. Scheduled scaling không phản ứng với đột biến; simple scaling bị cooldown làm chậm.",
+    "keyHint": "Auto Scaling group xử lý hàng đợi SQS + \"sudden spike in orders\" → target tracking theo custom metric backlog per instance."
+  },
+  {
+    "id": 10535,
+    "stemVi": "Một công ty vừa gặp sự cố ngừng cơ sở dữ liệu trong trung tâm dữ liệu on-premises. Công ty muốn chuyển sang một giải pháp cơ sở dữ liệu đáng tin cậy trên AWS, giảm tối đa mất dữ liệu và lưu mọi giao dịch trên ít nhất hai node.",
+    "promptVi": "Giải pháp nào sau đây đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon RDS MySQL DB instance rồi tạo một read replica ở Availability Zone khác, sao chép dữ liệu đồng bộ",
+        "reason": "Read replica của RDS MySQL sao chép bất đồng bộ, nên giao dịch vừa commit có thể chưa tới replica khi primary hỏng."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon EC2 instance cài MySQL DB engine, kích hoạt một AWS Lambda function để sao chép dữ liệu đồng bộ sang một Amazon RDS MySQL DB instance",
+        "reason": "Lambda được kích hoạt theo sự kiện không tạo ra sao chép đồng bộ ở mức giao dịch; cách này phức tạp, dễ mất dữ liệu và phải tự quản lý MySQL trên EC2."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon RDS MySQL DB instance rồi tạo một read replica ở AWS Region khác, sao chép dữ liệu đồng bộ",
+        "reason": "Read replica khác Region cũng sao chép bất đồng bộ, lại có độ trễ mạng lớn hơn, nên không bảo đảm mỗi giao dịch có mặt trên hai node."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon RDS MySQL DB instance có bật Multi-AZ để sao chép dữ liệu đồng bộ",
+        "reason": "Multi-AZ sao chép đồng bộ mọi giao dịch sang standby ở AZ khác trước khi xác nhận commit, nên mỗi giao dịch luôn nằm trên hai node và có failover tự động khi primary lỗi."
+      }
+    ],
+    "explanationVi": "Yêu cầu \"mọi giao dịch trên ít nhất hai node\" và giảm tối đa mất dữ liệu đòi hỏi sao chép đồng bộ. RDS Multi-AZ làm đúng điều này với standby ở AZ khác và failover tự động. Bẫy: các lựa chọn read replica tự nhận là \"đồng bộ\", nhưng read replica của RDS MySQL luôn sao chép bất đồng bộ.",
+    "keyHint": "\"minimizes data loss\" + \"every transaction on at least two nodes\" → RDS Multi-AZ (sao chép đồng bộ)."
+  },
+  {
+    "id": 10536,
+    "stemVi": "Một cơ quan giao thông khu vực vận hành cổng thông tin công cộng lưu lượng cao trên AWS. Backend gồm các Amazon EC2 instance phía sau một Application Load Balancer (ALB). Vài tuần gần đây, nhóm vận hành thấy ứng dụng chậm lại và gặp sự cố hiệu năng không liên tục. Sau khi điều tra, nhóm nghi ứng dụng đang bị tấn công từ chối dịch vụ phân tán (DDoS) từ một dải rất rộng địa chỉ IP. Nhóm cần giải pháp giảm thiểu DDoS, có log chi tiết cho mục đích kiểm toán và ít thay đổi kiến trúc hiện tại nhất.",
+    "promptVi": "Giải pháp nào giải quyết tốt nhất các nhu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật Amazon Inspector cho các EC2 instance. Dùng kết quả quét lỗ hổng để phát hiện các hướng tấn công DDoS tiềm năng và vá môi trường EC2 tương ứng",
+        "reason": "Inspector quét lỗ hổng phần mềm và mức phơi nhiễm mạng; nó không phát hiện hay giảm thiểu một cuộc tấn công DDoS đang diễn ra."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon CloudFront distribution phía trước ALB. Bật AWS WAF trên distribution và cấu hình custom rule để lọc lưu lượng từ các dải IP độc hại đã biết và theo vùng địa lý",
+        "reason": "Phải thêm CloudFront vào kiến trúc (thay đổi lớn hơn), và rule lọc theo dải IP đã biết khó hiệu quả khi tấn công đến từ rất nhiều IP; cũng không có đội chuyên gia hỗ trợ khi bị tấn công."
+      },
+      {
+        "key": "C",
+        "textVi": "Đăng ký AWS Shield Advanced để có bảo vệ DDoS chủ động. Nhờ AWS DDoS Response Team (DRT) phân tích mẫu lưu lượng và áp dụng biện pháp giảm thiểu. Dùng tính năng log và báo cáo có sẵn để lưu vết kiểm toán các sự kiện được phát hiện",
+        "reason": "Shield Advanced bảo vệ trực tiếp ALB hiện có mà không đổi kiến trúc, tự giảm thiểu DDoS tầng ứng dụng, có đội ứng cứu DDoS của AWS hỗ trợ và cung cấp metric, báo cáo sự kiện chi tiết cho kiểm toán."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai Amazon GuardDuty và tích hợp với môi trường EC2. Dùng kết quả của GuardDuty để chặn thủ công các IP đáng ngờ ở ALB hoặc trong security group của EC2",
+        "reason": "GuardDuty phát hiện mối đe dọa nhưng không giảm thiểu DDoS; chặn thủ công từng IP không theo kịp tấn công từ dải IP rộng, và security group không có rule deny."
+      }
+    ],
+    "explanationVi": "Đề cần ba thứ: giảm thiểu DDoS, log chi tiết cho kiểm toán, và ít thay đổi kiến trúc. Shield Advanced gắn thẳng vào ALB đang có, cung cấp giảm thiểu tự động, đội ứng cứu DDoS của AWS và báo cáo sự kiện. Bẫy là CloudFront + WAF: hữu ích nhưng thêm thành phần mới và chỉ dựa vào rule tự viết; Inspector và GuardDuty thì không giảm thiểu DDoS.",
+    "keyHint": "\"DDoS\" + \"detailed logs for audit\" + \"minimal changes to the existing architecture\" → AWS Shield Advanced (kèm đội ứng cứu DDoS)."
+  },
+  {
+    "id": 10537,
+    "stemVi": "Một ứng dụng cũ được xây theo kiến trúc nguyên khối gắn chặt (tightly-coupled). Do số người dùng tăng mạnh, hiệu năng ứng dụng đã giảm. Công ty muốn tách rời (decouple) kiến trúc và chuyển sang kiến trúc microservices trên AWS. Một số microservice cần xử lý các tiến trình chạy nhanh, trong khi các microservice khác xử lý các tiến trình chậm hơn.",
+    "promptVi": "Bạn xác định cách nào sau đây là đúng để kết nối các microservice này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Thêm Amazon EventBridge để tách rời kiến trúc phức tạp",
+        "reason": "EventBridge định tuyến sự kiện tới target theo rule, nhưng không đóng vai trò bộ đệm giữ việc để service chậm tự lấy theo tốc độ của mình."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon Simple Notification Service (Amazon SNS) để tách rời các microservice chạy tiến trình nhanh khỏi các microservice chạy tiến trình chậm",
+        "reason": "SNS đẩy (push) tin nhắn ngay tới subscriber và không lưu lại; nếu service chậm không kịp xử lý thì không có hàng đợi để tin nhắn chờ."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình hàng đợi Amazon Simple Queue Service (Amazon SQS) để tách rời các microservice chạy tiến trình nhanh khỏi các microservice chạy tiến trình chậm",
+        "reason": "SQS lưu tin nhắn bền vững để service chậm lấy (pull) theo tốc độ riêng, nên service nhanh không phải chờ và không mất việc khi tải tăng."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình Amazon Kinesis Data Streams để tách rời các microservice chạy tiến trình nhanh khỏi các microservice chạy tiến trình chậm",
+        "reason": "Kinesis Data Streams dành cho dữ liệu streaming thời gian thực với nhiều consumer đọc lại theo shard; với việc chuyển công việc giữa các microservice thì SQS đơn giản và phù hợp hơn."
+      }
+    ],
+    "explanationVi": "Khi bên gửi nhanh và bên nhận chậm, cần một bộ đệm lưu việc để bên nhận xử lý theo tốc độ của mình — đó là hàng đợi SQS. SNS và EventBridge đẩy tin ngay chứ không giữ lại cho bên nhận lấy dần; Kinesis hướng tới phân tích luồng dữ liệu thời gian thực hơn là hàng đợi công việc.",
+    "keyHint": "\"decouple\" + \"faster processes\" với \"slower processes\" → hàng đợi Amazon SQS."
+  },
+  {
+    "id": 10538,
+    "stemVi": "Một công ty thuê bạn với vai trò AWS Certified Solutions Architect – Associate để thiết kế lại một bộ xử lý dữ liệu thời gian thực. Công ty muốn xây ứng dụng tùy biến để xử lý và phân tích dữ liệu streaming cho nhu cầu riêng.",
+    "promptVi": "Bạn khuyên dùng giải pháp nào cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon Simple Queue Service (Amazon SQS) để xử lý các luồng dữ liệu và tách rời producer với consumer cho bộ xử lý dữ liệu thời gian thực",
+        "reason": "SQS là hàng đợi tin nhắn: mỗi tin nhắn được xóa sau khi xử lý, không hỗ trợ nhiều ứng dụng cùng đọc lại một luồng theo thứ tự như streaming."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon Kinesis Data Firehose để xử lý các luồng dữ liệu và tách rời producer với consumer cho bộ xử lý dữ liệu thời gian thực",
+        "reason": "Firehose dùng để nạp dữ liệu streaming vào đích như S3 hay Redshift, không cho phép ứng dụng tùy biến của bạn trực tiếp đọc và xử lý luồng."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Simple Notification Service (Amazon SNS) để xử lý các luồng dữ liệu và tách rời producer với consumer cho bộ xử lý dữ liệu thời gian thực",
+        "reason": "SNS là dịch vụ pub/sub đẩy thông báo, không lưu dữ liệu luồng để ứng dụng xử lý và phân tích."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon Kinesis Data Streams để xử lý các luồng dữ liệu và tách rời producer với consumer cho bộ xử lý dữ liệu thời gian thực",
+        "reason": "Kinesis Data Streams thu luồng dữ liệu theo thời gian thực và cho phép nhiều ứng dụng tùy biến (consumer) đọc, xử lý, phân tích dữ liệu theo thứ tự trong từng shard — đúng nhu cầu."
+      }
+    ],
+    "explanationVi": "Từ khóa là \"custom applications that process and analyze the streaming data\". Kinesis Data Streams lưu luồng dữ liệu theo shard để các ứng dụng tự viết đọc và xử lý theo thời gian thực. Bẫy là Firehose: nó cũng là dịch vụ streaming nhưng chỉ nạp dữ liệu vào đích, không phục vụ ứng dụng consumer tùy biến.",
+    "keyHint": "\"custom applications that process and analyze the streaming data\" → Kinesis Data Streams."
+  },
+  {
+    "id": 10539,
+    "stemVi": "Một AWS Organization đang dùng Service Control Policy (SCP) để kiểm soát tập trung quyền tối đa có thể có của mọi tài khoản trong tổ chức. Điều này giúp tổ chức bảo đảm mọi tài khoản tuân theo quy định kiểm soát truy cập của tổ chức.",
+    "promptVi": "Những tình huống nào sau đây đúng về các quyền được mô tả? (Chọn ba.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Service control policy (SCP) ảnh hưởng tới mọi user và role trong các tài khoản thành viên, kể cả root user của tài khoản thành viên",
+        "reason": "SCP giới hạn quyền của mọi principal trong tài khoản thành viên, bao gồm cả root user."
+      },
+      {
+        "key": "B",
+        "textVi": "Service control policy (SCP) ảnh hưởng tới mọi user và role trong các tài khoản thành viên, trừ root user của tài khoản thành viên",
+        "reason": "Sai: root user của tài khoản thành viên cũng bị SCP giới hạn (chỉ tài khoản management không bị SCP ảnh hưởng)."
+      },
+      {
+        "key": "C",
+        "textVi": "Nếu user hoặc role có IAM permission policy cấp quyền cho một action mà SCP áp dụng không cho phép hoặc từ chối tường minh, user hoặc role đó không thể thực hiện action",
+        "reason": "SCP đặt giới hạn trên: quyền thực tế là phần giao giữa SCP và IAM policy, nên action không được SCP cho phép thì IAM policy cũng không mở được."
+      },
+      {
+        "key": "D",
+        "textVi": "Service control policy (SCP) ảnh hưởng tới service-linked role",
+        "reason": "Sai: service-linked role được miễn khỏi SCP để các dịch vụ AWS tích hợp vẫn hoạt động."
+      },
+      {
+        "key": "E",
+        "textVi": "Nếu user hoặc role có IAM permission policy cấp quyền cho một action mà SCP áp dụng không cho phép hoặc từ chối tường minh, user hoặc role đó vẫn thực hiện được action",
+        "reason": "Sai: SCP là giới hạn trên, IAM policy không thể vượt qua giới hạn này."
+      },
+      {
+        "key": "F",
+        "textVi": "Service control policy (SCP) không ảnh hưởng tới service-linked role",
+        "reason": "Service-linked role do dịch vụ AWS tạo và dùng nên không bị SCP giới hạn."
+      }
+    ],
+    "explanationVi": "SCP không cấp quyền mà chỉ đặt giới hạn trên cho mọi user và role trong tài khoản thành viên, kể cả root user; IAM policy cho phép nhưng SCP không cho thì vẫn bị chặn. Hai ngoại lệ cần nhớ: tài khoản management và service-linked role không bị SCP ảnh hưởng.",
+    "keyHint": "\"Service Control Policies (SCPs)\" → giới hạn cả root user của tài khoản thành viên, không ảnh hưởng service-linked role."
+  },
+  {
+    "id": 10540,
+    "stemVi": "Một công ty dịch vụ tài chính đang hiện đại hóa nền tảng phân tích trên AWS. Các script xử lý dữ liệu cũ, viết cho cả môi trường Windows lẫn Linux, cần truy cập chung một file system hỗ trợ Windows ACL và giao thức SMB để tương thích với các workload Windows hiện có. Đồng thời, các ứng dụng Linux cần đọc và ghi vào cùng kho lưu trữ dùng chung này để giữ nhất quán giữa các nền tảng. Solutions architect cần thiết kế giải pháp lưu trữ cho phép cả EC2 instance Windows và Linux truy cập đồng thời file system dùng chung, đồng thời giữ các tính năng riêng của Windows như quyền NTFS và tích hợp Active Directory (AD).",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai Amazon FSx for Windows File Server và mount bằng giao thức SMB từ cả EC2 instance Windows lẫn Linux",
+        "reason": "FSx for Windows File Server hỗ trợ SMB, quyền NTFS và tích hợp AD; máy Linux mount được qua SMB (ví dụ cifs-utils), nên cả hai nền tảng dùng chung một file system với cùng quyền truy cập."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon EFS với storage class Standard và mount file system bằng NFS từ cả instance Windows lẫn Linux",
+        "reason": "EFS không hỗ trợ Windows instance và không có SMB, NTFS ACL hay tích hợp AD."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai Amazon FSx for Lustre và mount file system bằng client tuân thủ POSIX từ cả hai nền tảng",
+        "reason": "Client Lustre chỉ chạy trên Linux; FSx for Lustre không hỗ trợ SMB, quyền NTFS hay AD."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một S3 bucket và mount lên EC2 instance bằng Mountpoint for Amazon S3, quản lý truy cập qua IAM policy để hỗ trợ cả workload Windows và Linux",
+        "reason": "Mountpoint for Amazon S3 chỉ dành cho Linux và không cung cấp ngữ nghĩa file system đầy đủ, càng không có SMB hay quyền NTFS."
+      }
+    ],
+    "explanationVi": "Yêu cầu bắt buộc là SMB, quyền NTFS và tích hợp AD, đồng thời Linux cũng phải đọc ghi được. FSx for Windows File Server đáp ứng phần Windows, còn Linux kết nối được qua client SMB. EFS, FSx for Lustre và Mountpoint for S3 đều thiếu SMB và các tính năng Windows.",
+    "keyHint": "\"Windows ACLs and SMB protocol\" + \"NTFS permissions and Active Directory\" + cả Linux → FSx for Windows File Server mount qua SMB."
+  },
+  {
+    "id": 10541,
+    "stemVi": "Nhóm DevOps của một công ty đa quốc gia đang giúp các công ty con chuẩn hóa Amazon EC2 instance bằng cách dùng cùng một Amazon Machine Image (AMI). Một số công ty con ở cùng AWS Region nhưng dùng tài khoản AWS khác, số khác ở Region khác nhưng dùng chung tài khoản AWS với công ty mẹ. Nhóm DevOps thuê bạn làm solutions architect cho dự án này.",
+    "promptVi": "Bạn xác định những phát biểu nào sau đây là ĐÚNG về khả năng của một Amazon Machine Image (AMI)? (Chọn ba.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Sao chép một Amazon Machine Image (AMI) dựa trên snapshot đã mã hóa không thể tạo ra snapshot đích không mã hóa",
+        "reason": "Khi sao chép AMI, snapshot nguồn đã mã hóa thì snapshot đích luôn được mã hóa (có thể bằng khóa khác), không thể bỏ mã hóa trong lúc sao chép."
+      },
+      {
+        "key": "B",
+        "textVi": "Sao chép một Amazon Machine Image (AMI) dựa trên snapshot đã mã hóa sẽ tạo ra snapshot đích không mã hóa",
+        "reason": "Sai: không có cách nào bỏ mã hóa khi sao chép AMI hay snapshot."
+      },
+      {
+        "key": "C",
+        "textVi": "Bạn không thể chia sẻ Amazon Machine Image (AMI) với tài khoản AWS khác",
+        "reason": "Sai: có thể chia sẻ AMI bằng cách thêm tài khoản (hoặc organization/OU) vào launch permission của AMI."
+      },
+      {
+        "key": "D",
+        "textVi": "Bạn có thể sao chép Amazon Machine Image (AMI) sang AWS Region khác",
+        "reason": "AMI sao chép được giữa các Region (thao tác CopyImage), phục vụ các công ty con dùng chung tài khoản nhưng ở Region khác."
+      },
+      {
+        "key": "E",
+        "textVi": "Bạn không thể sao chép Amazon Machine Image (AMI) sang AWS Region khác",
+        "reason": "Sai: sao chép AMI giữa các Region là tính năng chuẩn."
+      },
+      {
+        "key": "F",
+        "textVi": "Bạn có thể chia sẻ Amazon Machine Image (AMI) với tài khoản AWS khác",
+        "reason": "Chia sẻ AMI qua launch permission phục vụ các công ty con ở cùng Region nhưng dùng tài khoản khác."
+      }
+    ],
+    "explanationVi": "AMI vừa chia sẻ được cho tài khoản khác (qua launch permission) vừa sao chép được sang Region khác — đáp ứng cả hai nhóm công ty con. Về mã hóa: sao chép AMI có snapshot mã hóa luôn cho ra snapshot mã hóa; chỉ có thể mã hóa thêm khi sao chép, không thể bỏ mã hóa.",
+    "keyHint": "\"same AWS region but different AWS accounts\" và \"different AWS regions\" → chia sẻ AMI và sao chép AMI giữa Region; mã hóa không bị gỡ khi sao chép."
+  },
+  {
+    "id": 10542,
+    "stemVi": "Một công ty phân tích dữ liệu quản lý một ứng dụng lưu dữ liệu người dùng trong bảng Amazon DynamoDB. Nhóm phát triển nhận thấy thỉnh thoảng ứng dụng ghi dữ liệu bị hỏng vào bảng Amazon DynamoDB. Ngay khi phát hiện, nhóm cần loại bỏ dữ liệu hỏng sớm nhất có thể.",
+    "promptVi": "Bạn khuyên dùng giải pháp nào?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình bảng Amazon DynamoDB thành global table và chuyển ứng dụng sang dùng bảng ở AWS Region khác không có dữ liệu hỏng",
+        "reason": "Global table sao chép mọi thay đổi giữa các Region trong vài giây, nên dữ liệu hỏng cũng có mặt ở Region kia."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng on-demand backup của Amazon DynamoDB để khôi phục bảng về trạng thái ngay trước khi dữ liệu hỏng được ghi",
+        "reason": "On-demand backup chỉ khôi phục được về thời điểm đã tạo backup; nếu backup gần nhất cách xa thời điểm lỗi thì sẽ mất các thay đổi hợp lệ ở giữa."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon DynamoDB Streams để khôi phục bảng về trạng thái ngay trước khi dữ liệu hỏng được ghi",
+        "reason": "DynamoDB Streams chỉ ghi lại thay đổi trong 24 giờ để xử lý tiếp, không có chức năng khôi phục bảng."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng point in time recovery của Amazon DynamoDB để khôi phục bảng về trạng thái ngay trước khi dữ liệu hỏng được ghi",
+        "reason": "PITR sao lưu liên tục và cho phép khôi phục bảng về bất kỳ giây nào trong 35 ngày gần nhất, nên chọn được đúng thời điểm ngay trước khi dữ liệu hỏng được ghi."
+      }
+    ],
+    "explanationVi": "Bảo vệ khỏi việc ghi nhầm hay ghi hỏng chính là mục đích của point-in-time recovery: khôi phục về một thời điểm bất kỳ, chính xác tới từng giây, trong 35 ngày. On-demand backup chỉ có các mốc cố định; global table sao chép luôn dữ liệu hỏng; Streams không khôi phục được bảng.",
+    "keyHint": "\"writes corrupted data\" + khôi phục về \"just before\" → DynamoDB point-in-time recovery."
+  },
+  {
+    "id": 10543,
+    "stemVi": "Một công ty đang chuyển một workload cũ từ on-premises lên AWS. Ứng dụng nhận các file đơn hàng của khách từ một hệ thống ERP on-premises qua giao thức SFTP. Khi file tới, ứng dụng phải xử lý ngay thay vì dựa vào việc kiểm tra định kỳ (polling). Công ty đã có kết nối mạng an toàn giữa AWS và môi trường on-premises. Giải pháp mới phải có tính sẵn sàng cao, an toàn và chịu được sự cố hạ tầng.",
+    "promptVi": "Bạn nên triển khai giải pháp nào để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai một AWS Transfer Family SFTP server hướng internet (internet facing) trong một Availability Zone, lưu trữ trên Amazon EFS. Cấu hình Transfer Family managed workflow để gọi một AWS Lambda function sau khi tải file lên xong",
+        "reason": "Chỉ một AZ thì không chịu được sự cố hạ tầng, và endpoint hướng internet là không cần thiết khi đã có kết nối mạng riêng an toàn."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai một AWS Transfer Family SFTP server nội bộ (internal) trải trên hai Availability Zone, lưu trữ trên Amazon EFS. Dùng Amazon EventBridge Scheduler để định kỳ kích hoạt một AWS Step Functions state machine quét file mới",
+        "reason": "Quét định kỳ theo lịch chính là polling mà đề muốn tránh, và file không được xử lý ngay khi tới."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai một AWS Transfer Family SFTP server hướng internet trải trên hai Availability Zone, lưu trữ trên Amazon S3. Cấu hình Amazon S3 Event Notifications để gọi một AWS Lambda function khi có object mới được tạo",
+        "reason": "Xử lý theo sự kiện và đa AZ là ổn, nhưng endpoint hướng internet làm tăng bề mặt tấn công không cần thiết khi ERP đã kết nối qua mạng riêng an toàn."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai một AWS Transfer Family SFTP server nội bộ trải trên hai Availability Zone, lưu trữ trên Amazon S3. Cấu hình Transfer Family managed workflow để gọi một AWS Lambda function ngay sau khi tải file lên xong",
+        "reason": "Endpoint nội bộ dùng kết nối riêng sẵn có (an toàn), hai AZ cho tính sẵn sàng cao, S3 có độ bền dữ liệu cao, và managed workflow gọi Lambda ngay khi file tải lên xong thay vì polling."
+      }
+    ],
+    "explanationVi": "Ghép từng yêu cầu: kết nối riêng sẵn có → endpoint nội bộ (VPC); chịu sự cố hạ tầng → trải hai AZ; xử lý ngay → kích hoạt theo sự kiện (managed workflow gọi Lambda khi upload hoàn tất). Chỉ một phương án thỏa cả ba. Bẫy: endpoint hướng internet, triển khai một AZ, và quét định kỳ theo lịch.",
+    "keyHint": "\"SFTP\" + \"secure network connectivity\" + \"process them immediately\" + \"resilient\" → Transfer Family internal endpoint đa AZ + managed workflow gọi Lambda."
+  },
+  {
+    "id": 10544,
+    "stemVi": "Một công ty có cấu trúc hybrid cloud gồm trung tâm dữ liệu on-premises và hạ tầng AWS Cloud. Công ty muốn xây giải pháp lưu trữ log web sao cho chỉ các log được truy cập thường xuyên nhất có sẵn dưới dạng dữ liệu cache tại chỗ, trong khi toàn bộ log được sao lưu trên Amazon S3.",
+    "promptVi": "Là solutions architect, bạn khuyên dùng giải pháp nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng thiết bị AWS Snowball Edge Storage Optimized để lưu các log được truy cập thường xuyên nhất tại chỗ cho truy cập độ trễ thấp, trong khi lưu bản sao lưu đầy đủ của log trong một Amazon S3 bucket",
+        "reason": "Snowball Edge là thiết bị chuyển dữ liệu hoặc xử lý ở biên theo đợt, không phải cache tại chỗ đồng bộ liên tục với S3."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Direct Connect để lưu các log được truy cập thường xuyên nhất tại chỗ cho truy cập độ trễ thấp, trong khi lưu bản sao lưu đầy đủ của log trong một Amazon S3 bucket",
+        "reason": "Direct Connect chỉ là đường kết nối mạng riêng, không lưu trữ hay cache dữ liệu."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Volume Gateway - Stored Volume - để lưu các log được truy cập thường xuyên nhất tại chỗ cho truy cập độ trễ thấp, trong khi lưu toàn bộ volume chứa mọi log trong Amazon S3 service bucket của nó",
+        "reason": "Stored volume giữ toàn bộ dữ liệu tại chỗ và chỉ sao lưu bất đồng bộ lên S3, ngược với yêu cầu chỉ giữ dữ liệu hay dùng tại chỗ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Volume Gateway - Cached Volume - để lưu các log được truy cập thường xuyên nhất tại chỗ cho truy cập độ trễ thấp, trong khi lưu toàn bộ volume chứa mọi log trong Amazon S3 service bucket của nó",
+        "reason": "Cached volume lưu toàn bộ volume trên S3 và chỉ giữ dữ liệu truy cập gần đây trong cache tại chỗ — đúng mô hình đề yêu cầu."
+      }
+    ],
+    "explanationVi": "Phân biệt hai chế độ Volume Gateway: cached volume để dữ liệu chính trên S3 và chỉ cache phần hay dùng tại chỗ; stored volume giữ toàn bộ dữ liệu tại chỗ và sao lưu lên S3. Đề muốn chỉ log hay dùng nằm tại chỗ nên chọn cached volume. Snowball và Direct Connect không phải giải pháp cache lưu trữ.",
+    "keyHint": "\"only the most frequently accessed logs ... cached data locally\" + toàn bộ trên S3 → Volume Gateway cached volume."
   }
 ]

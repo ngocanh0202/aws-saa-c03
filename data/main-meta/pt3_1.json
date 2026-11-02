@@ -249,7 +249,7 @@
     "services": [
       "sqs"
     ],
-    "note": "Giới hạn 3.000 tin nhắn/giây (có batching) là số mặc định cũ; FIFO high throughput nay hỗ trợ tới hàng chục nghìn tin nhắn/giây tùy Region, nên lựa chọn về giới hạn thông lượng đã lỗi thời nhưng vẫn là đáp án của đề."
+    "note": "Giới hạn 300 tin nhắn/giây (3.000 khi dùng batching) là của FIFO queue thường; từ 2021 SQS có chế độ high throughput cho FIFO queue với hạn mức cao hơn nhiều, tùy Region."
   },
   {
     "id": 10525,
@@ -294,8 +294,7 @@
     "services": [
       "vpc",
       "ec2"
-    ],
-    "note": "Đề trùng nguyên văn với id 11164 (pt6_1 vị trí 64): cả hai cùng đáp án (Security Group stateful, Network ACL stateless), chỉ khác thứ tự lựa chọn nên không mâu thuẫn, cả hai đều đúng."
+    ]
   },
   {
     "id": 10529,
@@ -385,7 +384,8 @@
       "elb",
       "guardduty",
       "inspector"
-    ]
+    ],
+    "note": "AWS DDoS Response Team (DRT) nay được gọi là Shield Response Team (SRT)."
   },
   {
     "id": 10537,
