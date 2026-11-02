@@ -1312,5 +1312,637 @@
     ],
     "explanationVi": "Các ràng buộc then chốt: script chạy tới 30 phút (loại Lambda), muốn container serverless (loại EC2/Batch trên EC2), ít refactor và lập lịch kiểu cron có thể mở rộng sang trigger sự kiện. EventBridge Scheduler gọi ECS Fargate task theo cron đáp ứng tất cả. Bẫy: Lambda có giới hạn 15 phút; Step Functions với Wait state là dùng sai công cụ.",
     "keyHint": "\"up to 30 minutes\" + \"containerized, serverless\" + cron → EventBridge Scheduler + ECS Fargate task."
+  },
+  {
+    "id": 10345,
+    "stemVi": "Một doanh nghiệp đang xây một API business intelligence bảo mật bằng Amazon API Gateway để phục vụ người dùng nội bộ dữ liệu phân tích mật. API chỉ được truy cập từ một tập địa chỉ IP tin cậy thuộc các dải mạng nội bộ của tổ chức. Không lưu lượng nào từ IP bên ngoài được gọi API. Solutions architect phải thiết kế cơ chế kiểm soát truy cập này với ít phức tạp vận hành nhất.",
+    "promptVi": "Architect nên làm gì để đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai API Gateway dạng regional API trong một public subnet và gắn subnet với một security group chỉ cho phép lưu lượng vào từ các dải IP tin cậy.",
+        "reason": "API Gateway là dịch vụ được quản lý, không chạy trong subnet của bạn nên không gắn subnet hay security group được."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai tài nguyên API Gateway lên máy chủ on-premises bằng AWS Outposts. Áp rule firewall trên host để lọc IP được phép.",
+        "reason": "Dựng Outposts chỉ để lọc IP là quá tốn kém và phức tạp, lại bỏ qua cơ chế kiểm soát truy cập sẵn có của API Gateway."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo resource policy cho API trên API Gateway, deny tường minh mọi địa chỉ IP trừ những IP trong danh sách cho phép (allow list).",
+        "reason": "Resource policy của API Gateway hỗ trợ điều kiện IpAddress/NotIpAddress theo aws:SourceIp; deny mọi IP ngoài allow list chặn hẳn lưu lượng bên ngoài mà không cần thêm hạ tầng."
+      },
+      {
+        "key": "D",
+        "textVi": "Sửa security group gắn với API Gateway để chỉ cho phép lưu lượng từ các địa chỉ IP cụ thể.",
+        "reason": "API Gateway (endpoint regional hay edge) không có security group để sửa; security group chỉ áp cho tài nguyên trong VPC như EC2, RDS."
+      }
+    ],
+    "explanationVi": "Cách gốc để giới hạn API Gateway theo IP là resource policy: một policy JSON gắn trực tiếp vào API, dùng điều kiện aws:SourceIp để deny mọi request không đến từ dải IP tin cậy. Cách này khai báo một lần, không cần thêm hạ tầng. Bẫy: API Gateway không nằm trong subnet và không có security group.",
+    "keyHint": "\"accessible only from a set of trusted IP addresses\" + API Gateway → resource policy với điều kiện aws:SourceIp."
+  },
+  {
+    "id": 10346,
+    "stemVi": "Một công ty logistics đa quốc gia đang di chuyển các hệ thống cốt lõi lên AWS. Trong quá trình này, công ty đã xây một data lake trên Amazon S3 để thu nhận và phân tích dữ liệu chuỗi cung ứng từ các hãng vận chuyển và nhà cung cấp bên ngoài. Một số nhà cung cấp đã dùng REST API hiện đại của công ty để upload lên S3, nhưng số khác vận hành hệ thống cũ chỉ truyền file bằng SFTP. Các nhà cung cấp này không thể hoặc không muốn đổi quy trình để dùng S3 API. Công ty muốn cung cấp cho họ một giải pháp tương thích SFTP cho phép upload thẳng vào Amazon S3, và phải dùng dịch vụ AWS được quản lý hoàn toàn để không phải quản lý hạ tầng. Giải pháp cũng phải hỗ trợ identity federation để các nhóm nội bộ ánh xạ quyền của từng nhà cung cấp một cách an toàn tới S3 bucket hoặc prefix cụ thể.",
+    "promptVi": "Tổ hợp lựa chọn nào cho giải pháp có khả năng mở rộng và ít bảo trì cho trường hợp này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dựng một Amazon EC2 instance chạy SFTP server tự cài bằng OpenSSH. Cấu hình cron job upload file nhận được lên S3. Dùng Amazon CloudWatch giám sát tình trạng EC2 và dung lượng đĩa.",
+        "reason": "Làm được nhưng phải tự vá lỗi, bảo mật, sao lưu, mở rộng và tính sẵn sàng cho server — trái yêu cầu dùng dịch vụ được quản lý hoàn toàn."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình S3 bucket policy dùng kiểm soát truy cập theo IAM role cho từng nhà cung cấp. Kết hợp với tích hợp identity provider của Transfer Family, dùng Amazon Cognito hoặc một custom identity provider để phân quyền chi tiết.",
+        "reason": "Transfer Family hỗ trợ custom identity provider (ví dụ qua Lambda, có thể xác thực với Cognito hay hệ thống danh tính sẵn có); người dùng xác thực xong được ánh xạ sang IAM role giới hạn đúng bucket/prefix — đáp ứng yêu cầu identity federation."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon AppFlow trích xuất dữ liệu từ hệ thống cũ của nhà cung cấp và chuyển thành upload tương thích S3. Lên lịch job đồng bộ theo lô mỗi giờ và gửi log về CloudWatch để kiểm toán.",
+        "reason": "AppFlow tích hợp với ứng dụng SaaS qua API (Salesforce, Zendesk…), không phải máy chủ nhận file SFTP từ hệ thống cũ của nhà cung cấp."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai một endpoint AWS Transfer Family được quản lý hoàn toàn có bật SFTP. Cấu hình lưu file upload trực tiếp vào một Amazon S3 bucket. Thiết lập IAM role ánh xạ cho từng nhà cung cấp để truy cập bucket hoặc prefix một cách an toàn.",
+        "reason": "Transfer Family cho nhà cung cấp dùng nguyên SFTP client hiện có, file đi thẳng vào S3; mỗi user được gắn IAM role chỉ truy cập prefix của mình — được quản lý hoàn toàn, không có server phải vận hành."
+      },
+      {
+        "key": "E",
+        "textVi": "Dùng AWS Transfer Family với SFTP để upload file. Tích hợp kiểm soát truy cập SFTP với Amazon Route 53 private hosted zone để tạo subdomain upload riêng cho từng nhà cung cấp trỏ về endpoint SFTP.",
+        "reason": "Private hosted zone chỉ phân giải DNS bên trong VPC, nhà cung cấp bên ngoài không dùng được; DNS cũng không phải cơ chế kiểm soát quyền truy cập."
+      }
+    ],
+    "explanationVi": "Hai phần của bài toán: nhận file SFTP vào S3 bằng dịch vụ được quản lý → AWS Transfer Family với endpoint SFTP lưu thẳng vào S3 và IAM role theo từng nhà cung cấp; và identity federation → tích hợp identity provider của Transfer Family để ánh xạ người dùng sang IAM role giới hạn bucket/prefix. Bẫy: SFTP tự dựng trên EC2 tốn công vận hành, AppFlow không nhận SFTP, Route 53 không kiểm soát quyền.",
+    "keyHint": "\"rely exclusively on SFTP\" + \"directly ... to Amazon S3\" + \"fully managed\" + \"identity federation\" → AWS Transfer Family + identity provider + IAM role theo prefix."
+  },
+  {
+    "id": 10347,
+    "stemVi": "Engineering manager của một ứng dụng quản lý nội dung muốn tạo Amazon RDS read replica để tăng hiệu năng và khả năng mở rộng đọc. Người này muốn hiểu phí truyền dữ liệu khi dùng Amazon RDS read replica.",
+    "promptVi": "Phát biểu nào sau đây đúng về phí truyền dữ liệu của Amazon RDS read replica?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Có phí truyền dữ liệu khi sao chép dữ liệu giữa các AWS Region.",
+        "reason": "Đúng: replica ở Region khác (cross-Region read replica) phát sinh phí truyền dữ liệu liên Region cho lưu lượng sao chép."
+      },
+      {
+        "key": "B",
+        "textVi": "Có phí truyền dữ liệu khi sao chép dữ liệu trong cùng một AWS Region.",
+        "reason": "Sai: RDS không tính phí truyền dữ liệu cho việc sao chép giữa DB instance nguồn và read replica trong cùng Region."
+      },
+      {
+        "key": "C",
+        "textVi": "Có phí truyền dữ liệu khi sao chép dữ liệu trong cùng một Availability Zone (AZ).",
+        "reason": "Sai: cùng AZ thì càng nằm trong cùng Region, việc sao chép tới replica không bị tính phí truyền dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Không có phí truyền dữ liệu khi sao chép dữ liệu giữa các AWS Region.",
+        "reason": "Sai: sao chép sang Region khác bị tính phí truyền dữ liệu liên Region."
+      }
+    ],
+    "explanationVi": "Read replica được tính tiền như một DB instance thường. Về truyền dữ liệu: sao chép tới replica trong cùng Region miễn phí (kể cả khác AZ), còn sao chép sang replica ở Region khác thì tính phí truyền dữ liệu liên Region. Cần nhớ khi thiết kế replica cho người dùng ở xa.",
+    "keyHint": "\"data transfer charges\" của read replica → miễn phí trong cùng Region, có phí khi qua Region khác."
+  },
+  {
+    "id": 10348,
+    "stemVi": "Một công ty xuất bản media đang di chuyển ứng dụng quản lý nội dung cũ lên AWS. Hiện ứng dụng và cơ sở dữ liệu MySQL chạy chung trên một máy ảo on-premises, tạo ra điểm lỗi đơn và hạn chế khả năng mở rộng. Do lượng độc giả và video tải lên tăng, công ty cần thiết kế lại giải pháp để có tự động mở rộng, tính sẵn sàng cao và tách tầng ứng dụng khỏi tầng cơ sở dữ liệu. Công ty muốn tiếp tục dùng engine tương thích MySQL và cần giải pháp được quản lý, tiết kiệm chi phí, giảm tối đa công vận hành.",
+    "promptVi": "Kiến trúc AWS nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chạy ứng dụng trên các EC2 instance thuộc target group của một Application Load Balancer. Tạo một Amazon RDS for MySQL Multi-AZ DB instance để có tính sẵn sàng cao và failover tự động cho cơ sở dữ liệu.",
+        "reason": "Có tính sẵn sàng cho cơ sở dữ liệu nhưng tầng ứng dụng không có Auto Scaling group, và RDS instance không tự mở rộng năng lực tính toán — thiếu yêu cầu tự động mở rộng."
+      },
+      {
+        "key": "B",
+        "textVi": "Container hóa ứng dụng và triển khai lên Amazon ECS kiểu EC2 phía sau Application Load Balancer. Dùng Amazon Neptune lưu dữ liệu quan hệ có cấu trúc với truy vấn giống SQL.",
+        "reason": "Neptune là graph database, không tương thích MySQL; phải viết lại mô hình dữ liệu và truy vấn."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai ứng dụng lên các EC2 instance đăng ký trong target group của Network Load Balancer. Dùng Amazon ElastiCache for Redis làm cơ sở dữ liệu và cấu hình Redis Streams để lưu trữ bền vững.",
+        "reason": "ElastiCache là kho key-value để cache, không thay được cơ sở dữ liệu quan hệ MySQL với join và giao dịch."
+      },
+      {
+        "key": "D",
+        "textVi": "Di chuyển ứng dụng sang các Amazon EC2 instance trong một Auto Scaling group phía sau Application Load Balancer. Dùng Amazon Aurora Serverless v2 for MySQL cho tầng cơ sở dữ liệu với khả năng tự mở rộng và tính sẵn sàng cao tích hợp.",
+        "reason": "Auto Scaling group sau ALB tự mở rộng tầng ứng dụng; Aurora Serverless v2 tương thích MySQL, tự điều chỉnh năng lực theo tải, có Multi-AZ và failover — tách tầng, được quản lý và ít công vận hành."
+      }
+    ],
+    "explanationVi": "Đề cần: tách tầng, tự mở rộng cả hai tầng, sẵn sàng cao, giữ MySQL và ít công vận hành. EC2 Auto Scaling group sau ALB lo tầng ứng dụng; Aurora Serverless v2 for MySQL tự co giãn năng lực cơ sở dữ liệu theo tải và có Multi-AZ. RDS MySQL Multi-AZ có sẵn sàng cao nhưng không tự mở rộng compute; Neptune và ElastiCache không thay được MySQL.",
+    "keyHint": "\"automatic scaling, high availability, and separation\" + \"MySQL-compatible\" → ASG + ALB và Aurora Serverless v2 for MySQL."
+  },
+  {
+    "id": 10349,
+    "stemVi": "Một công ty tư vấn big data cần dựng data lake trên Amazon S3 cho một khách hàng ngành y tế. Data lake chia thành vùng raw và vùng refined. Vì lý do tuân thủ, dữ liệu nguồn phải được giữ tối thiểu 5 năm. Dữ liệu nguồn đến vùng raw, sau đó được AWS Glue ETL job (extract, transform, load) xử lý sang vùng refined. Các business analyst chỉ chạy truy vấn ad-hoc trên dữ liệu vùng refined bằng Amazon Athena. Nhóm lo ngại chi phí lưu trữ ở cả hai vùng vì dữ liệu tăng 1 terabyte mỗi ngày ở mỗi vùng.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất những giải pháp nào tối ưu chi phí nhất (MOST cost-optimal)? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một job dựa trên AWS Lambda để xóa dữ liệu vùng raw sau 1 ngày.",
+        "reason": "Vi phạm yêu cầu tuân thủ: dữ liệu nguồn phải giữ ít nhất 5 năm."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Glue ETL job ghi dữ liệu đã biến đổi vào vùng refined ở định dạng CSV.",
+        "reason": "CSV không nén nên tốn dung lượng hơn, và Athena phải quét nhiều dữ liệu hơn (tính phí theo dữ liệu quét)."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo lifecycle policy chuyển dữ liệu vùng raw sang Amazon S3 Glacier Deep Archive sau 1 ngày kể từ khi tạo object.",
+        "reason": "Dữ liệu raw chỉ cần giữ cho tuân thủ và đã được Glue xử lý, không ai truy vấn; Deep Archive là lớp lưu trữ rẻ nhất cho dữ liệu giữ lâu năm."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo lifecycle policy chuyển dữ liệu vùng refined sang Amazon S3 Glacier Deep Archive sau 1 ngày kể từ khi tạo object.",
+        "reason": "Analyst cần truy vấn ad-hoc vùng refined bằng Athena; dữ liệu trong Deep Archive phải khôi phục mất nhiều giờ trước khi đọc được."
+      },
+      {
+        "key": "E",
+        "textVi": "Dùng AWS Glue ETL job ghi dữ liệu đã biến đổi vào vùng refined ở định dạng file nén.",
+        "reason": "Định dạng nén (như Parquet nén) giảm dung lượng lưu trữ vùng refined và giảm lượng dữ liệu Athena quét, nên giảm cả chi phí lưu trữ lẫn truy vấn."
+      }
+    ],
+    "explanationVi": "Tối ưu từng vùng theo cách dùng: vùng raw chỉ giữ để tuân thủ, không truy vấn → chuyển ngay sang S3 Glacier Deep Archive bằng lifecycle policy; vùng refined vẫn được truy vấn bằng Athena → không lưu trữ lạnh được, nhưng ghi ở định dạng nén để giảm dung lượng. Bẫy: xóa dữ liệu raw vi phạm yêu cầu 5 năm, đưa vùng refined vào Deep Archive làm hỏng truy vấn ad-hoc.",
+    "keyHint": "\"kept for a minimum of 5 years\" (raw) → lifecycle sang Glacier Deep Archive; \"ad-hoc queries\" (refined) → định dạng nén."
+  },
+  {
+    "id": 10350,
+    "stemVi": "Xét IAM policy sau:\n\n{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Sid\": \"Mystery Policy\",\n      \"Action\": [\n        \"ec2:RunInstances\"\n      ],\n      \"Effect\": \"Allow\",\n      \"Resource\": \"*\",\n      \"Condition\": {\n        \"IpAddress\": {\n          \"aws:SourceIp\": \"34.50.31.0/24\"\n        }\n      }\n    }\n  ]\n}",
+    "promptVi": "IAM policy này làm gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cho phép khởi chạy Amazon EC2 instance chỉ khi chúng có Elastic IP nằm trong khối CIDR 34.50.31.0/24.",
+        "reason": "aws:SourceIp không xét địa chỉ IP của instance được khởi chạy (Elastic IP hay bất kỳ loại nào) mà xét IP của bên gọi API."
+      },
+      {
+        "key": "B",
+        "textVi": "Cho phép khởi chạy Amazon EC2 instance chỉ khi chúng có Public IP nằm trong khối CIDR 34.50.31.0/24.",
+        "reason": "Điều kiện không liên quan tới public IP của instance; nó so IP nguồn của request gọi API."
+      },
+      {
+        "key": "C",
+        "textVi": "Cho phép khởi chạy Amazon EC2 instance chỉ khi IP nơi lệnh gọi xuất phát nằm trong khối CIDR 34.50.31.0/24.",
+        "reason": "aws:SourceIp là địa chỉ IP của bên gọi API, nên RunInstances chỉ được phép khi request đến từ dải 34.50.31.0/24 (ví dụ IP public của văn phòng)."
+      },
+      {
+        "key": "D",
+        "textVi": "Cho phép khởi chạy Amazon EC2 instance chỉ khi chúng có Private IP nằm trong khối CIDR 34.50.31.0/24.",
+        "reason": "34.50.31.0/24 là dải IP public, và điều kiện cũng không xét private IP của instance mà xét IP của bên gọi."
+      }
+    ],
+    "explanationVi": "Global condition key aws:SourceIp chứa địa chỉ IP của bên gửi request tới AWS API. Policy này chỉ Allow ec2:RunInstances khi lệnh gọi đến từ dải 34.50.31.0/24 — cách hay dùng để giới hạn thao tác từ IP public của hạ tầng công ty. Bẫy: các lựa chọn nói về IP của instance (Elastic, public hay private) đều hiểu sai ý nghĩa của điều kiện.",
+    "keyHint": "\"aws:SourceIp\" → IP của bên gọi API, không phải IP của EC2 instance."
+  },
+  {
+    "id": 10351,
+    "stemVi": "Một công ty dịch vụ tài chính muốn lưu dữ liệu mật trong Amazon S3 và phải đáp ứng các chuẩn bảo mật, tuân thủ sau:\n\nViệc sử dụng khóa mã hóa phải được ghi log để kiểm toán\nKhóa mã hóa phải được xoay vòng (rotate) mỗi năm\nDữ liệu phải được mã hóa at rest",
+    "promptVi": "Giải pháp nào hiệu quả vận hành nhất (MOST operationally efficient)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Server-side encryption với khóa do khách hàng cung cấp (SSE-C) và tự động xoay vòng khóa.",
+        "reason": "Với SSE-C, khách hàng tự quản lý khóa; muốn xoay vòng tự động và ghi log sử dụng khóa phải tự xây giải pháp — không hiệu quả vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Server-side encryption với khóa AWS Key Management Service (AWS KMS) (SSE-KMS) và xoay vòng khóa thủ công.",
+        "reason": "Đáp ứng log và mã hóa, nhưng xoay vòng thủ công mỗi năm thêm việc phải làm và dễ quên so với bật tự động."
+      },
+      {
+        "key": "C",
+        "textVi": "Server-side encryption (SSE-S3) với tự động xoay vòng khóa.",
+        "reason": "Khóa do S3 quản lý, không có log sử dụng khóa trong CloudTrail để kiểm toán như yêu cầu."
+      },
+      {
+        "key": "D",
+        "textVi": "Server-side encryption với khóa AWS Key Management Service (AWS KMS) (SSE-KMS) và tự động xoay vòng khóa.",
+        "reason": "Mỗi lần dùng KMS key đều được CloudTrail ghi log; bật automatic key rotation thì KMS tự tạo key material mới hằng năm (mặc định 365 ngày); dữ liệu được mã hóa at rest — đủ ba yêu cầu mà không phải làm tay."
+      }
+    ],
+    "explanationVi": "Ba yêu cầu: log việc dùng khóa, xoay vòng hằng năm, mã hóa at rest. SSE-KMS với customer managed key đáp ứng log (mọi lệnh gọi KMS ghi vào CloudTrail), còn bật automatic key rotation cho xoay vòng hằng năm không cần thao tác tay. SSE-S3 thiếu log sử dụng khóa; SSE-C và xoay vòng thủ công tốn công vận hành.",
+    "keyHint": "\"key usage must be logged\" + \"rotated every year\" + \"MOST operationally efficient\" → SSE-KMS với automatic key rotation."
+  },
+  {
+    "id": 10352,
+    "stemVi": "Cần cấp quyền chỉ đọc (read-only) cho Amazon S3 bucket mybucket và nội dung của nó.",
+    "promptVi": "IAM policy nào sau đây đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "{\n   \"Version\":\"2012-10-17\",\n   \"Statement\":[\n      {\n         \"Effect\":\"Allow\",\n         \"Action\":[\n            \"s3:ListBucket\"\n         ],\n         \"Resource\":\"arn:aws:s3:::mybucket\"\n      },\n      {\n         \"Effect\":\"Allow\",\n         \"Action\":[\n            \"s3:GetObject\"\n         ],\n         \"Resource\":\"arn:aws:s3:::mybucket/*\"\n      }\n   ]\n}",
+        "reason": "s3:ListBucket áp lên chính bucket (ARN arn:aws:s3:::mybucket), còn s3:GetObject áp lên object (ARN arn:aws:s3:::mybucket/*) — mỗi action đi đúng loại tài nguyên nên liệt kê và đọc được toàn bộ nội dung."
+      },
+      {
+        "key": "B",
+        "textVi": "{\n   \"Version\":\"2012-10-17\",\n   \"Statement\":[\n      {\n         \"Effect\":\"Allow\",\n         \"Action\":[\n            \"s3:ListBucket\"\n         ],\n         \"Resource\":\"arn:aws:s3:::mybucket/*\"\n      },\n      {\n         \"Effect\":\"Allow\",\n         \"Action\":[\n            \"s3:GetObject\"\n         ],\n         \"Resource\":\"arn:aws:s3:::mybucket\"\n      }\n   ]\n}",
+        "reason": "Đảo ngược tài nguyên: ListBucket gắn với ARN object và GetObject gắn với ARN bucket, nên không action nào có hiệu lực."
+      },
+      {
+        "key": "C",
+        "textVi": "{\n   \"Version\":\"2012-10-17\",\n   \"Statement\":[\n      {\n         \"Effect\":\"Allow\",\n         \"Action\":[\n            \"s3:ListBucket\",\n            \"s3:GetObject\"\n         ],\n         \"Resource\":\"arn:aws:s3:::mybucket/*\"\n      }\n   ]\n}",
+        "reason": "Cả hai action chỉ gắn với ARN object (mybucket/*), nên đọc được object nhưng không liệt kê được bucket vì ListBucket cần ARN của bucket."
+      },
+      {
+        "key": "D",
+        "textVi": "{\n   \"Version\":\"2012-10-17\",\n   \"Statement\":[\n      {\n         \"Effect\":\"Allow\",\n         \"Action\":[\n            \"s3:ListBucket\",\n            \"s3:GetObject\"\n         ],\n         \"Resource\":\"arn:aws:s3:::mybucket\"\n      }\n   ]\n}",
+        "reason": "Cả hai action chỉ gắn với ARN bucket, nên liệt kê được nhưng không đọc được object vì GetObject cần ARN dạng mybucket/*."
+      }
+    ],
+    "explanationVi": "Mấu chốt là loại tài nguyên của từng action S3: s3:ListBucket là thao tác trên bucket nên Resource là arn:aws:s3:::mybucket (không có /), còn s3:GetObject là thao tác trên object nên Resource là arn:aws:s3:::mybucket/*. Policy đúng phải tách hai statement với hai ARN tương ứng. Bẫy: gộp hai action vào một ARN hoặc gắn đảo ARN.",
+    "keyHint": "\"read-only access to the bucket and its content\" → ListBucket trên ARN bucket, GetObject trên ARN bucket/*."
+  },
+  {
+    "id": 10353,
+    "stemVi": "Một doanh nghiệp dùng một Amazon S3 bucket tập trung để lưu log và báo cáo do nhiều dịch vụ phân tích tạo ra. Mỗi dịch vụ ghi và đọc trong một prefix (đường dẫn thư mục) riêng trong bucket. Công ty muốn áp kiểm soát truy cập chi tiết để mỗi dịch vụ chỉ truy cập được prefix của mình, không thấy hay sửa được dữ liệu của dịch vụ khác. Giải pháp phải hỗ trợ quản lý quyền có khả năng mở rộng, dễ duy trì và ít công vận hành.",
+    "promptVi": "Cách nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo S3 access point riêng cho từng dịch vụ phân tích. Gắn access point policy chỉ cho phép truy cập đúng prefix tương ứng trong S3 bucket.",
+        "reason": "Mỗi dịch vụ có endpoint và policy riêng giới hạn trong prefix của mình; thêm dịch vụ chỉ cần thêm access point, không phải sửa một bucket policy lớn — dễ mở rộng và duy trì."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai Amazon Macie để phân loại object trong bucket theo prefix và tự động áp policy truy cập cấp object cho từng object dựa trên tag dịch vụ.",
+        "reason": "Macie dùng để phát hiện, phân loại dữ liệu nhạy cảm; nó không áp hay thực thi quyền truy cập S3."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo IAM user riêng cho từng dịch vụ. Gán thủ công inline IAM policy cấp quyền đọc/ghi S3 bucket. Tham chiếu tên object cụ thể trong policy của từng user.",
+        "reason": "Liệt kê tên object cụ thể phải cập nhật liên tục khi có object mới; IAM user với khóa dài hạn và inline policy rời rạc khó quản lý ở quy mô lớn."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một bucket policy duy nhất liệt kê mọi ARN object dưới từng prefix và cấp quyền tương ứng. Dùng resource-level permission để giới hạn truy cập cho từng dịch vụ.",
+        "reason": "Liệt kê từng ARN object không mở rộng được khi số object tăng, và bucket policy có giới hạn kích thước; mọi thay đổi đều phải sửa một policy chung dễ sai."
+      }
+    ],
+    "explanationVi": "Với một bucket dùng chung cho nhiều ứng dụng, S3 Access Points tách quyền thành từng điểm truy cập có policy riêng, mỗi policy giới hạn một prefix. Cách này tránh bucket policy phình to và không phải quản lý quyền theo từng object. Bẫy: Macie không kiểm soát quyền; liệt kê ARN từng object không mở rộng được.",
+    "keyHint": "\"centralized S3 bucket\" + \"each service can access only its own prefix\" + \"scalable\" → S3 Access Points với policy theo prefix."
+  },
+  {
+    "id": 10354,
+    "stemVi": "Để cải thiện hiệu năng và bảo mật của ứng dụng, nhóm kỹ sư của một công ty đã tạo một Amazon CloudFront distribution với Application Load Balancer làm custom origin. Nhóm cũng đã thiết lập AWS Web Application Firewall (AWS WAF) cho CloudFront distribution. Nhóm bảo mật nhận thấy các cuộc tấn công độc hại tăng vọt từ một địa chỉ IP cụ thể nhằm đánh cắp dữ liệu nhạy cảm lưu trên các Amazon EC2 instance.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất hành động nào để chặn các cuộc tấn công?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một IP match condition trong AWS WAF để chặn địa chỉ IP độc hại.",
+        "reason": "WAF đã gắn với CloudFront nên thấy đúng IP của client; một rule chặn theo IP (WAF Classic gọi là IP match condition, nay là IP set) chặn request ngay tại edge trước khi tới ALB và EC2."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo rule deny cho IP độc hại trong các security group gắn với từng instance.",
+        "reason": "Security group chỉ có rule allow, không tạo được rule deny; hơn nữa instance chỉ thấy IP của ALB/CloudFront chứ không thấy IP client."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo ticket với AWS Support để họ xử lý IP độc hại.",
+        "reason": "Theo mô hình trách nhiệm chung, bảo mật ứng dụng là trách nhiệm của khách hàng; AWS Support không chặn IP thay bạn."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo rule deny cho IP độc hại trong network access control list (network ACL) gắn với từng instance.",
+        "reason": "Network ACL gắn với subnet chứ không gắn với instance; và với CloudFront phía trước, lưu lượng tới subnet đến từ IP của CloudFront/ALB, không phải IP của kẻ tấn công."
+      }
+    ],
+    "explanationVi": "Khi có CloudFront phía trước, chỉ ở tầng CloudFront mới thấy địa chỉ IP thật của client. AWS WAF đã gắn với distribution, nên thêm rule chặn theo IP (IP set trong web ACL) là cách đúng và nhanh nhất. Bẫy: security group không có rule deny, network ACL gắn với subnet, và cả hai đều chỉ thấy IP của CloudFront/ALB.",
+    "keyHint": "\"AWS WAF with Amazon CloudFront\" + \"specific IP address\" → rule chặn IP (IP set) trong AWS WAF."
+  },
+  {
+    "id": 10355,
+    "stemVi": "Amazon EC2 Auto Scaling cần terminate một instance ở Availability Zone (AZ) us-east-1a vì AZ này có nhiều instance nhất trong các AZ đang dùng. Có 4 instance trong us-east-1a như sau: Instance A dùng launch template cũ nhất, Instance B dùng launch configuration cũ nhất, Instance C dùng launch configuration mới nhất và Instance D gần giờ tính phí tiếp theo nhất.",
+    "promptVi": "Theo default termination policy, instance nào sẽ bị terminate?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Instance C",
+        "reason": "Instance dùng launch configuration bị ưu tiên terminate trước instance dùng launch template, nhưng giữa các instance dùng launch configuration thì cái cũ nhất bị chọn trước; Instance C dùng cấu hình mới nhất nên được giữ."
+      },
+      {
+        "key": "B",
+        "textVi": "Instance D",
+        "reason": "Tiêu chí gần giờ tính phí tiếp theo chỉ được xét sau cùng, khi các tiêu chí về launch template/configuration chưa phân định được."
+      },
+      {
+        "key": "C",
+        "textVi": "Instance A",
+        "reason": "Instance dùng launch template chỉ bị xét khi không còn instance nào dùng launch configuration; ở đây có instance dùng launch configuration nên Instance A được giữ."
+      },
+      {
+        "key": "D",
+        "textVi": "Instance B",
+        "reason": "Sau bước chọn AZ, chính sách mặc định ưu tiên terminate instance dùng launch configuration, và trong số đó chọn cái dùng launch configuration cũ nhất — chính là Instance B."
+      }
+    ],
+    "explanationVi": "Thứ tự của default termination policy: chọn AZ có nhiều instance nhất, xét allocation strategy On-Demand/Spot, rồi ưu tiên instance dùng launch configuration (trước instance dùng launch template), trong đó chọn cấu hình cũ nhất; sau đó mới tới instance gần giờ tính phí tiếp theo, cuối cùng là ngẫu nhiên. Vì vậy Instance B bị terminate. Lưu ý thực tế: launch configuration đã bị AWS ngừng phát triển và khuyên chuyển hẳn sang launch template.",
+    "keyHint": "\"default termination policy\" → launch configuration trước launch template, cũ nhất trước; \"next billing hour\" xét sau cùng."
+  },
+  {
+    "id": 10356,
+    "stemVi": "Một công ty IT đang làm dự án cho khách hàng để xây ứng dụng Quản lý chuỗi cung ứng (Supply Chain Management). Tầng web chạy trên một Amazon EC2 instance và tầng cơ sở dữ liệu trên Amazon RDS MySQL. Để beta test, mọi tài nguyên hiện được triển khai trong một Availability Zone (AZ). Nhóm phát triển muốn cải thiện tính sẵn sàng của ứng dụng trước khi go-live.",
+    "promptVi": "Biết rằng mọi người dùng cuối đều ở Mỹ, giải pháp nào sau đây hiệu quả về tài nguyên nhất (MOST resource-efficient)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai EC2 instance tầng web ở hai Availability Zone (AZ), phía sau một Elastic Load Balancer. Triển khai cơ sở dữ liệu Amazon RDS MySQL ở cấu hình Multi-AZ.",
+        "reason": "Web tier trải hai AZ sau ELB chịu được mất một AZ; RDS Multi-AZ có standby đồng bộ ở AZ khác và failover tự động — đủ sẵn sàng cao trong một Region, đúng với người dùng chỉ ở Mỹ."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai EC2 instance tầng web ở hai region, phía sau một Elastic Load Balancer. Triển khai cơ sở dữ liệu Amazon RDS MySQL ở cấu hình Multi-AZ.",
+        "reason": "Một ELB không trải qua nhiều Region được; triển khai hai Region cũng thừa tài nguyên khi người dùng chỉ ở Mỹ."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai EC2 instance tầng web ở hai Availability Zone (AZ), phía sau một Elastic Load Balancer. Triển khai cơ sở dữ liệu Amazon RDS MySQL ở cấu hình read replica.",
+        "reason": "Read replica dùng để mở rộng đọc, sao chép bất đồng bộ và không tự failover, nên không phải giải pháp sẵn sàng cao cho cơ sở dữ liệu."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai EC2 instance tầng web ở hai region, phía sau một Elastic Load Balancer. Triển khai cơ sở dữ liệu Amazon RDS MySQL ở cấu hình read replica.",
+        "reason": "Vừa sai ở ELB đa Region vừa dùng read replica thay cho Multi-AZ để lo tính sẵn sàng."
+      }
+    ],
+    "explanationVi": "Người dùng chỉ ở một khu vực nên sẵn sàng cao trong một Region là đủ: EC2 ở nhiều AZ sau ELB cho tầng web, RDS Multi-AZ cho tầng cơ sở dữ liệu. Bẫy: read replica phục vụ mở rộng đọc chứ không phải failover tự động; ELB không trải qua nhiều Region.",
+    "keyHint": "\"improve application availability\" + \"all end users ... in the US\" → nhiều AZ sau ELB + RDS Multi-AZ."
+  },
+  {
+    "id": 10357,
+    "stemVi": "Công ty bạn có dịch vụ Distributed File System Replication (DFSR) on-premises để đồng bộ file giữa nhiều Windows server, và muốn di chuyển lên AWS cloud.",
+    "promptVi": "Bạn đề xuất gì để thay thế DFSR?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon Elastic File System (Amazon EFS)",
+        "reason": "EFS là file system NFS cho Linux, không hỗ trợ SMB hay các tính năng file của Windows như DFS."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon Simple Storage Service (Amazon S3)",
+        "reason": "S3 là object storage, không mount được như file share trên Windows server."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon FSx for Lustre",
+        "reason": "FSx for Lustre là file system hiệu năng cao cho HPC trên Linux, không phục vụ Windows server."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon FSx for Windows File Server",
+        "reason": "FSx for Windows File Server được xây trên Windows Server, truy cập qua SMB, hỗ trợ DFS Namespaces và tự sao chép dữ liệu ở bản triển khai Multi-AZ — thay thế tự nhiên cho file share đồng bộ bằng DFSR."
+      }
+    ],
+    "explanationVi": "DFSR là công nghệ của Windows để đồng bộ thư mục giữa nhiều file server. Trên AWS, Amazon FSx for Windows File Server là file system Windows được quản lý, hỗ trợ SMB, Active Directory và DFS, nên là đích di chuyển phù hợp. EFS và FSx for Lustre dành cho Linux, còn S3 không phải file system.",
+    "keyHint": "\"Distributed File System Replication (DFSR)\" + \"Windows servers\" → Amazon FSx for Windows File Server."
+  },
+  {
+    "id": 10358,
+    "stemVi": "Một startup vừa phát triển dịch vụ sao lưu video chạy trên một nhóm Amazon EC2 instance. Các instance nằm sau Application Load Balancer và dùng Amazon Elastic Block Store (Amazon EBS) volume để lưu trữ. Dịch vụ cho người dùng đã xác thực upload video, video được lưu trên EBS volume gắn với instance xử lý request. Ngay ngày đầu chạy beta, người dùng phàn nàn rằng họ chỉ thấy một phần video đã upload. Mỗi lần đăng nhập, họ lại thấy một tập con video khác nhau.",
+    "promptVi": "Giải pháp nào sau đây TỐI ƯU NHẤT để bảo đảm người dùng xem được mọi video đã upload? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Viết job chạy một lần chép video từ mọi Amazon EBS volume sang Amazon DynamoDB, rồi sửa ứng dụng để lưu video trong Amazon DynamoDB.",
+        "reason": "DynamoDB là NoSQL database với giới hạn 400 KB mỗi item, không phải nơi lưu file video."
+      },
+      {
+        "key": "B",
+        "textVi": "Viết job chạy một lần chép video từ mọi Amazon EBS volume sang Amazon S3, rồi sửa ứng dụng để lưu video trong Amazon S3 Standard.",
+        "reason": "S3 là kho lưu trữ dùng chung, mọi instance cùng đọc ghi một nơi nên người dùng luôn thấy đủ video; S3 Standard truy cập ngay và bền vững."
+      },
+      {
+        "key": "C",
+        "textVi": "Viết job chạy một lần chép video từ mọi Amazon EBS volume sang Amazon RDS, rồi sửa ứng dụng để lưu video trong Amazon RDS.",
+        "reason": "RDS là cơ sở dữ liệu quan hệ, không phù hợp để lưu file video dung lượng lớn."
+      },
+      {
+        "key": "D",
+        "textVi": "Viết job chạy một lần chép video từ mọi Amazon EBS volume sang Amazon S3 Glacier Deep Archive, rồi sửa ứng dụng để lưu video trong Amazon S3 Glacier Deep Archive.",
+        "reason": "Deep Archive dành cho lưu trữ lâu dài, phải khôi phục mất nhiều giờ mới đọc được, nên người dùng không xem video ngay được."
+      },
+      {
+        "key": "E",
+        "textVi": "Mount Amazon Elastic File System (Amazon EFS) trên mọi Amazon EC2 instance. Viết job chạy một lần chép video từ mọi Amazon EBS volume sang Amazon EFS. Sửa ứng dụng để lưu video trong Amazon EFS.",
+        "reason": "EFS là file system dùng chung mà mọi instance mount đồng thời, nên instance nào phục vụ request cũng thấy đủ video."
+      }
+    ],
+    "explanationVi": "Nguyên nhân: mỗi EBS volume chỉ gắn với một instance, nên video nằm rải rác theo instance đã nhận upload, và ALB đưa người dùng tới instance khác nhau mỗi lần. Cách sửa là chuyển sang kho lưu trữ dùng chung cho mọi instance: Amazon S3 (Standard) hoặc Amazon EFS. Bẫy: DynamoDB và RDS không dành cho file video, Glacier Deep Archive không truy cập tức thì.",
+    "keyHint": "\"see a different subset\" mỗi lần đăng nhập + EBS gắn từng instance → kho dùng chung: Amazon S3 hoặc Amazon EFS."
+  },
+  {
+    "id": 10359,
+    "stemVi": "Một startup ở Silicon Valley có ứng dụng quản lý nội dung với tầng web chạy trên Amazon EC2 instance và tầng cơ sở dữ liệu chạy trên Amazon Aurora. Hiện toàn bộ hạ tầng đặt ở region us-east-1. 90% khách hàng của startup ở Mỹ và châu Âu. Nhóm kỹ sư nhận báo cáo khách hàng ở châu Âu gặp hiệu năng kém, thời gian tải ứng dụng cao.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất những gì để giải quyết các vấn đề hiệu năng này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo Amazon Aurora read replica ở region eu-west-1.",
+        "reason": "Replica Aurora ở châu Âu (cross-Region replica hoặc Aurora Global Database) cho tầng web châu Âu đọc dữ liệu cục bộ với độ trễ thấp."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo Amazon Aurora Multi-AZ standby instance ở region eu-west-1.",
+        "reason": "Multi-AZ hoạt động trong một Region để tăng tính sẵn sàng, không đặt standby ở Region khác và không phục vụ đọc cho người dùng châu Âu."
+      },
+      {
+        "key": "C",
+        "textVi": "Dựng thêm một nhóm Amazon EC2 instance cho tầng web ở region eu-west-1. Bật latency routing policy trong Amazon Route 53.",
+        "reason": "Tầng web đặt gần người dùng châu Âu, và latency routing đưa mỗi người dùng tới Region có độ trễ thấp nhất cho họ."
+      },
+      {
+        "key": "D",
+        "textVi": "Dựng thêm một nhóm Amazon EC2 instance cho tầng web ở region eu-west-1. Bật failover routing policy trong Amazon Route 53.",
+        "reason": "Failover routing chỉ chuyển sang tài nguyên dự phòng khi tài nguyên chính hỏng; lúc bình thường người dùng châu Âu vẫn đi tới us-east-1."
+      },
+      {
+        "key": "E",
+        "textVi": "Dựng thêm một nhóm Amazon EC2 instance cho tầng web ở region eu-west-1. Bật geolocation routing policy trong Amazon Route 53.",
+        "reason": "Geolocation định tuyến theo vị trí địa lý (thường dùng cho bản địa hóa hay giới hạn bản quyền), không bảo đảm chọn Region có độ trễ thấp nhất như latency routing."
+      }
+    ],
+    "explanationVi": "Để giảm độ trễ cho người dùng châu Âu cần đưa cả tầng web lẫn dữ liệu đọc tới gần họ: thêm nhóm EC2 ở eu-west-1 với Route 53 latency routing, và tạo Aurora replica ở eu-west-1 để đọc cục bộ. Bẫy: Multi-AZ chỉ trong một Region; failover routing không chia tải lúc bình thường; geolocation dựa vào vị trí chứ không dựa vào độ trễ.",
+    "keyHint": "\"customers in Europe\" + \"high application load time\" → web tier ở eu-west-1 + Route 53 latency routing + Aurora replica ở eu-west-1."
+  },
+  {
+    "id": 10360,
+    "stemVi": "Một công ty vừa ra mắt ứng dụng game di động mới đang được người dùng đón nhận nhanh. Công ty dùng Amazon RDS MySQL làm cơ sở dữ liệu. Nhóm kỹ sư cần gấp một giải pháp cho vấn đề workload tăng nhanh có thể vượt quá dung lượng lưu trữ hiện có của cơ sở dữ liệu.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp nào cần ít công phát triển và quản trị hệ thống nhất để đáp ứng yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật storage auto-scaling cho Amazon RDS MySQL.",
+        "reason": "Chỉ cần bật tùy chọn và đặt ngưỡng tối đa; RDS tự tăng dung lượng khi dung lượng trống còn dưới 10% — không phải di chuyển hay sửa ứng dụng."
+      },
+      {
+        "key": "B",
+        "textVi": "Di chuyển cơ sở dữ liệu RDS MySQL sang Amazon Aurora, vốn có tự động mở rộng lưu trữ.",
+        "reason": "Aurora tự mở rộng lưu trữ, nhưng di chuyển cơ sở dữ liệu tốn công quản trị hơn hẳn so với bật một tùy chọn có sẵn."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo read replica cho Amazon RDS MySQL.",
+        "reason": "Read replica chỉ mở rộng khả năng đọc, không tăng dung lượng lưu trữ của cơ sở dữ liệu chính."
+      },
+      {
+        "key": "D",
+        "textVi": "Di chuyển cơ sở dữ liệu Amazon RDS MySQL sang Amazon DynamoDB, vốn tự cấp dung lượng khi cần.",
+        "reason": "Chuyển sang NoSQL buộc phải viết lại phần truy cập dữ liệu của ứng dụng — tốn rất nhiều công phát triển."
+      }
+    ],
+    "explanationVi": "Vấn đề chỉ là sắp hết dung lượng lưu trữ, và RDS có sẵn storage autoscaling: khi dung lượng trống dưới 10% trong ít nhất 5 phút (và đã qua 6 giờ từ lần sửa trước), RDS tự tăng dung lượng tới ngưỡng tối đa bạn đặt. Không cần di chuyển engine hay sửa ứng dụng. Bẫy: read replica không thêm dung lượng; di chuyển sang Aurora hay DynamoDB tốn công.",
+    "keyHint": "\"might exceed the available database storage\" + \"minimum development and systems administration effort\" → RDS storage autoscaling."
+  },
+  {
+    "id": 10361,
+    "stemVi": "Một ứng dụng web chia sẻ ảnh chạy trên các Amazon Elastic Compute Cloud (Amazon EC2) instance phía sau Elastic Load Balancer. Ứng dụng cho người dùng upload ảnh và hiển thị bảng xếp hạng (leaderboard) trên trang chủ. Ảnh upload được lưu trong Amazon Simple Storage Service (Amazon S3) và dữ liệu leaderboard được lưu trong Amazon DynamoDB. Các EC2 instance cần truy cập cả Amazon S3 lẫn Amazon DynamoDB cho các tính năng này.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp nào AN TOÀN NHẤT (MOST secure)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mã hóa AWS credential bằng một thư viện mã hóa tự viết và lưu trong một thư mục bí mật trên EC2 instance. Code ứng dụng giải mã credential để gọi API tới Amazon S3 và Amazon DynamoDB.",
+        "reason": "Vẫn là khóa dài hạn nằm trên máy; khóa giải mã cũng phải nằm đâu đó trên instance, và phải tự xoay vòng credential — kém an toàn hơn credential tạm thời."
+      },
+      {
+        "key": "B",
+        "textVi": "Lưu AWS credential (access key ID và secret access key) trong file cấu hình nằm trong code ứng dụng trên EC2 instance. EC2 instance dùng credential này để truy cập Amazon S3 và Amazon DynamoDB.",
+        "reason": "Khóa dài hạn dạng plain text trong code dễ bị lộ (qua repo, backup, người truy cập máy) và khó xoay vòng."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình AWS CLI trên EC2 instance bằng credential của một IAM user hợp lệ. Code ứng dụng gọi shell script để truy cập Amazon S3 và Amazon DynamoDB qua AWS CLI.",
+        "reason": "Credential của IAM user vẫn được lưu dài hạn trên máy (file cấu hình CLI), cùng rủi ro lộ khóa như lưu trong code."
+      },
+      {
+        "key": "D",
+        "textVi": "Gắn IAM role phù hợp vào EC2 instance profile để instance truy cập được Amazon S3 và Amazon DynamoDB.",
+        "reason": "Instance profile cấp credential tạm thời, tự xoay vòng qua instance metadata; không có khóa dài hạn nào nằm trên máy và quyền giới hạn đúng S3, DynamoDB."
+      }
+    ],
+    "explanationVi": "Ứng dụng trên EC2 nên lấy quyền qua IAM role gắn bằng instance profile: SDK tự lấy credential tạm thời từ instance metadata và chúng được xoay vòng tự động. Mọi cách lưu access key dài hạn trên instance (plain text, mã hóa tự chế hay cấu hình CLI) đều có rủi ro lộ khóa và tốn công xoay vòng.",
+    "keyHint": "\"EC2 instances need to access S3 and DynamoDB\" + \"MOST secure\" → IAM role qua EC2 instance profile."
+  },
+  {
+    "id": 10362,
+    "stemVi": "Nhóm DevOps của một công ty dịch vụ tài chính lớn dùng triển khai Multi-Availability Zone (Multi-AZ) cho cơ sở dữ liệu Amazon RDS MySQL để tự động sao chép dữ liệu và tăng độ bền dữ liệu (durability). Nhóm đã lên lịch một maintenance window cuối tuần tới để nâng cấp database engine.",
+    "promptVi": "Kết quả nào sau đây đúng trong maintenance window?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mọi lần nâng cấp database engine cho Amazon RDS instance triển khai Multi-AZ đều nâng cấp cả primary lẫn standby cùng lúc. Việc này gây downtime cho tới khi nâng cấp xong.",
+        "reason": "Với RDS Multi-AZ DB instance, nâng cấp engine áp cho primary và standby cùng lúc nên cơ sở dữ liệu ngừng phục vụ cho tới khi nâng cấp hoàn tất."
+      },
+      {
+        "key": "B",
+        "textVi": "Mọi lần nâng cấp database engine cho Amazon RDS instance triển khai Multi-AZ sẽ nâng cấp primary trước rồi tới standby. Việc này không gây downtime trong suốt quá trình nâng cấp.",
+        "reason": "Cách nâng cấp lần lượt kèm failover chỉ áp cho bảo trì hệ điều hành hay thay đổi instance class, không áp cho nâng cấp engine."
+      },
+      {
+        "key": "C",
+        "textVi": "Mọi lần nâng cấp database engine cho Amazon RDS instance triển khai Multi-AZ sẽ nâng cấp standby trước rồi tới primary. Việc này không gây downtime trong suốt quá trình nâng cấp.",
+        "reason": "Với nâng cấp engine, RDS không nâng cấp standby trước rồi failover; cả hai được nâng cấp cùng lúc và có downtime."
+      },
+      {
+        "key": "D",
+        "textVi": "Mọi lần nâng cấp database engine cho Amazon RDS instance triển khai Multi-AZ đều nâng cấp cả primary lẫn standby cùng lúc. Tuy nhiên việc này không gây downtime cho tới khi nâng cấp xong.",
+        "reason": "Mâu thuẫn: khi cả primary lẫn standby cùng được nâng cấp thì không còn instance nào phục vụ, nên chắc chắn có downtime."
+      }
+    ],
+    "explanationVi": "Multi-AZ giúp giảm downtime cho bảo trì hệ điều hành (nâng cấp standby, failover, rồi nâng cấp primary cũ), nhưng nâng cấp database engine là ngoại lệ: primary và standby được nâng cấp cùng lúc nên có downtime, thời gian phụ thuộc kích thước cơ sở dữ liệu. Bẫy: nghĩ Multi-AZ luôn loại bỏ downtime khi bảo trì.",
+    "keyHint": "\"database engine level upgrade\" + Multi-AZ → primary và standby nâng cấp cùng lúc, có downtime."
+  },
+  {
+    "id": 10363,
+    "stemVi": "Một công ty đang phát triển ứng dụng y tế toàn cầu, cần độ trễ thấp nhất có thể cho thao tác đọc/ghi cơ sở dữ liệu từ người dùng ở nhiều vùng địa lý trên thế giới. Công ty thuê bạn với vai trò AWS Certified Solutions Architect Associate để xây giải pháp dùng Amazon Aurora có recovery point objective (RPO) thực tế tính bằng giây và recovery time objective (RTO) khoảng một phút.",
+    "promptVi": "Bạn đề xuất lựa chọn nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một Amazon Aurora provisioned database cluster.",
+        "reason": "Một cluster thường chỉ nằm trong một Region, không cho đọc cục bộ ở các vùng khác và không chịu được sự cố cả Region với RPO/RTO như yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một Amazon Aurora Global Database cluster.",
+        "reason": "Global Database trải nhiều Region, sao chép ở tầng storage với độ trễ thường dưới một giây, cho đọc cục bộ nhanh ở mỗi Region và có thể promote Region phụ khi Region chính hỏng — RPO khoảng giây, RTO khoảng một phút."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một Amazon Aurora multi-master database cluster.",
+        "reason": "Aurora multi-master (chỉ có ở Aurora MySQL 5.6) chỉ hoạt động trong một Region và đã ngừng; nó không đáp ứng phân tán toàn cầu hay khôi phục khi mất cả Region."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một Amazon Aurora serverless database cluster.",
+        "reason": "Aurora Serverless giúp co giãn năng lực, nhưng một cluster vẫn chỉ ở một Region nên không giải quyết độ trễ toàn cầu và khôi phục khi mất Region."
+      }
+    ],
+    "explanationVi": "Yêu cầu toàn cầu cộng RPO tính bằng giây và RTO khoảng một phút là mô tả gần như nguyên văn của Amazon Aurora Global Database: một cluster chính và tối đa nhiều Region phụ chỉ đọc, sao chép ở tầng storage, có thể chuyển Region phụ thành chính khi có sự cố. Các cluster thường, serverless hay multi-master đều giới hạn trong một Region.",
+    "keyHint": "\"several geographies across the world\" + \"RPO of seconds and RTO of a minute\" → Amazon Aurora Global Database."
+  },
+  {
+    "id": 10364,
+    "stemVi": "Bạn muốn dùng AWS Snowball để chuyển các bản sao lưu on-premises vào một tầng lưu trữ lâu dài (archival) trên AWS.",
+    "promptVi": "Giải pháp nào tiết kiệm chi phí nhất (MOST cost savings)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một AWS Snowball job với đích là một Amazon S3 Glacier Vault.",
+        "reason": "Snowball chỉ nhập dữ liệu vào S3 bucket, không ghi thẳng vào Glacier vault được."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo một AWS Snowball job với đích là một Amazon S3 bucket. Tạo lifecycle policy chuyển dữ liệu sang Amazon S3 Glacier Deep Archive ngay trong ngày.",
+        "reason": "Snowball nhập vào S3, lifecycle policy 0 ngày chuyển ngay sang Glacier Deep Archive — lớp lưu trữ rẻ nhất cho bản sao lưu lâu dài, gần như không tốn phí lưu ở S3 Standard."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo một AWS Snowball job với đích là một Amazon S3 Glacier Deep Archive Vault.",
+        "reason": "Không có đích kiểu \"Glacier Deep Archive Vault\" cho Snowball; Snowball chỉ nhập vào S3 bucket."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một AWS Snowball job với đích là một Amazon S3 bucket. Tạo lifecycle policy chuyển dữ liệu sang Amazon S3 Glacier ngay trong ngày.",
+        "reason": "Cách làm đúng quy trình, nhưng S3 Glacier (Flexible Retrieval) đắt hơn Glacier Deep Archive cho dữ liệu lưu trữ lâu dài."
+      }
+    ],
+    "explanationVi": "Snowball chỉ nhập dữ liệu vào S3 bucket, nên muốn đưa vào tầng lưu trữ lạnh phải dùng lifecycle policy chuyển ngay (0 ngày) sang storage class đích. Với bản sao lưu dài hạn, S3 Glacier Deep Archive là lớp rẻ nhất. Bẫy: Snowball không ghi thẳng vào Glacier vault.",
+    "keyHint": "\"Snowball\" + \"long term archival\" + \"MOST cost savings\" → nhập vào S3 rồi lifecycle 0 ngày sang Glacier Deep Archive.",
+    "review": {
+      "reason": "Chưa chắc chắn: đáp án dựa trên AWS Snowball, dịch vụ chỉ còn cho khách hàng hiện hữu từ 07/11/2025 và hết hỗ trợ ở các Region thương mại ngày 31/12/2026. Khách hàng mới không tạo được Snowball job nữa mà phải chuyển dữ liệu bằng AWS DataSync, AWS Data Transfer Terminal hoặc giải pháp của Partner; ý chuyển ngay sang S3 Glacier Deep Archive bằng lifecycle policy vẫn đúng."
+    }
+  },
+  {
+    "id": 10365,
+    "stemVi": "Một systems administrator đã tạo private hosted zone và liên kết nó với một Virtual Private Cloud (VPC). Tuy nhiên, các truy vấn Domain Name System (DNS) cho private hosted zone vẫn không được phân giải.",
+    "promptVi": "Với vai trò Solutions Architect, bạn hãy xác định những tùy chọn Amazon Virtual Private Cloud (Amazon VPC) cần cấu hình để private hosted zone hoạt động.",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Sửa xung đột giữa private hosted zone và bất kỳ Resolver rule nào chuyển lưu lượng về mạng của bạn cho cùng tên miền, vì nó gây mơ hồ về đường đi.",
+        "reason": "Khi private hosted zone và Resolver rule trùng tên miền, Resolver rule được ưu tiên; điều này không làm truy vấn bị bỏ ngỏ."
+      },
+      {
+        "key": "B",
+        "textVi": "Bỏ các namespace chồng lấn giữa private hosted zone và public hosted zone.",
+        "reason": "Namespace chồng lấn được Resolver xử lý theo kết quả khớp cụ thể nhất, không khiến truy vấn không phân giải được."
+      },
+      {
+        "key": "C",
+        "textVi": "Bật DNS hostnames và DNS resolution cho private hosted zone.",
+        "reason": "Private hosted zone chỉ trả lời truy vấn qua Amazon-provided DNS server của VPC; cần bật enableDnsSupport (DNS resolution) và enableDnsHostnames trên VPC thì zone mới hoạt động."
+      },
+      {
+        "key": "D",
+        "textVi": "Sửa record Name server (NS) và Start Of Authority (SOA) có thể đã bị tạo sai cấu hình.",
+        "reason": "Route 53 tự tạo NS và SOA khi tạo hosted zone; đây không phải nguyên nhân khiến truy vấn trong VPC không phân giải."
+      }
+    ],
+    "explanationVi": "Private hosted zone chỉ được phân giải bởi DNS server do Amazon cung cấp trong VPC (địa chỉ base của CIDR +2). Vì vậy hai thuộc tính VPC là DNS resolution và DNS hostnames phải được bật — với VPC không tạo bằng wizard, DNS hostnames mặc định tắt. Các lựa chọn về Resolver rule, namespace chồng lấn hay NS/SOA không gây ra lỗi không phân giải.",
+    "keyHint": "\"private hosted zone\" + \"queries ... remain unresolved\" → bật DNS hostnames và DNS resolution trên VPC."
   }
 ]
