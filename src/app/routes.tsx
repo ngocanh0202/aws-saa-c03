@@ -3,6 +3,7 @@ import { Layout } from '../components/Layout';
 import { ExamPage } from '../pages/ExamPage';
 import { ExternalListPage } from '../pages/ExternalListPage';
 import { ExternalPracticePage } from '../pages/ExternalPracticePage';
+import { HistoryPage } from '../pages/HistoryPage';
 import { HomePage } from '../pages/HomePage';
 import { QuestionViewPage } from '../pages/QuestionViewPage';
 import { ResultPage } from '../pages/ResultPage';
@@ -25,6 +26,7 @@ export function AppRoutes() {
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="set/:id" element={<SetStatsPage />} />
+        <Route path="history" element={<HistoryPage />} />
         <Route path="exam/:id" element={<ExamPage />} />
         <Route path="result/:id" element={<ResultPage />} />
         <Route path="q/:id" element={<QuestionViewPage />} />

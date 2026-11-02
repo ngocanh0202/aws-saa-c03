@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
@@ -16,44 +16,60 @@ export function Layout() {
   const english = examId !== undefined && store.get(examId)?.mode === 'real';
   const menu = useRef<HTMLDetailsElement>(null);
   const closeMenu = () => menu.current?.removeAttribute('open');
+  // Điện thoại: link và nút sáng/tối gom vào panel, mở bằng nút ☰; đổi trang thì tự đóng.
+  const [navOpen, setNavOpen] = useState(false);
+  useEffect(() => setNavOpen(false), [pathname]);
   return (
     <>
-      <header className="topbar">
+      <header className={`topbar${navOpen ? ' is-open' : ''}`}>
         <Link to="/" className="brand">
           SAA-C03
         </Link>
-        <nav className="topbar__nav">
-          <NavLink to="/" end>
-            Đề thi
-          </NavLink>
-          <NavLink to="/services">Service</NavLink>
-          <details ref={menu} className={`topbar__menu${pathname.startsWith('/external') ? ' is-active' : ''}`}>
-            <summary>External ▾</summary>
-            <ul className="topbar__menu-list">
-              <li>
-                <Link to="/external" onClick={closeMenu}>
-                  Câu hỏi External (trong web)
-                </Link>
-              </li>
-              {bank.externals.map((book) => (
-                <li key={book.slug}>
-                  <a href={externalHref(book.file)} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                    {book.file} ↗
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </details>
-        </nav>
         <button
           type="button"
-          className="icon-btn"
-          onClick={toggleTheme}
-          aria-label="Đổi giao diện sáng/tối"
-          title={theme === 'dark' ? 'Chuyển sang giao diện sáng (giống trang External)' : 'Chuyển sang giao diện tối'}
+          className="icon-btn topbar__toggle"
+          aria-expanded={navOpen}
+          aria-controls="topbar-panel"
+          aria-label={navOpen ? 'Đóng menu' : 'Mở menu'}
+          onClick={() => setNavOpen((o) => !o)}
         >
-          {theme === 'dark' ? '☀ Sáng' : '☾ Tối'}
+          {navOpen ? '✕' : '☰'}
         </button>
+        <div id="topbar-panel" className="topbar__panel">
+          <nav className="topbar__nav">
+            <NavLink to="/" end>
+              Đề thi
+            </NavLink>
+            <NavLink to="/history">Lịch sử</NavLink>
+            <NavLink to="/services">Service</NavLink>
+            <details ref={menu} className={`topbar__menu${pathname.startsWith('/external') ? ' is-active' : ''}`}>
+              <summary>External ▾</summary>
+              <ul className="topbar__menu-list">
+                <li>
+                  <Link to="/external" onClick={closeMenu}>
+                    Câu hỏi External (trong web)
+                  </Link>
+                </li>
+                {bank.externals.map((book) => (
+                  <li key={book.slug}>
+                    <a href={externalHref(book.file)} target="_blank" rel="noreferrer" onClick={closeMenu}>
+                      {book.file} ↗
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          </nav>
+          <button
+            type="button"
+            className="icon-btn"
+            onClick={toggleTheme}
+            aria-label="Đổi giao diện sáng/tối"
+            title={theme === 'dark' ? 'Chuyển sang giao diện sáng (giống trang External)' : 'Chuyển sang giao diện tối'}
+          >
+            {theme === 'dark' ? '☀ Sáng' : '☾ Tối'}
+          </button>
+        </div>
         <AccountMenu english={english} />
       </header>
       {!store.available && (

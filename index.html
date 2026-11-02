@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Trang tự có giao diện sáng/tối: báo trình duyệt (Chrome, Cốc Cốc…) đừng tự ép tối trang. -->
+    <meta name="color-scheme" content="light dark" />
     <title>Luyện thi SAA-C03</title>
+    <script>
+      // Đặt theme đã lưu trước khi React chạy để không nháy sai màu (xem src/app/theme.ts).
+      try {
+        var t = localStorage.getItem('saa-c03:theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
