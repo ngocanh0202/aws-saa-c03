@@ -1,0 +1,228 @@
+import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
+import { useApp } from '../app/context';
+import { buildSystemPrompt, trimHistory } from '../ai/prompt';
+import type { AiChat, AiClient, ChatHistoryStore, ChatMessage } from '../ai/types';
+import { htmlToText } from '../data/html-text';
+import type { Question } from '../data/types';
+import type { SyncController, SyncState, SyncUser } from '../sync/types';
+import { Markdown } from './Markdown';
+
+interface Props {
+  attemptId: string;
+  /** Vị trí câu trong lượt thi, bắt đầu từ 1. */
+  number: number;
+  question: Question;
+  order: string[];
+  /** Gọi khi câu trả lời có chữ đầu tiên (để gắn nhãn câu đã xem gợi ý). */
+  onFirstReply: () => void;
+}
+
+/** User đang đăng nhập (kể cả lúc đang tải/xung đột dữ liệu); không có thì null. */
+export function signedInUser(state: SyncState): SyncUser | null {
+  return 'user' in state ? state.user : null;
+}
+
+const PREVIEW = 80;
+
+function GeminiIcon() {
+  const id = useId();
+  return (
+    <svg className="gemini-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#4285f4" />
+          <stop offset="0.5" stopColor="#9b72cb" />
+          <stop offset="1" stopColor="#d96570" />
+        </linearGradient>
+      </defs>
+      <path d="M12 2C12 7.5 16.5 12 22 12C16.5 12 12 16.5 12 22C12 16.5 7.5 12 2 12C7.5 12 12 7.5 12 2Z" fill={`url(#${id})`} />
+    </svg>
+  );
+}
+
+/** Nút "Hỏi Gemini" cho câu đang làm ở Thi thử; chỉ hiện khi có AI và đã đăng nhập Google. */
+export function GeminiButton(props: Props) {
+  const { sync, ai, chats } = useApp();
+  if (!sync || !ai || !chats) return null;
+  return <SignedIn sync={sync} ai={ai} chats={chats} {...props} />;
+}
+
+function SignedIn({ sync, ...rest }: Props & { sync: SyncController; ai: AiClient; chats: ChatHistoryStore }) {
+  const state = useSyncExternalStore(sync.subscribe, sync.getState);
+  const user = signedInUser(state);
+  // key theo uid: đăng xuất (hay đổi tài khoản) thì popup và cuộc trò chuyện bị bỏ hẳn.
+  return user ? <Launcher key={user.uid} uid={user.uid} {...rest} /> : null;
+}
+
+function Launcher(props: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore }) {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => setOpen(false), []);
+  return (
+    <>
+      <button type="button" className="btn-gemini" aria-label="Hỏi Gemini" onClick={() => setOpen(true)}>
+        <GeminiIcon />
+        Hỏi Gemini
+      </button>
+      {open && <ChatDialog {...props} onClose={close} />}
+    </>
+  );
+}
+
+function ChatDialog({
+  uid,
+  ai,
+  chats,
+  attemptId,
+  number,
+  question,
+  order,
+  onFirstReply,
+  onClose,
+}: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; onClose: () => void }) {
+  const qid = question.id;
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [sendFailed, setSendFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [input, setInput] = useState('');
+  const chatRef = useRef<AiChat | null>(null);
+  // Popup đã đóng (Esc, đăng xuất…) thì bỏ phần stream còn lại, không cập nhật hay lưu gì nữa.
+  const alive = useRef(true);
+  // Luôn gọi bản onFirstReply mới nhất, kể cả khi stream bắt đầu từ lần render trước.
+  const firstReply = useRef(onFirstReply);
+  firstReply.current = onFirstReply;
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    alive.current = true;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    window.addEventListener('keydown', onKey);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      alive.current = false;
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = overflow;
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    let live = true;
+    chats.load(uid, attemptId, qid).then(
+      (saved) => live && setMessages(saved),
+      () => live && setLoadFailed(true),
+    ).finally(() => live && setLoaded(true));
+    return () => {
+      live = false;
+    };
+  }, [chats, uid, attemptId, qid]);
+
+  useEffect(() => {
+    if (loaded && !busy) inputRef.current?.focus();
+  }, [loaded, busy]);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ block: 'end' });
+  }, [messages]);
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || busy || !loaded) return;
+    const history = messages;
+    const asked: ChatMessage[] = [...history, { role: 'user', text }];
+    setInput('');
+    setSendFailed(false);
+    setBusy(true);
+    setMessages(asked);
+    // Một phiên chat cho mỗi lần mở popup; mô hình chỉ nhận các tin gần nhất.
+    const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), trimHistory(history)));
+    let reply = '';
+    try {
+      for await (const chunk of chat.send(text)) {
+        if (!alive.current) return;
+        if (!chunk) continue;
+        if (!reply) firstReply.current();
+        reply += chunk;
+        setMessages([...asked, { role: 'model', text: reply }]);
+      }
+      if (!alive.current) return;
+      if (!reply) throw new Error('empty reply');
+      chats.save(uid, attemptId, qid, [...asked, { role: 'model', text: reply }]).catch(() => {
+        // Lưu lỗi thì lần trả lời sau sẽ lưu lại toàn bộ.
+      });
+    } catch {
+      if (alive.current) setSendFailed(true);
+    } finally {
+      if (alive.current) setBusy(false);
+    }
+  };
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    void send();
+  };
+
+  // Enter gửi, Shift+Enter xuống dòng; bỏ qua lúc đang gõ dấu bằng bộ gõ (IME).
+  const onKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      void send();
+    }
+  };
+
+  const stem = question.html ? htmlToText(question.stem) : question.stem;
+  const preview = stem.length > PREVIEW ? `${stem.slice(0, PREVIEW).trimEnd()}…` : stem;
+
+  return createPortal(
+    <div className="service-modal gemini" role="dialog" aria-modal="true" aria-labelledby="gemini-title" lang="vi">
+      <header className="service-modal__bar">
+        <div className="service-modal__title">
+          <h1 id="gemini-title">Hỏi Gemini · Câu {number}</h1>
+          <p className="hint gemini__stem">{preview}</p>
+        </div>
+        <button type="button" className="service-modal__close" aria-label="Đóng" title="Đóng (Esc)" onClick={onClose}>
+          ✕ Đóng
+        </button>
+      </header>
+      <div className="service-modal__body">
+        <div className="gemini__log" aria-live="polite">
+          {loadFailed && <p className="gemini__notice">Không tải được lịch sử trò chuyện.</p>}
+          {loaded && messages.length === 0 && !loadFailed && (
+            <p className="hint">Hỏi bất cứ điều gì về câu này, ví dụ vì sao một lựa chọn sai.</p>
+          )}
+          {messages.map((m, i) => (
+            <div key={i} className={`gemini__msg gemini__msg--${m.role}`}>
+              {m.role === 'model' ? <Markdown text={m.text} /> : m.text}
+            </div>
+          ))}
+          {busy && messages[messages.length - 1]?.role === 'user' && <p className="hint">Gemini đang trả lời…</p>}
+          {sendFailed && (
+            <p className="gemini__notice" role="alert">
+              Gemini chưa trả lời được, thử gửi lại nhé.
+            </p>
+          )}
+          <div ref={endRef} />
+        </div>
+      </div>
+      <form className="gemini__form" onSubmit={onSubmit}>
+        <textarea
+          ref={inputRef}
+          aria-label="Câu hỏi cho Gemini"
+          rows={2}
+          value={input}
+          disabled={busy || !loaded}
+          placeholder="Nhập câu hỏi…"
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+        />
+        <button type="submit" className="btn-primary" disabled={busy || !loaded}>
+          Gửi
+        </button>
+      </form>
+    </div>,
+    document.body,
+  );
+}

@@ -110,6 +110,9 @@ tr.is-clickable { cursor: pointer; }
 .opt__badge { display: inline-block; margin-left: 8px; font-size: 0.8em; color: var(--ok); font-weight: 600; }
 
 .btn-guide { margin-top: 12px; }
+.exam__assist { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.btn-gemini { margin-top: 12px; display: inline-flex; align-items: center; gap: 6px; }
+.gemini-icon { flex: none; }
 .guide { margin-top: 12px; padding: 16px 20px; border-radius: 4px var(--radius) var(--radius) 4px; background: var(--guide-bg); border: 1px solid var(--border); border-left: 5px solid var(--guide-bar); }
 .guide h4 { margin: 0 0 8px; }
 .guide h5 { margin: 14px 0 4px; }
@@ -297,6 +300,20 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .service-modal, .service-modal__close { animation: none; }
 }
+/* Popup hỏi Gemini: dùng khung của service-modal, tin người dùng bên phải, Gemini bên trái */
+.gemini__stem { overflow-wrap: anywhere; }
+.gemini__log { max-width: 820px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.gemini__msg { max-width: 85%; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--border); overflow-wrap: anywhere; }
+.gemini__msg--user { align-self: flex-end; background: var(--selected-bg); white-space: pre-wrap; }
+.gemini__msg--model { align-self: flex-start; background: var(--surface); }
+.gemini__msg--model > :first-child { margin-top: 0; }
+.gemini__msg--model > :last-child { margin-bottom: 0; }
+.gemini__msg pre { max-width: 100%; overflow-x: auto; }
+.gemini__notice { margin: 0; padding: 8px 12px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
+.gemini__form { display: flex; gap: 8px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--border); }
+.gemini__form textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.gemini__form button { flex: none; align-self: stretch; }
+@media (max-width: 600px) { .gemini__log { padding: 12px; } .gemini__msg { max-width: 92%; } }
 .guide__tabs { display: flex; gap: 6px; margin: 12px 0 4px; }
 .guide__tab { padding: 4px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: inherit; font-weight: 600; cursor: pointer; }
 .guide__tab[aria-selected="true"] { background: var(--guide-bar); color: #000; border-color: var(--guide-bar); }

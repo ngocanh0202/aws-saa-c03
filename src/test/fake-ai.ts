@@ -6,18 +6,29 @@ export interface FakeAi extends AiClient {
   reply: string[] | Error;
   /** Ném lỗi sau n đoạn. */
   failAfter?: number;
+  /** true: send() chờ release() rồi mới trả đoạn đầu (để thử trạng thái đang trả lời). */
+  hold: boolean;
+  release(): void;
 }
 
 export function fakeAi(): FakeAi {
+  let waiting: (() => void)[] = [];
   const ai: FakeAi = {
     calls: [],
     reply: ['ok'],
+    hold: false,
+    release() {
+      const list = waiting;
+      waiting = [];
+      for (const r of list) r();
+    },
     startChat(systemPrompt, history) {
       const call = { systemPrompt, history, sent: [] as string[] };
       ai.calls.push(call);
       return {
         async *send(text) {
           call.sent.push(text);
+          if (ai.hold) await new Promise<void>((r) => waiting.push(r));
           if (ai.reply instanceof Error) throw ai.reply;
           let n = 0;
           for (const chunk of ai.reply) {

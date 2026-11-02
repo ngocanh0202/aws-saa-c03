@@ -4,6 +4,7 @@ import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
 import { EXAM_LABELS } from '../app/labels';
 import { DraggableFab } from '../components/DraggableFab';
+import { GeminiButton } from '../components/GeminiChat';
 import { GuidePanel } from '../components/GuidePanel';
 import { NavGrid } from '../components/NavGrid';
 import { QuestionCard } from '../components/QuestionCard';
@@ -110,14 +111,32 @@ export function ExamPage() {
             onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
           />
 
-          {attempt.mode === 'practice' &&
-            (revealed ? (
-              <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
-            ) : (
-              <button type="button" className="btn-guide" onClick={() => update(markGuideOpened(attempt, aq.qid))}>
-                {t.guide}
-              </button>
-            ))}
+          {attempt.mode === 'practice' && (
+            <>
+              <div className="exam__assist">
+                {!revealed && (
+                  <button type="button" className="btn-guide" onClick={() => update(markGuideOpened(attempt, aq.qid))}>
+                    {t.guide}
+                  </button>
+                )}
+                <GeminiButton
+                  key={aq.qid}
+                  attemptId={attempt.id}
+                  number={index + 1}
+                  question={question}
+                  order={aq.optionOrder}
+                  onFirstReply={() => {
+                    // Câu trả lời stream về sau nhiều lần lưu: lấy lượt thi mới nhất trong store.
+                    const latest = store.get(attempt.id);
+                    if (latest) update(markGuideOpened(latest, aq.qid));
+                  }}
+                />
+              </div>
+              {revealed && (
+                <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
+              )}
+            </>
+          )}
         </div>
       </div>
 
