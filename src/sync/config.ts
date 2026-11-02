@@ -4,9 +4,9 @@ export interface FirebaseConfig {
   databaseURL: string;
   projectId: string;
   appId: string;
-  /** Khóa reCAPTCHA Enterprise cho App Check; không có thì không bật App Check. */
+  /** Khóa reCAPTCHA Enterprise cho App Check; bắt buộc để dùng Gemini (không có thì không hiện nút Hỏi Gemini). */
   recaptchaSiteKey?: string;
-  /** Tên model Gemini; không có thì dùng mặc định trong main.tsx. */
+  /** Tên model Gemini; không có thì dùng DEFAULT_GEMINI_MODEL (src/ai/deps.ts). */
   geminiModel?: string;
 }
 

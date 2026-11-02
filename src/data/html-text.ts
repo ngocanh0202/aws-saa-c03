@@ -1,4 +1,4 @@
-/** HTML → chữ thường để in ra console (soạn meta) và kiểm tra trùng lặp. */
+/** HTML → văn bản thuần để in ra console (soạn meta) và kiểm tra trùng lặp. */
 export function htmlToText(html: string): string {
   return html
     .replace(/<img[^>]*>/gi, '[ảnh]')

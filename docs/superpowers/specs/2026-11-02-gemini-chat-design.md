@@ -22,7 +22,7 @@ Khi làm Thi thử, người dùng hay bí ở một câu và muốn hỏi ngay 
 
 - Nút chỉ có ở chế độ Thi thử và chỉ khi đã đăng nhập.
 - Gemini **được biết đáp án đúng**.
-- Hỏi Gemini **tính như mở hướng dẫn**. Gọi `markGuideOpened(attempt, qid)` (`src/engine/actions.ts`) khi Gemini **trả về đoạn chữ đầu tiên** cho tin nhắn đầu tiên ở câu đó, và câu đó được gắn nhãn khi chấm như hiện nay. Chỉ mở popup, hoặc gửi mà bị lỗi ngay, thì không tính *(quyết định của tôi: lỗi mạng hay hết quota không nên làm người dùng mất điểm)*. Hỏi Gemini chỉ gắn nhãn, không tự mở khung hướng dẫn soạn sẵn *(quyết định của tôi)*.
+- Hỏi Gemini **tính như mở hướng dẫn**. Gọi `markGuideOpened(attempt, qid)` (`src/engine/actions.ts`) khi Gemini **trả về đoạn chữ đầu tiên** cho tin nhắn đầu tiên ở câu đó, và câu đó được gắn nhãn khi chấm như hiện nay. Chỉ mở popup, hoặc gửi mà bị lỗi ngay, thì không tính *(quyết định của tôi: lỗi mạng hay hết quota không nên làm người dùng mất điểm)*. Đoạn chữ đầu tiên cũng **hiện luôn khung hướng dẫn soạn sẵn và đáp án**, giống bấm nút hướng dẫn *(đã chốt khi review)*.
 - Chat **nhiều lượt**: Gemini nhớ các tin nhắn trước trong cuộc trò chuyện của câu đó.
 - **Lưu lịch sử trò chuyện với AI** lên tài khoản (Firebase), chỉ lưu lịch sử chat, không thêm gì khác.
 
@@ -31,8 +31,8 @@ Khi làm Thi thử, người dùng hay bí ở một câu và muốn hỏi ngay 
 - **SDK:** Firebase AI Logic qua `firebase/ai` (có sẵn trong `firebase@^13`, không cài thêm gói). Dùng backend Gemini Developer API (`GoogleAIBackend`), `getGenerativeModel`, `startChat`, và gửi theo luồng (`sendMessageStream`) để chữ hiện dần.
 - **Cấu hình:** dùng chung Firebase app với đăng nhập/đồng bộ.
   - Biến mới `VITE_GEMINI_MODEL` là tùy chọn. Mặc định là model Gemini Flash ổn định mới nhất mà Firebase AI Logic hỗ trợ lúc làm; người làm kiểm tra tài liệu Firebase để chọn tên đúng.
-  - Cập nhật `.env.example` và `docs/firebase-setup.md`: bật Firebase AI Logic trong console, chọn Gemini Developer API, và khuyến nghị bật App Check để chặn lạm dụng.
-  - App Check là tùy chọn. Nếu có biến `VITE_RECAPTCHA_SITE_KEY` thì adapter bật App Check với reCAPTCHA Enterprise; không có thì chạy không App Check *(quyết định của tôi)*.
+  - Cập nhật `.env.example` và `docs/firebase-setup.md`: bật Firebase AI Logic trong console, chọn Gemini Developer API, và App Check là bắt buộc.
+  - App Check là **bắt buộc** cho Gemini (Firebase yêu cầu cho AI Logic từ 02/11/2026). Có `VITE_RECAPTCHA_SITE_KEY` thì bật App Check với reCAPTCHA Enterprise; không có thì không tạo `ai` và ẩn nút Hỏi Gemini (`buildAiDeps`). Model mặc định `gemini-3.5-flash`.
   - Đề và lựa chọn của cả hai bộ không có hình (đã kiểm tra 0/780 câu main), nên prompt chỉ cần chữ.
 - **Ranh giới module** (giữ quy tắc "chỉ `src/sync/firebase.ts` import Firebase SDK" theo tinh thần hiện có):
   - Thêm adapter `src/ai/gemini.ts`, là file duy nhất import `firebase/ai`, chỉ `main.tsx` import nó.
@@ -76,7 +76,7 @@ Khi làm Thi thử, người dùng hay bí ở một câu và muốn hỏi ngay 
 - Nút hiện hay ẩn:
   - Thi thử + đăng nhập + có `ai` thì hiện.
   - Thi thật, khách chưa đăng nhập, hoặc không có `ai` thì ẩn.
-- Gửi tin đầu tiên thì câu được thêm vào `guideOpened`; chỉ mở popup thì không.
+- Gửi tin đầu tiên thì câu được thêm vào `guideOpened` và khung hướng dẫn soạn sẵn hiện ra; chỉ mở popup thì không.
 - Chat nhiều lượt với `fake-ai`: tin nhắn hiện theo thứ tự, câu trả lời theo luồng nối dần, lỗi hiện thông báo.
 - Lịch sử: mở lại popup thì thấy tin nhắn cũ (từ bản giả `ChatHistoryStore`), gửi tiếp thì lịch sử được đưa vào `startChat`, và sau mỗi lượt thì `save` được gọi.
 - `npm run check` qua.

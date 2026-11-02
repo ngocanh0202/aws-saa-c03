@@ -66,6 +66,7 @@ Nếu header báo "Không đọc được dữ liệu trên cloud…" thì rules
 
 Nút "Hỏi Gemini" chỉ hiện ở chế độ Thi thử khi đã cấu hình Firebase và đã đăng nhập.
 
-1. Firebase console → **Build → AI Logic** (Firebase AI Logic) → **Get started**, chọn **Gemini Developer API** và bật. Model mặc định là `gemini-2.5-flash`; muốn đổi thì đặt `VITE_GEMINI_MODEL`.
+1. Firebase console → **Build → AI Logic** (Firebase AI Logic) → **Get started**, chọn **Gemini Developer API** và bật. Model mặc định là `gemini-3.5-flash`; muốn đổi thì đặt `VITE_GEMINI_MODEL`.
 2. Deploy lại `database.rules.json` (đã có nhánh `users/$uid/aiChats` lưu lịch sử chat theo từng câu) ở **Realtime Database → Rules**.
-3. App Check (khuyên dùng để chống lạm dụng quota): tạo khóa **reCAPTCHA Enterprise** cho domain web, đăng ký trong **App Check → Apps → Web** rồi đặt khóa vào `VITE_RECAPTCHA_SITE_KEY` (cả `.env.local` và Variables trên GitHub). Để trống thì không bật App Check. Nên theo dõi quota và đặt ngân sách trong Google Cloud/Firebase console.
+3. App Check (**bắt buộc** cho Gemini: Firebase yêu cầu App Check cho AI Logic từ 02/11/2026; thiếu khóa thì web ẩn nút "Hỏi Gemini"): tạo khóa **reCAPTCHA Enterprise** cho domain web, đăng ký trong **App Check → Apps → Web** rồi đặt khóa vào `VITE_RECAPTCHA_SITE_KEY` (cả `.env.local` và Variables trên GitHub, cùng `VITE_GEMINI_MODEL` nếu muốn đổi model). Nên theo dõi quota và đặt ngân sách trong Google Cloud/Firebase console.
+4. Chạy ở localhost: thêm `localhost` vào domain của khóa reCAPTCHA, hoặc dùng debug token: mở web ở localhost, lấy token in ra console trình duyệt (`App Check debug token: ...`; cần đặt `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true` trước khi app khởi tạo, ví dụ trong DevTools rồi tải lại), rồi đăng ký trong **App Check → Apps → Web → Manage debug tokens**.

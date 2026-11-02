@@ -85,6 +85,7 @@ function ChatDialog({
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState('');
   const chatRef = useRef<AiChat | null>(null);
@@ -135,6 +136,7 @@ function ChatDialog({
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
     setInput('');
     setSendFailed(false);
+    setSaveFailed(false);
     setBusy(true);
     setMessages(asked);
     let reply = '';
@@ -152,7 +154,8 @@ function ChatDialog({
       if (!alive.current) return;
       if (!reply) throw new Error('empty reply');
       chats.save(uid, attemptId, qid, [...asked, { role: 'model', text: reply }]).catch(() => {
-        // Lưu lỗi thì lần trả lời sau sẽ lưu lại toàn bộ.
+        // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
+        if (alive.current) setSaveFailed(true);
       });
     } catch {
       if (alive.current) setSendFailed(true);
@@ -205,6 +208,7 @@ function ChatDialog({
               Gemini chưa trả lời được, thử gửi lại nhé.
             </p>
           )}
+          {saveFailed && <p className="gemini__notice">Không lưu được lịch sử trò chuyện.</p>}
           <div ref={endRef} />
         </div>
       </div>

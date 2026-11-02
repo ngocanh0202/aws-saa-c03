@@ -13,12 +13,12 @@
 ## Global Constraints
 
 - Button only when `attempt.mode === 'practice'` AND `deps.ai` AND `deps.chats` AND sync state is `loading | conflict | synced` (has `user`). Never in real mode, ResultPage, External, QuestionViewPage.
-- `markGuideOpened(attempt, qid)` is called when the **first streamed chunk** of a reply arrives (idempotent); opening the popup or a send that fails before any chunk does not mark. Asking Gemini does not open the written guide.
+- `markGuideOpened(attempt, qid)` is called when the **first streamed chunk** of a reply arrives (idempotent); opening the popup or a send that fails before any chunk does not mark. The first chunk also reveals the written guide/answer panel, same as pressing the guide button.
 - Options in the prompt use display order and labels from `displayLabel(i)` over `aq.optionOrder`; nothing display-labelled is stored except inside chat text.
 - History path `users/{uid}/aiChats/{attemptId}/{qid}`, value `{ json: string, updatedAt: number }`, `json` = `JSON.stringify(ChatMessage[])`, rule: `json` string `< 200000` chars, `updatedAt` number. Saved after each complete reply only.
 - Model gets at most the **40** most recent history messages; UI shows all.
-- Model name: `import.meta.env.VITE_GEMINI_MODEL` or default `'gemini-2.5-flash'` (implementer: if Firebase AI Logic docs list a newer stable Flash, use it and note it in the report). Backend `GoogleAIBackend`.
-- App Check only when `VITE_RECAPTCHA_SITE_KEY` is set (`ReCaptchaEnterpriseProvider`, auto refresh on).
+- Model name: `import.meta.env.VITE_GEMINI_MODEL` or default `DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash'` (`src/ai/deps.ts`; Gemini 2.5 shuts down Oct 2026). Backend `GoogleAIBackend`.
+- App Check is required for Gemini: `ai` is created only when `VITE_RECAPTCHA_SITE_KEY` is set (`buildAiDeps`); `chats` is independent (`ReCaptchaEnterpriseProvider`, auto refresh on).
 - Only `src/ai/gemini.ts` imports `firebase/ai`; only `src/sync/firebase.ts` imports other Firebase SDK modules; only `main.tsx` imports either adapter.
 - UI copy is Vietnamese; button `aria-label="Hỏi Gemini"`. Model output rendered as safe Markdown (no raw HTML / `dangerouslySetInnerHTML`).
 - System prompt instructs: Vietnamese answers keeping AWS terms in English, focus exactly on the user's question, concise, say when info may be outdated, never invent services or numbers.

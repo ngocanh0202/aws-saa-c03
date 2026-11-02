@@ -96,6 +96,27 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(guideOpened(s)).toContain(s.qid));
   });
 
+  it('chữ đầu tiên cũng mở hướng dẫn soạn sẵn như nút hướng dẫn', async () => {
+    const s = setup();
+    s.ai.reply = ['Vì ', 'S3'];
+    const dialog = await openChat();
+    expect(screen.queryByText(/Đáp án đúng:/)).toBeNull();
+    await ask(dialog);
+    await waitFor(() => expect(screen.getByRole('complementary', { name: 'Hướng dẫn' })).toBeInTheDocument());
+  });
+
+  it('lưu lịch sử lỗi thì báo trong popup', async () => {
+    const s = setup();
+    s.chats.save = async () => {
+      throw new Error('too long');
+    };
+    s.ai.reply = ['Vì ', 'S3'];
+    const dialog = await openChat();
+    await ask(dialog);
+    await waitFor(() => expect(within(dialog).getByText('Không lưu được lịch sử trò chuyện.')).toBeInTheDocument());
+    expect(within(dialog).getByText('Vì S3')).toBeInTheDocument();
+  });
+
   it('lỗi trước chữ đầu tiên không gắn nhãn', async () => {
     const s = setup();
     s.ai.reply = new Error('blocked');
