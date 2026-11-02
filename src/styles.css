@@ -297,3 +297,7 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 @media (prefers-reduced-motion: reduce) {
   .service-modal, .service-modal__close { animation: none; }
 }
+.guide__tabs { display: flex; gap: 6px; margin: 12px 0 4px; }
+.guide__tab { padding: 4px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: inherit; font-weight: 600; cursor: pointer; }
+.guide__tab[aria-selected="true"] { background: var(--guide-bar); color: #000; border-color: var(--guide-bar); }
+.guide pre { white-space: pre-wrap; overflow-x: auto; }

@@ -30,7 +30,7 @@ function domainOf(id: number): Domain {
 /** Đề main giả (id 101): 3 câu HTML 10101–10103; câu 10101 có ghi chú review. */
 export const MAIN_IDS = [10101, 10102, 10103];
 
-function makeMainQuestion(id: number): Question {
+export function makeMainQuestion(id: number): Question {
   return {
     id,
     stem: `<p>Main stem <strong>${id}</strong></p>`,
