@@ -65,7 +65,7 @@ export function ExamPage() {
         order={aq.optionOrder}
         selected={selected}
         reveal={revealed}
-        showOrigLabels={revealed && !bank.vi.has(aq.qid)}
+        showOrigLabels={revealed && !bank.vi.has(aq.qid) && !question.html}
         chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
         onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
       />

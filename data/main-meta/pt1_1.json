@@ -1,0 +1,677 @@
+[
+ {
+  "id": 10101,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "fsx-windows",
+   "fsx-lustre",
+   "directory-service"
+  ]
+ },
+ {
+  "id": 10102,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "efs",
+   "vpc",
+   "s3",
+   "rds"
+  ]
+ },
+ {
+  "id": 10103,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10104,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "api-gateway"
+  ]
+ },
+ {
+  "id": 10105,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "sqs"
+  ],
+  "note": "Con số lỗi thời: FIFO queue nay có chế độ high throughput (hàng chục nghìn msg/giây mỗi API) nên phép tính 300 msg/s x batch 10 không còn là giới hạn duy nhất; đáp án vẫn đúng theo kiến thức thời điểm ra đề."
+ },
+ {
+  "id": 10106,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ebs",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10107,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ebs"
+  ]
+ },
+ {
+  "id": 10108,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "eks",
+   "iam",
+   "dynamodb",
+   "s3"
+  ]
+ },
+ {
+  "id": 10109,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "api-gateway",
+   "kinesis-data-analytics",
+   "lambda",
+   "athena",
+   "quicksight",
+   "redshift"
+  ],
+  "note": "Đáp án đúng (API Gateway + Kinesis Data Analytics) đáng ngờ: Kinesis Data Analytics chỉ xử lý luồng, không lưu trữ và truy xuất dữ liệu như đề yêu cầu, còn lựa chọn Lambda bị loại với lý do khá yếu. Ngoài ra dịch vụ đã đổi tên thành Amazon Managed Service for Apache Flink (08/2023)."
+ },
+ {
+  "id": 10110,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "ec2-auto-scaling",
+   "elb",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10111,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "rds",
+   "elb",
+   "vpc-endpoint"
+  ]
+ },
+ {
+  "id": 10112,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "ec2-auto-scaling",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10113,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "sqs",
+   "eventbridge",
+   "api-gateway",
+   "lambda"
+  ]
+ },
+ {
+  "id": 10114,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "efs",
+   "vpc",
+   "iam",
+   "guardduty"
+  ]
+ },
+ {
+  "id": 10115,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "ebs",
+   "efs"
+  ]
+ },
+ {
+  "id": 10116,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "s3",
+   "step-functions",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10117,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "cloudtrail",
+   "cloudwatch",
+   "sns",
+   "kinesis-data-streams",
+   "athena",
+   "quicksight",
+   "trusted-advisor"
+  ]
+ },
+ {
+  "id": 10118,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "global-accelerator",
+   "site-to-site-vpn",
+   "direct-connect"
+  ]
+ },
+ {
+  "id": 10119,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "aurora",
+   "sct",
+   "dms",
+   "glue"
+  ]
+ },
+ {
+  "id": 10120,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10121,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "guardduty",
+   "inspector",
+   "s3",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10122,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "rds-proxy",
+   "aurora",
+   "sqs",
+   "ec2-auto-scaling",
+   "api-gateway",
+   "elasticache"
+  ]
+ },
+ {
+  "id": 10123,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "iam",
+   "dynamodb"
+  ]
+ },
+ {
+  "id": 10124,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "waf",
+   "elb",
+   "cloudfront",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10125,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10126,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "glue",
+   "athena",
+   "appflow",
+   "s3"
+  ]
+ },
+ {
+  "id": 10127,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "cost-explorer",
+   "cloudwatch",
+   "aws-budgets"
+  ]
+ },
+ {
+  "id": 10128,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ec2"
+  ]
+ },
+ {
+  "id": 10129,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10130,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "directory-service",
+   "iam-identity-center",
+   "organizations",
+   "control-tower"
+  ]
+ },
+ {
+  "id": 10131,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "rds",
+   "ec2"
+  ],
+  "note": "Amazon RDS Custom for Oracle hết hỗ trợ ngày 31/03/2027 (xem service-status), nên đáp án đúng phụ thuộc vào dịch vụ sắp ngừng."
+ },
+ {
+  "id": 10132,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "global-accelerator",
+   "cloudfront",
+   "route-53",
+   "elb"
+  ]
+ },
+ {
+  "id": 10133,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "cloudfront",
+   "route-53"
+  ]
+ },
+ {
+  "id": 10134,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "ecs",
+   "fargate",
+   "ec2",
+   "ebs"
+  ]
+ },
+ {
+  "id": 10135,
+  "domain": 4,
+  "difficulty": 3,
+  "services": [
+   "efs",
+   "datasync",
+   "storage-gateway",
+   "fsx-windows",
+   "aws-backup",
+   "s3"
+  ]
+ },
+ {
+  "id": 10136,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "cloudfront",
+   "route-53",
+   "s3"
+  ]
+ },
+ {
+  "id": 10137,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ec2-auto-scaling",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10138,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10139,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10140,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "iam",
+   "sts"
+  ]
+ },
+ {
+  "id": 10141,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "direct-connect",
+   "site-to-site-vpn",
+   "transit-gateway"
+  ]
+ },
+ {
+  "id": 10142,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "iam",
+   "s3"
+  ],
+  "note": "Lựa chọn \"s3:*Object\" thực tế là wildcard IAM hợp lệ (khớp DeleteObject, GetObject, PutObject...) nên cũng khắc phục được lỗi, trái với giải thích gốc nói action không hợp lệ. Policy gốc còn ghi Version \"2021-10-17\" (đúng phải là \"2012-10-17\"). Các lựa chọn không trùng nhau (cảnh báo trùng lựa chọn là dương tính giả do đề chứa JSON)."
+ },
+ {
+  "id": 10143,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "sns",
+   "lambda"
+  ]
+ },
+ {
+  "id": 10144,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "s3",
+   "kms"
+  ]
+ },
+ {
+  "id": 10145,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "elb",
+   "ec2-auto-scaling",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10146,
+  "domain": 4,
+  "difficulty": 3,
+  "services": [
+   "lambda",
+   "efs",
+   "s3",
+   "datasync",
+   "api-gateway",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10147,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10148,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "eks",
+   "direct-connect",
+   "ecs",
+   "fargate",
+   "snowball",
+   "api-gateway",
+   "iam",
+   "cloudwatch"
+  ]
+ },
+ {
+  "id": 10149,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "iam",
+   "s3"
+  ]
+ },
+ {
+  "id": 10150,
+  "domain": 4,
+  "difficulty": 3,
+  "services": [
+   "glue",
+   "redshift",
+   "sagemaker",
+   "athena",
+   "emr",
+   "rds",
+   "aurora"
+  ]
+ },
+ {
+  "id": 10151,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "elasticache",
+   "dynamodb",
+   "dax",
+   "aurora"
+  ]
+ },
+ {
+  "id": 10152,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "kinesis-data-streams",
+   "lambda",
+   "dynamodb",
+   "sqs",
+   "sns",
+   "ec2",
+   "rds"
+  ]
+ },
+ {
+  "id": 10153,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "route-53",
+   "vpc",
+   "site-to-site-vpn"
+  ]
+ },
+ {
+  "id": 10154,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "aurora",
+   "dynamodb"
+  ]
+ },
+ {
+  "id": 10155,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "rds"
+  ]
+ },
+ {
+  "id": 10156,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ebs",
+   "s3",
+   "efs"
+  ]
+ },
+ {
+  "id": 10157,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "iam",
+   "cloudtrail"
+  ]
+ },
+ {
+  "id": 10158,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "sqs",
+   "lambda",
+   "dynamodb",
+   "kinesis-data-streams",
+   "kinesis-data-firehose",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10159,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "lambda",
+   "comprehend",
+   "dynamodb",
+   "transcribe",
+   "sagemaker",
+   "eventbridge"
+  ]
+ },
+ {
+  "id": 10160,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "ec2-auto-scaling",
+   "ec2",
+   "cloudwatch"
+  ]
+ },
+ {
+  "id": 10161,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "ec2",
+   "lambda"
+  ]
+ },
+ {
+  "id": 10162,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "elb"
+  ]
+ },
+ {
+  "id": 10163,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "api-gateway",
+   "lambda",
+   "ecs",
+   "fargate",
+   "eks",
+   "sqs",
+   "eventbridge",
+   "step-functions",
+   "lightsail"
+  ]
+ },
+ {
+  "id": 10164,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "fsx-lustre",
+   "fsx-windows",
+   "glue",
+   "emr",
+   "s3"
+  ]
+ },
+ {
+  "id": 10165,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "dynamodb",
+   "dax",
+   "cloudfront",
+   "elasticache",
+   "s3"
+  ]
+ }
+]

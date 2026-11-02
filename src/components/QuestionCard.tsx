@@ -19,15 +19,20 @@ export function QuestionCard({ question, order, selected, reveal, showOrigLabels
   return (
     <section className="qcard" lang="en">
       {heading && <h3 className="qcard__heading">{heading}</h3>}
-      {question.stem
-        .split('\n\n')
-        .filter(Boolean)
-        .map((para, i) => (
-          <p key={i}>{para}</p>
-        ))}
-      <p className="qcard__prompt">
-        <strong>{question.prompt}</strong>
-      </p>
+      {question.html ? (
+        // HTML lấy từ question-doc-main trong repo (nguồn tin cậy), không phải dữ liệu người dùng nhập.
+        <div className="qcard__stem" dangerouslySetInnerHTML={{ __html: question.stem }} />
+      ) : (
+        question.stem
+          .split('\n\n')
+          .filter(Boolean)
+          .map((para, i) => <p key={i}>{para}</p>)
+      )}
+      {question.prompt && (
+        <p className="qcard__prompt">
+          <strong>{question.prompt}</strong>
+        </p>
+      )}
       {chooseLabel && <p className="qcard__choose">{chooseLabel}</p>}
       <ul className="qcard__options" role={multi ? 'group' : 'radiogroup'}>
         {order.map((key, i) => {
@@ -42,7 +47,11 @@ export function QuestionCard({ question, order, selected, reveal, showOrigLabels
                 disabled={!onSelect}
                 onClick={() => onSelect?.(key)}
               >
-                <span className="opt__label">{displayLabel(i)}.</span> <span className="opt__text">{byKey.get(key)?.text}</span>
+                <span className="opt__label">{displayLabel(i)}.</span> {question.html ? (
+                  <span className="opt__text opt__text--html" dangerouslySetInnerHTML={{ __html: byKey.get(key)?.text ?? '' }} />
+                ) : (
+                  <span className="opt__text">{byKey.get(key)?.text}</span>
+                )}
                 {showOrigLabels && <span className="opt__orig"> (gốc: {key})</span>}
                 {state === 'missed' && <span className="opt__badge">Đáp án đúng</span>}
               </button>

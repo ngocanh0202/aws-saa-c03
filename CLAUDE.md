@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Trạng thái dự án
 
-Web tĩnh luyện thi **AWS Certified Solutions Architect – Associate (SAA-C03)** từ ngân hàng câu hỏi trong `Question-Doc/`. Stack: **Vite + React + TypeScript + Vitest**, hash router, lưu trạng thái bằng `localStorage`. Giai đoạn 1 (dữ liệu + web lõi) và giai đoạn 2 (hướng dẫn tiếng Việt `data/vi` cho đủ 500 câu, quy tắc soạn ở `docs/vi-style-guide.md`) đã xong; giai đoạn 3 là ghi chú service `data/services`, giai đoạn 4 là deploy lên GitHub Pages.
+Web tĩnh luyện thi **AWS Certified Solutions Architect – Associate (SAA-C03)** từ hai ngân hàng câu hỏi: **sub** `question-doc-sub/` (500 câu → 7 đề, trước đây tên `Question-Doc/`) và **main** `question-doc-main/` (12 file JSON = 12 đề cố định 65 câu). Stack: **Vite + React + TypeScript + Vitest**, hash router, lưu trạng thái bằng `localStorage`. Giai đoạn 1 (dữ liệu + web lõi) và giai đoạn 2 (hướng dẫn tiếng Việt `data/vi` cho đủ 500 câu, quy tắc soạn ở `docs/vi-style-guide.md`) đã xong; giai đoạn 3 là ghi chú service `data/services`, giai đoạn 4 là deploy lên GitHub Pages.
 
 **Thiết kế chi tiết (nguồn chuẩn):** [docs/superpowers/specs/2026-09-24-saa-c03-exam-site-design.md](docs/superpowers/specs/2026-09-24-saa-c03-exam-site-design.md). Khi có mâu thuẫn giữa file này và spec, spec được ưu tiên.
 
@@ -15,7 +15,9 @@ Web tĩnh luyện thi **AWS Certified Solutions Architect – Associate (SAA-C03
 - `npm run dev` — chạy web ở máy · `npm run build` — build ra `dist/` · `npm run preview` — xem bản build
 - `npm test` — chạy toàn bộ test · một file: `npx vitest run src/engine/attempt.test.ts` · một test: `npx vitest run -t "tên test"`
 - `npm run typecheck`
-- `npm run parse` — `Question-Doc/` → `data/questions.json`
+- `npm run parse` — `question-doc-sub/` → `data/questions.json`
+- `npm run main` — `question-doc-main/*.json` → `data/main.json` (sinh ra; `validate` báo lỗi nếu quên chạy lại)
+- `npm run main:show -- pt1_1 [đầu] [cuối]` — in câu main dạng chữ (id, đáp án, giải thích) để soạn `data/main-meta/pt1_1.json`
 - `npm run sets` — `data/meta` → `data/sets.json` (tất định, seed 20260924; cần đủ meta cho 500 câu)
 - `npm run validate` — kiểm tra toàn bộ dữ liệu (lỗi thì exit 1)
 - `npm run vi:show -- 26` — in lô 25 câu bắt đầu từ câu 26 (đề, lựa chọn, đáp án, meta, giải thích gốc) để soạn `data/vi/q026-050.json`; quy tắc soạn ở `docs/vi-style-guide.md`
@@ -33,13 +35,15 @@ Web tĩnh luyện thi **AWS Certified Solutions Architect – Associate (SAA-C03
 - Mỗi lượt thi (`Attempt`) lưu `optionOrder` theo **nhãn gốc**, và đáp án cũng lưu theo nhãn gốc. Nhãn hiển thị A/B/C chỉ tính lúc render (`displayLabel`). Đừng lưu nhãn hiển thị.
 - UI lấy dữ liệu qua `useApp()` (`src/app/context.tsx`). Test UI dùng `makeDeps()`/`renderApp()` trong `src/test/fixtures.tsx`, với bank giả gồm 75 câu.
 - `src/sync/`: đồng bộ lượt thi lên Firebase khi đăng nhập Google. `controller.ts` (máy trạng thái đăng nhập/xung đột), `merge.ts` (quy tắc gộp, hàm thuần), `firebase.ts` (adapter duy nhất import Firebase SDK, chỉ `main.tsx` import nó). Store lưu thêm owner và `updatedAt` của từng lượt ở key phụ `saa-c03:owners:v1`. Test dùng bản giả `src/test/fake-sync.ts`, không gọi mạng. Thiết kế: `docs/superpowers/specs/2026-11-02-firebase-sync-design.md`.
-- `src/data/service-status.ts`: bảng dịch vụ đã đổi tên/đã ngừng (kiểm tra 10/2026). Hướng dẫn tự hiện mục "Cập nhật dịch vụ" cho câu nào nhắc tới chúng (cả External); khi AWS đổi tên hay ngừng dịch vụ thì cập nhật bảng này. Câu có đáp án đúng phụ thuộc dịch vụ đã ngừng vẫn gắn `review`.\n- `src/data/load.ts` nạp JSON bằng `import.meta.glob`, nên thêm file vào `data/meta` hay `data/vi` không cần sửa code.
+- `src/data/service-status.ts`: bảng dịch vụ đã đổi tên/đã ngừng (kiểm tra 10/2026). Hướng dẫn tự hiện mục "Cập nhật dịch vụ" cho câu nào nhắc tới chúng (cả External); khi AWS đổi tên hay ngừng dịch vụ thì cập nhật bảng này. Câu có đáp án đúng phụ thuộc dịch vụ đã ngừng vẫn gắn `review`.\n- **Main** (`question-doc-main/`): `npm run main` dựng `data/main.json` (`sets` id 101…112 = "Main 1…12", câu id `setId*100 + vị trí`, đáp án theo chữ cái gốc A/B/C…, `html: true`, và `twins` = cặp câu trùng nguyên văn giữa các file). Meta soạn tay ở `data/main-meta/<file>.json` chỉ cho câu gốc (`ptX_1`), câu trùng dùng lại meta qua `expandMainMetas` (`src/data/main-meta.ts`). Trường `note` trong meta là ghi chú review (đáp án đáng ngờ, thông tin lỗi thời…), hiện trong hướng dẫn. Đề main không thay câu dự phòng; lựa chọn luôn xáo, thứ tự câu chỉ xáo khi bật công tắc "Xáo thứ tự câu hỏi" trên trang chủ (`createAttempt` với `mainSets` + `shuffleQuestions`). Nhãn đề dùng `setLabel()` (`src/app/format.ts`).
+- `src/data/load.ts` nạp JSON bằng `import.meta.glob`, nên thêm file vào `data/meta` hay `data/vi` không cần sửa code.
 - **External** (`#/external`): mỗi file HTML trong `external/` là một bộ câu hỏi luyện tập riêng, không vào 7 đề và không tính thống kê. File gốc chỉ có `rawData` gồm đề + giải thích; `scripts/lib/parse-external.ts` dựng lại lựa chọn từ phần "Correct/Incorrect options" (đáp án đúng luôn đứng đầu, nên trang luyện tập luôn xáo lựa chọn; thứ tự câu hỏi giữ như file gốc, không xáo). `data/external/` là file **sinh ra**; `data/external-vi/<slug>/*.json` là hướng dẫn tiếng Việt **soạn tay** (cùng định dạng và quy tắc với `data/vi`, dịch từ giải thích trong file HTML). Lúc build, `vite.config.ts` chép `external/*.html` vào `dist/external/` để link "file HTML gốc" trên header chạy được, và chèn script xáo lựa chọn (`scripts/lib/external-html.ts`) nếu file chưa có. `external/aws_quiz_final.html` đã được chèn sẵn script này để mở trực tiếp cũng xáo; file HTML mới thả vào chỉ được chèn ở bản build.
 
 ## Tài liệu nguồn
 
 - `exam_guide/ssa-03-aws.pdf` — Exam Guide chính thức (30 trang, **bản scan, không có text layer**: `pdftotext`/`pypdf` trả về rỗng. Muốn đọc thì render trang ra ảnh, ví dụ `pypdfium2` cài vào scratchpad, rồi đọc ảnh).
-- `Question-Doc/` — 500 câu, không có hình ảnh:
+- `question-doc-main/` — 12 file `pt1_1.json` … `pt6_2.json`, mỗi file 65 câu `{ question, options, correctAnswerIndices, explanation }` dạng HTML (giải thích tiếng Anh, có ảnh). **Không sửa các file này.** Mỗi file `ptX_2` trùng nội dung `ptX_1` (cùng 65 câu, khác thứ tự), nên chỉ có 390 câu khác nhau.
+- `question-doc-sub/` — 500 câu, không có hình ảnh:
   - `SAA-C03_Part1-2_Q1-50.md`: Markdown. Mỗi câu: `## Question N`, đoạn đề bài, dòng in đậm `**Which ...?**`, các lựa chọn `A.`…`E.`, `**Answer: D**` hoặc `**Answer: A, E**`, `**Explanation:** ...` (tiếng Việt), ngăn cách bằng `---`.
   - `SAA-C03_PartX_Qa-b.docx` (Part 3–21, Q51–500, 20–25 câu/file): đầu file có bảng "Bảng đáp án nhanh" (bỏ qua khi parse), sau đó Heading1 "Chi tiết câu hỏi, đáp án và giải thích"; mỗi câu là Heading2 `Question N`, đoạn đề bài, câu hỏi in đậm, các lựa chọn `A.`…, `Đáp án đúng: D` (hoặc `A, C`), `Giải thích: ...`.
   - Câu nhiều đáp án có ghi `(Choose two.)` / `(Choose three.)` trong câu hỏi; đáp án cách nhau bằng dấu phẩy.

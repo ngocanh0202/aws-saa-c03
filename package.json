@@ -15,8 +15,10 @@
     "vi:show": "tsx scripts/show-batch.ts",
     "external": "tsx scripts/external.ts",
     "external:show": "tsx scripts/show-external.ts",
-    "data": "npm run parse && npm run sets && npm run validate",
-    "check": "npm run validate && npm run test && npm run typecheck"
+    "data": "npm run parse && npm run sets && npm run main && npm run validate",
+    "check": "npm run validate && npm run test && npm run typecheck",
+    "main": "tsx scripts/main.ts",
+    "main:show": "tsx scripts/show-main.ts"
   },
   "dependencies": {
     "firebase": "^13.1.0",

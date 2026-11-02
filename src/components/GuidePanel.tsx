@@ -31,6 +31,7 @@ export function GuidePanel({ question, order, vi, meta, services }: GuidePanelPr
           </ul>
         </div>
       )}
+      {meta?.note && <p className="guide__review">⚠ Ghi chú review: {meta.note}</p>}
       {vi ? (
         <>
           {vi.review && <p className="guide__review">⚠ Cần xem lại đáp án gốc: {vi.review.reason}</p>}
@@ -65,8 +66,17 @@ export function GuidePanel({ question, order, vi, meta, services }: GuidePanelPr
         </>
       ) : (
         <>
-          <p className="guide__pending">Câu này chưa có bản dịch. Giải thích gốc (chữ cái theo nhãn gốc):</p>
-          <p>{question.explanationOrig}</p>
+          {question.html ? (
+            <>
+              <p className="guide__pending">Giải thích gốc (tiếng Anh):</p>
+              <div className="guide__orig" lang="en" dangerouslySetInnerHTML={{ __html: question.explanationOrig }} />
+            </>
+          ) : (
+            <>
+              <p className="guide__pending">Câu này chưa có bản dịch. Giải thích gốc (chữ cái theo nhãn gốc):</p>
+              <p>{question.explanationOrig}</p>
+            </>
+          )}
         </>
       )}
       {meta && meta.services.length > 0 && (

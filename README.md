@@ -6,7 +6,8 @@ Web chạy thử tại: https://anhbhn-kstns.github.io/exam-aws-ssa-03/
 
 ## Tính năng
 
-- **7 đề cố định, mỗi đề 65 câu.** Các domain chia theo tỉ lệ của đề thật (Secure 20 · Resilient 17 · High-Performing 15 · Cost 13), độ khó tăng dần từ Đề 1 đến Đề 7. Mỗi lượt thi đổi ngẫu nhiên 10 câu bằng câu dự phòng, rồi xáo thứ tự câu hỏi và lựa chọn.
+- **Main: 12 đề cố định** lấy nguyên từ `question-doc-main`. Lựa chọn luôn xáo; thứ tự câu hỏi chỉ xáo khi bật công tắc trên trang chủ. Mỗi câu được gắn domain và có ghi chú review nếu phát hiện bất thường.
+- **Sub: 7 đề, mỗi đề 65 câu.** Các domain chia theo tỉ lệ của đề thật (Secure 20 · Resilient 17 · High-Performing 15 · Cost 13), độ khó tăng dần từ Đề 1 đến Đề 7. Mỗi lượt thi đổi ngẫu nhiên 10 câu bằng câu dự phòng, rồi xáo thứ tự câu hỏi và lựa chọn.
 - **Thi thật:** 130 phút (160 phút nếu bật ESL +30), giao diện tiếng Anh, chỉ xem được hướng dẫn sau khi nộp bài.
 - **Thi thử:** không tính giờ, mở hướng dẫn được ngay tại từng câu.
 - **Chấm điểm** theo thang 100–1000, đậu khi đạt từ 720 điểm. Có bảng phân tích theo domain cho từng lượt thi và từng đề.
@@ -42,7 +43,8 @@ Nếu không cấu hình bước này, web vẫn chạy đầy đủ, chỉ khô
 | `npm test` | Chạy toàn bộ test (Vitest) |
 | `npm run typecheck` | Kiểm tra kiểu TypeScript |
 | `npm run check` | Chạy validate, test và typecheck (nên chạy trước khi commit) |
-| `npm run parse` | Chuyển `Question-Doc/` thành `data/questions.json` |
+| `npm run parse` | Chuyển `question-doc-sub/` thành `data/questions.json` |
+| `npm run main` | Chuyển `question-doc-main/` thành `data/main.json` |
 | `npm run sets` | Sinh `data/sets.json` từ `data/meta` |
 | `npm run validate` | Kiểm tra toàn bộ dữ liệu |
 | `npm run external` | Chuyển `external/*.html` thành `data/external/*.json` |
@@ -50,7 +52,8 @@ Nếu không cấu hình bước này, web vẫn chạy đầy đủ, chỉ khô
 ## Cấu trúc thư mục
 
 ```
-Question-Doc/   Ngân hàng câu hỏi gốc (.md, .docx)
+question-doc-main/  Bộ main: 12 đề cố định (JSON, HTML) — không sửa
+question-doc-sub/   Bộ sub: ngân hàng 500 câu gốc (.md, .docx)
 external/       Bộ câu hỏi External dạng HTML
 data/           Dữ liệu cho web: questions.json, sets.json (sinh ra);
                 meta/, vi/, services/ (soạn tay)

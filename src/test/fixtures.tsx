@@ -27,7 +27,23 @@ function domainOf(id: number): Domain {
   return ([1, 1, 1, 2, 2, 2, 3, 3, 4, 4] as Domain[])[id - 66];
 }
 
-export function makeBank(): Bank {
+/** Đề main giả (id 101): 3 câu HTML 10101–10103; câu 10101 có ghi chú review. */
+export const MAIN_IDS = [10101, 10102, 10103];
+
+function makeMainQuestion(id: number): Question {
+  return {
+    id,
+    stem: `<p>Main stem <strong>${id}</strong></p>`,
+    prompt: '',
+    options: ['A', 'B', 'C', 'D'].map((key) => ({ key, text: `<p>Main opt ${key} of ${id}</p>` })),
+    answer: ['B'],
+    choose: 1,
+    explanationOrig: `<p>Main explanation <em>${id}</em></p>`,
+    html: true,
+  };
+}
+
+export function makeBank({ main = false }: { main?: boolean } = {}): Bank {
   const ids = range(1, 75);
   const questions = ids.map((id) => (id === 2 ? makeQuestion(2, ['A', 'B', 'C', 'D', 'E'], ['A', 'C']) : makeQuestion(id)));
   const metas: QuestionMeta[] = ids.map((id) => ({
@@ -36,9 +52,14 @@ export function makeBank(): Bank {
     difficulty: ((id % 3) + 1) as Difficulty,
     services: id === 1 ? ['s3'] : [],
   }));
+  if (main) {
+    questions.push(...MAIN_IDS.map(makeMainQuestion));
+    metas.push(...MAIN_IDS.map((id) => ({ id, domain: 2 as const, difficulty: 2 as const, services: [], ...(id === 10101 ? { note: 'Đáp án đáng ngờ' } : {}) })));
+  }
   return buildBank({
     questions,
     metas,
+    mainSets: main ? [{ id: 101, file: 'pt1_1.json', title: 'Main 1', questionIds: MAIN_IDS }] : [],
     vis: [
       {
         id: 1,

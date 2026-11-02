@@ -14,6 +14,8 @@ export interface Question {
   answer: string[];
   choose: number;
   explanationOrig: string;
+  /** Đề, lựa chọn và giải thích là HTML (bộ main); không có thì là chữ thường. */
+  html?: boolean;
 }
 
 export interface QuestionMeta {
@@ -21,6 +23,8 @@ export interface QuestionMeta {
   domain: Domain;
   difficulty: Difficulty;
   services: string[];
+  /** Ghi chú khi review thấy điểm bất thường (chỉ dùng cho bộ main, vì không sửa file gốc). */
+  note?: string;
 }
 
 export interface ViOption {
@@ -68,6 +72,19 @@ export interface SetsFile {
   sets: ExamSet[];
   reserve: number[];
   duplicates?: [number, number][];
+}
+
+/** Một đề cố định 65 câu dựng từ một file trong `question-doc-main/` (sinh bởi `npm run main`). */
+export interface MainSet extends ExamSet {
+  file: string;
+  title: string;
+}
+
+export interface MainFile {
+  sets: MainSet[];
+  questions: Question[];
+  /** [câu gốc, câu trùng nguyên văn ở file sau]; câu trùng dùng lại meta của câu gốc. */
+  twins: [number, number][];
 }
 
 /** Bộ câu hỏi dựng từ một file HTML trong `external/` (sinh bởi `npm run external`). */

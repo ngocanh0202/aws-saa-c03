@@ -151,3 +151,40 @@ describe('isCompatible', () => {
     expect(isCompatible(attempt, changed)).toBe(false);
   });
 });
+
+describe('createAttempt — đề main (cố định)', () => {
+  const mainIds = [10101, 10102, 10103, 10104, 10105];
+  const mainInput = (overrides: Partial<CreateAttemptInput> = {}) => {
+    const base = input();
+    const questions = new Map(base.questions);
+    const metas = new Map(base.metas);
+    for (const id of mainIds) {
+      questions.set(id, q(id));
+      metas.set(id, { id, domain: 1, difficulty: 2, services: [] });
+    }
+    return input({
+      setId: 101,
+      questions,
+      metas,
+      mainSets: [{ id: 101, file: 'pt1_1.json', title: 'Main 1', questionIds: mainIds }],
+      ...overrides,
+    });
+  };
+
+  it('không xáo câu hỏi: giữ đúng thứ tự file gốc, không thay câu dự phòng', () => {
+    const a = createAttempt(mainInput());
+    expect(a.questions.map((x) => x.qid)).toEqual(mainIds);
+    expect(a.setId).toBe(101);
+  });
+
+  it('bật xáo câu hỏi: vẫn đủ đúng các câu đó nhưng đổi thứ tự', () => {
+    const orders = [1, 2, 3, 4, 5].map((seed) => createAttempt(mainInput({ seed, shuffleQuestions: true })).questions.map((x) => x.qid));
+    for (const o of orders) expect([...o].sort()).toEqual(mainIds);
+    expect(orders.some((o) => o.join() !== mainIds.join())).toBe(true);
+  });
+
+  it('lựa chọn luôn được xáo, kể cả khi không xáo câu hỏi', () => {
+    const orders = [1, 2, 3, 4, 5].map((seed) => createAttempt(mainInput({ seed })).questions.map((x) => x.optionOrder.join('')));
+    expect(orders.flat().some((o) => o !== 'ABCD')).toBe(true);
+  });
+});

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useClockReady, useStoreVersion } from '../app/use-store';
-import { formatDate, modeName } from '../app/format';
+import { formatDate, modeName, setLabel } from '../app/format';
 import { DOMAINS, DOMAIN_SHORT } from '../data/constants';
 import { isCompatible, type Mode } from '../engine/attempt';
 import { WEAK_THRESHOLD, setStats, summarize } from '../engine/stats';
@@ -19,7 +19,7 @@ export function SetStatsPage() {
     if (clockReady) finalizeExpiredRealAttempts(store, now());
   }, [store, now, version, clockReady]);
 
-  if (!bank.sets.sets.some((s) => s.id === setId)) {
+  if (!bank.sets.sets.some((s) => s.id === setId) && !bank.mainSets.some((s) => s.id === setId)) {
     return (
       <main className="page">
         <p>Không có đề này.</p>
@@ -43,7 +43,7 @@ export function SetStatsPage() {
       <p>
         <Link to="/">← Danh sách đề</Link>
       </p>
-      <h1>Thống kê Đề {setId}</h1>
+      <h1>Thống kê {setLabel(setId)}</h1>
       <div className="filters" role="group" aria-label="Chế độ">
         {(['real', 'practice'] as Mode[]).map((m) => (
           <button key={m} type="button" aria-pressed={mode === m} onClick={() => setMode(m)}>

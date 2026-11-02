@@ -1,4 +1,4 @@
-import type { Domain, Question, QuestionMeta, SetsFile } from '../data/types';
+import type { Domain, MainSet, Question, QuestionMeta, SetsFile } from '../data/types';
 import { mulberry32, shuffle, type Rng } from './rng';
 
 export type Mode = 'real' | 'practice';
@@ -39,6 +39,10 @@ export interface CreateAttemptInput {
   sets: SetsFile;
   questions: Map<number, Question>;
   metas: Map<number, QuestionMeta>;
+  /** Đề cố định của bộ main: không thay câu dự phòng; lựa chọn luôn xáo. */
+  mainSets?: MainSet[];
+  /** Chỉ dùng cho đề main: có xáo thứ tự câu hỏi hay giữ thứ tự trong file. */
+  shuffleQuestions?: boolean;
 }
 
 export function examDurationMs(esl: boolean): number {
@@ -100,12 +104,14 @@ export function pickQuestionIds(
 
 export function createAttempt(input: CreateAttemptInput): Attempt {
   const rng = mulberry32(input.seed);
-  const set = input.sets.sets.find((s) => s.id === input.setId);
+  const main = input.mainSets?.find((s) => s.id === input.setId);
+  const set = main ?? input.sets.sets.find((s) => s.id === input.setId);
   if (!set) throw new Error(`Không có đề ${input.setId}`);
-  const ids = shuffle(
-    pickQuestionIds(set.questionIds, input.sets.reserve, input.metas, rng, input.sets.duplicates ?? []),
-    rng,
-  );
+  const ids = main
+    ? input.shuffleQuestions
+      ? shuffle(main.questionIds, rng)
+      : main.questionIds.slice()
+    : shuffle(pickQuestionIds(set.questionIds, input.sets.reserve, input.metas, rng, input.sets.duplicates ?? []), rng);
   const questions = ids.map((qid) => {
     const q = input.questions.get(qid);
     if (!q) throw new Error(`Không có câu ${qid}`);

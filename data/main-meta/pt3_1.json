@@ -1,0 +1,688 @@
+[
+  {
+    "id": 10501,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "sqs"
+    ]
+  },
+  {
+    "id": 10502,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "ec2",
+      "vpc"
+    ]
+  },
+  {
+    "id": 10503,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "api-gateway",
+      "elb"
+    ]
+  },
+  {
+    "id": 10504,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "fsx-windows",
+      "storage-gateway",
+      "s3",
+      "efs",
+      "ebs"
+    ]
+  },
+  {
+    "id": 10505,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "elb",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10506,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "aws-config",
+      "cloudtrail",
+      "cloudwatch",
+      "ssm"
+    ]
+  },
+  {
+    "id": 10507,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "elb",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10508,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "rds",
+      "aurora",
+      "elasticache",
+      "dynamodb"
+    ]
+  },
+  {
+    "id": 10509,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "global-accelerator",
+      "elb",
+      "ec2",
+      "ec2-auto-scaling"
+    ]
+  },
+  {
+    "id": 10510,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "s3",
+      "lambda",
+      "dynamodb",
+      "cloudfront",
+      "ec2",
+      "rds"
+    ]
+  },
+  {
+    "id": 10511,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "efs",
+      "ecs",
+      "dynamodb",
+      "ebs",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10512,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "ecs",
+      "fargate",
+      "efs",
+      "eks",
+      "lambda",
+      "s3"
+    ]
+  },
+  {
+    "id": 10513,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "nat-gateway",
+      "vpc",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10514,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "api-gateway",
+      "lambda",
+      "ecs",
+      "fargate",
+      "app-runner"
+    ]
+  },
+  {
+    "id": 10515,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "rds"
+    ]
+  },
+  {
+    "id": 10516,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "nat-gateway",
+      "vpc",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10517,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "ec2",
+      "ec2-auto-scaling",
+      "vpc"
+    ]
+  },
+  {
+    "id": 10518,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "sqs",
+      "vpc-endpoint",
+      "nat-gateway",
+      "site-to-site-vpn"
+    ]
+  },
+  {
+    "id": 10519,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "fsx-ontap",
+      "efs",
+      "fsx-openzfs",
+      "datasync"
+    ]
+  },
+  {
+    "id": 10520,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "cloudwatch",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10521,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "vpc",
+      "ec2",
+      "nat-gateway"
+    ]
+  },
+  {
+    "id": 10522,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "s3",
+      "kms"
+    ]
+  },
+  {
+    "id": 10523,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "datasync",
+      "s3",
+      "efs",
+      "fsx-windows",
+      "transfer-family",
+      "snowball",
+      "storage-gateway"
+    ]
+  },
+  {
+    "id": 10524,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "sqs"
+    ],
+    "note": "Giới hạn 3.000 tin nhắn/giây (có batching) là số mặc định cũ; FIFO high throughput nay hỗ trợ tới hàng chục nghìn tin nhắn/giây tùy Region, nên lựa chọn về giới hạn thông lượng đã lỗi thời nhưng vẫn là đáp án của đề."
+  },
+  {
+    "id": 10525,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "vpc-endpoint",
+      "s3",
+      "nat-gateway",
+      "ec2",
+      "elb"
+    ]
+  },
+  {
+    "id": 10526,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "elasticache",
+      "glue",
+      "emr",
+      "rds",
+      "aurora"
+    ]
+  },
+  {
+    "id": 10527,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "cloudwatch",
+      "ec2",
+      "ebs",
+      "eventbridge",
+      "trusted-advisor"
+    ]
+  },
+  {
+    "id": 10528,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "vpc",
+      "ec2"
+    ],
+    "note": "Đề trùng nguyên văn với id 11164 (pt6_1 vị trí 64): cả hai cùng đáp án (Security Group stateful, Network ACL stateless), chỉ khác thứ tự lựa chọn nên không mâu thuẫn, cả hai đều đúng."
+  },
+  {
+    "id": 10529,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "lambda",
+      "api-gateway",
+      "ecs",
+      "fargate",
+      "app-runner",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10530,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "cloudfront",
+      "waf",
+      "s3",
+      "ec2"
+    ],
+    "note": "Đáp án dùng origin access identity (OAI), nay là cách cũ; AWS khuyên dùng origin access control (OAC). Nguyên lý của đáp án vẫn đúng."
+  },
+  {
+    "id": 10531,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "s3",
+      "cloudfront",
+      "global-accelerator",
+      "elasticache",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10532,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "ssm",
+      "iam",
+      "ec2",
+      "rds",
+      "secrets-manager"
+    ]
+  },
+  {
+    "id": 10533,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "vpc",
+      "resource-access-manager",
+      "organizations"
+    ]
+  },
+  {
+    "id": 10534,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "ec2-auto-scaling",
+      "sqs",
+      "cloudwatch"
+    ]
+  },
+  {
+    "id": 10535,
+    "domain": 2,
+    "difficulty": 1,
+    "services": [
+      "rds"
+    ]
+  },
+  {
+    "id": 10536,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "shield",
+      "waf",
+      "cloudfront",
+      "elb",
+      "guardduty",
+      "inspector"
+    ]
+  },
+  {
+    "id": 10537,
+    "domain": 2,
+    "difficulty": 1,
+    "services": [
+      "sqs",
+      "sns",
+      "eventbridge",
+      "kinesis-data-streams"
+    ]
+  },
+  {
+    "id": 10538,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "kinesis-data-streams",
+      "kinesis-data-firehose",
+      "sqs",
+      "sns"
+    ]
+  },
+  {
+    "id": 10539,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "organizations",
+      "iam"
+    ]
+  },
+  {
+    "id": 10540,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "fsx-windows",
+      "efs",
+      "fsx-lustre",
+      "s3"
+    ]
+  },
+  {
+    "id": 10541,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "ec2",
+      "ebs",
+      "kms"
+    ]
+  },
+  {
+    "id": 10542,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "dynamodb",
+      "aws-backup"
+    ]
+  },
+  {
+    "id": 10543,
+    "domain": 2,
+    "difficulty": 3,
+    "services": [
+      "transfer-family",
+      "s3",
+      "efs",
+      "lambda",
+      "eventbridge",
+      "step-functions"
+    ]
+  },
+  {
+    "id": 10544,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "storage-gateway",
+      "snowball",
+      "direct-connect",
+      "s3"
+    ]
+  },
+  {
+    "id": 10545,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "macie",
+      "guardduty",
+      "s3"
+    ]
+  },
+  {
+    "id": 10546,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "cloudfront",
+      "s3",
+      "efs",
+      "ebs",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10547,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "route-53"
+    ]
+  },
+  {
+    "id": 10548,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "transit-gateway",
+      "direct-connect",
+      "vpc",
+      "site-to-site-vpn",
+      "vpc-endpoint"
+    ]
+  },
+  {
+    "id": 10549,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "iam",
+      "ec2",
+      "dynamodb"
+    ]
+  },
+  {
+    "id": 10550,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "cloudformation",
+      "organizations",
+      "resource-access-manager"
+    ]
+  },
+  {
+    "id": 10551,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "ebs",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10552,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "fsx-windows",
+      "storage-gateway",
+      "fsx-lustre",
+      "efs",
+      "directory-service"
+    ]
+  },
+  {
+    "id": 10553,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "cloudfront",
+      "s3",
+      "lambda",
+      "rds",
+      "dynamodb",
+      "elasticache"
+    ]
+  },
+  {
+    "id": 10554,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "nat-gateway",
+      "ec2",
+      "vpc"
+    ]
+  },
+  {
+    "id": 10555,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "eventbridge",
+      "lambda",
+      "glue",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10556,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "kinesis-data-streams",
+      "lambda",
+      "kinesis-data-analytics",
+      "api-gateway",
+      "sns",
+      "sqs"
+    ]
+  },
+  {
+    "id": 10557,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "route-53",
+      "direct-connect",
+      "vpc"
+    ]
+  },
+  {
+    "id": 10558,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "route-53"
+    ]
+  },
+  {
+    "id": 10559,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "sct",
+      "dms",
+      "glue",
+      "snowball"
+    ]
+  },
+  {
+    "id": 10560,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "site-to-site-vpn",
+      "vpc"
+    ]
+  },
+  {
+    "id": 10561,
+    "domain": 4,
+    "difficulty": 3,
+    "services": [
+      "ec2"
+    ]
+  },
+  {
+    "id": 10562,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "ecs",
+      "ec2-auto-scaling",
+      "elb",
+      "cloudwatch"
+    ]
+  },
+  {
+    "id": 10563,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "vpc",
+      "ec2"
+    ]
+  },
+  {
+    "id": 10564,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "global-accelerator",
+      "cloudfront",
+      "elb",
+      "ec2-auto-scaling"
+    ]
+  },
+  {
+    "id": 10565,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "directory-service"
+    ]
+  }
+]

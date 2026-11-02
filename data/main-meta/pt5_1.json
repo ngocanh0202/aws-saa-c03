@@ -1,0 +1,704 @@
+[
+ {
+  "id": 10901,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "iam",
+   "inspector",
+   "aws-config"
+  ]
+ },
+ {
+  "id": 10902,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "ec2-auto-scaling",
+   "ec2"
+  ],
+  "note": "Đáp án (tối thiểu 4 instance, 2 mỗi AZ) có thể tranh cãi: cấu hình tối thiểu 2 instance, mỗi AZ 1 instance cũng đã chịu được mất một AZ. Giải thích gốc chỉ dựa vào việc ASG chia đều instance giữa các AZ."
+ },
+ {
+  "id": 10903,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "efs",
+   "s3",
+   "fsx-ontap",
+   "fsx-lustre",
+   "aws-backup"
+  ]
+ },
+ {
+  "id": 10904,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "ec2",
+   "ebs"
+  ]
+ },
+ {
+  "id": 10905,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "vpc-endpoint",
+   "s3",
+   "nat-gateway",
+   "direct-connect",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10906,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "waf",
+   "cloudfront",
+   "firewall-manager",
+   "route-53"
+  ]
+ },
+ {
+  "id": 10907,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "kinesis-data-streams",
+   "lambda",
+   "dynamodb",
+   "kinesis-data-firehose"
+  ]
+ },
+ {
+  "id": 10908,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "ebs",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10909,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "cloudwatch",
+   "ec2",
+   "lambda",
+   "eventbridge",
+   "sns"
+  ]
+ },
+ {
+  "id": 10910,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "transit-gateway",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10911,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "site-to-site-vpn",
+   "direct-connect",
+   "datasync",
+   "secrets-manager"
+  ]
+ },
+ {
+  "id": 10912,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "route-53",
+   "elb",
+   "s3"
+  ]
+ },
+ {
+  "id": 10913,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "site-to-site-vpn",
+   "direct-connect",
+   "client-vpn"
+  ]
+ },
+ {
+  "id": 10914,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10915,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ec2-auto-scaling",
+   "sqs"
+  ]
+ },
+ {
+  "id": 10916,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "datasync",
+   "storage-gateway",
+   "s3"
+  ]
+ },
+ {
+  "id": 10917,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ebs",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10918,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "s3",
+   "lambda",
+   "glue",
+   "fargate"
+  ]
+ },
+ {
+  "id": 10919,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "global-accelerator",
+   "elb",
+   "direct-connect",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10920,
+  "domain": 4,
+  "difficulty": 3,
+  "services": [
+   "redshift",
+   "direct-connect"
+  ]
+ },
+ {
+  "id": 10921,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "rds",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10922,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "transcribe",
+   "athena",
+   "quicksight",
+   "kinesis-data-streams",
+   "kinesis-data-analytics"
+  ]
+ },
+ {
+  "id": 10923,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "cloudfront",
+   "efs",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10924,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "s3-glacier",
+   "s3"
+  ]
+ },
+ {
+  "id": 10925,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "dynamodb",
+   "aurora",
+   "rds"
+  ],
+  "note": "Đề yêu cầu 'global consistency' nhưng DynamoDB global tables mặc định sao chép bất đồng bộ (eventual consistency giữa các Region, multi-active). Đáp án đúng theo giải thích gốc chỉ thỏa yêu cầu 'dưới 1 giây'."
+ },
+ {
+  "id": 10926,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ec2-auto-scaling",
+   "elb",
+   "aurora",
+   "cloudfront",
+   "route-53"
+  ]
+ },
+ {
+  "id": 10927,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "dms",
+   "rds",
+   "lambda",
+   "glue"
+  ]
+ },
+ {
+  "id": 10928,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "s3"
+  ]
+ },
+ {
+  "id": 10929,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ec2-auto-scaling",
+   "elb",
+   "fargate",
+   "ecs"
+  ]
+ },
+ {
+  "id": 10930,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "snowball",
+   "s3",
+   "s3-glacier",
+   "direct-connect",
+   "site-to-site-vpn"
+  ]
+ },
+ {
+  "id": 10931,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "waf",
+   "cloudfront",
+   "elb",
+   "api-gateway",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10932,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "waf",
+   "elb",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10933,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "cloudwatch",
+   "ec2",
+   "opensearch",
+   "eventbridge",
+   "sns",
+   "rds"
+  ]
+ },
+ {
+  "id": 10934,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "rds",
+   "aurora"
+  ]
+ },
+ {
+  "id": 10935,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "elasticache",
+   "global-accelerator",
+   "dax"
+  ]
+ },
+ {
+  "id": 10936,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "aurora",
+   "lambda",
+   "elb",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10937,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "ebs",
+   "aws-backup",
+   "iam",
+   "lambda",
+   "dynamodb",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10938,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "kms",
+   "vpc-endpoint"
+  ]
+ },
+ {
+  "id": 10939,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "sqs"
+  ]
+ },
+ {
+  "id": 10940,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "ssm",
+   "elb",
+   "ec2",
+   "cloudwatch",
+   "lambda",
+   "eventbridge"
+  ]
+ },
+ {
+  "id": 10941,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ebs",
+   "s3"
+  ]
+ },
+ {
+  "id": 10942,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "cloudfront",
+   "s3",
+   "acm"
+  ]
+ },
+ {
+  "id": 10943,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "kinesis-data-streams",
+   "sqs",
+   "kinesis-data-firehose"
+  ]
+ },
+ {
+  "id": 10944,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "cloudwatch",
+   "ec2-auto-scaling",
+   "elb",
+   "lambda",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10945,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "rds"
+  ]
+ },
+ {
+  "id": 10946,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "global-accelerator",
+   "cloudfront",
+   "route-53",
+   "api-gateway",
+   "lambda",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10947,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "dynamodb",
+   "dax",
+   "lambda"
+  ]
+ },
+ {
+  "id": 10948,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10949,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "storage-gateway",
+   "s3",
+   "fsx-lustre",
+   "datasync"
+  ]
+ },
+ {
+  "id": 10950,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "sqs",
+   "ec2-auto-scaling",
+   "ec2",
+   "cloudwatch"
+  ]
+ },
+ {
+  "id": 10951,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "global-accelerator",
+   "route-53",
+   "cloudfront",
+   "direct-connect",
+   "elb"
+  ]
+ },
+ {
+  "id": 10952,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "vpc-endpoint",
+   "ec2",
+   "site-to-site-vpn",
+   "cloudfront"
+  ]
+ },
+ {
+  "id": 10953,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "organizations",
+   "iam",
+   "ec2"
+  ],
+  "note": "Đáp án tranh cãi. Giải thích gốc thừa nhận tag policy chỉ gắn cờ không tuân thủ chứ không chặn tạo tài nguyên, và tag policy không thể bắt buộc phải có khóa tag. SCP chặn ec2:DeleteTags vô điều kiện thì cấm xóa mọi tag, không riêng tag phân loại."
+ },
+ {
+  "id": 10954,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "kinesis-data-streams"
+  ]
+ },
+ {
+  "id": 10955,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "ecs",
+   "fargate",
+   "efs",
+   "fsx-ontap",
+   "fsx-lustre",
+   "aws-backup",
+   "s3"
+  ]
+ },
+ {
+  "id": 10956,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "kinesis-data-streams",
+   "opensearch",
+   "quicksight",
+   "athena",
+   "glue",
+   "redshift",
+   "dynamodb",
+   "fargate",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10957,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "elb",
+   "ec2-auto-scaling",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10958,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "transfer-family",
+   "efs",
+   "fsx-lustre",
+   "storage-gateway",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10959,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "api-gateway",
+   "sqs",
+   "lambda",
+   "comprehend",
+   "kinesis-data-streams",
+   "translate",
+   "opensearch",
+   "dynamodb",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10960,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "kms",
+   "athena",
+   "redshift"
+  ],
+  "note": "Giải thích gốc loại hai lựa chọn CRR vì 'bỏ qua bước tạo bucket đích', nhưng lựa chọn đúng cũng không nhắc tới bucket đích, nên lý do loại không nhất quán."
+ },
+ {
+  "id": 10961,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "ssm"
+  ]
+ },
+ {
+  "id": 10962,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "s3",
+   "s3-glacier",
+   "ebs",
+   "storage-gateway"
+  ]
+ },
+ {
+  "id": 10963,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "athena",
+   "s3",
+   "emr",
+   "rds",
+   "redshift"
+  ]
+ },
+ {
+  "id": 10964,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "s3",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10965,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "elasticache",
+   "elb",
+   "dynamodb",
+   "rds",
+   "ec2"
+  ]
+ }
+]

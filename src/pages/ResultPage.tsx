@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
-import { formatDate, modeName } from '../app/format';
+import { formatDate, modeName, setLabel } from '../app/format';
 import { DomainTable } from '../components/DomainTable';
 import { GuidePanel } from '../components/GuidePanel';
 import { QuestionCard } from '../components/QuestionCard';
@@ -45,10 +45,10 @@ export function ResultPage() {
   return (
     <main className="page result" data-testid="result-page">
       <p>
-        <Link to="/">← Danh sách đề</Link> · <Link to={`/set/${attempt.setId}`}>Thống kê Đề {attempt.setId}</Link>
+        <Link to="/">← Danh sách đề</Link> · <Link to={`/set/${attempt.setId}`}>Thống kê {setLabel(attempt.setId)}</Link>
       </p>
       <h1>
-        Kết quả Đề {attempt.setId} ({modeName(attempt.mode)})
+        Kết quả {setLabel(attempt.setId)} ({modeName(attempt.mode)})
       </h1>
       <p className={`score ${result.passed ? 'score--pass' : 'score--fail'}`}>
         <strong>{result.score}</strong>/1000 · {result.passed ? 'ĐẬU' : 'TRƯỢT'} (cần ≥ {PASS_SCORE})
@@ -93,7 +93,7 @@ export function ResultPage() {
               {attempt.guideOpened.includes(aq.qid) && <span className="tag">Đã xem hướng dẫn</span>}
               <span className="tag">{DOMAIN_SHORT[aq.domain]}</span>
             </div>
-            <QuestionCard heading={`Câu ${index + 1}`} question={question} order={aq.optionOrder} selected={selected} reveal showOrigLabels={!bank.vi.has(aq.qid)} />
+            <QuestionCard heading={`Câu ${index + 1}`} question={question} order={aq.optionOrder} selected={selected} reveal showOrigLabels={!bank.vi.has(aq.qid) && !question.html} />
             <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
           </article>
         );

@@ -1,4 +1,4 @@
-import type { ExternalSet, Question, QuestionMeta, QuestionVi, ServiceNote, ServiceRef, SetsFile } from './types';
+import type { ExternalSet, MainSet, Question, QuestionMeta, QuestionVi, ServiceNote, ServiceRef, SetsFile } from './types';
 
 /** Bộ câu hỏi External kèm hướng dẫn tiếng Việt (theo id câu trong bộ). */
 export interface ExternalBook extends ExternalSet {
@@ -13,6 +13,8 @@ export interface Bank {
   serviceNotes: Map<string, ServiceNote>;
   questionsByService: Map<string, number[]>;
   sets: SetsFile;
+  /** 12 đề cố định của bộ main (id 101…112); câu và meta đã gộp vào questions/meta. */
+  mainSets: MainSet[];
   externals: ExternalBook[];
 }
 
@@ -23,6 +25,7 @@ export function buildBank(input: {
   registry: ServiceRef[];
   serviceNotes?: ServiceNote[];
   sets: SetsFile;
+  mainSets?: MainSet[];
   externals?: ExternalSet[];
   externalVis?: Record<string, QuestionVi[]>;
 }): Bank {
@@ -38,6 +41,7 @@ export function buildBank(input: {
     serviceNotes: new Map((input.serviceNotes ?? []).map((s) => [s.id, s])),
     questionsByService,
     sets: input.sets,
+    mainSets: input.mainSets ?? [],
     externals: (input.externals ?? []).map((set) => ({
       ...set,
       vi: new Map((input.externalVis?.[set.slug] ?? []).map((v) => [v.id, v])),

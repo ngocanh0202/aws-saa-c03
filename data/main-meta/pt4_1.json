@@ -1,0 +1,649 @@
+[
+ {
+  "id": 10701,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "lambda",
+   "vpc",
+   "nat-gateway",
+   "cloudwatch"
+  ]
+ },
+ {
+  "id": 10702,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "dynamodb"
+  ]
+ },
+ {
+  "id": 10703,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "dynamodb",
+   "dax",
+   "elasticache"
+  ]
+ },
+ {
+  "id": 10704,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "eventbridge",
+   "sns",
+   "sqs",
+   "elb"
+  ]
+ },
+ {
+  "id": 10705,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "ec2-auto-scaling",
+   "elb",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10706,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "cloudformation",
+   "vpc",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10707,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "elb",
+   "ec2-auto-scaling",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10708,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "ecs",
+   "eks",
+   "fargate",
+   "sagemaker",
+   "emr"
+  ]
+ },
+ {
+  "id": 10709,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "ec2-auto-scaling",
+   "elb",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10710,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10711,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "rds",
+   "elasticache",
+   "dynamodb"
+  ]
+ },
+ {
+  "id": 10712,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "storage-gateway",
+   "datasync",
+   "direct-connect",
+   "s3",
+   "s3-glacier",
+   "efs"
+  ]
+ },
+ {
+  "id": 10713,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "rds",
+   "iam",
+   "lambda",
+   "ssm-parameter-store",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10714,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "efs",
+   "ec2",
+   "s3"
+  ]
+ },
+ {
+  "id": 10715,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "ec2"
+  ]
+ },
+ {
+  "id": 10716,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "aurora",
+   "elasticache"
+  ]
+ },
+ {
+  "id": 10717,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "ec2",
+   "sqs",
+   "sns"
+  ]
+ },
+ {
+  "id": 10718,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "elb",
+   "acm"
+  ]
+ },
+ {
+  "id": 10719,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "dynamodb",
+   "cloudtrail",
+   "eventbridge",
+   "lambda",
+   "s3"
+  ]
+ },
+ {
+  "id": 10720,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "elb"
+  ],
+  "note": "Lựa chọn \"example.com\" và \"EXAMPLE.COM\" thực chất trùng nhau (tên host không phân biệt hoa thường); cả hai đều không khớp quy tắc *.example.com vì thiếu subdomain, nên chỉ còn \"test.example.com\" đúng."
+ },
+ {
+  "id": 10721,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "s3",
+   "iam"
+  ]
+ },
+ {
+  "id": 10722,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "vpc-endpoint",
+   "s3",
+   "dynamodb",
+   "sns",
+   "sqs",
+   "kinesis-data-streams"
+  ]
+ },
+ {
+  "id": 10723,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "elb",
+   "ec2",
+   "ec2-auto-scaling",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10724,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "storage-gateway",
+   "datasync",
+   "fsx-windows",
+   "s3"
+  ]
+ },
+ {
+  "id": 10725,
+  "domain": 1,
+  "difficulty": 1,
+  "services": [
+   "rds",
+   "iam"
+  ]
+ },
+ {
+  "id": 10726,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "dynamodb",
+   "rds",
+   "elasticache"
+  ]
+ },
+ {
+  "id": 10727,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "iam",
+   "organizations",
+   "s3"
+  ]
+ },
+ {
+  "id": 10728,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "s3",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10729,
+  "domain": 2,
+  "difficulty": 1,
+  "services": []
+ },
+ {
+  "id": 10730,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "direct-connect",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10731,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "trusted-advisor",
+   "s3",
+   "ec2",
+   "rds",
+   "s3-glacier"
+  ]
+ },
+ {
+  "id": 10732,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "elb",
+   "ec2",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10733,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "aurora"
+  ]
+ },
+ {
+  "id": 10734,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "cloudformation",
+   "rds",
+   "trusted-advisor",
+   "iam"
+  ]
+ },
+ {
+  "id": 10735,
+  "domain": 1,
+  "difficulty": 3,
+  "services": [
+   "iam-identity-center",
+   "directory-service",
+   "organizations",
+   "cognito"
+  ]
+ },
+ {
+  "id": 10736,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "ec2-auto-scaling",
+   "ec2",
+   "cloudwatch"
+  ]
+ },
+ {
+  "id": 10737,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "rds",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10738,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "direct-connect",
+   "site-to-site-vpn"
+  ]
+ },
+ {
+  "id": 10739,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "opensearch",
+   "redshift",
+   "aurora"
+  ]
+ },
+ {
+  "id": 10740,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "route-53"
+  ]
+ },
+ {
+  "id": 10741,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "elasticache",
+   "rds",
+   "opensearch",
+   "rds-proxy"
+  ]
+ },
+ {
+  "id": 10742,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "route-53",
+   "elb"
+  ]
+ },
+ {
+  "id": 10743,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "elastic-beanstalk",
+   "ec2",
+   "s3"
+  ]
+ },
+ {
+  "id": 10744,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "cloudfront",
+   "kms"
+  ]
+ },
+ {
+  "id": 10745,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "snowball"
+  ]
+ },
+ {
+  "id": 10746,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "vpc",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10747,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "s3",
+   "snowball",
+   "direct-connect"
+  ]
+ },
+ {
+  "id": 10748,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "dms",
+   "kinesis-data-streams",
+   "lambda",
+   "sns",
+   "eventbridge"
+  ]
+ },
+ {
+  "id": 10749,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "kinesis-data-streams",
+   "kinesis-data-analytics",
+   "kinesis-data-firehose",
+   "athena",
+   "quicksight",
+   "sqs"
+  ]
+ },
+ {
+  "id": 10750,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "iam"
+  ]
+ },
+ {
+  "id": 10751,
+  "domain": 1,
+  "difficulty": 2,
+  "services": [
+   "s3",
+   "kms",
+   "cloudhsm"
+  ]
+ },
+ {
+  "id": 10752,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "transit-gateway",
+   "vpc"
+  ]
+ },
+ {
+  "id": 10753,
+  "domain": 3,
+  "difficulty": 3,
+  "services": [
+   "efs",
+   "ec2"
+  ]
+ },
+ {
+  "id": 10754,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "ebs",
+   "ec2",
+   "cloudformation"
+  ]
+ },
+ {
+  "id": 10755,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "eks",
+   "ec2-auto-scaling",
+   "fargate",
+   "lambda",
+   "cloudwatch"
+  ]
+ },
+ {
+  "id": 10756,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "ec2"
+  ]
+ },
+ {
+  "id": 10757,
+  "domain": 4,
+  "difficulty": 2,
+  "services": [
+   "api-gateway",
+   "lambda",
+   "aurora",
+   "elb"
+  ]
+ },
+ {
+  "id": 10758,
+  "domain": 2,
+  "difficulty": 2,
+  "services": [
+   "elasticache"
+  ]
+ },
+ {
+  "id": 10759,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "elb",
+   "global-accelerator",
+   "lambda"
+  ]
+ },
+ {
+  "id": 10760,
+  "domain": 4,
+  "difficulty": 1,
+  "services": [
+   "vpc",
+   "nat-gateway",
+   "direct-connect"
+  ]
+ },
+ {
+  "id": 10761,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "ec2"
+  ]
+ },
+ {
+  "id": 10762,
+  "domain": 3,
+  "difficulty": 1,
+  "services": [
+   "ec2-auto-scaling",
+   "s3",
+   "route-53",
+   "cloudfront"
+  ]
+ },
+ {
+  "id": 10763,
+  "domain": 3,
+  "difficulty": 2,
+  "services": [
+   "site-to-site-vpn",
+   "transit-gateway",
+   "global-accelerator",
+   "s3"
+  ]
+ },
+ {
+  "id": 10764,
+  "domain": 2,
+  "difficulty": 3,
+  "services": [
+   "route-53",
+   "elb"
+  ]
+ },
+ {
+  "id": 10765,
+  "domain": 2,
+  "difficulty": 1,
+  "services": [
+   "amazon-mq",
+   "sns",
+   "kinesis-data-streams",
+   "sqs"
+  ]
+ }
+]

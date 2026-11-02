@@ -1,0 +1,664 @@
+[
+  {
+    "id": 11101,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "kinesis-data-streams",
+      "lambda"
+    ]
+  },
+  {
+    "id": 11102,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "kinesis-data-streams",
+      "fargate",
+      "ecs",
+      "lambda",
+      "step-functions"
+    ]
+  },
+  {
+    "id": 11103,
+    "domain": 2,
+    "difficulty": 3,
+    "services": [
+      "mgn",
+      "ec2",
+      "ec2-auto-scaling",
+      "drs"
+    ]
+  },
+  {
+    "id": 11104,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "rds"
+    ]
+  },
+  {
+    "id": 11105,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "s3",
+      "cloudfront",
+      "global-accelerator"
+    ]
+  },
+  {
+    "id": 11106,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "elasticache",
+      "dax"
+    ]
+  },
+  {
+    "id": 11107,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "dynamodb",
+      "dax",
+      "elasticache"
+    ]
+  },
+  {
+    "id": 11108,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "s3"
+    ]
+  },
+  {
+    "id": 11109,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "efs",
+      "s3"
+    ]
+  },
+  {
+    "id": 11110,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "ebs",
+      "s3",
+      "ec2",
+      "s3-glacier"
+    ]
+  },
+  {
+    "id": 11111,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "cloudfront",
+      "aurora",
+      "elb",
+      "ec2-auto-scaling",
+      "global-accelerator",
+      "shield",
+      "direct-connect"
+    ]
+  },
+  {
+    "id": 11112,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "vpc-endpoint",
+      "s3",
+      "dynamodb",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11113,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "elb",
+      "ec2-auto-scaling",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11114,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "ec2"
+    ]
+  },
+  {
+    "id": 11115,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "redshift",
+      "s3",
+      "athena"
+    ]
+  },
+  {
+    "id": 11116,
+    "domain": 2,
+    "difficulty": 3,
+    "services": [
+      "ec2",
+      "elb",
+      "ec2-auto-scaling",
+      "aws-backup",
+      "ecs",
+      "fargate"
+    ]
+  },
+  {
+    "id": 11117,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "rds"
+    ]
+  },
+  {
+    "id": 11118,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "organizations",
+      "iam"
+    ]
+  },
+  {
+    "id": 11119,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "directory-service",
+      "transit-gateway"
+    ]
+  },
+  {
+    "id": 11120,
+    "domain": 2,
+    "difficulty": 3,
+    "services": [
+      "ec2-auto-scaling",
+      "sqs",
+      "elb",
+      "dynamodb",
+      "eventbridge",
+      "kinesis-data-streams"
+    ]
+  },
+  {
+    "id": 11121,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "route-53",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11122,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "ec2",
+      "lambda",
+      "emr",
+      "elb"
+    ]
+  },
+  {
+    "id": 11123,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "cloudfront",
+      "s3"
+    ]
+  },
+  {
+    "id": 11124,
+    "domain": 2,
+    "difficulty": 3,
+    "services": [
+      "ec2",
+      "ec2-auto-scaling",
+      "elb",
+      "iam"
+    ]
+  },
+  {
+    "id": 11125,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "aws-budgets",
+      "ec2",
+      "fargate",
+      "lambda",
+      "quicksight",
+      "cloudwatch"
+    ]
+  },
+  {
+    "id": 11126,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "s3",
+      "rds"
+    ]
+  },
+  {
+    "id": 11127,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "elb",
+      "ec2",
+      "ec2-auto-scaling",
+      "vpc-endpoint"
+    ]
+  },
+  {
+    "id": 11128,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "s3",
+      "cloudtrail",
+      "eventbridge",
+      "lambda"
+    ]
+  },
+  {
+    "id": 11129,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "aws-budgets",
+      "control-tower",
+      "service-catalog",
+      "cost-explorer",
+      "lambda",
+      "aws-config",
+      "iam"
+    ]
+  },
+  {
+    "id": 11130,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "guardduty",
+      "ec2",
+      "shield",
+      "waf",
+      "firewall-manager"
+    ]
+  },
+  {
+    "id": 11131,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "ec2"
+    ]
+  },
+  {
+    "id": 11132,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "ec2"
+    ]
+  },
+  {
+    "id": 11133,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "cloudfront",
+      "s3"
+    ],
+    "note": "Đáp án dùng origin access identity (OAI). AWS hiện khuyến nghị origin access control (OAC) thay cho OAI (OAI là cơ chế cũ); đáp án vẫn đúng về ý nhưng thông tin hơi lỗi thời."
+  },
+  {
+    "id": 11134,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "ec2"
+    ]
+  },
+  {
+    "id": 11135,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "rds"
+    ]
+  },
+  {
+    "id": 11136,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "ec2",
+      "ebs"
+    ]
+  },
+  {
+    "id": 11137,
+    "domain": 1,
+    "difficulty": 2,
+    "services": [
+      "firewall-manager",
+      "shield",
+      "vpc",
+      "waf",
+      "guardduty",
+      "inspector",
+      "organizations"
+    ]
+  },
+  {
+    "id": 11138,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "nat-gateway",
+      "vpc",
+      "ec2"
+    ]
+  },
+  {
+    "id": 11139,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "control-tower",
+      "resource-access-manager",
+      "vpc",
+      "service-catalog",
+      "aws-config",
+      "organizations"
+    ]
+  },
+  {
+    "id": 11140,
+    "domain": 2,
+    "difficulty": 1,
+    "services": [
+      "ec2-auto-scaling",
+      "elb",
+      "rds",
+      "route-53",
+      "ec2"
+    ]
+  },
+  {
+    "id": 11141,
+    "domain": 2,
+    "difficulty": 2,
+    "services": [
+      "elb",
+      "ec2"
+    ]
+  },
+  {
+    "id": 11142,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "ec2"
+    ]
+  },
+  {
+    "id": 11143,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "site-to-site-vpn",
+      "direct-connect",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11144,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "vpc-endpoint",
+      "s3",
+      "nat-gateway",
+      "vpc",
+      "elb"
+    ]
+  },
+  {
+    "id": 11145,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "waf",
+      "shield",
+      "elb",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11146,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "aurora",
+      "dynamodb",
+      "elasticache"
+    ]
+  },
+  {
+    "id": 11147,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "amazon-mq",
+      "sqs",
+      "sns"
+    ]
+  },
+  {
+    "id": 11148,
+    "domain": 4,
+    "difficulty": 3,
+    "services": [
+      "ec2",
+      "lambda",
+      "fargate",
+      "sagemaker"
+    ]
+  },
+  {
+    "id": 11149,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "aws-batch",
+      "step-functions",
+      "s3",
+      "lambda",
+      "ec2",
+      "eks",
+      "sqs"
+    ]
+  },
+  {
+    "id": 11150,
+    "domain": 2,
+    "difficulty": 1,
+    "services": [
+      "sqs"
+    ]
+  },
+  {
+    "id": 11151,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "s3",
+      "kms"
+    ]
+  },
+  {
+    "id": 11152,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "s3"
+    ]
+  },
+  {
+    "id": 11153,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "sqs"
+    ]
+  },
+  {
+    "id": 11154,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "iam-identity-center",
+      "rds",
+      "s3",
+      "lambda",
+      "iam",
+      "organizations"
+    ]
+  },
+  {
+    "id": 11155,
+    "domain": 4,
+    "difficulty": 1,
+    "services": [
+      "site-to-site-vpn",
+      "direct-connect"
+    ]
+  },
+  {
+    "id": 11156,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "iam",
+      "s3"
+    ]
+  },
+  {
+    "id": 11157,
+    "domain": 3,
+    "difficulty": 3,
+    "services": [
+      "direct-connect",
+      "s3",
+      "vpc-endpoint",
+      "transit-gateway"
+    ]
+  },
+  {
+    "id": 11158,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "sqs",
+      "s3",
+      "ec2"
+    ]
+  },
+  {
+    "id": 11159,
+    "domain": 1,
+    "difficulty": 3,
+    "services": [
+      "cognito",
+      "s3",
+      "vpc-endpoint",
+      "lambda"
+    ]
+  },
+  {
+    "id": 11160,
+    "domain": 4,
+    "difficulty": 3,
+    "services": [
+      "s3",
+      "s3-glacier"
+    ],
+    "note": "Giải thích gốc nói S3 Glacier Instant Retrieval đắt hơn mỗi GB so với Standard-IA, nhưng thực tế GIR có giá lưu trữ thấp hơn (khoảng 0,004 so với 0,0125 USD/GB-tháng), chỉ phí truy xuất cao hơn. Với dữ liệu hiếm truy cập thì GIR có thể rẻ hơn, nên đáp án Standard-IA là tranh cãi."
+  },
+  {
+    "id": 11161,
+    "domain": 3,
+    "difficulty": 1,
+    "services": [
+      "transit-gateway",
+      "direct-connect",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11162,
+    "domain": 3,
+    "difficulty": 2,
+    "services": [
+      "ebs",
+      "ec2"
+    ]
+  },
+  {
+    "id": 11163,
+    "domain": 4,
+    "difficulty": 2,
+    "services": [
+      "ec2",
+      "vpc"
+    ]
+  },
+  {
+    "id": 11164,
+    "domain": 1,
+    "difficulty": 1,
+    "services": [
+      "vpc",
+      "ec2"
+    ],
+    "note": "Đề bài giống hệt câu 10528 (Main 5, file pt3_1, vị trí 28); chỉ khác thứ tự lựa chọn. Đáp án đúng (Security Group stateful, network ACL stateless) và giải thích hai bên nhất quán, không bên nào sai."
+  },
+  {
+    "id": 11165,
+    "domain": 2,
+    "difficulty": 3,
+    "services": [
+      "aurora",
+      "dms",
+      "lambda",
+      "rds"
+    ]
+  }
+]
