@@ -1,4 +1,4 @@
-import { expandMainMetas } from './main-meta';
+import { expandMainMetas, expandTwins } from './main-meta';
 
 describe('expandMainMetas', () => {
   it('câu trùng dùng lại meta (kể cả note) của câu gốc, đổi id', () => {
@@ -12,5 +12,20 @@ describe('expandMainMetas', () => {
       { id: 10205, domain: 3 as const, difficulty: 1 as const, services: [] },
     ];
     expect(expandMainMetas(metas, [[10101, 10205], [10102, 10206]])).toEqual(metas);
+  });
+});
+
+describe('expandTwins', () => {
+  it('copies a QuestionVi onto its twin id', () => {
+    const vi = { id: 10101, stemVi: 'x', promptVi: 'p', options: [], explanationVi: 'e', keyHint: 'k' };
+    const out = expandTwins([vi], [[10101, 10201]]);
+    expect(out.map((v) => v.id)).toEqual([10101, 10201]);
+    expect(out[1].stemVi).toBe('x');
+  });
+
+  it('does not overwrite a twin already present', () => {
+    const a = { id: 10101, stemVi: 'a', promptVi: '', options: [], explanationVi: '', keyHint: '' };
+    const b = { ...a, id: 10201, stemVi: 'b' };
+    expect(expandTwins([a, b], [[10101, 10201]])).toEqual([a, b]);
   });
 });
