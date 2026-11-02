@@ -5,7 +5,7 @@ import { writeJson } from './lib/io';
 import { parseDocx } from './lib/parse-docx';
 import { parseMarkdown } from './lib/parse-md';
 
-const SOURCE_DIR = 'Question-Doc';
+const SOURCE_DIR = 'question-doc-sub';
 const OUTPUT = 'data/questions.json';
 
 const questions: Question[] = [];
