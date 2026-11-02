@@ -62,7 +62,8 @@ Khi làm Thi thử, người dùng hay bí ở một câu và muốn hỏi ngay 
   - Trong lúc chờ: chỉ báo đang trả lời và khóa nút gửi. Khi lỗi (mạng, hết quota, App Check từ chối): hiện thông báo tiếng Việt ngắn trong popup và cho gửi lại.
 - **Lịch sử chat:** lưu trong Firebase Realtime Database của người dùng tại `users/{uid}/aiChats/{attemptId}/{qid}`, dạng `{ json: string, updatedAt: number }`. `json` là mảng tin nhắn `{ role: 'user' | 'model', text }`.
   - Ghi lại sau mỗi lượt hỏi đáp hoàn chỉnh, tức khi Gemini trả lời xong.
-  - Mở popup thì nạp lịch sử của câu đó và tiếp tục chat. Lịch sử được đưa vào `startChat({ history })`, nên Gemini nhớ cả các lượt cũ, kể cả sau khi tải lại trang hay mở trên máy khác.
+  - Mở popup thì nạp lịch sử của câu đó và tiếp tục chat. Lịch sử được đưa vào `startChat({ history })`, nên Gemini nhớ cả các lượt cũ, kể cả sau khi tải lại trang hay mở trên máy khác. Ngữ cảnh câu hỏi (system instruction) luôn được dựng mới, không lấy từ lịch sử. Nhãn A/B/C trong lịch sử luôn khớp với màn hình vì `optionOrder` cố định trong một lượt thi.
+  - Chỉ gửi cho model tối đa 40 tin nhắn gần nhất của lịch sử; giao diện vẫn hiện đủ *(quyết định của tôi)*.
   - Cập nhật `database.rules.json`: thêm nhánh `aiChats/$attemptId/$qid` có `.validate` tương tự `attempts`, với giới hạn độ dài `json`, ví dụ dưới 200000 ký tự.
   - Đăng xuất thì popup đóng và không còn đọc được lịch sử, vì lịch sử nằm theo `uid`.
   - Phần đọc/ghi lịch sử nằm trong adapter Firebase (giữ quy tắc chỉ adapter import SDK). Interface thuần, ví dụ `ChatHistoryStore.load(uid, attemptId, qid)` và `save(...)`, có bản giả để test.
