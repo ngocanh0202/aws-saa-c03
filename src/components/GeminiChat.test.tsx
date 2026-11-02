@@ -148,6 +148,31 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.chats.saved[0].messages).toHaveLength(4);
   });
 
+  it('lịch sử cũ không xen kẽ (lượt lỗi trước đó) vẫn chat được, không bị khóa', async () => {
+    const s = setup({
+      history: [
+        { role: 'user', text: 'Hỏi lần 1' },
+        { role: 'user', text: 'Hỏi lần 2' },
+        { role: 'model', text: 'Trả lời' },
+      ],
+    });
+    s.ai.strictHistory = true;
+    s.ai.reply = ['Vì ', 'S3'];
+    const dialog = await openChat();
+    await ask(dialog);
+    await waitFor(() => expect(within(dialog).getByText('Vì S3')).toBeInTheDocument());
+    expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled();
+  });
+
+  it('startChat ném lỗi: báo lỗi và mở khóa ô nhập', async () => {
+    const s = setup();
+    s.ai.startError = new Error("Content with role 'user' can't follow 'user'");
+    const dialog = await openChat();
+    await ask(dialog);
+    await waitFor(() => expect(within(dialog).getByText('Gemini chưa trả lời được, thử gửi lại nhé.')).toBeInTheDocument());
+    expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled();
+  });
+
   it('lỗi tải lịch sử vẫn chat được', async () => {
     const s = setup({ loadError: new Error('denied') });
     s.ai.reply = ['Vì ', 'S3'];

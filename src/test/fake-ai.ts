@@ -1,3 +1,4 @@
+import { prepareHistory } from '../ai/prompt';
 import type { AiClient, ChatHistoryStore, ChatMessage } from '../ai/types';
 
 export interface FakeAi extends AiClient {
@@ -9,6 +10,13 @@ export interface FakeAi extends AiClient {
   /** true: send() chờ release() rồi mới trả đoạn đầu (để thử trạng thái đang trả lời). */
   hold: boolean;
   release(): void;
+  /**
+   * true: như adapter thật, history được qua prepareHistory rồi kiểm tra như Firebase SDK
+   * (không xen kẽ user/model hoặc bắt đầu bằng model thì startChat ném lỗi).
+   */
+  strictHistory: boolean;
+  /** Đặt thì startChat() ném lỗi này ngay (đồng bộ). */
+  startError?: Error;
 }
 
 export function fakeAi(): FakeAi {
@@ -17,12 +25,21 @@ export function fakeAi(): FakeAi {
     calls: [],
     reply: ['ok'],
     hold: false,
+    strictHistory: false,
     release() {
       const list = waiting;
       waiting = [];
       for (const r of list) r();
     },
     startChat(systemPrompt, history) {
+      if (ai.startError) throw ai.startError;
+      if (ai.strictHistory) {
+        const sent = prepareHistory(history);
+        if (sent[0]?.role === 'model') throw new Error("First Content should be with role 'user'");
+        sent.forEach((msg, i) => {
+          if (i > 0 && sent[i - 1].role === msg.role) throw new Error(`Content with role '${msg.role}' can't follow '${msg.role}'`);
+        });
+      }
       const call = { systemPrompt, history, sent: [] as string[] };
       ai.calls.push(call);
       return {

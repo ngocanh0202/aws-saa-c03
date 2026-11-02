@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
-import { buildSystemPrompt, trimHistory } from '../ai/prompt';
+import { buildSystemPrompt } from '../ai/prompt';
 import type { AiChat, AiClient, ChatHistoryStore, ChatMessage } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import type { Question } from '../data/types';
@@ -137,10 +137,11 @@ function ChatDialog({
     setSendFailed(false);
     setBusy(true);
     setMessages(asked);
-    // Một phiên chat cho mỗi lần mở popup; mô hình chỉ nhận các tin gần nhất.
-    const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), trimHistory(history)));
     let reply = '';
     try {
+      // Một phiên chat cho mỗi lần mở popup; adapter tự cắt và chuẩn hóa history.
+      // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
+      const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), history));
       for await (const chunk of chat.send(text)) {
         if (!alive.current) return;
         if (!chunk) continue;

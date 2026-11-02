@@ -1,7 +1,7 @@
 import type { FirebaseApp } from 'firebase/app';
 import { GoogleAIBackend, getAI, getGenerativeModel } from 'firebase/ai';
 import type { AiClient } from './types';
-import { trimHistory } from './prompt';
+import { prepareHistory } from './prompt';
 
 /** Duy nhất file này import firebase/ai. */
 export function createGeminiClient(app: FirebaseApp, model: string): AiClient {
@@ -11,7 +11,7 @@ export function createGeminiClient(app: FirebaseApp, model: string): AiClient {
     startChat(systemPrompt, history) {
       const session = generative.startChat({
         systemInstruction: systemPrompt,
-        history: trimHistory(history).map((m) => ({ role: m.role, parts: [{ type: 'text', text: m.text }] })),
+        history: prepareHistory(history).map((m) => ({ role: m.role, parts: [{ type: 'text', text: m.text }] })),
       });
       return {
         async *send(text) {

@@ -40,3 +40,25 @@ export function buildSystemPrompt(question: Question, order: string[]): string {
 export function trimHistory(messages: ChatMessage[], max = HISTORY_LIMIT): ChatMessage[] {
   return messages.length > max ? messages.slice(messages.length - max) : messages;
 }
+
+/**
+ * Firebase SDK từ chối history không xen kẽ user/model hoặc bắt đầu bằng model (lượt trước lỗi
+ * để lại tin user không có trả lời, hay cắt 40 tin rơi đúng vào tin model). Bỏ các tin model đứng
+ * đầu; nhiều tin cùng vai liền nhau thì chỉ giữ tin cuối; bỏ tin user cuối chưa có trả lời (tin
+ * mới gửi cũng là user, sẽ thành hai tin user liền nhau).
+ */
+export function normalizeHistory(messages: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = [];
+  for (const m of messages) {
+    if (out.length === 0 && m.role === 'model') continue;
+    if (out.length > 0 && out[out.length - 1].role === m.role) out[out.length - 1] = m;
+    else out.push(m);
+  }
+  if (out[out.length - 1]?.role === 'user') out.pop();
+  return out;
+}
+
+/** History gửi cho mô hình: cắt còn các tin gần nhất rồi chuẩn hóa. */
+export function prepareHistory(messages: ChatMessage[]): ChatMessage[] {
+  return normalizeHistory(trimHistory(messages));
+}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeMainQuestion, makeQuestion } from '../test/fixtures';
-import { buildSystemPrompt, trimHistory } from './prompt';
+import { buildSystemPrompt, normalizeHistory, trimHistory } from './prompt';
 import type { ChatMessage } from './types';
 
 describe('buildSystemPrompt', () => {
@@ -36,5 +36,31 @@ describe('trimHistory', () => {
     expect(out).toHaveLength(40);
     expect(out[0].text).toBe('m6');
     expect(trimHistory(msgs(3))).toEqual(msgs(3));
+  });
+});
+
+describe('normalizeHistory', () => {
+  const u = (text: string): ChatMessage => ({ role: 'user', text });
+  const m = (text: string): ChatMessage => ({ role: 'model', text });
+
+  it('hai tin user liền nhau: giữ tin sau', () => {
+    expect(normalizeHistory([u('a'), u('b'), m('c')])).toEqual([u('b'), m('c')]);
+  });
+
+  it('bỏ tin model đứng đầu', () => {
+    expect(normalizeHistory([m('x'), u('a'), m('b')])).toEqual([u('a'), m('b')]);
+  });
+
+  it('hai tin model liền nhau: giữ tin sau', () => {
+    expect(normalizeHistory([u('a'), m('b'), m('c')])).toEqual([u('a'), m('c')]);
+  });
+
+  it('bỏ tin user cuối chưa có trả lời', () => {
+    expect(normalizeHistory([u('a'), m('b'), u('c')])).toEqual([u('a'), m('b')]);
+  });
+
+  it('xen kẽ đúng thì giữ nguyên', () => {
+    const msgs = [u('a'), m('b'), u('c'), m('d')];
+    expect(normalizeHistory(msgs)).toEqual(msgs);
   });
 });
