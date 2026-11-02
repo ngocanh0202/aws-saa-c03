@@ -233,3 +233,67 @@ input[type='search'] { width: 100%; padding: 10px 12px; border-radius: 8px; bord
 /* Trang lịch sử */
 td.is-pass { color: var(--ok); font-weight: 600; }
 td.is-fail { color: var(--bad); font-weight: 600; }
+
+/* Trang thi: khung bên trái (nút điều hướng + danh sách câu), nội dung câu bên phải */
+.page.exam { max-width: 1200px; }
+.exam__layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
+.exam__side { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+.exam__side-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 0.9em; }
+.exam__side .exam__actions { flex-wrap: wrap; margin: 10px 0 12px; }
+.exam__side .exam__actions button { flex: 1 1 auto; }
+.exam__side .navgrid { margin-top: 0; grid-template-columns: repeat(5, 1fr); }
+.exam__side-close, .exam__backdrop, .exam-fab { display: none; }
+.exam .dialog { z-index: 30; }
+
+@media (max-width: 900px) {
+  .exam__layout { grid-template-columns: 1fr; }
+  .exam__side {
+    position: fixed; top: 0; bottom: 0; left: 0; z-index: 20; width: min(320px, 86vw); max-height: none;
+    border-radius: 0 var(--radius) var(--radius) 0; box-shadow: 4px 0 24px rgb(0 0 0 / 0.25);
+    transform: translateX(-105%); visibility: hidden; transition: transform 0.2s ease, visibility 0.2s;
+  }
+  .exam__side.is-open { transform: none; visibility: visible; }
+  .exam__side-close { display: inline-block; }
+  .exam__backdrop { display: block; position: fixed; inset: 0; z-index: 15; background: rgb(0 0 0 / 0.4); }
+  .exam-fab {
+    display: flex; align-items: center; justify-content: center; position: fixed; z-index: 25;
+    width: 56px; height: 56px; padding: 0; border-radius: 50%; border: none;
+    background: var(--accent); color: var(--accent-text); font-weight: 700; font-size: 0.85em;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.3); touch-action: none; user-select: none; cursor: grab;
+  }
+  .exam-fab:active { cursor: grabbing; }
+}
+
+/* Nội dung HTML của bộ main: link/URL dài (vd "via - https://docs.aws…") tự xuống dòng, không làm tràn khung */
+.guide, .qcard { min-width: 0; overflow-wrap: anywhere; }
+.guide__orig a, .qcard__stem a, .opt__text--html a { overflow-wrap: anywhere; word-break: break-word; }
+.guide__orig pre, .qcard__stem pre, .opt__text--html pre { max-width: 100%; overflow-x: auto; }
+.guide__orig code, .qcard__stem code, .opt__text--html code { overflow-wrap: anywhere; }
+.guide__orig table { display: block; max-width: 100%; overflow-x: auto; }
+/* Nút "Larger image" sót lại từ trang gốc (icon không tồn tại) */
+.guide__orig button, .qcard__stem button, .opt__text--html button { display: none; }
+.review-item { min-width: 0; }
+
+/* Popup ghi chú service: phủ toàn màn hình như một trang riêng */
+button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
+.service-modal { position: fixed; inset: 0; z-index: 40; display: flex; flex-direction: column; background: var(--bg); color: var(--text); animation: service-modal-in 0.18s ease-out; }
+.service-modal__bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; background: var(--surface); border-bottom: 2px solid var(--brand-bar); }
+.service-modal__title { min-width: 0; }
+.service-modal__title h1 { margin: 0; font-size: 1.25em; overflow-wrap: anywhere; }
+.service-modal__title .hint { margin: 0; }
+.service-modal__body { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.service-modal__close {
+  flex: none; padding: 8px 16px; font-weight: 700; border-radius: 999px;
+  background: var(--accent); color: var(--accent-text); border-color: var(--accent);
+  animation: service-close-pulse 0.9s ease-out 3;
+}
+.service-modal__close:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.service-modal__close:focus-visible { outline: 3px solid var(--selected); outline-offset: 2px; }
+@keyframes service-modal-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes service-close-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 70%, transparent); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .service-modal, .service-modal__close { animation: none; }
+}

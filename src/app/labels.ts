@@ -15,6 +15,11 @@ export interface ExamLabels {
   cancel: string;
   guide: string;
   nav: string;
+  /** Khung bên trái (danh sách câu + nút điều hướng); trên điện thoại mở bằng nút nổi. */
+  panel: string;
+  openPanel: string;
+  closePanel: string;
+  progress: (answered: number, total: number, flagged: number) => string;
 }
 
 export const EXAM_LABELS: Record<Mode, ExamLabels> = {
@@ -33,6 +38,10 @@ export const EXAM_LABELS: Record<Mode, ExamLabels> = {
     cancel: 'Return to exam',
     guide: '',
     nav: 'Question navigation',
+    panel: 'Exam panel',
+    openPanel: 'Show questions',
+    closePanel: 'Close',
+    progress: (a, n, f) => `${a}/${n} answered · ${f} flagged`,
   },
   practice: {
     question: (i, n) => `Câu ${i}/${n}`,
@@ -49,5 +58,9 @@ export const EXAM_LABELS: Record<Mode, ExamLabels> = {
     cancel: 'Làm tiếp',
     guide: 'Xem hướng dẫn',
     nav: 'Danh sách câu',
+    panel: 'Bảng điều khiển bài thi',
+    openPanel: 'Hiện danh sách câu',
+    closePanel: 'Đóng',
+    progress: (a, n, f) => `Đã làm ${a}/${n} · đánh dấu ${f}`,
   },
 };

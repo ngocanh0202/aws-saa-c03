@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
 import { EXAM_LABELS } from '../app/labels';
+import { DraggableFab } from '../components/DraggableFab';
 import { GuidePanel } from '../components/GuidePanel';
 import { NavGrid } from '../components/NavGrid';
 import { QuestionCard } from '../components/QuestionCard';
@@ -18,6 +19,14 @@ export function ExamPage() {
   const attempt = store.get(id);
   const [index, setIndex] = useState(0);
   const [confirming, setConfirming] = useState(false);
+  // Điện thoại: khung bên trái là ngăn kéo, mở bằng nút nổi; máy tính luôn hiện.
+  const [panelOpen, setPanelOpen] = useState(false);
+  useEffect(() => {
+    if (!panelOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPanelOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [panelOpen]);
 
   const update = useCallback(
     (next: Attempt) => {
@@ -60,38 +69,62 @@ export function ExamPage() {
         </button>
       </header>
 
-      <QuestionCard
-        question={question}
-        order={aq.optionOrder}
-        selected={selected}
-        reveal={revealed}
-        showOrigLabels={revealed && !bank.vi.has(aq.qid) && !question.html}
-        chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
-        onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
-      />
+      <div className="exam__layout">
+        <aside id="exam-panel" className={`exam__side${panelOpen ? ' is-open' : ''}`} aria-label={t.panel}>
+          <div className="exam__side-head">
+            <span>{t.progress(attempt.questions.length - unanswered, attempt.questions.length, attempt.flagged.length)}</span>
+            <button type="button" className="icon-btn exam__side-close" aria-label={t.closePanel} onClick={() => setPanelOpen(false)}>
+              ✕
+            </button>
+          </div>
+          <div className="exam__actions">
+            <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)}>
+              {t.prev}
+            </button>
+            <button type="button" aria-pressed={flagged} onClick={() => update(toggleFlag(attempt, aq.qid))}>
+              {flagged ? t.unflag : t.flag}
+            </button>
+            <button type="button" disabled={index === attempt.questions.length - 1} onClick={() => setIndex(index + 1)}>
+              {t.next}
+            </button>
+          </div>
+          <NavGrid
+            attempt={attempt}
+            current={index}
+            onJump={(i) => {
+              setIndex(i);
+              setPanelOpen(false);
+            }}
+            label={t.nav}
+          />
+        </aside>
 
-      {attempt.mode === 'practice' &&
-        (revealed ? (
-          <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
-        ) : (
-          <button type="button" className="btn-guide" onClick={() => update(markGuideOpened(attempt, aq.qid))}>
-            {t.guide}
-          </button>
-        ))}
+        <div className="exam__content">
+          <QuestionCard
+            question={question}
+            order={aq.optionOrder}
+            selected={selected}
+            reveal={revealed}
+            showOrigLabels={revealed && !bank.vi.has(aq.qid) && !question.html}
+            chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
+            onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
+          />
 
-      <div className="exam__actions">
-        <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)}>
-          {t.prev}
-        </button>
-        <button type="button" aria-pressed={flagged} onClick={() => update(toggleFlag(attempt, aq.qid))}>
-          {flagged ? t.unflag : t.flag}
-        </button>
-        <button type="button" disabled={index === attempt.questions.length - 1} onClick={() => setIndex(index + 1)}>
-          {t.next}
-        </button>
+          {attempt.mode === 'practice' &&
+            (revealed ? (
+              <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
+            ) : (
+              <button type="button" className="btn-guide" onClick={() => update(markGuideOpened(attempt, aq.qid))}>
+                {t.guide}
+              </button>
+            ))}
+        </div>
       </div>
 
-      <NavGrid attempt={attempt} current={index} onJump={setIndex} label={t.nav} />
+      {panelOpen && <div className="exam__backdrop" onClick={() => setPanelOpen(false)} />}
+      <DraggableFab label={panelOpen ? t.closePanel : t.openPanel} expanded={panelOpen} controls="exam-panel" onClick={() => setPanelOpen((o) => !o)}>
+        {panelOpen ? '✕' : `${index + 1}/${attempt.questions.length}`}
+      </DraggableFab>
 
       {confirming && (
         <div className="dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
