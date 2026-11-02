@@ -11,7 +11,7 @@ export function createGeminiClient(app: FirebaseApp, model: string): AiClient {
     startChat(systemPrompt, history) {
       const session = generative.startChat({
         systemInstruction: systemPrompt,
-        history: trimHistory(history).map((m) => ({ role: m.role, parts: [{ text: m.text }] })),
+        history: trimHistory(history).map((m) => ({ role: m.role, parts: [{ type: 'text', text: m.text }] })),
       });
       return {
         async *send(text) {
