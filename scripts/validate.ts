@@ -32,6 +32,7 @@ const main = validateMain({
   main: readJsonIfExists<MainFile | null>('data/main.json', null),
   rebuilt: buildMainFromDir('question-doc-main'),
   metas: readJsonDir<QuestionMeta>('data/main-meta'),
+  vis: readJsonDir<QuestionVi>('data/main-vi'),
   registryIds: new Set(readJsonIfExists<ServiceRef[]>('data/service-registry.json', []).map((s) => s.id)),
 });
 report.errors.push(...main.errors);

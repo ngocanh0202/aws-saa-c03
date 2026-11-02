@@ -1,6 +1,7 @@
 import { expandMainMetas } from '../../src/data/main-meta';
-import type { MainFile, QuestionMeta } from '../../src/data/types';
+import type { MainFile, QuestionMeta, QuestionVi } from '../../src/data/types';
 import type { ValidationReport } from './validate';
+import { validateVi } from './validate-vi';
 
 export interface MainValidationInput {
   /** data/main.json đang có trong repo (null nếu chưa sinh). */
@@ -8,6 +9,8 @@ export interface MainValidationInput {
   /** data/main.json sinh lại từ question-doc-main ngay lúc kiểm tra. */
   rebuilt: MainFile;
   metas: QuestionMeta[];
+  /** data/main-vi: hướng dẫn tiếng Việt, chỉ cho câu gốc (câu trùng dùng lại qua expandTwins). */
+  vis: QuestionVi[];
   registryIds: Set<string>;
 }
 
@@ -35,5 +38,15 @@ export function validateMain(input: MainValidationInput): ValidationReport {
   const covered = new Set(expandMainMetas(input.metas, main.twins).map((m) => m.id));
   const missing = main.questions.filter((q) => !covered.has(q.id)).map((q) => q.id);
   if (missing.length > 0) errors.push(`main-meta: thiếu meta cho ${missing.length} câu (đầu tiên: ${missing.slice(0, 5).join(', ')})`);
+  const twinIds = new Set(main.twins.map(([, t]) => t));
+  const originals = main.questions.filter((q) => !twinIds.has(q.id));
+  const vis: QuestionVi[] = [];
+  for (const v of input.vis) {
+    if (twinIds.has(v.id)) errors.push(`main-vi: câu ${v.id} là câu trùng, chỉ soạn cho câu gốc`);
+    else vis.push(v);
+  }
+  const vi = validateVi(originals, vis);
+  errors.push(...vi.errors.map((m) => `main-${m}`));
+  warnings.push(...vi.warnings.map((m) => `main-${m}`));
   return { errors, warnings };
 }
