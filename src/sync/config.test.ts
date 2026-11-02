@@ -20,6 +20,19 @@ describe('readFirebaseConfig', () => {
     });
   });
 
+  it('đọc VITE_RECAPTCHA_SITE_KEY và VITE_GEMINI_MODEL khi có', () => {
+    const cfg = readFirebaseConfig({ ...full, VITE_RECAPTCHA_SITE_KEY: 'rc', VITE_GEMINI_MODEL: 'gemini-x' });
+    expect(cfg?.recaptchaSiteKey).toBe('rc');
+    expect(cfg?.geminiModel).toBe('gemini-x');
+  });
+
+  it('thiếu hai biến này vẫn trả cấu hình, trường là undefined', () => {
+    const cfg = readFirebaseConfig({ ...full, VITE_RECAPTCHA_SITE_KEY: '', VITE_GEMINI_MODEL: '' });
+    expect(cfg).not.toBeNull();
+    expect(cfg?.recaptchaSiteKey).toBeUndefined();
+    expect(cfg?.geminiModel).toBeUndefined();
+  });
+
   it('thiếu một biến thì null', () => {
     const { VITE_FIREBASE_APP_ID: _omit, ...rest } = full;
     expect(readFirebaseConfig(rest)).toBeNull();

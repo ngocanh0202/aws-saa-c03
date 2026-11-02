@@ -61,3 +61,11 @@ Lưu ý: cấu hình web của Firebase (kể cả `apiKey`) không phải bí m
 5. Kiểm tra tải lại khi mất mạng: ở trình duyệt 1, đang làm dở lượt Thi thật thì ngắt mạng (DevTools → Network → **Offline**), tải lại trang, chọn thêm vài đáp án, rồi bật mạng lại. Không được hiện hộp thoại "Máy này có dữ liệu chưa đăng nhập", và các đáp án vừa chọn phải hiện ở trình duyệt 2.
 
 Nếu header báo "Không đọc được dữ liệu trên cloud…" thì rules ở bước 3 chưa được publish (Realtime Database đang ở locked mode). Publish rules rồi bấm lại nút đăng nhập.
+
+## Bước 7. Hỏi Gemini trong Thi thử (tùy chọn)
+
+Nút "Hỏi Gemini" chỉ hiện ở chế độ Thi thử khi đã cấu hình Firebase và đã đăng nhập.
+
+1. Firebase console → **Build → AI Logic** (Firebase AI Logic) → **Get started**, chọn **Gemini Developer API** và bật. Model mặc định là `gemini-2.5-flash`; muốn đổi thì đặt `VITE_GEMINI_MODEL`.
+2. Deploy lại `database.rules.json` (đã có nhánh `users/$uid/aiChats` lưu lịch sử chat theo từng câu) ở **Realtime Database → Rules**.
+3. App Check (khuyên dùng để chống lạm dụng quota): tạo khóa **reCAPTCHA Enterprise** cho domain web, đăng ký trong **App Check → Apps → Web** rồi đặt khóa vào `VITE_RECAPTCHA_SITE_KEY` (cả `.env.local` và Variables trên GitHub). Để trống thì không bật App Check. Nên theo dõi quota và đặt ngân sách trong Google Cloud/Firebase console.

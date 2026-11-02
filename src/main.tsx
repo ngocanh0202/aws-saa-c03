@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { AppProvider, type AppDeps } from './app/context';
 import { AppRoutes } from './app/routes';
+import { createGeminiClient } from './ai/gemini';
 import { bank } from './data/load';
 import { randomSeed } from './engine/rng';
 import { createStore, getBrowserStorage } from './storage/storage';
@@ -28,6 +29,8 @@ const deps: AppDeps = {
   newSeed: randomSeed,
   newId: () => crypto.randomUUID(),
   sync,
+  ai: clients ? createGeminiClient(clients.app, config?.geminiModel ?? 'gemini-2.5-flash') : undefined,
+  chats: clients?.chats,
 };
 
 createRoot(document.getElementById('root')!).render(

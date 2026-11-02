@@ -9,6 +9,13 @@
             ".validate": "newData.hasChildren(['json', 'updatedAt']) && newData.child('json').isString() && newData.child('json').val().length < 200000 && newData.child('updatedAt').isNumber()"
           }
         },
+        "aiChats": {
+          "$attemptId": {
+            "$qid": {
+              ".validate": "newData.hasChildren(['json', 'updatedAt']) && newData.child('json').isString() && newData.child('json').val().length < 200000 && newData.child('updatedAt').isNumber()"
+            }
+          }
+        },
         "$other": { ".validate": false }
       }
     }

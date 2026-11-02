@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import type { AiClient, ChatHistoryStore } from '../ai/types';
 import type { Bank } from '../data/bank';
 import type { AttemptStore } from '../storage/storage';
 import type { SyncController } from '../sync/types';
@@ -11,6 +12,10 @@ export interface AppDeps {
   newId: () => string;
   /** Không có khi chưa cấu hình Firebase. */
   sync?: SyncController;
+  /** Chỉ có khi cấu hình Firebase. */
+  ai?: AiClient;
+  /** Chỉ có khi cấu hình Firebase. */
+  chats?: ChatHistoryStore;
 }
 
 const AppContext = createContext<AppDeps | null>(null);

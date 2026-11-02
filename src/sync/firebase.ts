@@ -1,4 +1,5 @@
-import { initializeApp } from 'firebase/app';
+import { type FirebaseApp, initializeApp } from 'firebase/app';
+import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check';
 import {
   GoogleAuthProvider,
   getAuth,
@@ -6,7 +7,8 @@ import {
   signInWithPopup,
   signOut as fbSignOut,
 } from 'firebase/auth';
-import { getDatabase, onValue, ref, set } from 'firebase/database';
+import { get, getDatabase, onValue, ref, set } from 'firebase/database';
+import type { ChatHistoryStore, ChatMessage } from '../ai/types';
 import type { Attempt } from '../engine/attempt';
 import { looksLikeAttempt } from '../storage/storage';
 import type { FirebaseConfig } from './config';
@@ -14,8 +16,20 @@ import type { RemoteSnapshot } from './merge';
 import type { AuthClient, RemoteAttempts, SyncUser } from './types';
 
 /** Duy nhất file này import Firebase SDK. */
-export function createFirebaseClients(config: FirebaseConfig): { auth: AuthClient; remote: RemoteAttempts } {
-  const app = initializeApp(config);
+export function createFirebaseClients(config: FirebaseConfig): {
+  auth: AuthClient;
+  remote: RemoteAttempts;
+  chats: ChatHistoryStore;
+  app: FirebaseApp;
+} {
+  const { recaptchaSiteKey, geminiModel: _model, ...options } = config;
+  const app = initializeApp(options);
+  if (recaptchaSiteKey) {
+    initializeAppCheck(app, {
+      provider: new ReCaptchaEnterpriseProvider(recaptchaSiteKey),
+      isTokenAutoRefreshEnabled: true,
+    });
+  }
   const fbAuth = getAuth(app);
   const db = getDatabase(app);
 
@@ -97,5 +111,26 @@ export function createFirebaseClients(config: FirebaseConfig): { auth: AuthClien
     },
   };
 
-  return { auth, remote };
+  const chatRef = (uid: string, attemptId: string, qid: number) => ref(db, `users/${uid}/aiChats/${attemptId}/${qid}`);
+  const chats: ChatHistoryStore = {
+    async load(uid, attemptId, qid) {
+      const val = (await get(chatRef(uid, attemptId, qid))).val() as { json?: unknown } | null;
+      if (!val || typeof val.json !== 'string') return [];
+      try {
+        const parsed: unknown = JSON.parse(val.json);
+        if (!Array.isArray(parsed)) return [];
+        const ok = parsed.every(
+          (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string',
+        );
+        return ok ? (parsed as ChatMessage[]) : [];
+      } catch {
+        return [];
+      }
+    },
+    save(uid, attemptId, qid, messages) {
+      return set(chatRef(uid, attemptId, qid), { json: JSON.stringify(messages), updatedAt: Date.now() });
+    },
+  };
+
+  return { auth, remote, chats, app };
 }
