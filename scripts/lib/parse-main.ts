@@ -1,4 +1,7 @@
 import type { MainSet, Question } from '../../src/data/types';
+import { htmlToText } from '../../src/data/html-text';
+
+export { htmlToText };
 
 /** Một câu trong `question-doc-main/*.json` (giữ nguyên, không sửa file gốc). */
 export interface MainRawQuestion {
@@ -58,21 +61,4 @@ export function findMainTwins(questions: Question[]): [number, number][] {
     else twins.push([prev, q.id]);
   }
   return twins;
-}
-
-/** HTML → chữ thường để in ra console (soạn meta) và kiểm tra trùng lặp. */
-export function htmlToText(html: string): string {
-  return html
-    .replace(/<img[^>]*>/gi, '[ảnh]')
-    .replace(/<\/(p|li|div|h\d)>|<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]+>/g, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&rsquo;|&lsquo;/g, "'")
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n\s*\n+/g, '\n')
-    .trim();
 }
