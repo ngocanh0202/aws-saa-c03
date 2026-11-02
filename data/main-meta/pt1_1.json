@@ -310,8 +310,7 @@
   "services": [
    "rds",
    "ec2"
-  ],
-  "note": "Amazon RDS Custom for Oracle hết hỗ trợ ngày 31/03/2027 (xem service-status), nên đáp án đúng phụ thuộc vào dịch vụ sắp ngừng."
+  ]
  },
  {
   "id": 10132,

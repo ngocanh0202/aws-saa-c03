@@ -682,5 +682,659 @@
     ],
     "explanationVi": "Timeout khi tải tăng vọt thường do ứng dụng mở quá nhiều kết nối tới cơ sở dữ liệu và xử lý đồng bộ. RDS Proxy giải quyết phần kết nối, còn SQS cùng worker trong Auto Scaling group đệm và xử lý giao dịch bất đồng bộ, co giãn theo tải. Bẫy: throttling làm mất đơn, ghi vào cache trước dễ mất dữ liệu, còn read replica không ghi được.",
     "keyHint": "\"timing out\" lúc \"flash ticket sales\" + \"without reengineering the database layer\" → RDS Proxy + SQS với worker Auto Scaling."
+  },
+  {
+    "id": 10123,
+    "stemVi": "Một công ty CNTT muốn rà soát lại các best practice bảo mật sau một sự cố: một developer mới trong nhóm được cấp toàn quyền Amazon DynamoDB và đã vô tình xóa vài table trong môi trường production khi đang xây tính năng mới.",
+    "promptVi": "Cách nào HIỆU QUẢ NHẤT (MOST effective) để xử lý vấn đề này sao cho sự cố không lặp lại?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Gỡ toàn quyền cơ sở dữ liệu của mọi IAM user trong tổ chức.",
+        "reason": "Gỡ quyền hàng loạt là biện pháp thô, làm gián đoạn những người thật sự cần quyền và không tạo cơ chế giới hạn quyền lâu dài khi cấp quyền mới."
+      },
+      {
+        "key": "B",
+        "textVi": "Chỉ root user mới có toàn quyền cơ sở dữ liệu trong tổ chức.",
+        "reason": "Dùng root user cho công việc hằng ngày trái với best practice bảo mật; root chỉ nên dùng cho số ít tác vụ đặc biệt."
+      },
+      {
+        "key": "C",
+        "textVi": "CTO nên rà soát quyền của IAM user của từng developer mới để sự cố không lặp lại.",
+        "reason": "Rà soát thủ công không mở rộng được và dễ sót, không phải cơ chế kỹ thuật ngăn cấp quyền quá mức."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng permissions boundary để kiểm soát quyền tối đa mà nhân viên có thể cấp cho các IAM principal.",
+        "reason": "Permissions boundary đặt trần quyền cho user/role: dù policy cấp gì, quyền thực tế không vượt quá boundary, nên developer mới không thể nhận quyền xóa table production."
+      }
+    ],
+    "explanationVi": "Nguyên nhân là một principal được cấp quyền vượt quá nhu cầu. Permissions boundary là managed policy đặt giới hạn quyền tối đa cho IAM user hoặc role; quyền hiệu lực là phần giao giữa identity policy và boundary. Nhờ đó, kể cả khi ai đó cấp nhầm toàn quyền, principal vẫn bị chặn ở mức trần. Các lựa chọn còn lại là biện pháp thủ công, quá thô hoặc trái best practice.",
+    "keyHint": "\"assigned full access\" + \"so that such incidents do not recur\" → IAM permissions boundary đặt trần quyền."
+  },
+  {
+    "id": 10124,
+    "stemVi": "Một công ty truyền thông vận hành ứng dụng web chia sẻ ảnh được truy cập từ ba quốc gia khác nhau. Ứng dụng chạy trên nhiều Amazon Elastic Compute Cloud (Amazon EC2) instance phía sau một Application Load Balancer. Theo quy định mới của chính phủ, công ty phải chặn truy cập từ hai quốc gia và chỉ cho phép truy cập từ quốc gia sở tại của công ty.",
+    "promptVi": "Nên dùng cấu hình nào để đáp ứng yêu cầu mới này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình AWS Web Application Firewall (AWS WAF) trên Application Load Balancer trong một Amazon Virtual Private Cloud (Amazon VPC).",
+        "reason": "WAF gắn trực tiếp vào ALB và có geo match condition để chặn hoặc cho phép request theo quốc gia nguồn — đúng yêu cầu chỉ cho phép một quốc gia."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng tính năng Geo Restriction của Amazon CloudFront trong một Amazon Virtual Private Cloud (Amazon VPC).",
+        "reason": "CloudFront là dịch vụ toàn cầu ở edge, không nằm \"trong VPC\"; kiến trúc hiện tại cũng không có CloudFront nên phải dựng thêm, mô tả lựa chọn này không đúng."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình security group trên Application Load Balancer.",
+        "reason": "Security group chỉ lọc theo IP, cổng và giao thức, không có khái niệm quốc gia; duy trì danh sách dải IP theo quốc gia là không khả thi."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình security group cho các Amazon EC2 instance.",
+        "reason": "Traffic tới EC2 đi qua ALB nên security group của instance chỉ thấy IP của ALB; nó cũng không lọc được theo quốc gia."
+      }
+    ],
+    "explanationVi": "Chặn truy cập theo quốc gia cần một lớp hiểu vị trí địa lý của IP nguồn. AWS WAF gắn vào ALB có geo match rule đáp ứng đúng việc này mà không phải thay kiến trúc. Security group chỉ lọc theo IP/cổng; CloudFront Geo Restriction cũng làm được việc tương tự nhưng lựa chọn mô tả sai (CloudFront không nằm trong VPC) và cần thêm một tầng mới.",
+    "keyHint": "\"block access from two countries\" + ứng dụng sau \"Application Load Balancer\" → AWS WAF geo match trên ALB."
+  },
+  {
+    "id": 10125,
+    "stemVi": "Một dịch vụ lưu trữ file dùng Amazon Simple Storage Service (Amazon S3) làm nền cho các sản phẩm lưu trữ. Hiện mọi file của khách hàng được tải thẳng vào một S3 bucket duy nhất. Nhóm kỹ thuật bắt đầu gặp vấn đề mở rộng: các lần tải file của khách bắt đầu thất bại vào giờ cao điểm khi có hơn 5000 request mỗi giây.",
+    "promptVi": "Cách nào sau đây hiệu quả tài nguyên nhất và tối ưu chi phí nhất (MOST resource efficient and cost-optimal) để xử lý vấn đề này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Đổi kiến trúc ứng dụng để tạo một S3 bucket mới cho dữ liệu mỗi ngày, rồi tải file của ngày đó thẳng vào bucket đó.",
+        "reason": "Tạo bucket mỗi ngày làm phức tạp quản lý và nhanh chóng chạm giới hạn số bucket mỗi account; giới hạn hiệu năng S3 tính theo prefix, không cần thêm bucket."
+      },
+      {
+        "key": "B",
+        "textVi": "Đổi kiến trúc ứng dụng để tạo một S3 bucket mới cho mỗi khách hàng, rồi tải file của từng khách vào bucket tương ứng.",
+        "reason": "Một bucket cho mỗi khách hàng không mở rộng được khi số khách lớn (có giới hạn số bucket) và tốn công quản lý, trong khi chỉ cần chia prefix là đủ."
+      },
+      {
+        "key": "C",
+        "textVi": "Đổi kiến trúc ứng dụng để tạo các prefix riêng theo khách hàng trong cùng S3 bucket, rồi tải file hằng ngày vào các vị trí có prefix đó.",
+        "reason": "S3 hỗ trợ ít nhất 3500 request PUT/COPY/POST/DELETE mỗi giây cho mỗi prefix; chia theo prefix khách hàng nhân thông lượng lên mà không tốn thêm chi phí hay bucket."
+      },
+      {
+        "key": "D",
+        "textVi": "Đổi kiến trúc ứng dụng để dùng Amazon Elastic File System (Amazon EFS) thay cho Amazon S3 để lưu file khách hàng tải lên.",
+        "reason": "EFS đắt hơn S3 nhiều lần mỗi GB và đòi hỏi viết lại ứng dụng, không phải cách tối ưu chi phí."
+      }
+    ],
+    "explanationVi": "Giới hạn hiệu năng của S3 tính theo prefix: khoảng 3500 request ghi và 5500 request đọc mỗi giây cho mỗi prefix, và số prefix trong bucket không giới hạn. Vượt 5000 request/giây trên một prefix sẽ gặp lỗi, nên chỉ cần chia dữ liệu theo nhiều prefix (ví dụ theo khách hàng) để tăng thông lượng song song. Tạo nhiều bucket hay chuyển sang EFS đều tốn công và chi phí không cần thiết.",
+    "keyHint": "\"single Amazon S3 bucket\" + \"more than 5000 requests per second\" → chia nhiều prefix trong bucket (3500 ghi/5500 đọc mỗi prefix)."
+  },
+  {
+    "id": 10126,
+    "stemVi": "Một công ty phân tích dữ liệu y tế tập trung các tập dữ liệu lâm sàng và vận hành trong một data lake trên Amazon S3. Dữ liệu đến ở định dạng Apache Parquet từ nhiều bệnh viện và thiết bị sức khỏe đeo tay. Để bảo đảm chất lượng và chuẩn hóa, công ty áp dụng nhiều bước biến đổi: lọc dữ liệu bất thường, chuẩn hóa ngày giờ và tổng hợp theo nhóm bệnh nhân. Công ty cần giải pháp có giao diện không cần viết code để data engineer và business analyst cùng cộng tác trên các workflow chuẩn bị dữ liệu. Công ty cũng cần theo dõi data lineage, khả năng data profiling và cách dễ dàng chia sẻ logic biến đổi giữa các nhóm mà không phải viết hay quản lý code.",
+    "promptVi": "Giải pháp AWS nào đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Glue DataBrew để dựng trực quan các workflow biến đổi trên các file Parquet thô trong S3. Dùng recipe của DataBrew để theo dõi, kiểm tra và chia sẻ các bước biến đổi với người khác. Bật data profiling để xem thống kê cột, giá trị null và kiểu dữ liệu trên các tập dữ liệu.",
+        "reason": "DataBrew là công cụ chuẩn bị dữ liệu trực quan, không cần code, có hơn 250 phép biến đổi dựng sẵn; recipe chia sẻ được, có data lineage và data profiling — khớp mọi yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng visual canvas của AWS Glue Studio để thiết kế các workflow biến đổi trên file Parquet trong Amazon S3. Cấu hình Glue Studio job chạy các biến đổi mà không viết code. Chia sẻ định nghĩa job cho thành viên nhóm dùng lại. Dùng visual job editor để theo dõi tiến độ biến đổi và xem thống kê profiling cho từng cột.",
+        "reason": "Glue Studio hướng tới data engineer dựng ETL job (sinh code Spark bên dưới), không có data profiling theo cột và không thân thiện cho business analyst như DataBrew."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo các truy vấn SQL Amazon Athena để thực hiện bước biến đổi trực tiếp trên S3. Lưu truy vấn trong AWS Glue Data Catalog và chia sẻ saved query với người khác qua query editor của Amazon Athena.",
+        "reason": "Viết SQL chính là viết code; Athena cũng không có data profiling hay data lineage, và saved query không được lưu trong Glue Data Catalog."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon AppFlow để di chuyển và biến đổi file Parquet trong S3. Cấu hình biến đổi và mapping trong giao diện trực quan của AppFlow. Chia sẻ flow với cộng sự qua IAM policy và lịch chạy.",
+        "reason": "AppFlow dùng để chuyển dữ liệu giữa ứng dụng SaaS và AWS, chỉ có biến đổi đơn giản, không có profiling hay lineage cho chuẩn bị dữ liệu."
+      }
+    ],
+    "explanationVi": "Các từ khóa: không cần code, cộng tác giữa engineer và analyst, data profiling, lineage và chia sẻ logic biến đổi. AWS Glue DataBrew được thiết kế đúng cho chuẩn bị dữ liệu trực quan: recipe lưu và chia sẻ các bước, có profiling và lineage. Bẫy là Glue Studio — cũng có giao diện trực quan nhưng dành cho xây ETL job, thiếu profiling theo cột.",
+    "keyHint": "\"code-free interface\" + \"data profiling\" + \"data lineage\" + \"share transformation logic\" → AWS Glue DataBrew (recipe)."
+  },
+  {
+    "id": 10127,
+    "stemVi": "Một công ty phần mềm vận hành nền tảng phân tích khách hàng trên một nhóm Amazon EC2 instance. Trong buổi rà soát chi phí cloud hằng quý, nhóm tài chính phát hiện chi phí AWS tăng bất ngờ mà không ai nhận ra trong nhiều ngày. Công ty muốn liên tục phát hiện các mẫu chi tiêu bất thường và tự động thông báo cho những người phụ trách khi AWS phát hiện chi phí tăng bất ngờ.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một monitor AWS Cost Anomaly Detection và cấu hình alert subscription để thông báo cho những người phụ trách khi monitor phát hiện chi tiêu bất thường.",
+        "reason": "Cost Anomaly Detection dùng machine learning học mẫu chi tiêu lịch sử, liên tục phát hiện chi phí bất thường và gửi cảnh báo qua alert subscription — đúng từng yêu cầu."
+      },
+      {
+        "key": "B",
+        "textVi": "Bật billing metric của Amazon CloudWatch, tạo alarm cho các ngưỡng estimated charges định trước và cấu hình thông báo Amazon SNS cho nhóm tài chính.",
+        "reason": "Alarm theo ngưỡng cố định chỉ báo khi vượt con số đặt trước, không nhận ra mẫu chi tiêu bất thường nằm dưới ngưỡng."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Pricing Calculator mô hình hóa chi phí dự kiến của workload EC2 hiện tại và định kỳ so sánh với chi phí AWS thực tế.",
+        "reason": "Pricing Calculator chỉ để ước tính; so sánh định kỳ bằng tay không liên tục và không tự động thông báo."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo zero spend budget từ template AWS Budgets và cấu hình budget thông báo khi chi tiêu vượt ngưỡng đã đặt.",
+        "reason": "Zero spend budget cảnh báo ngay khi có bất kỳ chi phí nào, dành cho account free tier; với nền tảng đang chạy EC2 nó sẽ báo liên tục và không phát hiện được bất thường."
+      }
+    ],
+    "explanationVi": "Yêu cầu là phát hiện chi phí bất thường (không phải vượt một ngưỡng cố định) và tự động báo cho người phụ trách. AWS Cost Anomaly Detection dùng ML học mức chi tiêu bình thường, tính cả tăng trưởng và tính mùa vụ, rồi cảnh báo qua email hoặc SNS. Budgets và CloudWatch billing alarm chỉ so với ngưỡng đặt sẵn, còn Pricing Calculator chỉ là công cụ ước tính.",
+    "keyHint": "\"abnormal spending patterns\" + \"automatically notify\" → AWS Cost Anomaly Detection + alert subscription."
+  },
+  {
+    "id": 10128,
+    "stemVi": "Một trường đại học thuộc nhóm ivy-league đang hỗ trợ NASA tìm địa điểm hạ cánh tiềm năng cho các phương tiện thám hiểm trong các sứ mệnh không người lái tới các hành tinh lân cận. Trường dùng kiến trúc ứng dụng High Performance Computing (HPC) để xác định các địa điểm này.",
+    "promptVi": "Ứng dụng này nên được triển khai trên topology Amazon EC2 instance nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai các Amazon EC2 instance trong partition placement group để xử lý hiệu quả các workload phân tán.",
+        "reason": "Partition placement group tách instance thành các partition trên rack khác nhau để giảm lỗi tương quan cho hệ thống như Hadoop, Cassandra; nó không tối ưu độ trễ mạng giữa các node."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai các Amazon EC2 instance trong Auto Scaling group để ứng dụng đáp ứng yêu cầu tính sẵn sàng cao.",
+        "reason": "Auto Scaling group lo tính sẵn sàng và co giãn, không phải topology đặt instance để có mạng độ trễ thấp mà HPC cần."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai các Amazon EC2 instance trong spread placement group để không có lỗi tương quan.",
+        "reason": "Spread placement group đặt mỗi instance trên phần cứng riêng để tăng sẵn sàng, ngược với nhu cầu đặt các node sát nhau của HPC."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai các Amazon EC2 instance trong cluster placement group để workload được hưởng độ trễ mạng thấp và thông lượng mạng cao.",
+        "reason": "Cluster placement group xếp các instance sát nhau trong một AZ, cho độ trễ thấp và thông lượng cao giữa các node — đúng nhu cầu giao tiếp chặt chẽ của HPC."
+      }
+    ],
+    "explanationVi": "Workload HPC có các node liên lạc chặt chẽ với nhau nên cần mạng giữa các instance có độ trễ thấp và thông lượng cao. Cluster placement group đáp ứng điều đó bằng cách đặt các instance gần nhau trong một AZ. Spread và partition placement group hướng tới giảm lỗi tương quan, còn Auto Scaling group không quyết định vị trí vật lý của instance.",
+    "keyHint": "\"High Performance Computing (HPC)\" → cluster placement group."
+  },
+  {
+    "id": 10129,
+    "stemVi": "Một công ty phân tích dữ liệu đo lường người tiêu dùng xem gì và tiếp xúc với quảng cáo nào. Dữ liệu thời gian thực này được nạp vào trung tâm dữ liệu on-premises, sau đó dữ liệu hằng ngày được nén thành một file duy nhất và tải lên Amazon S3 để sao lưu. Kích thước file nén thường khoảng 2 gigabyte.",
+    "promptVi": "Cách nào sau đây nhanh nhất để tải file nén hằng ngày lên Amazon S3?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tải file nén bằng multipart upload kết hợp Amazon S3 Transfer Acceleration (Amazon S3TA).",
+        "reason": "Multipart upload tải song song nhiều phần của file, còn S3TA đưa dữ liệu vào edge location gần nhất rồi đi qua mạng AWS tối ưu — kết hợp cả hai cho tốc độ cao nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Tải file nén trong một thao tác duy nhất.",
+        "reason": "Một thao tác PUT đơn không tải song song được và lỗi giữa chừng phải tải lại toàn bộ; AWS khuyên dùng multipart upload cho file trên 100 MB."
+      },
+      {
+        "key": "C",
+        "textVi": "Tải file nén bằng multipart upload.",
+        "reason": "Multipart upload nhanh hơn tải đơn, nhưng không có S3TA thì vẫn đi qua internet công cộng nên chậm hơn khi kết hợp cả hai."
+      },
+      {
+        "key": "D",
+        "textVi": "FTP file nén lên một Amazon EC2 instance chạy cùng region với S3 bucket. Sau đó chuyển file từ EC2 instance vào S3 bucket.",
+        "reason": "Thêm một chặng trung gian qua EC2 làm chậm hơn và tốn công vận hành, FTP cũng không nhanh hơn tải trực tiếp."
+      }
+    ],
+    "explanationVi": "Muốn tải file lớn nhanh nhất lên S3 thì kết hợp hai tối ưu: multipart upload chia file để tải song song, và S3 Transfer Acceleration rút ngắn đường đi qua edge location và mạng xương sống của AWS. Từng tính năng riêng lẻ đều kém hơn tổ hợp, còn chặng trung gian qua EC2 chỉ làm chậm thêm.",
+    "keyHint": "\"fastest way to upload\" + file \"2 gigabytes\" → multipart upload + S3 Transfer Acceleration."
+  },
+  {
+    "id": 10130,
+    "stemVi": "Một công ty phần mềm có đội ngũ developer phân tán khắp thế giới, cần truy cập môi trường AWS an toàn và tuân thủ. Công ty quản lý nhiều AWS account trong AWS Organizations và dùng Microsoft Active Directory on-premises để xác thực người dùng. Để đơn giản hóa kiểm soát truy cập và quản trị danh tính giữa các dự án và account, công ty muốn một giải pháp quản lý tập trung, tích hợp với hạ tầng hiện có. Giải pháp phải tốn ít công vận hành lâu dài nhất.",
+    "promptVi": "Cách nào đáp ứng tốt nhất các yêu cầu của công ty?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai một identity provider (IdP) mã nguồn mở trên Amazon EC2. Đồng bộ nó với Active Directory on-premises và dùng SAML để federate truy cập vào các AWS account. Gán IAM role cho người dùng federated dựa trên SAML assertion.",
+        "reason": "Tự vận hành IdP trên EC2 nghĩa là phải lo vá lỗi, sẵn sàng và bảo mật cho nó — trái với yêu cầu ít công vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Directory Service AD Connector để kết nối AWS với Active Directory on-premises. Tích hợp AD Connector với AWS IAM Identity Center. Dùng permission set để cấp quyền truy cập account và tài nguyên theo nhóm Active Directory.",
+        "reason": "AD Connector chuyển yêu cầu xác thực về AD sẵn có mà không sao chép danh tính; IAM Identity Center quản lý tập trung quyền vào mọi account trong Organizations bằng permission set theo nhóm AD — dịch vụ được quản lý, ít công vận hành."
+      },
+      {
+        "key": "C",
+        "textVi": "Triển khai AWS Directory Service for Microsoft Active Directory trên AWS. Thiết lập trust relationship với Active Directory on-premises. Dùng IAM role liên kết với nhóm AD để kiểm soát truy cập tài nguyên AWS.",
+        "reason": "Dựng thêm một AD trên AWS và quản lý trust là thừa khi chỉ cần xác thực bằng AD sẵn có; gán IAM role theo từng account cũng không tập trung như permission set."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Control Tower để cấp quyền truy cập account cho developer. Tạo IAM role trong từng member account và gán quyền thủ công. Hướng dẫn developer assume role giữa các account bằng AWS CLI.",
+        "reason": "Tạo role và gán quyền thủ công ở từng account tốn công, không tích hợp với Active Directory on-premises."
+      }
+    ],
+    "explanationVi": "Mục tiêu: quản lý tập trung quyền truy cập nhiều account, dùng lại AD on-premises và ít công vận hành. IAM Identity Center là điểm quản lý truy cập tập trung cho AWS Organizations; AD Connector là proxy nhẹ để Identity Center xác thực bằng AD hiện có. Các phương án tự dựng IdP, dựng AD mới hay gán role thủ công đều tốn công vận hành hơn.",
+    "keyHint": "\"multiple AWS accounts under AWS Organizations\" + \"on-premises Microsoft Active Directory\" + \"least amount of ongoing operational management\" → IAM Identity Center + AD Connector."
+  },
+  {
+    "id": 10131,
+    "stemVi": "Một công ty y tế dùng hạ tầng on-premises để chạy các ứng dụng legacy cần tùy biến đặc biệt cho cơ sở dữ liệu Oracle bên dưới cũng như hệ điều hành (OS) máy chủ. Công ty cũng muốn cải thiện tính sẵn sàng của tầng cơ sở dữ liệu Oracle. Công ty thuê bạn, một AWS Certified Solutions Architect – Associate, xây giải pháp trên AWS đáp ứng các yêu cầu này đồng thời giảm thiểu công bảo trì hạ tầng.",
+    "promptVi": "Lựa chọn nào sau đây là giải pháp tốt nhất cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng cấu hình multi-AZ của Amazon RDS for Oracle, cho phép Database Administrator (DBA) truy cập và tùy biến môi trường cơ sở dữ liệu và hệ điều hành bên dưới.",
+        "reason": "RDS for Oracle là dịch vụ được quản lý hoàn toàn, không cho DBA truy cập hệ điều hành hay tùy biến sâu môi trường cơ sở dữ liệu."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng cấu hình read replica khác AZ của Amazon RDS for Oracle, cho phép DBA truy cập và tùy biến môi trường cơ sở dữ liệu và hệ điều hành bên dưới.",
+        "reason": "RDS for Oracle không cho truy cập hệ điều hành; read replica cũng chủ yếu để mở rộng đọc chứ không phải cơ chế failover chính."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng cấu hình multi-AZ của Amazon RDS Custom for Oracle, cho phép DBA truy cập và tùy biến môi trường cơ sở dữ liệu và hệ điều hành bên dưới.",
+        "reason": "RDS Custom for Oracle cho phép truy cập và tùy biến OS lẫn cơ sở dữ liệu nhưng AWS vẫn lo phần lớn việc quản trị; Multi-AZ tăng tính sẵn sàng — đáp ứng cả ba yêu cầu."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai tầng cơ sở dữ liệu Oracle trên nhiều Amazon EC2 instance trải trên hai Availability Zone (AZ). Cấu hình này bảo đảm tính sẵn sàng cao và cho phép DBA truy cập và tùy biến môi trường cơ sở dữ liệu và hệ điều hành bên dưới.",
+        "reason": "Tự quản lý Oracle trên EC2 cho phép tùy biến, nhưng công ty phải tự lo cài đặt, sao lưu, vá lỗi và nhân bản — trái với yêu cầu giảm công bảo trì."
+      }
+    ],
+    "explanationVi": "Đề có ba yêu cầu: tùy biến được cả cơ sở dữ liệu lẫn OS, tăng tính sẵn sàng, và giảm công bảo trì hạ tầng. RDS for Oracle không cho truy cập OS, còn tự chạy trên EC2 tốn công vận hành. RDS Custom for Oracle nằm ở giữa: là dịch vụ được quản lý nhưng cho phép truy cập OS, và hỗ trợ Multi-AZ.",
+    "keyHint": "\"specialized customizations\" cho Oracle và \"host operating system\" + \"minimizing ... maintenance\" → Amazon RDS Custom for Oracle (Multi-AZ).",
+    "review": {
+      "reason": "Chưa chắc chắn: đáp án đúng phụ thuộc Amazon RDS Custom for Oracle, dịch vụ hết hỗ trợ ngày 31/03/2027; AWS khuyên chuyển sang Oracle tự quản lý trên EC2, nên sau mốc này phương án chạy Oracle trên EC2 trải hai AZ mới là lựa chọn khả thi."
+    }
+  },
+  {
+    "id": 10132,
+    "stemVi": "Một công ty game muốn cải thiện tính sẵn sàng và hiệu năng cho ứng dụng chủ lực toàn cầu dùng giao thức User Datagram Protocol (UDP), đồng thời cần hỗ trợ failover nhanh giữa các region khi một AWS Region gặp sự cố. Công ty muốn tiếp tục dùng dịch vụ Domain Name System (DNS) tự quản của mình.",
+    "promptVi": "Dịch vụ AWS nào sau đây là giải pháp tốt nhất cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon CloudFront",
+        "reason": "CloudFront là CDN cho nội dung HTTP/HTTPS, không hỗ trợ ứng dụng UDP."
+      },
+      {
+        "key": "B",
+        "textVi": "AWS Global Accelerator",
+        "reason": "Global Accelerator hỗ trợ TCP và UDP, cung cấp hai anycast IP tĩnh nên giữ được DNS tự quản (chỉ cần trỏ tới các IP này), đưa traffic vào mạng AWS và failover giữa các region trong vài giây."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon Route 53",
+        "reason": "Công ty muốn giữ DNS tự quản nên không dùng Route 53; failover bằng DNS còn phụ thuộc TTL và cache nên chậm hơn."
+      },
+      {
+        "key": "D",
+        "textVi": "AWS Elastic Load Balancing (ELB)",
+        "reason": "ELB chỉ hoạt động trong một region, không failover giữa các region."
+      }
+    ],
+    "explanationVi": "Ba yêu cầu: UDP, failover nhanh giữa các region, và giữ DNS riêng. Global Accelerator đáp ứng cả ba: hỗ trợ UDP, health check endpoint ở nhiều region và chuyển traffic ngay khi một region lỗi, và cung cấp IP tĩnh để DNS riêng trỏ tới. CloudFront không hỗ trợ UDP, Route 53 trái yêu cầu dùng DNS riêng, còn ELB chỉ trong một region.",
+    "keyHint": "\"User Datagram Protocol\" + \"fast regional failover\" + \"own custom DNS\" → AWS Global Accelerator."
+  },
+  {
+    "id": 10133,
+    "stemVi": "Một trong những giải bóng đá lớn nhất châu Âu đã trao quyền phát trực tiếp các trận đấu tại Mỹ cho một công ty dịch vụ streaming ở Silicon Valley. Theo điều khoản phân phối, công ty phải bảo đảm chỉ người dùng tại Mỹ mới xem trực tiếp được các trận đấu trên nền tảng của họ. Người dùng từ các quốc gia khác phải bị từ chối truy cập.",
+    "promptVi": "Những lựa chọn nào sau đây cho phép công ty thực thi các giới hạn streaming này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng latency-based routing policy của Amazon Route 53 để giới hạn phân phối nội dung chỉ ở những nơi có quyền phân phối.",
+        "reason": "Latency-based routing chọn region có độ trễ thấp nhất cho người dùng, không dựa vào vị trí địa lý nên không chặn được người dùng ngoài Mỹ."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng georestriction để ngăn người dùng ở các vị trí địa lý cụ thể truy cập nội dung phân phối qua Amazon CloudFront web distribution.",
+        "reason": "Geo restriction của CloudFront cho phép (allowlist) hoặc chặn (blocklist) theo quốc gia; người dùng ngoài Mỹ nhận lỗi 403."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng failover routing policy của Amazon Route 53 để giới hạn phân phối nội dung chỉ ở những nơi có quyền phân phối.",
+        "reason": "Failover routing chỉ chuyển sang tài nguyên dự phòng khi tài nguyên chính lỗi, không liên quan đến vị trí người dùng."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng weighted routing policy của Amazon Route 53 để giới hạn phân phối nội dung chỉ ở những nơi có quyền phân phối.",
+        "reason": "Weighted routing chia traffic theo tỷ lệ, không phân biệt người dùng theo quốc gia."
+      },
+      {
+        "key": "E",
+        "textVi": "Dùng geolocation routing policy của Amazon Route 53 để giới hạn phân phối nội dung chỉ ở những nơi có quyền phân phối.",
+        "reason": "Geolocation routing trả lời DNS theo vị trí nguồn truy vấn; chỉ tạo record cho Mỹ (không có record mặc định) thì truy vấn từ nơi khác không nhận được địa chỉ."
+      }
+    ],
+    "explanationVi": "Giới hạn theo quốc gia có hai cách trong các lựa chọn: CloudFront geo restriction chặn ở edge theo quốc gia của người xem, và Route 53 geolocation routing trả lời DNS theo vị trí người dùng. Các routing policy khác (latency, failover, weighted) không dựa trên vị trí địa lý nên không thực thi được quyền phân phối.",
+    "keyHint": "\"only users from the USA\" → CloudFront geo restriction + Route 53 geolocation routing."
+  },
+  {
+    "id": 10134,
+    "stemVi": "Một công ty phân tích mạng xã hội hàng đầu đang cân nhắc chuyển stack ứng dụng đã docker hóa lên AWS Cloud. Công ty chưa rõ cách tính giá khi dùng Amazon Elastic Container Service (Amazon ECS) với EC2 launch type so với Amazon ECS với Fargate launch type.",
+    "promptVi": "Phát biểu nào sau đây đúng về cách tính giá của hai cách này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cả Amazon ECS với EC2 launch type và Amazon ECS với Fargate launch type đều tính phí theo tài nguyên vCPU và bộ nhớ mà ứng dụng container yêu cầu.",
+        "reason": "Chỉ Fargate tính theo vCPU và bộ nhớ của task; với EC2 launch type bạn trả tiền cho các EC2 instance và EBS volume."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon ECS với EC2 launch type tính phí theo EC2 instance và EBS volume sử dụng. Amazon ECS với Fargate launch type tính phí theo tài nguyên vCPU và bộ nhớ mà ứng dụng container yêu cầu.",
+        "reason": "Đúng mô hình giá: ECS không thu thêm phí; EC2 launch type trả cho instance và volume bạn chạy, Fargate trả theo vCPU và bộ nhớ task yêu cầu trong thời gian chạy."
+      },
+      {
+        "key": "C",
+        "textVi": "Cả Amazon ECS với EC2 launch type và Amazon ECS với Fargate launch type đều chỉ tính phí theo Elastic Container Service sử dụng mỗi giờ.",
+        "reason": "ECS không thu phí theo giờ cho bản thân dịch vụ; chi phí nằm ở tài nguyên tính toán bên dưới."
+      },
+      {
+        "key": "D",
+        "textVi": "Cả Amazon ECS với EC2 launch type và Amazon ECS với Fargate launch type đều tính phí theo Amazon EC2 instance và Amazon EBS Elastic Volume sử dụng.",
+        "reason": "Fargate là serverless, bạn không quản lý hay trả tiền cho EC2 instance; phí tính theo vCPU và bộ nhớ của task."
+      }
+    ],
+    "explanationVi": "Bản thân ECS không thu phí. Với EC2 launch type, bạn trả cho EC2 instance và EBS volume tạo ra để chạy container. Với Fargate, AWS quản lý hạ tầng và bạn trả theo vCPU và bộ nhớ mà task yêu cầu. Các lựa chọn khác gộp hai mô hình giá làm một.",
+    "keyHint": "\"pricing\" ECS \"EC2 launch type\" vs \"Fargate launch type\" → EC2: trả cho instance + EBS; Fargate: trả theo vCPU + bộ nhớ."
+  },
+  {
+    "id": 10135,
+    "stemVi": "Một công ty phân tích video chạy các workload batch nặng dữ liệu, mỗi ngày sinh ra nhiều file log và metadata lớn. Các file hiện được lưu trên một hệ thống lưu trữ dựa trên NFS on-premises ở trung tâm dữ liệu chính. Tuy nhiên hệ thống ngày càng khó mở rộng và không đáp ứng được nhu cầu lưu trữ tăng nhanh. Nhóm IT muốn chuyển sang giải pháp lưu trữ trên cloud giảm thiểu chi phí, giữ tương thích NFS và hỗ trợ tự động chuyển dữ liệu ít truy cập sang lớp lưu trữ rẻ hơn. Nhóm muốn tiếp tục dùng các công cụ và giao thức NFS hiện có để tương thích với stack ứng dụng.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này tiết kiệm chi phí nhất (MOST cost-effectively)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo một file system Amazon Elastic File System (Amazon EFS) với storage class One Zone–IA. Dùng AWS DataSync di chuyển dữ liệu NFS sang EFS. Cấu hình ứng dụng mount file system qua NFS và bật lifecycle management để chuyển các file ít truy cập.",
+        "reason": "EFS giữ được NFS nhưng giá mỗi GB cao hơn S3 nhiều; ứng dụng on-premises mount EFS còn cần Direct Connect hoặc VPN, nên kém tiết kiệm hơn."
+      },
+      {
+        "key": "B",
+        "textVi": "Triển khai AWS Storage Gateway Volume Gateway ở chế độ cached. Gắn nó như block device vào một file server on-premises rồi mount NFS lên trên. Lưu snapshot trong Amazon S3 Glacier Deep Archive và dùng AWS Backup quản lý khôi phục và phân tầng.",
+        "reason": "Volume Gateway cung cấp block storage iSCSI, phải tự dựng thêm file server NFS; dữ liệu nằm dạng volume nên không tự phân tầng theo file, và snapshot không đưa thẳng vào Deep Archive được."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon FSx for Windows File Server thay cho workload NFS. Bật data deduplication và sao lưu tự động. Dùng Amazon S3 Glacier để chuyển snapshot sang lớp lưu trữ rẻ. Cấu hình lại ứng dụng phân tích để truy cập file qua giao thức SMB.",
+        "reason": "Chuyển sang SMB vi phạm yêu cầu giữ công cụ và giao thức NFS hiện có."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai AWS Storage Gateway File Gateway on-premises. Cấu hình nó cung cấp file share tương thích NFS cho các workload. Lưu file tải lên trong Amazon S3 và dùng S3 Lifecycle policy tự động chuyển các object ít truy cập sang storage class rẻ hơn.",
+        "reason": "File Gateway cung cấp NFS share on-premises với cache cục bộ, lưu dữ liệu thành object S3 dung lượng không giới hạn; S3 Lifecycle tự chuyển dữ liệu ít dùng sang class rẻ — đáp ứng cả ba yêu cầu với chi phí thấp."
+      }
+    ],
+    "explanationVi": "Cần giữ NFS cho ứng dụng on-premises, mở rộng không giới hạn và tự phân tầng dữ liệu ít truy cập với chi phí thấp nhất. S3 File Gateway trình bày NFS share, lưu file thành object trong S3, và S3 Lifecycle chuyển dữ liệu sang Standard-IA hay Glacier. EFS đắt hơn mỗi GB, Volume Gateway là block storage, còn FSx for Windows buộc đổi sang SMB.",
+    "keyHint": "\"retains NFS compatibility\" + \"automated tiering\" + \"MOST cost-effectively\" từ on-premises → S3 File Gateway + S3 Lifecycle."
+  },
+  {
+    "id": 10136,
+    "stemVi": "Website động của một công ty bán lẻ chạy trên máy chủ on-premises trong trung tâm dữ liệu tại Mỹ. Công ty sắp ra mắt website ở châu Á và muốn tối ưu thời gian tải trang cho người dùng mới ở châu Á. Backend của website phải ở lại Mỹ. Website sẽ ra mắt trong vài ngày nữa và cần một giải pháp ngay lập tức.",
+    "promptVi": "Bạn đề xuất gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng geo-proximity routing policy của Amazon Route 53 trỏ tới các máy chủ on-premises.",
+        "reason": "Chỉ có một backend ở Mỹ nên định tuyến DNS không rút ngắn được đường đi; người dùng châu Á vẫn truy cập thẳng máy chủ ở Mỹ."
+      },
+      {
+        "key": "B",
+        "textVi": "Di chuyển website sang Amazon S3. Dùng S3 cross-region replication (S3 CRR) giữa các AWS Region ở Mỹ và châu Á.",
+        "reason": "S3 chỉ host được website tĩnh, còn website này là động; di chuyển cũng không kịp trong vài ngày và trái yêu cầu giữ backend ở Mỹ."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon CloudFront với custom origin trỏ tới các máy chủ on-premises.",
+        "reason": "CloudFront hỗ trợ origin bên ngoài AWS; edge location ở châu Á cache nội dung và tăng tốc cả nội dung động qua kết nối tối ưu về origin ở Mỹ — triển khai nhanh, backend giữ nguyên."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon CloudFront với custom origin trỏ tới DNS record của website trên Amazon Route 53.",
+        "reason": "Origin phải là máy chủ phục vụ nội dung (tên miền của máy chủ on-premises), không phải \"DNS record trên Route 53\"; website cũng không được nói là đang dùng Route 53."
+      }
+    ],
+    "explanationVi": "Cần tăng tốc cho người dùng ở xa mà backend phải ở nguyên chỗ và triển khai trong vài ngày. CloudFront chấp nhận custom origin là máy chủ on-premises, cache nội dung tĩnh ở edge gần người dùng và tăng tốc nội dung động qua mạng AWS. Route 53 chỉ định tuyến DNS, còn di chuyển sang S3 không hợp với website động.",
+    "keyHint": "\"optimize the website loading times\" + \"backend must remain in the United States\" + \"immediate solution\" → CloudFront với custom origin on-premises."
+  },
+  {
+    "id": 10137,
+    "stemVi": "Phòng lương của một công ty khởi chạy nhiều workload tính toán nặng trên Amazon EC2 instance vào một giờ cố định ngày cuối cùng mỗi tháng. Phòng nhận thấy hiệu năng bị chậm nghiêm trọng trong giờ đó. Nhóm kỹ thuật tìm ra giải pháp: dùng Auto Scaling Group cho các EC2 instance và bảo đảm có 10 EC2 instance trong giờ cao điểm. Khi vận hành bình thường thì 2 EC2 instance là đủ.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất bước nào sau đây để triển khai giải pháp?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Cấu hình Auto Scaling group bằng target tracking policy và đặt số instance là 10 vào giờ đã định. Việc này khiến scale-out diễn ra trước khi traffic cao điểm bắt đầu.",
+        "reason": "Target tracking giữ một metric quanh giá trị mục tiêu, không đặt số instance theo giờ; nó chỉ phản ứng sau khi tải đã tăng."
+      },
+      {
+        "key": "B",
+        "textVi": "Cấu hình Auto Scaling group bằng một scheduled action chạy vào giờ đã định ngày cuối tháng. Đặt cả min và max số instance là 10. Việc này khiến scale-out diễn ra trước khi traffic cao điểm bắt đầu.",
+        "reason": "Đặt min = max = 10 khóa cứng group ở 10 instance, sau giờ cao điểm không tự giảm về 2 nếu không có thêm action khác; cách đúng là đặt desired capacity."
+      },
+      {
+        "key": "C",
+        "textVi": "Cấu hình Auto Scaling group bằng simple tracking policy và đặt số instance là 10 vào giờ đã định. Việc này khiến scale-out diễn ra trước khi traffic cao điểm bắt đầu.",
+        "reason": "Không có loại \"simple tracking policy\"; simple scaling policy cũng phản ứng theo alarm chứ không chạy theo lịch."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình Auto Scaling group bằng một scheduled action chạy vào giờ đã định ngày cuối tháng. Đặt desired capacity là 10. Việc này khiến scale-out diễn ra trước khi traffic cao điểm bắt đầu.",
+        "reason": "Tải tăng vào thời điểm biết trước nên dùng scheduled action; đặt desired capacity 10 đưa group lên 10 instance đúng giờ mà vẫn giữ nguyên giới hạn min/max."
+      }
+    ],
+    "explanationVi": "Khi tải tăng theo lịch biết trước, dùng scheduled scaling thay vì dynamic scaling (vốn chỉ phản ứng sau khi tải tăng). Scheduled action chỉ cần đặt desired capacity là 10 vào giờ đã định. Bẫy là đặt cả min và max bằng 10: group bị khóa ở 10 instance, không còn linh hoạt.",
+    "keyHint": "\"designated hour on the last day of every month\" → scheduled action, đặt \"desired capacity\" = 10."
+  },
+  {
+    "id": 10138,
+    "stemVi": "Phòng IT của một công ty tư vấn tổ chức buổi đào tạo cho developer mới. Trong bài tập đánh giá về Amazon S3, các developer mới được yêu cầu xác định những lifecycle transition giữa các storage class KHÔNG hợp lệ cho object lưu trên Amazon S3.",
+    "promptVi": "Bạn có thể chỉ ra những lifecycle transition KHÔNG HỢP LỆ trong các lựa chọn dưới đây không? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon S3 Standard-IA => Amazon S3 One Zone-IA",
+        "reason": "Hợp lệ: Standard-IA được chuyển xuống One Zone-IA (rẻ hơn, ít AZ hơn)."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon S3 One Zone-IA => Amazon S3 Standard-IA",
+        "reason": "Không hợp lệ: từ One Zone-IA, lifecycle chỉ chuyển được sang các lớp Glacier, không lên Standard-IA."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon S3 Intelligent-Tiering => Amazon S3 Standard",
+        "reason": "Không hợp lệ: lifecycle không bao giờ chuyển object về S3 Standard từ bất kỳ storage class nào."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon S3 Standard => Amazon S3 Intelligent-Tiering",
+        "reason": "Hợp lệ: Standard chuyển được sang mọi storage class khác, kể cả Intelligent-Tiering."
+      },
+      {
+        "key": "E",
+        "textVi": "Amazon S3 Standard-IA => Amazon S3 Intelligent-Tiering",
+        "reason": "Hợp lệ: Standard-IA chuyển được sang Intelligent-Tiering, One Zone-IA hoặc các lớp Glacier."
+      }
+    ],
+    "explanationVi": "Lifecycle transition của S3 đi theo mô hình thác nước: chỉ đi xuống các lớp truy cập ít hơn. Không có transition nào về S3 Standard, và One Zone-IA không chuyển lên Standard-IA hay Intelligent-Tiering. Standard-IA chuyển được sang Intelligent-Tiering hoặc One Zone-IA, nên hai transition đó hợp lệ.",
+    "keyHint": "\"INVALID lifecycle transitions\" → không có gì về S3 Standard; One Zone-IA không đi lên Standard-IA."
+  },
+  {
+    "id": 10139,
+    "stemVi": "Một nhà khoa học trẻ làm việc tại Deep Space Research Laboratory của NASA đang tải ảnh độ phân giải cao của một tinh vân lên Amazon S3. Ảnh có kích thước khoảng 3 gigabyte. Anh dùng Amazon S3 Transfer Acceleration (Amazon S3TA) để tải ảnh nhanh hơn. Hóa ra S3TA không giúp việc truyền nhanh hơn.",
+    "promptVi": "Trong tình huống này, phát biểu nào sau đây đúng về chi phí cho lần truyền ảnh này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Nhà khoa học không phải trả bất kỳ phí truyền dữ liệu nào cho lần tải ảnh.",
+        "reason": "Dữ liệu vào S3 từ internet miễn phí, và S3TA chỉ tính phí khi việc truyền thực sự được tăng tốc; lần này không được tăng tốc nên không mất phí."
+      },
+      {
+        "key": "B",
+        "textVi": "Nhà khoa học chỉ phải trả phí truyền dữ liệu của Amazon S3 cho lần tải ảnh.",
+        "reason": "S3 không thu phí dữ liệu đi vào (data transfer in) từ internet."
+      },
+      {
+        "key": "C",
+        "textVi": "Nhà khoa học phải trả cả phí truyền của S3 lẫn phí truyền của S3TA cho lần tải ảnh.",
+        "reason": "Không có phí S3 cho dữ liệu vào, và phí S3TA chỉ áp dụng khi truyền được tăng tốc."
+      },
+      {
+        "key": "D",
+        "textVi": "Nhà khoa học chỉ phải trả phí truyền của S3TA cho lần tải ảnh.",
+        "reason": "S3TA không tính phí khi việc truyền không được tăng tốc so với truyền S3 thông thường."
+      }
+    ],
+    "explanationVi": "Hai quy tắc giá cần nhớ: dữ liệu từ internet vào S3 miễn phí, và S3 Transfer Acceleration chỉ tính phí cho những lần truyền thực sự được tăng tốc. Vì S3TA không tăng tốc lần tải này nên không phát sinh phí truyền dữ liệu nào.",
+    "keyHint": "\"S3TA did not result in an accelerated transfer\" → không tính phí S3TA; dữ liệu vào S3 cũng miễn phí."
+  },
+  {
+    "id": 10140,
+    "stemVi": "Một tổ chức muốn ủy quyền cho một nhóm người dùng ở môi trường development truy cập một số tài nguyên trong môi trường production, vốn được quản lý trong một AWS account khác.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất bước nào sau đây?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Tạo IAM user credential mới cho môi trường production và chia sẻ cho nhóm người dùng từ môi trường development.",
+        "reason": "Chia sẻ credential dài hạn là thực hành bảo mật tệ: khó truy vết ai làm gì và khó thu hồi."
+      },
+      {
+        "key": "B",
+        "textVi": "IAM role và IAM user có thể dùng thay thế nhau cho truy cập cross-account.",
+        "reason": "Sai: cách chuẩn để truy cập cross-account là assume IAM role lấy credential tạm thời, không phải dùng IAM user của account kia."
+      },
+      {
+        "key": "C",
+        "textVi": "Không thể truy cập tài nguyên cross-account.",
+        "reason": "Sai: AWS hỗ trợ truy cập cross-account qua IAM role và resource-based policy."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo một IAM role mới có quyền cần thiết để truy cập tài nguyên trong môi trường production. Người dùng sau đó assume IAM role này khi truy cập tài nguyên production.",
+        "reason": "IAM role trong account production với trust policy cho account development cho phép người dùng assume role và nhận credential tạm thời, đúng quyền cần thiết."
+      }
+    ],
+    "explanationVi": "Ủy quyền truy cập giữa các account dùng IAM role: account production tạo role có quyền cần thiết và trust policy tin account development; người dùng gọi AssumeRole để lấy credential tạm thời. Cách này không phải chia sẻ mật khẩu hay access key và dễ kiểm soát, thu hồi.",
+    "keyHint": "\"delegate access\" + \"another AWS account\" → IAM role cross-account + AssumeRole."
+  },
+  {
+    "id": 10141,
+    "stemVi": "Nhóm kỹ thuật tại một công ty thương mại điện tử muốn thiết lập một kết nối riêng (dedicated), được mã hóa, độ trễ thấp và thông lượng cao giữa trung tâm dữ liệu và AWS Cloud. Nhóm đã dành đủ thời gian cho công vận hành khi thiết lập kết nối này.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp nào sau đây cho công ty?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS site-to-site VPN để thiết lập kết nối giữa trung tâm dữ liệu và AWS Cloud.",
+        "reason": "Site-to-Site VPN được mã hóa nhưng đi qua internet công cộng, không phải kết nối riêng và không bảo đảm độ trễ thấp ổn định."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Transit Gateway để thiết lập kết nối giữa trung tâm dữ liệu và AWS Cloud.",
+        "reason": "Transit Gateway là hub định tuyến giữa các VPC và kết nối on-premises; tự nó không tạo đường truyền riêng hay mã hóa tới trung tâm dữ liệu."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Direct Connect để thiết lập kết nối giữa trung tâm dữ liệu và AWS Cloud.",
+        "reason": "Theo đáp án gốc, Direct Connect cho đường truyền riêng, độ trễ thấp, thông lượng cao nhưng không tự mã hóa traffic, nên thiếu yêu cầu mã hóa."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Direct Connect kết hợp virtual private network (VPN) để thiết lập kết nối giữa trung tâm dữ liệu và AWS Cloud.",
+        "reason": "Direct Connect lo phần kết nối riêng, độ trễ thấp và thông lượng cao; chạy IPsec VPN trên Direct Connect bổ sung mã hóa — đủ cả bốn yêu cầu."
+      }
+    ],
+    "explanationVi": "Đề đòi hỏi bốn tính chất: riêng (dedicated), mã hóa, độ trễ thấp và thông lượng cao, và chấp nhận thời gian thiết lập dài. Direct Connect cho kết nối riêng hiệu năng cao; VPN IPsec chạy trên đó bổ sung mã hóa. VPN đơn thuần đi qua internet, còn Transit Gateway không phải đường truyền.",
+    "keyHint": "\"dedicated, encrypted, low latency, and high throughput\" → AWS Direct Connect + VPN (IPsec).",
+    "review": {
+      "reason": "Chưa chắc chắn: phương án Direct Connect kết hợp VPN vẫn là đáp án kinh điển, nhưng lý do loại phương án chỉ dùng Direct Connect (không tự mã hóa được) đã lỗi thời: Direct Connect dedicated connection 10/100/400 Gbps tại một số location hỗ trợ MACsec (mã hóa lớp 2, AES 256-bit). Trong khi đó mỗi tunnel IPsec VPN có giới hạn băng thông riêng (khoảng 1,25 Gbps), nên với yêu cầu thông lượng cao, Direct Connect dedicated bật MACsec cũng có cơ sở. Khi đi thi, nếu đề không nhắc MACsec thì vẫn nên chọn Direct Connect kết hợp VPN."
+    }
+  },
+  {
+    "id": 10142,
+    "stemVi": "Một nhóm phát triển cần quyền liệt kê một Amazon S3 bucket và xóa object trong bucket đó. Một systems administrator đã tạo IAM policy sau để cấp quyền truy cập bucket và gắn policy vào group. Group không xóa được object trong bucket. Công ty tuân theo nguyên tắc least privilege.\n\n    \"Version\": \"2021-10-17\",\n    \"Statement\": [\n        {\n            \"Action\": [\n                \"s3:ListBucket\",\n                \"s3:DeleteObject\"\n            ],\n            \"Resource\": [\n                \"arn:aws:s3:::example-bucket\"\n            ],\n            \"Effect\": \"Allow\"\n        }\n    ]",
+    "promptVi": "Solutions architect nên thêm statement nào vào policy để khắc phục vấn đề?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "{\n    \"Action\": [\n        \"s3:DeleteObject\"\n    ],\n    \"Resource\": [\n        \"arn:aws:s3:::example-bucket/*\"\n    ],\n    \"Effect\": \"Allow\"\n}",
+        "reason": "Cấp đúng một action s3:DeleteObject trên ARN object (example-bucket/*) — sửa đúng lỗi resource của policy gốc và tuân thủ least privilege."
+      },
+      {
+        "key": "B",
+        "textVi": "{\n    \"Action\": [\n        \"s3:*\"\n    ],\n    \"Resource\": [\n        \"arn:aws:s3:::example-bucket/*\"\n    ],\n    \"Effect\": \"Allow\"\n}",
+        "reason": "s3:* cấp mọi thao tác trên object (đọc, ghi, đổi ACL…), vượt xa nhu cầu xóa, vi phạm least privilege."
+      },
+      {
+        "key": "C",
+        "textVi": "{\n    \"Action\": [\n        \"s3:*Object\"\n    ],\n    \"Resource\": [\n        \"arn:aws:s3:::example-bucket/*\"\n    ],\n    \"Effect\": \"Allow\"\n}",
+        "reason": "s3:*Object là wildcard hợp lệ, khớp cả GetObject, PutObject, DeleteObject…; nó sửa được lỗi xóa nhưng cấp thừa quyền đọc/ghi, vi phạm least privilege."
+      },
+      {
+        "key": "D",
+        "textVi": "{\n    \"Action\": [\n        \"s3:DeleteObject\"\n    ],\n    \"Resource\": [\n        \"arn:aws:s3:::example-bucket*\"\n    ],\n    \"Effect\": \"Allow\"\n}",
+        "reason": "ARN example-bucket* khớp cả mọi bucket có tên bắt đầu bằng example-bucket (như example-bucket-prod), cấp quyền xóa rộng hơn cần thiết."
+      }
+    ],
+    "explanationVi": "Lỗi nằm ở resource: s3:ListBucket áp lên ARN bucket, còn s3:DeleteObject phải áp lên ARN object (bucket/*). Policy gốc gắn DeleteObject vào ARN bucket nên không có tác dụng. Statement bổ sung chỉ cần DeleteObject trên example-bucket/*. Các phương án dùng wildcard trong action hay trong tên bucket đều cấp thừa quyền, trái nguyên tắc least privilege.",
+    "keyHint": "\"not able to delete objects\" + \"least privilege\" → s3:DeleteObject trên ARN object \"example-bucket/*\"."
+  },
+  {
+    "id": 10143,
+    "stemVi": "Nhóm kỹ thuật của một câu lạc bộ bóng đá chuyên nghiệp Tây Ban Nha đã xây hệ thống thông báo cho website bằng Amazon Simple Notification Service (Amazon SNS); các thông báo sau đó được một AWS Lambda function xử lý để gửi tới người dùng cuối. Mùa nghỉ, hệ thống chỉ cần xử lý khoảng 100 request mỗi giây. Vào mùa giải cao điểm, tốc độ lên tới khoảng 5000 request mỗi giây và có nhiều thông báo không tới được người dùng trên website.",
+    "promptVi": "Với vai trò solutions architect, bạn đề xuất giải pháp TỐT NHẤT (BEST) nào sau đây cho vấn đề này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lượng message Amazon SNS giao tới AWS Lambda đã vượt quota concurrency của account cho AWS Lambda, nên nhóm cần liên hệ AWS support để nâng giới hạn account.",
+        "reason": "Lambda có quota concurrency mặc định (1000 mỗi region); khi SNS gọi Lambda vượt mức này, lời gọi bị throttle và thông báo có thể bị bỏ sau khi hết retry — nâng quota qua AWS support giải quyết gốc rễ."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon SNS đã chạm giới hạn mở rộng, nên nhóm cần liên hệ AWS support để nâng giới hạn account.",
+        "reason": "SNS mở rộng rất lớn và 5000 message/giây không phải giới hạn của nó; điểm nghẽn nằm ở concurrency của Lambda."
+      },
+      {
+        "key": "C",
+        "textVi": "Nhóm kỹ thuật cần cấp thêm máy chủ chạy dịch vụ Amazon SNS.",
+        "reason": "SNS là dịch vụ được quản lý hoàn toàn, khách hàng không cấp hay quản lý máy chủ cho nó."
+      },
+      {
+        "key": "D",
+        "textVi": "Nhóm kỹ thuật cần cấp thêm máy chủ chạy dịch vụ AWS Lambda.",
+        "reason": "Lambda là serverless, không có máy chủ để cấp thêm; giới hạn ở đây là quota concurrency."
+      }
+    ],
+    "explanationVi": "SNS gọi Lambda bất đồng bộ cho mỗi message, nên 5000 request/giây cần nhiều execution đồng thời. Khi vượt quota concurrency của account, Lambda bị throttle; SNS thử lại một số lần rồi bỏ message nếu không có dead-letter queue. Cách xử lý là yêu cầu AWS nâng quota concurrency. SNS và Lambda đều là dịch vụ được quản lý nên không có máy chủ để cấp thêm.",
+    "keyHint": "\"100 requests per second\" tăng lên \"5000 requests per second\" + SNS → Lambda → quota concurrency của Lambda."
+  },
+  {
+    "id": 10144,
+    "stemVi": "Một startup y tế tại Mỹ đang xây công cụ chẩn đoán tương tác cho các đánh giá liên quan COVID-19. Người dùng sẽ nhập hồ sơ sức khỏe cá nhân qua công cụ này. Vì đây là thông tin sức khỏe nhạy cảm, bản sao lưu dữ liệu người dùng phải được mã hóa trong Amazon Simple Storage Service (Amazon S3). Startup không muốn tự cung cấp khóa mã hóa nhưng vẫn muốn có audit trail về việc khóa mã hóa được dùng khi nào và bởi ai.",
+    "promptVi": "Giải pháp nào sau đây là TỐT NHẤT (BEST) cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng server-side encryption với AWS Key Management Service key (SSE-KMS) để mã hóa dữ liệu người dùng trên Amazon S3.",
+        "reason": "SSE-KMS dùng khóa do AWS KMS quản lý (không phải tự cung cấp khóa), và mọi lần dùng khóa đều được ghi vào AWS CloudTrail — có audit trail ai dùng khóa và khi nào."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng server-side encryption với Amazon S3 managed key (SSE-S3) để mã hóa dữ liệu người dùng trên Amazon S3.",
+        "reason": "SSE-S3 mã hóa với khóa do S3 quản lý hoàn toàn, nhưng không có audit trail riêng cho việc sử dụng khóa."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng client-side encryption với khóa do client cung cấp rồi tải dữ liệu đã mã hóa lên Amazon S3.",
+        "reason": "Startup phải tự quản lý khóa, trái với yêu cầu không tự cung cấp khóa."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng server-side encryption với khóa do khách hàng cung cấp (SSE-C) để mã hóa dữ liệu người dùng trên Amazon S3.",
+        "reason": "SSE-C bắt khách hàng gửi khóa trong mỗi request, trái với yêu cầu không tự cung cấp khóa."
+      }
+    ],
+    "explanationVi": "Hai yêu cầu: không tự cung cấp khóa, và có audit trail cho việc dùng khóa. SSE-KMS đáp ứng cả hai vì khóa nằm trong KMS và mọi lần dùng khóa được CloudTrail ghi lại. SSE-S3 không có audit trail về khóa, còn SSE-C và client-side encryption buộc tự quản lý khóa.",
+    "keyHint": "\"does not want to provide its own encryption keys\" + \"audit trail of when an encryption key was used and by whom\" → SSE-KMS."
   }
 ]
