@@ -26,6 +26,10 @@ describe('buildSystemPrompt', () => {
     expect(buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'])).toContain('tiếng Việt');
   });
 
+  it('dặn không dùng LaTeX', () => {
+    expect(buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'])).toContain('Không dùng LaTeX');
+  });
+
   it('có chỉ dẫn dùng tool tìm câu', () => {
     const p = buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D']);
     expect(p).toContain('find_answered_questions');

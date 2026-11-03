@@ -3,19 +3,42 @@ import type { ReactNode } from 'react';
 // Markdown tối giản và an toàn cho câu trả lời của Gemini: chỉ dựng React element,
 // không bao giờ chèn HTML thô. Chữ đang stream dở (``` hay ** chưa đóng) vẫn hiển thị được.
 
+const LATEX: Record<string, string> = {
+  rightarrow: '→', to: '→', leftarrow: '←', leftrightarrow: '↔', uparrow: '↑', downarrow: '↓',
+  Rightarrow: '⇒', Leftarrow: '⇐', Leftrightarrow: '⇔', implies: '⇒',
+  times: '×', cdot: '·', pm: '±', le: '≤', leq: '≤', ge: '≥', geq: '≥', neq: '≠', ne: '≠',
+  approx: '≈', infty: '∞', checkmark: '✓', ldots: '…', dots: '…',
+};
+
+/**
+ * Gemini hay viết ký hiệu kiểu LaTeX ($\rightarrow$). Đoạn $…$ chỉ gồm lệnh quen thuộc thì đổi
+ * sang ký tự; có lệnh lạ hay cấu trúc ({ } ^ _) thì giữ nguyên. Số tiền ($5) không có "\" nên không bị đụng.
+ */
+function latex(text: string): string {
+  return text.replace(/\$([^$\n]*\\[a-zA-Z]+[^$\n]*)\$/g, (whole, body: string) => {
+    if (/[{}^_]/.test(body)) return whole;
+    let known = true;
+    const out = body.replace(/\\([a-zA-Z]+)/g, (_, name: string) => {
+      if (!(name in LATEX)) known = false;
+      return LATEX[name] ?? '';
+    });
+    return known ? out : whole;
+  });
+}
+
 function inline(text: string): ReactNode[] {
   const out: ReactNode[] = [];
   const re = /\*\*([^*\n]+)\*\*|`([^`\n]+)`/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
-    if (m.index > last) out.push(text.slice(last, m.index));
+    if (m.index > last) out.push(latex(text.slice(last, m.index)));
     out.push(
-      m[1] !== undefined ? <strong key={out.length}>{m[1]}</strong> : <code key={out.length}>{m[2]}</code>,
+      m[1] !== undefined ? <strong key={out.length}>{latex(m[1])}</strong> : <code key={out.length}>{m[2]}</code>,
     );
     last = m.index + m[0].length;
   }
-  if (last < text.length) out.push(text.slice(last));
+  if (last < text.length) out.push(latex(text.slice(last)));
   return out;
 }
 

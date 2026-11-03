@@ -33,6 +33,7 @@ export function buildSystemPrompt(question: Question, order: string[]): string {
     '- Ngắn gọn, dễ hiểu.',
     '- Nếu thông tin có thể đã lỗi thời (dịch vụ đổi tên, ngừng hỗ trợ, giá thay đổi) thì nói rõ.',
     '- Không bịa dịch vụ hay con số; không chắc thì nói không chắc.',
+    '- Không dùng LaTeX hay công thức trong dấu $ (như $\\rightarrow$); viết thẳng ký tự như →, ≤, ×.',
     '- Khi người học muốn tìm lại một câu đã làm, gọi tool find_answered_questions với từ khóa tiếng Anh hoặc tên dịch vụ AWS.',
     '- Tool trả về rỗng thì chỉ trả lời: "Bạn chưa làm câu nào như vậy trong đề này." Không bịa câu hỏi.',
     '- Tìm thấy thì nêu đề, các lựa chọn, người học đã chọn gì, đúng hay sai, đáp án đúng, rồi phân tích tình huống và so sánh với câu đang làm. Nhiều câu thì liệt kê ngắn để người học chọn.',
