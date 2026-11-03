@@ -259,6 +259,29 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(dialog).getByText('Tại sao?')).toBeInTheDocument();
   });
 
+  it('lượt gửi lỗi thì lần gửi sau mở phiên chat mới từ lịch sử chữ', async () => {
+    const s = setup();
+    s.ai.reply = new Error('tool round failed');
+    const dialog = await openChat();
+    await ask(dialog);
+    await waitFor(() => expect(within(dialog).getByRole('alert')).toBeInTheDocument());
+    s.ai.reply = ['Được rồi'];
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+    await ask(dialog, 'Thử lại');
+    await waitFor(() => expect(within(dialog).getByText('Được rồi')).toBeInTheDocument());
+    expect(s.ai.calls).toHaveLength(2);
+  });
+
+  it('đang trả lời thì không chuyển sang danh sách trò chuyện cũ', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    expect(within(dialog).getByRole('button', { name: 'Trò chuyện cũ' })).toBeDisabled();
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Trò chuyện cũ' })).toBeEnabled());
+  });
+
   it('startChat nhận tool find_answered_questions', async () => {
     const s = setup();
     const dialog = await openChat();

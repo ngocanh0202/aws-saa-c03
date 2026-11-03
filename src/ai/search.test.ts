@@ -121,6 +121,17 @@ describe('searchAnswered', () => {
     expect(JSON.stringify(hits[0])).not.toMatch(/<\/?p>/);
   });
 
+  it('từ ngắn/từ nối không làm khớp câu không liên quan', () => {
+    const unrelated: Question = { ...makeQuestion(6), stem: 'Upload application logs to S3 within a day.', prompt: 'Which is the cheapest storage class?' };
+    const list = [attempt('a1', { answers: { 5: ['B'], 6: ['A'] } })];
+    expect(searchAnswered('multipart upload in s3', CTX, list, bank([unrelated])).map((h) => h.qid)).toEqual([5]);
+  });
+
+  it('khớp theo nguyên từ, không theo một phần của từ', () => {
+    const list = [attempt('a1', { answers: { 5: ['B'] } })];
+    expect(searchAnswered('part', CTX, list, bank())).toEqual([]);
+  });
+
   it('không có nhãn A/B/C', () => {
     const hits = searchAnswered('multipart', CTX, [attempt('a1', { answers: { 5: ['B'] } })], bank());
     expect(JSON.stringify(hits)).not.toContain('"key"');

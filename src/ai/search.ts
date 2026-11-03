@@ -45,6 +45,11 @@ export const SEARCH_LIMIT = 5;
 
 type SearchBank = Pick<Bank, 'questions' | 'meta' | 'services'>;
 
+/** Từ không mang nghĩa khi tìm (đề và lựa chọn bằng tiếng Anh; "amazon"/"aws" có trong hầu hết tên dịch vụ). */
+const STOPWORDS = new Set(['the', 'and', 'for', 'with', 'from', 'into', 'that', 'this', 'which', 'what', 'use', 'using', 'question', 'aws', 'amazon']);
+
+const words = (text: string) => text.split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
 function isoDate(ms: number): string {
   const d = new Date(ms);
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -57,8 +62,11 @@ function isoDate(ms: number): string {
  */
 export function searchAnswered(query: string, ctx: SearchContext, attempts: Attempt[], bank: SearchBank, limit = SEARCH_LIMIT): SearchHit[] {
   const phrase = query.toLowerCase().replace(/\s+/g, ' ').trim();
-  const tokens = [...new Set(phrase.split(/[^\p{L}\p{N}]+/u).filter((t) => t.length >= 2))];
+  // Bỏ từ nối và từ quá ngắn ("in", "to"…), trừ tên ngắn có số như "s3".
+  const tokens = [...new Set(words(phrase))].filter((t) => !STOPWORDS.has(t) && (t.length >= 3 || /\d/.test(t)));
   if (tokens.length === 0) return [];
+  // Tối đa 3 từ khóa thì phải khớp hết; nhiều hơn thì được thiếu 1.
+  const need = tokens.length <= 3 ? tokens.length : tokens.length - 1;
 
   const byQid = new Map<number, { tries: (SearchTry & { at: number })[] }>();
   for (const a of attempts) {
@@ -97,8 +105,11 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
     const serviceIds = bank.meta.get(qid)?.services ?? [];
     const services = serviceIds.map((id) => bank.services.get(id)?.name ?? id);
     const haystack = [question, ...options.map((o) => o.text), ...services, ...serviceIds].join('\n').toLowerCase().replace(/\s+/g, ' ');
-    const score = tokens.filter((t) => haystack.includes(t)).length + (haystack.includes(phrase) ? 2 : 0);
-    if (score < Math.max(1, Math.ceil(tokens.length / 2))) continue;
+    // Khớp theo nguyên từ ("part" không khớp "multipart").
+    const present = new Set(words(haystack));
+    const matched = tokens.filter((t) => present.has(t)).length;
+    if (matched < need) continue;
+    const score = matched + (haystack.includes(phrase) ? 2 : 0);
     tries.sort((x, y) => y.at - x.at);
     const latest = tries[0];
     scored.push({

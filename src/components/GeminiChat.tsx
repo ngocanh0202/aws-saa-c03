@@ -101,6 +101,7 @@ function ChatDialog({
   const [view, setView] = useState<'chat' | 'list'>('chat');
   /** null = câu đang làm. */
   const [picked, setPicked] = useState<{ attemptId: string; qid: number } | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
@@ -173,6 +174,7 @@ function ChatDialog({
             aria-label="Trò chuyện cũ"
             aria-pressed={view === 'list'}
             title="Trò chuyện cũ"
+            disabled={busy}
             onClick={() => setView((v) => (v === 'list' ? 'chat' : 'list'))}
           >
             🕘
@@ -205,11 +207,11 @@ function ChatDialog({
       ) : (
         <>
           {!atHome && (
-            <button type="button" className="gemini__back" onClick={() => setPicked(null)}>
+            <button type="button" className="gemini__back" disabled={busy} onClick={() => setPicked(null)}>
               ← Quay lại {homeLabel}
             </button>
           )}
-          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} target={target} />
+          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} target={target} onBusy={setBusy} />
         </>
       )}
     </div>,
@@ -278,7 +280,20 @@ function ChatList({
   );
 }
 
-function Conversation({ uid, ai, chats, target }: { uid: string; ai: AiClient; chats: ChatHistoryStore; target: Target }) {
+function Conversation({
+  uid,
+  ai,
+  chats,
+  target,
+  onBusy,
+}: {
+  uid: string;
+  ai: AiClient;
+  chats: ChatHistoryStore;
+  target: Target;
+  /** Báo khung ngoài để khóa chuyển cuộc trò chuyện khi đang trả lời (chuyển đi sẽ bỏ câu trả lời). */
+  onBusy: (busy: boolean) => void;
+}) {
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
   const { store, bank } = useApp();
@@ -298,6 +313,8 @@ function Conversation({ uid, ai, chats, target }: { uid: string; ai: AiClient; c
   firstReply.current = target.onFirstReply;
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => onBusy(busy), [busy, onBusy]);
 
   useEffect(() => {
     alive.current = true;
@@ -358,6 +375,8 @@ function Conversation({ uid, ai, chats, target }: { uid: string; ai: AiClient; c
         if (alive.current) setSaveFailed(true);
       });
     } catch {
+      // Phiên có thể kẹt ở lượt gọi tool chưa có kết quả; lần gửi sau mở phiên mới từ lịch sử chữ.
+      chatRef.current = null;
       if (alive.current) setSendFailed(true);
     } finally {
       if (alive.current) {
