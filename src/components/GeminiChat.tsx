@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
 import { buildSystemPrompt } from '../ai/prompt';
+import { inflightFor, inflightKey } from '../ai/inflight';
 import { createSearchTool } from '../ai/search';
 import type { AiChat, AiClient, ChatHistoryStore, ChatMessage, ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
@@ -291,23 +292,27 @@ function Conversation({
   ai: AiClient;
   chats: ChatHistoryStore;
   target: Target;
-  /** Báo khung ngoài để khóa chuyển cuộc trò chuyện khi đang trả lời (chuyển đi sẽ bỏ câu trả lời). */
+  /** Báo khung ngoài để khóa chuyển cuộc trò chuyện khi đang trả lời. */
   onBusy: (busy: boolean) => void;
 }) {
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
-  const { store, bank } = useApp();
-  const [searching, setSearching] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const key = inflightKey(uid, attemptId, qid);
+  const { store, bank, sync } = useApp();
+  const inflight = inflightFor(chats);
+  // Câu trả lời còn chạy từ lần mở khung trước (đã sang câu khác rồi quay lại): theo dõi tiếp.
+  const [running] = useState(() => inflight.get(key));
+  const [searching, setSearching] = useState(running?.searching ?? false);
+  const [messages, setMessages] = useState<ChatMessage[]>(running?.messages ?? []);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
   const [saveFailed, setSaveFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState(running !== undefined);
   const [input, setInput] = useState('');
   const chatRef = useRef<AiChat | null>(null);
-  // Khung đã đóng hay đã chuyển sang cuộc trò chuyện khác thì bỏ phần stream còn lại, không cập nhật hay lưu gì nữa.
-  const alive = useRef(true);
+  // Đã nhận tin từ câu trả lời đang chạy thì lịch sử tải về (có thể cũ hơn) không được ghi đè.
+  const fromInflight = useRef(running !== undefined);
   // Luôn gọi bản onFirstReply mới nhất, kể cả khi stream bắt đầu từ lần render trước.
   const firstReply = useRef(target.onFirstReply);
   firstReply.current = target.onFirstReply;
@@ -316,17 +321,23 @@ function Conversation({
 
   useEffect(() => onBusy(busy), [busy, onBusy]);
 
-  useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
-    };
-  }, []);
+  useEffect(
+    () =>
+      inflight.subscribe(key, (e) => {
+        fromInflight.current = true;
+        if (e.kind === 'save-failed') return setSaveFailed(true);
+        setMessages(e.messages);
+        setBusy(e.kind === 'progress');
+        setSearching(e.kind === 'progress' && e.searching);
+        if (e.kind === 'done') setSendFailed(e.failed);
+      }),
+    [inflight, key],
+  );
 
   useEffect(() => {
     let live = true;
     chats.load(uid, attemptId, qid).then(
-      (saved) => live && setMessages(saved),
+      (saved) => live && !fromInflight.current && setMessages(saved),
       () => live && setLoadFailed(true),
     ).finally(() => live && setLoaded(true));
     return () => {
@@ -342,47 +353,54 @@ function Conversation({
     endRef.current?.scrollIntoView?.({ block: 'end' });
   }, [messages]);
 
+  /**
+   * Chạy ở nền, không phụ thuộc khung chat còn mở hay không: mọi cập nhật đi qua `inflight`, khung
+   * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
+   */
   const send = async () => {
     const text = input.trim();
     if (!text || busy || !loaded) return;
     const history = messages;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
+    const signedIn = () => !sync || signedInUser(sync.getState())?.uid === uid;
     setInput('');
     setSendFailed(false);
     setSaveFailed(false);
-    setBusy(true);
-    setMessages(asked);
     let reply = '';
+    let searchingNow = false;
+    const progress = () =>
+      inflight.emit(key, { kind: 'progress', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, searching: searchingNow });
+    progress();
     try {
-      // Một phiên chat cho mỗi lần mở popup; adapter tự cắt và chuẩn hóa history.
+      // Một phiên chat cho mỗi lần mở khung; adapter tự cắt và chuẩn hóa history.
       // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
       const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), history, {
         tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
-        onToolCall: () => alive.current && setSearching(true),
+        onToolCall: () => {
+          searchingNow = true;
+          progress();
+        },
       }));
       for await (const chunk of chat.send(text)) {
-        if (!alive.current) return;
+        if (!signedIn()) throw new Error('signed out');
         if (!chunk) continue;
-        setSearching(false);
+        searchingNow = false;
         if (!reply) firstReply.current();
         reply += chunk;
-        setMessages([...asked, { role: 'model', text: reply }]);
+        progress();
       }
-      if (!alive.current) return;
       if (!reply) throw new Error('empty reply');
-      chats.save(uid, attemptId, qid, [...asked, { role: 'model', text: reply }]).catch(() => {
+      if (!signedIn()) throw new Error('signed out');
+      const done: ChatMessage[] = [...asked, { role: 'model', text: reply }];
+      inflight.emit(key, { kind: 'done', messages: done, failed: false });
+      chats.save(uid, attemptId, qid, done).catch(() => {
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
-        if (alive.current) setSaveFailed(true);
+        inflight.emit(key, { kind: 'save-failed' });
       });
     } catch {
       // Phiên có thể kẹt ở lượt gọi tool chưa có kết quả; lần gửi sau mở phiên mới từ lịch sử chữ.
       chatRef.current = null;
-      if (alive.current) setSendFailed(true);
-    } finally {
-      if (alive.current) {
-        setBusy(false);
-        setSearching(false);
-      }
+      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true });
     }
   };
 

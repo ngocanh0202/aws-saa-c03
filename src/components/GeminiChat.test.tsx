@@ -282,6 +282,49 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Trò chuyện cũ' })).toBeEnabled());
   });
 
+  it('sang câu khác khi Gemini đang trả lời: câu trả lời vẫn chạy ở nền và được lưu', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    s.ai.reply = ['Vì ', 'S3'];
+    const dialog = await openChat();
+    await ask(dialog);
+    fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await act(async () => s.ai.release());
+    await waitFor(() =>
+      expect(s.chats.saved.at(-1)).toEqual({ key: s.key, messages: [{ role: 'user', text: 'Tại sao?' }, { role: 'model', text: 'Vì S3' }] }),
+    );
+    expect(guideOpened(s)).toContain(s.qid);
+  });
+
+  it('đóng khung khi Gemini đang trả lời: vẫn lưu', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(s.chats.saved.at(-1)?.key).toBe(s.key));
+  });
+
+  it('quay lại câu cũ khi Gemini còn đang trả lời: thấy câu hỏi đang chờ rồi câu trả lời', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    s.ai.reply = ['Trả lời ở nền'];
+    const dialog = await openChat();
+    await ask(dialog, 'Hỏi rồi đi');
+    fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Câu trước' }));
+    fireEvent.click(screen.getByRole('button', { name: GEMINI }));
+    const again = screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 1' });
+    expect(await within(again).findByText('Hỏi rồi đi')).toBeInTheDocument();
+    expect(within(again).getByText('Gemini đang trả lời…')).toBeInTheDocument();
+    expect(within(again).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+    await act(async () => s.ai.release());
+    expect(await within(again).findByText('Trả lời ở nền')).toBeInTheDocument();
+    await waitFor(() => expect(within(again).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+  });
+
   it('startChat nhận tool find_answered_questions', async () => {
     const s = setup();
     const dialog = await openChat();
