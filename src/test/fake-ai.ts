@@ -1,8 +1,9 @@
 import { prepareHistory } from '../ai/prompt';
-import type { AiClient, ChatHistoryStore, ChatMessage } from '../ai/types';
+import { toolLoop, type FunctionCallLike } from '../ai/tool-loop';
+import type { AiClient, ChatHistoryStore, ChatMessage, ChatOptions } from '../ai/types';
 
 export interface FakeAi extends AiClient {
-  calls: { systemPrompt: string; history: ChatMessage[]; sent: string[] }[];
+  calls: { systemPrompt: string; history: ChatMessage[]; sent: string[]; options?: ChatOptions; toolResults: object[] }[];
   /** Các đoạn trả lời; là Error thì ném trước đoạn đầu tiên. */
   reply: string[] | Error;
   /** Ném lỗi sau n đoạn. */
@@ -17,6 +18,8 @@ export interface FakeAi extends AiClient {
   strictHistory: boolean;
   /** Đặt thì startChat() ném lỗi này ngay (đồng bộ). */
   startError?: Error;
+  /** Đặt thì tin nhắn đầu của mỗi chat gọi các tool này (qua toolLoop như adapter thật) rồi mới trả reply. */
+  toolCalls?: FunctionCallLike[];
 }
 
 export function fakeAi(): FakeAi {
@@ -31,7 +34,7 @@ export function fakeAi(): FakeAi {
       waiting = [];
       for (const r of list) r();
     },
-    startChat(systemPrompt, history) {
+    startChat(systemPrompt, history, options) {
       if (ai.startError) throw ai.startError;
       if (ai.strictHistory) {
         const sent = prepareHistory(history);
@@ -40,20 +43,33 @@ export function fakeAi(): FakeAi {
           if (i > 0 && sent[i - 1].role === msg.role) throw new Error(`Content with role '${msg.role}' can't follow '${msg.role}'`);
         });
       }
-      const call = { systemPrompt, history, sent: [] as string[] };
+      const call = { systemPrompt, history, sent: [] as string[], options, toolResults: [] as object[] };
       ai.calls.push(call);
-      return {
-        async *send(text) {
-          call.sent.push(text);
-          if (ai.hold) await new Promise<void>((r) => waiting.push(r));
-          if (ai.reply instanceof Error) throw ai.reply;
-          let n = 0;
-          for (const chunk of ai.reply) {
-            if (ai.failAfter !== undefined && n >= ai.failAfter) throw new Error('stream failed');
-            n++;
-            yield chunk;
-          }
+      async function* answer() {
+        if (ai.hold) await new Promise<void>((r) => waiting.push(r));
+        if (ai.reply instanceof Error) throw ai.reply;
+        let n = 0;
+        for (const chunk of ai.reply) {
           if (ai.failAfter !== undefined && n >= ai.failAfter) throw new Error('stream failed');
+          n++;
+          yield chunk;
+        }
+        if (ai.failAfter !== undefined && n >= ai.failAfter) throw new Error('stream failed');
+      }
+      async function* none() {}
+      return {
+        send(text) {
+          call.sent.push(text);
+          const toolCalls = call.sent.length === 1 ? (ai.toolCalls ?? []) : [];
+          return toolLoop(
+            async (turn) => {
+              if (typeof turn !== 'string') call.toolResults.push(...turn.map((r) => r.response));
+              const calling = typeof turn === 'string' && toolCalls.length > 0;
+              return { chunks: calling ? none() : answer(), calls: async () => (calling ? toolCalls : []) };
+            },
+            text,
+            options,
+          );
         },
       };
     },

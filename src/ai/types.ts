@@ -8,8 +8,23 @@ export interface AiChat {
   send(text: string): AsyncIterable<string>;
 }
 
+/** Hàm mô hình được gọi (function calling); chạy ở trình duyệt. */
+export interface AiTool {
+  name: string;
+  description: string;
+  /** Tham số chuỗi: tên → mô tả. Tất cả bắt buộc. */
+  params: Record<string, string>;
+  run(args: Record<string, unknown>): Promise<object> | object;
+}
+
+export interface ChatOptions {
+  tools?: AiTool[];
+  /** Gọi mỗi lần mô hình yêu cầu chạy tool (để hiện dòng chờ). */
+  onToolCall?: (name: string) => void;
+}
+
 export interface AiClient {
-  startChat(systemPrompt: string, history: ChatMessage[]): AiChat;
+  startChat(systemPrompt: string, history: ChatMessage[], options?: ChatOptions): AiChat;
 }
 
 export interface ChatHistoryStore {

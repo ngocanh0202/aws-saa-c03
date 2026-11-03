@@ -25,6 +25,12 @@ describe('buildSystemPrompt', () => {
   it('có chỉ dẫn trả lời tiếng Việt', () => {
     expect(buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'])).toContain('tiếng Việt');
   });
+
+  it('có chỉ dẫn dùng tool tìm câu', () => {
+    const p = buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D']);
+    expect(p).toContain('find_answered_questions');
+    expect(p).toContain('Bạn chưa làm câu nào như vậy trong đề này.');
+  });
 });
 
 describe('trimHistory', () => {
