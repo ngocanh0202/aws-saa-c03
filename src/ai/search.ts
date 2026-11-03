@@ -2,7 +2,10 @@ import { setLabel } from '../app/format';
 import type { Bank } from '../data/bank';
 import { htmlToText } from '../data/html-text';
 import type { Attempt, Mode } from '../engine/attempt';
+import { markGuideOpened } from '../engine/actions';
 import { isCorrect } from '../engine/scoring';
+import type { AttemptStore } from '../storage/storage';
+import type { AiTool } from './types';
 
 /** Một lần người học đã trả lời câu này. */
 export interface SearchTry {
@@ -116,4 +119,31 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
     .sort((x, y) => y.score - x.score || y.at - x.at)
     .slice(0, limit)
     .map((s) => s.hit);
+}
+
+export const SEARCH_TOOL = 'find_answered_questions';
+
+/**
+ * Bọc searchAnswered thành tool cho Gemini. Câu tìm được thuộc lượt Thi thử chưa nộp thì gắn nhãn
+ * "đã xem hướng dẫn" ở đúng lượt đó (tool lộ đáp án đúng, giống mở hướng dẫn).
+ */
+export function createSearchTool(store: AttemptStore, bank: SearchBank, ctx: SearchContext): AiTool {
+  return {
+    name: SEARCH_TOOL,
+    description:
+      'Tìm các câu người học đã trả lời trong cùng đề (lượt đang làm và các lượt cũ). Trả về đề, các lựa chọn, đáp án đúng và những lần người học đã làm câu đó.',
+    params: { query: 'Từ khóa tiếng Anh hoặc tên dịch vụ AWS của câu cần tìm' },
+    run(args) {
+      const query = typeof args.query === 'string' ? args.query : '';
+      const results = searchAnswered(query, ctx, store.list(), bank);
+      for (const hit of results) {
+        for (const t of hit.tries) {
+          if (t.mode !== 'practice' || t.submitted) continue;
+          const latest = store.get(t.attemptId);
+          if (latest && latest.status === 'in-progress' && !latest.guideOpened.includes(hit.qid)) store.save(markGuideOpened(latest, hit.qid));
+        }
+      }
+      return { results };
+    },
+  };
 }

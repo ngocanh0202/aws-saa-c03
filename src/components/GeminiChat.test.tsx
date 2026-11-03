@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage } from '../ai/types';
 import { createAttempt } from '../engine/attempt';
+import { selectOption } from '../engine/actions';
 import { createStore } from '../storage/storage';
 import { createSyncController } from '../sync/controller';
 import type { SyncUser } from '../sync/types';
@@ -255,6 +256,29 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(dialog).toHaveClass('gemini-dock');
     expect(document.body.style.overflow).toBe('');
     expect(within(dialog).getByText('Tại sao?')).toBeInTheDocument();
+  });
+
+  it('startChat nhận tool find_answered_questions', async () => {
+    const s = setup();
+    const dialog = await openChat();
+    await ask(dialog);
+    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions']);
+  });
+
+  it('Gemini gọi tool tìm câu: hiện dòng chờ, kết quả gửi lại cho mô hình, câu tìm được gắn nhãn', async () => {
+    const s = setup();
+    const other = s.store.get('e1')!.questions[1].qid;
+    s.store.save(selectOption(s.store.get('e1')!, other, 'A', 1));
+    s.ai.toolCalls = [{ name: 'find_answered_questions', args: { query: `Stem ${other}` } }];
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    await waitFor(() => expect(within(dialog).getByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeInTheDocument());
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(within(dialog).queryByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeNull());
+    const result = s.ai.calls[0].toolResults[0] as { results: { qid: number }[] };
+    expect(result.results.map((r) => r.qid)).toContain(other);
+    expect(guideOpened(s)).toContain(other);
   });
 
   it('Esc đóng popup (kể cả khi đang mở rộng) và trả lại cuộn trang', async () => {

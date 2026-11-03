@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Attempt, Mode } from '../engine/attempt';
 import type { Question, QuestionMeta } from '../data/types';
-import { makeMainQuestion, makeQuestion } from '../test/fixtures';
-import { searchAnswered } from './search';
+import { createStore } from '../storage/storage';
+import { makeMainQuestion, makeQuestion, memoryStorage } from '../test/fixtures';
+import { createSearchTool, searchAnswered, SEARCH_TOOL } from './search';
 
 const MULTIPART: Question = {
   ...makeQuestion(5, ['A', 'B', 'C', 'D'], ['B']),
@@ -123,5 +124,25 @@ describe('searchAnswered', () => {
   it('không có nhãn A/B/C', () => {
     const hits = searchAnswered('multipart', CTX, [attempt('a1', { answers: { 5: ['B'] } })], bank());
     expect(JSON.stringify(hits)).not.toContain('"key"');
+  });
+});
+
+describe('createSearchTool', () => {
+  it('tool đánh dấu đã xem hướng dẫn ở lượt Thi thử chưa nộp, không sửa lượt đã nộp', async () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    store.save(attempt('open', { status: 'in-progress', answers: { 5: ['A'] } }));
+    store.save(attempt('done', { answers: { 5: ['B'] } }));
+    const tool = createSearchTool(store, bank(), CTX);
+    expect(tool.name).toBe(SEARCH_TOOL);
+    const out = (await tool.run({ query: 'multipart' })) as { results: unknown[] };
+    expect(out.results).toHaveLength(1);
+    expect(store.get('open')!.guideOpened).toEqual([5]);
+    expect(store.get('done')!.guideOpened).toEqual([]);
+  });
+
+  it('args không phải chuỗi thì coi như rỗng', async () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    store.save(attempt('a1', { answers: { 5: ['B'] } }));
+    expect(await createSearchTool(store, bank(), CTX).run({ query: 5 })).toEqual({ results: [] });
   });
 });

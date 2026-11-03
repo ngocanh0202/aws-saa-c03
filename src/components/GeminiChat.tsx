@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, 
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { buildSystemPrompt } from '../ai/prompt';
+import { createSearchTool } from '../ai/search';
 import type { AiChat, AiClient, ChatHistoryStore, ChatMessage } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import type { Question } from '../data/types';
@@ -81,6 +82,8 @@ function ChatDialog({
   onClose,
 }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; onClose: () => void }) {
   const qid = question.id;
+  const { store, bank } = useApp();
+  const [searching, setSearching] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -152,10 +155,15 @@ function ChatDialog({
     try {
       // Một phiên chat cho mỗi lần mở popup; adapter tự cắt và chuẩn hóa history.
       // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
-      const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), history));
+      const setId = store.get(attemptId)?.setId ?? 0;
+      const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), history, {
+        tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
+        onToolCall: () => alive.current && setSearching(true),
+      }));
       for await (const chunk of chat.send(text)) {
         if (!alive.current) return;
         if (!chunk) continue;
+        setSearching(false);
         if (!reply) firstReply.current();
         reply += chunk;
         setMessages([...asked, { role: 'model', text: reply }]);
@@ -169,7 +177,10 @@ function ChatDialog({
     } catch {
       if (alive.current) setSendFailed(true);
     } finally {
-      if (alive.current) setBusy(false);
+      if (alive.current) {
+        setBusy(false);
+        setSearching(false);
+      }
     }
   };
 
@@ -228,7 +239,9 @@ function ChatDialog({
               {m.role === 'model' ? <Markdown text={m.text} /> : m.text}
             </div>
           ))}
-          {busy && messages[messages.length - 1]?.role === 'user' && <p className="hint">Gemini đang trả lời…</p>}
+          {busy && messages[messages.length - 1]?.role === 'user' && (
+            <p className="hint">{searching ? 'Gemini đang tìm trong các câu bạn đã làm…' : 'Gemini đang trả lời…'}</p>
+          )}
           {sendFailed && (
             <p className="gemini__notice" role="alert">
               Gemini chưa trả lời được, thử gửi lại nhé.
