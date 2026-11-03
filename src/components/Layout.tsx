@@ -6,6 +6,7 @@ import { useTheme } from '../app/theme';
 import { externalHref } from '../pages/ExternalListPage';
 import { AccountMenu } from './AccountMenu';
 import { ConflictDialog } from './ConflictDialog';
+import { SyncLoading } from './SyncLoading';
 
 export function Layout() {
   const { store, bank } = useApp();
@@ -79,6 +80,7 @@ export function Layout() {
       )}
       <Outlet />
       <ConflictDialog />
+      <SyncLoading />
     </>
   );
 }

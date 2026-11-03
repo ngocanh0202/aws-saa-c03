@@ -28,7 +28,7 @@ const PREVIEW = 80;
 function GeminiIcon() {
   const id = useId();
   return (
-    <svg className="gemini-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+    <svg className="gemini-icon" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
       <defs>
         <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#4285f4" />
