@@ -17,7 +17,7 @@ function clamp(pos: Pos): Pos {
   return { x: Math.min(Math.max(pos.x, MARGIN), maxX), y: Math.min(Math.max(pos.y, MARGIN), maxY) };
 }
 
-/** Vị trí người dùng đã kéo tới (null = chưa kéo, nút bám góc dưới bên phải). */
+/** Vị trí người dùng đã kéo tới (null = chưa kéo, nút bám góc dưới bên trái). */
 function readSaved(): Pos | null {
   try {
     const saved = JSON.parse(localStorage.getItem(POS_KEY) ?? 'null') as Pos | null;
@@ -28,8 +28,9 @@ function readSaved(): Pos | null {
   return null;
 }
 
+/** Góc dưới bên trái, ngang hàng với nút "Hỏi Gemini" ở góc dưới bên phải (cùng bottom 24px). */
 function defaultPos(): Pos {
-  return { x: window.innerWidth - SIZE - 16, y: window.innerHeight - SIZE - 24 };
+  return { x: 16, y: window.innerHeight - SIZE - 24 };
 }
 
 /** Nút tròn nổi, kéo thả được (vị trí được nhớ); bấm (không kéo) thì gọi onClick. */

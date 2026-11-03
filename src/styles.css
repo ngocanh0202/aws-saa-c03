@@ -92,7 +92,9 @@ tr.is-clickable { cursor: pointer; }
 .exam__bar { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
 .timer { font-variant-numeric: tabular-nums; font-weight: 600; }
 .timer--low { color: var(--bad); }
-.exam__actions { display: flex; justify-content: space-between; gap: 8px; margin: 16px 0; }
+.exam__actions { display: grid; gap: 8px; margin: 16px 0; }
+/* Câu trước / Câu sau ngay dưới câu hỏi, chung một hàng */
+.exam__pager { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
 
 .qcard { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
 .qcard__heading { margin-top: 0; }
@@ -111,7 +113,7 @@ tr.is-clickable { cursor: pointer; }
 
 .btn-guide { margin-top: 12px; }
 .exam__assist { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-/* Nút "Hỏi Gemini" nổi ở góc dưới bên phải; màn hình hẹp thì nhấc lên trên nút bảng câu hỏi (.exam-fab) */
+/* Nút "Hỏi Gemini" nổi ở góc dưới bên phải; màn hình hẹp thì cao bằng và ngang hàng với nút danh sách câu (.exam-fab, góc dưới bên trái) */
 .btn-gemini {
   position: fixed; right: 20px; bottom: 24px; z-index: 12;
   display: inline-flex; align-items: center; gap: 10px;
@@ -121,7 +123,7 @@ tr.is-clickable { cursor: pointer; }
 .gemini-icon { flex: none; }
 /* Chừa chỗ cuối trang để nút nổi không che nội dung */
 .exam__content:has(.btn-gemini) { padding-bottom: 88px; }
-@media (max-width: 900px) { .btn-gemini { right: 16px; bottom: 96px; padding: 12px 18px; font-size: 1em; } }
+@media (max-width: 900px) { .btn-gemini { right: 16px; bottom: 24px; height: 56px; padding: 0 18px; font-size: 1em; } }
 .guide { margin-top: 12px; padding: 16px 20px; border-radius: 4px var(--radius) var(--radius) 4px; background: var(--guide-bg); border: 1px solid var(--border); border-left: 5px solid var(--guide-bar); }
 .guide h4 { margin: 0 0 8px; }
 .guide h5 { margin: 14px 0 4px; }
@@ -167,7 +169,6 @@ tr.is-clickable { cursor: pointer; }
 input[type='search'] { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; }
 
 @media (max-width: 600px) {
-  .exam__actions { flex-wrap: wrap; }
   .bars__row { grid-template-columns: 90px 1fr 40px; }
   .service-note__concepts div { grid-template-columns: 1fr; gap: 2px; }
 }
@@ -251,8 +252,7 @@ td.is-fail { color: var(--bad); font-weight: 600; }
 .exam__layout { display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 20px; align-items: start; }
 .exam__side { position: sticky; top: 64px; max-height: calc(100vh - 80px); overflow-y: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
 .exam__side-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: 0.9em; }
-.exam__side .exam__actions { flex-wrap: wrap; margin: 10px 0 12px; }
-.exam__side .exam__actions button { flex: 1 1 auto; }
+.exam__side .exam__actions { margin: 10px 0 12px; }
 .exam__side .navgrid { margin-top: 0; grid-template-columns: repeat(5, 1fr); }
 .exam__side-close, .exam__backdrop, .exam-fab { display: none; }
 .exam .dialog { z-index: 30; }

@@ -13,9 +13,12 @@ function setup() {
 const panel = () => screen.getByRole('complementary', { name: 'Bảng điều khiển bài thi' });
 
 describe('Trang thi — khung bên trái và nút nổi', () => {
-  it('khung bên trái chứa nút điều hướng, tiến độ và danh sách câu', () => {
+  it('khung bên trái chứa nút đánh dấu, tiến độ và danh sách câu; Câu trước/Câu sau nằm dưới câu hỏi', () => {
     setup();
-    expect(within(panel()).getByRole('button', { name: 'Câu sau' })).toBeInTheDocument();
+    expect(within(panel()).queryByRole('button', { name: 'Câu sau' })).toBeNull();
+    expect(within(panel()).queryByRole('button', { name: 'Câu trước' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Câu sau' })).toBeInTheDocument();
+    expect(within(panel()).getByRole('button', { name: 'Đánh dấu xem lại' })).toBeInTheDocument();
     expect(within(panel()).getByRole('navigation', { name: 'Danh sách câu' })).toBeInTheDocument();
     expect(within(panel()).getByText('Đã làm 0/65 · đánh dấu 0')).toBeInTheDocument();
   });
@@ -56,6 +59,17 @@ describe('Trang thi — khung bên trái và nút nổi', () => {
 });
 
 describe('Nút nổi luôn nằm trong màn hình', () => {
+  it('chưa kéo thì nút nằm ở góc dưới bên trái', () => {
+    localStorage.removeItem('saa-c03:exam-fab');
+    const deps = makeDeps();
+    deps.store.save(createAttempt({ id: 'e3', setId: 1, mode: 'practice', esl: false, seed: 7, now: deps.now(), sets: deps.bank.sets, questions: deps.bank.questions, metas: deps.bank.meta }));
+    Object.assign(window, { innerWidth: 390, innerHeight: 800 });
+    renderApp('/exam/e3', deps);
+    const button = screen.getByRole('button', { name: 'Hiện danh sách câu' });
+    expect(parseFloat(button.style.left)).toBe(16);
+    expect(parseFloat(button.style.top)).toBe(800 - 56 - 24);
+  });
+
   it('vị trí lưu từ màn hình lớn được kéo về trong màn hình nhỏ; đổi kích thước thì tính lại', () => {
     localStorage.setItem('saa-c03:exam-fab', JSON.stringify({ x: 1800, y: 1000 }));
     const deps = makeDeps();

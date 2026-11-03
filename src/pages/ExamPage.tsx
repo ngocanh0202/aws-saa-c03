@@ -79,14 +79,8 @@ export function ExamPage() {
             </button>
           </div>
           <div className="exam__actions">
-            <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)}>
-              {t.prev}
-            </button>
-            <button type="button" aria-pressed={flagged} onClick={() => update(toggleFlag(attempt, aq.qid))}>
+            <button type="button" className="exam__flag" aria-pressed={flagged} onClick={() => update(toggleFlag(attempt, aq.qid))}>
               {flagged ? t.unflag : t.flag}
-            </button>
-            <button type="button" disabled={index === attempt.questions.length - 1} onClick={() => setIndex(index + 1)}>
-              {t.next}
             </button>
           </div>
           <NavGrid
@@ -110,6 +104,15 @@ export function ExamPage() {
             chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
             onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
           />
+
+          <div className="exam__pager">
+            <button type="button" disabled={index === 0} onClick={() => setIndex(index - 1)}>
+              {t.prev}
+            </button>
+            <button type="button" disabled={index === attempt.questions.length - 1} onClick={() => setIndex(index + 1)}>
+              {t.next}
+            </button>
+          </div>
 
           {attempt.mode === 'practice' && (
             <>
