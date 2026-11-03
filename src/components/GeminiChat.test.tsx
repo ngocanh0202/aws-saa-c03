@@ -233,12 +233,38 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.chats.saved).toEqual([]);
   });
 
-  it('Esc đóng popup và trả lại cuộn trang', async () => {
+  it('mở ra là khung chat nhỏ ở góc, trang vẫn cuộn và dùng được; nút mở chat ẩn đi', async () => {
     setup();
-    await openChat();
+    const dialog = await openChat();
+    expect(dialog).toHaveClass('gemini-dock');
+    expect(dialog).not.toHaveAttribute('aria-modal');
+    expect(document.body.style.overflow).toBe('');
+    expect(screen.queryByRole('button', { name: GEMINI })).toBeNull();
+  });
+
+  it('nút Mở rộng chuyển sang toàn màn hình, Thu nhỏ quay về khung chat, tin nhắn giữ nguyên', async () => {
+    setup();
+    const dialog = await openChat();
+    await ask(dialog);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mở rộng' }));
+    expect(dialog).toHaveClass('service-modal');
+    expect(dialog).toHaveAttribute('aria-modal', 'true');
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(within(dialog).getByText('Tại sao?')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Thu nhỏ' }));
+    expect(dialog).toHaveClass('gemini-dock');
+    expect(document.body.style.overflow).toBe('');
+    expect(within(dialog).getByText('Tại sao?')).toBeInTheDocument();
+  });
+
+  it('Esc đóng popup (kể cả khi đang mở rộng) và trả lại cuộn trang', async () => {
+    setup();
+    const dialog = await openChat();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Mở rộng' }));
     expect(document.body.style.overflow).toBe('hidden');
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.body.style.overflow).toBe('');
+    expect(screen.getByRole('button', { name: GEMINI })).toBeInTheDocument();
   });
 });

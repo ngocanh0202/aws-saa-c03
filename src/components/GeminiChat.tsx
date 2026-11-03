@@ -58,14 +58,14 @@ function SignedIn({ sync, ...rest }: Props & { sync: SyncController; ai: AiClien
 function Launcher(props: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore }) {
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
-  return (
-    <>
-      <button type="button" className="btn-gemini" aria-label="Hỏi Gemini" onClick={() => setOpen(true)}>
-        <GeminiIcon />
-        Hỏi Gemini
-      </button>
-      {open && <ChatDialog {...props} onClose={close} />}
-    </>
+  // Như chat Messenger: khung chat mở ra thay chỗ nút, đóng lại thì nút hiện lại.
+  return open ? (
+    <ChatDialog {...props} onClose={close} />
+  ) : (
+    <button type="button" className="btn-gemini" aria-label="Hỏi Gemini" onClick={() => setOpen(true)}>
+      <GeminiIcon />
+      Hỏi Gemini
+    </button>
   );
 }
 
@@ -88,6 +88,8 @@ function ChatDialog({
   const [saveFailed, setSaveFailed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [input, setInput] = useState('');
+  /** false = khung chat nhỏ ở góc (trang vẫn dùng được); true = phủ toàn màn hình. */
+  const [expanded, setExpanded] = useState(false);
   const chatRef = useRef<AiChat | null>(null);
   // Popup đã đóng (Esc, đăng xuất…) thì bỏ phần stream còn lại, không cập nhật hay lưu gì nữa.
   const alive = useRef(true);
@@ -101,14 +103,21 @@ function ChatDialog({
     alive.current = true;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
     return () => {
       alive.current = false;
       window.removeEventListener('keydown', onKey);
-      document.body.style.overflow = overflow;
     };
   }, [onClose]);
+
+  // Chỉ khóa cuộn trang khi phủ toàn màn hình.
+  useEffect(() => {
+    if (!expanded) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [expanded]);
 
   useEffect(() => {
     let live = true;
@@ -181,15 +190,32 @@ function ChatDialog({
   const preview = stem.length > PREVIEW ? `${stem.slice(0, PREVIEW).trimEnd()}…` : stem;
 
   return createPortal(
-    <div className="service-modal gemini" role="dialog" aria-modal="true" aria-labelledby="gemini-title" lang="vi">
+    <div
+      className={expanded ? 'service-modal gemini' : 'gemini-dock gemini'}
+      role="dialog"
+      aria-modal={expanded || undefined}
+      aria-labelledby="gemini-title"
+      lang="vi"
+    >
       <header className="service-modal__bar">
         <div className="service-modal__title">
           <h1 id="gemini-title">Hỏi Gemini · Câu {number}</h1>
           <p className="hint gemini__stem">{preview}</p>
         </div>
-        <button type="button" className="service-modal__close" aria-label="Đóng" title="Đóng (Esc)" onClick={onClose}>
-          ✕ Đóng
-        </button>
+        <div className="gemini__tools">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={expanded ? 'Thu nhỏ' : 'Mở rộng'}
+            title={expanded ? 'Thu nhỏ' : 'Mở rộng toàn màn hình'}
+            onClick={() => setExpanded((x) => !x)}
+          >
+            {expanded ? '⤡' : '⤢'}
+          </button>
+          <button type="button" className={expanded ? 'service-modal__close' : 'icon-btn'} aria-label="Đóng" title="Đóng (Esc)" onClick={onClose}>
+            {expanded ? '✕ Đóng' : '✕'}
+          </button>
+        </div>
       </header>
       <div className="service-modal__body">
         <div className="gemini__log" aria-live="polite">
