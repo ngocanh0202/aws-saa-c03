@@ -2,7 +2,7 @@
 
 Web tĩnh để luyện thi chứng chỉ **AWS Certified Solutions Architect – Associate (SAA-C03)**, dùng ngân hàng 500 câu hỏi. Đề bài và các lựa chọn giữ nguyên tiếng Anh như đề thật, còn phần hướng dẫn giải viết bằng tiếng Việt.
 
-Web chạy thử tại: https://anhbhn-kstns.github.io/exam-aws-ssa-03/
+Web chạy thử tại: [https://anhbhn-kstns.github.io/exam-aws-ssa-03/](https://ngocanh0202.github.io/aws-saa-c03/)
 
 ## Tính năng
 
