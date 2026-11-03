@@ -1,6 +1,6 @@
 import { prepareHistory } from '../ai/prompt';
 import { toolLoop, type FunctionCallLike } from '../ai/tool-loop';
-import type { AiClient, ChatHistoryStore, ChatMessage, ChatOptions } from '../ai/types';
+import { summarize, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatOptions } from '../ai/types';
 
 export interface FakeAi extends AiClient {
   calls: { systemPrompt: string; history: ChatMessage[]; sent: string[]; options?: ChatOptions; toolResults: object[] }[];
@@ -80,10 +80,14 @@ export function fakeAi(): FakeAi {
 export interface FakeChats extends ChatHistoryStore {
   saved: { key: string; messages: ChatMessage[] }[];
   loadError?: Error;
+  listError?: Error;
 }
 
 export function fakeChats(initial: Record<string, ChatMessage[]> = {}): FakeChats {
   const data = new Map(Object.entries(initial));
+  // updatedAt tăng dần theo thứ tự ghi (initial trước).
+  let clock = 0;
+  const updated = new Map([...data.keys()].map((k) => [k, ++clock]));
   const chats: FakeChats = {
     saved: [],
     async load(uid, attemptId, qid) {
@@ -93,7 +97,17 @@ export function fakeChats(initial: Record<string, ChatMessage[]> = {}): FakeChat
     async save(uid, attemptId, qid, messages) {
       const key = `${uid}/${attemptId}/${qid}`;
       data.set(key, messages);
+      updated.set(key, ++clock);
       chats.saved.push({ key, messages });
+    },
+    async list(uid) {
+      if (chats.listError) throw chats.listError;
+      return [...data]
+        .filter(([key]) => key.startsWith(`${uid}/`))
+        .map(([key, messages]) => {
+          const [, attemptId, qid] = key.split('/');
+          return { attemptId, qid: Number(qid), updatedAt: updated.get(key) ?? 0, last: summarize(messages) };
+        });
     },
   };
   return chats;

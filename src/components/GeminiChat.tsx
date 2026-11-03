@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
+import { formatDate, setLabel } from '../app/format';
 import { buildSystemPrompt } from '../ai/prompt';
 import { createSearchTool } from '../ai/search';
-import type { AiChat, AiClient, ChatHistoryStore, ChatMessage } from '../ai/types';
+import type { AiChat, AiClient, ChatHistoryStore, ChatMessage, ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
+import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
 import type { SyncController, SyncState, SyncUser } from '../sync/types';
 import { Markdown } from './Markdown';
@@ -70,6 +72,18 @@ function Launcher(props: Props & { uid: string; ai: AiClient; chats: ChatHistory
   );
 }
 
+/** Cuộc trò chuyện đang mở trong khung: câu đang làm (home) hoặc một câu ở lượt cũ. */
+interface Target {
+  attemptId: string;
+  number: number;
+  question: Question;
+  order: string[];
+  setId: number;
+  onFirstReply: () => void;
+}
+
+const keyOf = (attemptId: string, qid: number) => `${attemptId}/${qid}`;
+
 function ChatDialog({
   uid,
   ai,
@@ -81,35 +95,17 @@ function ChatDialog({
   onFirstReply,
   onClose,
 }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; onClose: () => void }) {
-  const qid = question.id;
   const { store, bank } = useApp();
-  const [searching, setSearching] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loaded, setLoaded] = useState(false);
-  const [loadFailed, setLoadFailed] = useState(false);
-  const [sendFailed, setSendFailed] = useState(false);
-  const [saveFailed, setSaveFailed] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [input, setInput] = useState('');
   /** false = khung chat nhỏ ở góc (trang vẫn dùng được); true = phủ toàn màn hình. */
   const [expanded, setExpanded] = useState(false);
-  const chatRef = useRef<AiChat | null>(null);
-  // Popup đã đóng (Esc, đăng xuất…) thì bỏ phần stream còn lại, không cập nhật hay lưu gì nữa.
-  const alive = useRef(true);
-  // Luôn gọi bản onFirstReply mới nhất, kể cả khi stream bắt đầu từ lần render trước.
-  const firstReply = useRef(onFirstReply);
-  firstReply.current = onFirstReply;
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-  const endRef = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState<'chat' | 'list'>('chat');
+  /** null = câu đang làm. */
+  const [picked, setPicked] = useState<{ attemptId: string; qid: number } | null>(null);
 
   useEffect(() => {
-    alive.current = true;
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
-    return () => {
-      alive.current = false;
-      window.removeEventListener('keydown', onKey);
-    };
+    return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
 
   // Chỉ khóa cuộn trang khi phủ toàn màn hình.
@@ -121,6 +117,194 @@ function ChatDialog({
       document.body.style.overflow = overflow;
     };
   }, [expanded]);
+
+  const homeSetId = store.get(attemptId)?.setId ?? 0;
+  const home: Target = { attemptId, number, question, order, setId: homeSetId, onFirstReply };
+  const homeLabel = `${setLabel(homeSetId)} · Câu ${number}`;
+
+  /** Dựng cuộc trò chuyện ở lượt cũ; lượt hay câu không còn thì null. */
+  const resolve = (id: string, qid: number): Target | null => {
+    const a = store.get(id);
+    const index = a ? a.questions.findIndex((q) => q.qid === qid) : -1;
+    const q = bank.questions.get(qid);
+    if (!a || a.status === 'incompatible' || index < 0 || !q) return null;
+    return {
+      attemptId: id,
+      number: index + 1,
+      question: q,
+      order: a.questions[index].optionOrder,
+      setId: a.setId,
+      // Như mở hướng dẫn, nhưng chỉ với lượt Thi thử còn dở; lượt đã nộp thì không đổi.
+      onFirstReply: () => {
+        const latest = store.get(id);
+        if (latest?.mode === 'practice' && latest.status === 'in-progress' && !latest.guideOpened.includes(qid)) {
+          store.save(markGuideOpened(latest, qid));
+        }
+      },
+    };
+  };
+
+  const isHome = !picked || (picked.attemptId === attemptId && picked.qid === question.id);
+  const target = (!isHome && picked && resolve(picked.attemptId, picked.qid)) || home;
+  const atHome = target === home;
+
+  const stem = target.question.html ? htmlToText(target.question.stem) : target.question.stem;
+  const preview = stem.length > PREVIEW ? `${stem.slice(0, PREVIEW).trimEnd()}…` : stem;
+  const title =
+    view === 'list' ? 'Trò chuyện cũ' : atHome ? `Hỏi Gemini · Câu ${number}` : `Hỏi Gemini · ${setLabel(target.setId)} · Câu ${target.number}`;
+
+  return createPortal(
+    <div
+      className={expanded ? 'service-modal gemini' : 'gemini-dock gemini'}
+      role="dialog"
+      aria-modal={expanded || undefined}
+      aria-labelledby="gemini-title"
+      lang="vi"
+    >
+      <header className="service-modal__bar">
+        <div className="service-modal__title">
+          <h1 id="gemini-title">{title}</h1>
+          {view === 'chat' && <p className="hint gemini__stem">{preview}</p>}
+        </div>
+        <div className="gemini__tools">
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Trò chuyện cũ"
+            aria-pressed={view === 'list'}
+            title="Trò chuyện cũ"
+            onClick={() => setView((v) => (v === 'list' ? 'chat' : 'list'))}
+          >
+            🕘
+          </button>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label={expanded ? 'Thu nhỏ' : 'Mở rộng'}
+            title={expanded ? 'Thu nhỏ' : 'Mở rộng toàn màn hình'}
+            onClick={() => setExpanded((x) => !x)}
+          >
+            {expanded ? '⤡' : '⤢'}
+          </button>
+          <button type="button" className={expanded ? 'service-modal__close' : 'icon-btn'} aria-label="Đóng" title="Đóng (Esc)" onClick={onClose}>
+            {expanded ? '✕ Đóng' : '✕'}
+          </button>
+        </div>
+      </header>
+      {view === 'list' ? (
+        <ChatList
+          uid={uid}
+          chats={chats}
+          home={{ attemptId, qid: question.id, label: homeLabel }}
+          resolve={resolve}
+          onPick={(id, qid) => {
+            setPicked({ attemptId: id, qid });
+            setView('chat');
+          }}
+        />
+      ) : (
+        <>
+          {!atHome && (
+            <button type="button" className="gemini__back" onClick={() => setPicked(null)}>
+              ← Quay lại {homeLabel}
+            </button>
+          )}
+          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} target={target} />
+        </>
+      )}
+    </div>,
+    document.body,
+  );
+}
+
+function ChatList({
+  uid,
+  chats,
+  home,
+  resolve,
+  onPick,
+}: {
+  uid: string;
+  chats: ChatHistoryStore;
+  home: { attemptId: string; qid: number; label: string };
+  resolve: (attemptId: string, qid: number) => Target | null;
+  onPick: (attemptId: string, qid: number) => void;
+}) {
+  const [items, setItems] = useState<ChatSummary[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    chats.list(uid).then(
+      (list) => live && setItems(list),
+      () => live && setItems([]),
+    );
+    return () => {
+      live = false;
+    };
+  }, [chats, uid]);
+
+  // Bỏ câu đang làm (đã đứng đầu) và cuộc trò chuyện của lượt không còn trong máy.
+  const others = (items ?? [])
+    .filter((c) => keyOf(c.attemptId, c.qid) !== keyOf(home.attemptId, home.qid))
+    .map((c) => ({ c, t: resolve(c.attemptId, c.qid) }))
+    .filter((x): x is { c: ChatSummary; t: Target } => x.t !== null)
+    .sort((x, y) => y.c.updatedAt - x.c.updatedAt);
+
+  return (
+    <div className="service-modal__body">
+      <ul className="gemini__list">
+        <li>
+          <button type="button" className="gemini__item is-current" onClick={() => onPick(home.attemptId, home.qid)}>
+            <strong>{home.label}</strong> <span className="hint">(câu đang làm)</span>
+          </button>
+        </li>
+        {others.map(({ c, t }) => (
+          <li key={keyOf(c.attemptId, c.qid)}>
+            <button type="button" className="gemini__item" onClick={() => onPick(c.attemptId, c.qid)}>
+              <strong>
+                {setLabel(t.setId)} · Câu {t.number}
+              </strong>{' '}
+              <span className="hint">· {formatDate(c.updatedAt)}</span>
+              <small>{c.last}</small>
+            </button>
+          </li>
+        ))}
+      </ul>
+      {items === null ? (
+        <p className="hint gemini__empty">Đang tải…</p>
+      ) : (
+        others.length === 0 && <p className="hint gemini__empty">Chưa có cuộc trò chuyện nào.</p>
+      )}
+    </div>
+  );
+}
+
+function Conversation({ uid, ai, chats, target }: { uid: string; ai: AiClient; chats: ChatHistoryStore; target: Target }) {
+  const { attemptId, question, order, setId } = target;
+  const qid = question.id;
+  const { store, bank } = useApp();
+  const [searching, setSearching] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [loaded, setLoaded] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [sendFailed, setSendFailed] = useState(false);
+  const [saveFailed, setSaveFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [input, setInput] = useState('');
+  const chatRef = useRef<AiChat | null>(null);
+  // Khung đã đóng hay đã chuyển sang cuộc trò chuyện khác thì bỏ phần stream còn lại, không cập nhật hay lưu gì nữa.
+  const alive = useRef(true);
+  // Luôn gọi bản onFirstReply mới nhất, kể cả khi stream bắt đầu từ lần render trước.
+  const firstReply = useRef(target.onFirstReply);
+  firstReply.current = target.onFirstReply;
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     let live = true;
@@ -155,7 +339,6 @@ function ChatDialog({
     try {
       // Một phiên chat cho mỗi lần mở popup; adapter tự cắt và chuẩn hóa history.
       // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
-      const setId = store.get(attemptId)?.setId ?? 0;
       const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), history, {
         tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
         onToolCall: () => alive.current && setSearching(true),
@@ -197,37 +380,8 @@ function ChatDialog({
     }
   };
 
-  const stem = question.html ? htmlToText(question.stem) : question.stem;
-  const preview = stem.length > PREVIEW ? `${stem.slice(0, PREVIEW).trimEnd()}…` : stem;
-
-  return createPortal(
-    <div
-      className={expanded ? 'service-modal gemini' : 'gemini-dock gemini'}
-      role="dialog"
-      aria-modal={expanded || undefined}
-      aria-labelledby="gemini-title"
-      lang="vi"
-    >
-      <header className="service-modal__bar">
-        <div className="service-modal__title">
-          <h1 id="gemini-title">Hỏi Gemini · Câu {number}</h1>
-          <p className="hint gemini__stem">{preview}</p>
-        </div>
-        <div className="gemini__tools">
-          <button
-            type="button"
-            className="icon-btn"
-            aria-label={expanded ? 'Thu nhỏ' : 'Mở rộng'}
-            title={expanded ? 'Thu nhỏ' : 'Mở rộng toàn màn hình'}
-            onClick={() => setExpanded((x) => !x)}
-          >
-            {expanded ? '⤡' : '⤢'}
-          </button>
-          <button type="button" className={expanded ? 'service-modal__close' : 'icon-btn'} aria-label="Đóng" title="Đóng (Esc)" onClick={onClose}>
-            {expanded ? '✕ Đóng' : '✕'}
-          </button>
-        </div>
-      </header>
+  return (
+    <>
       <div className="service-modal__body">
         <div className="gemini__log" aria-live="polite">
           {loadFailed && <p className="gemini__notice">Không tải được lịch sử trò chuyện.</p>}
@@ -266,7 +420,6 @@ function ChatDialog({
           Gửi
         </button>
       </form>
-    </div>,
-    document.body,
+    </>
   );
 }

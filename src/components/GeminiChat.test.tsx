@@ -2,7 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest';
 import type { ChatMessage } from '../ai/types';
 import { createAttempt } from '../engine/attempt';
-import { selectOption } from '../engine/actions';
+import { selectOption, submitAttempt } from '../engine/actions';
 import { createStore } from '../storage/storage';
 import { createSyncController } from '../sync/controller';
 import type { SyncUser } from '../sync/types';
@@ -19,7 +19,8 @@ function setup({
   withAi = true,
   history,
   loadError,
-}: { mode?: 'practice' | 'real'; signedIn?: boolean; withAi?: boolean; history?: ChatMessage[]; loadError?: Error } = {}) {
+  extraChats = {},
+}: { mode?: 'practice' | 'real'; signedIn?: boolean; withAi?: boolean; history?: ChatMessage[]; loadError?: Error; extraChats?: Record<string, ChatMessage[]> } = {}) {
   const store = createStore(memoryStorage(), { now: () => 500 });
   const auth = fakeAuth();
   const remote = fakeRemote();
@@ -29,14 +30,14 @@ function setup({
   const attempt = createAttempt({ id: 'e1', setId: 1, mode, esl: false, seed: 7, now: base.now(), sets: base.bank.sets, questions: base.bank.questions, metas: base.bank.meta });
   store.save(attempt);
   const qid = attempt.questions[0].qid;
-  const chats = fakeChats(history ? { [`u1/e1/${qid}`]: history } : {});
+  const chats = fakeChats({ ...extraChats, ...(history ? { [`u1/e1/${qid}`]: history } : {}) });
   chats.loadError = loadError;
   const deps = withAi ? { ...base, ai, chats } : base;
   renderApp('/exam/e1', deps);
   act(() => auth.emit(signedIn ? USER : null));
   // Cloud đã có đúng lượt này nên không hỏi xung đột dữ liệu khách.
   if (signedIn) act(() => remote.emit(USER.uid, new Map([[attempt.id, { attempt, updatedAt: 1 }]])));
-  return { store, auth, ai, chats, qid, key: `u1/e1/${qid}` };
+  return { store, auth, ai, chats, qid, key: `u1/e1/${qid}`, base };
 }
 
 async function openChat() {
@@ -290,5 +291,88 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(document.body.style.overflow).toBe('');
     expect(screen.getByRole('button', { name: GEMINI })).toBeInTheDocument();
+  });
+});
+
+describe('Trò chuyện cũ', () => {
+  /** Lượt Thi thử cũ e0 cùng đề (cùng seed nên cùng câu), có chat ở câu thứ 3. */
+  function withOld({ submitted = false, extra = {} }: { submitted?: boolean; extra?: Record<string, ChatMessage[]> } = {}) {
+    const probe = makeDeps();
+    const e0 = createAttempt({ id: 'e0', setId: 1, mode: 'practice', esl: false, seed: 7, now: 100, sets: probe.bank.sets, questions: probe.bank.questions, metas: probe.bank.meta });
+    const oldQid = e0.questions[2].qid;
+    const s = setup({ extraChats: { [`u1/e0/${oldQid}`]: [{ role: 'user', text: 'Câu cũ hỏi gì?' }, { role: 'model', text: 'Trả lời cũ' }], ...extra } });
+    s.store.save(submitted ? submitAttempt(e0, 200) : e0);
+    return { ...s, oldQid };
+  }
+
+  async function openList() {
+    const dialog = await openChat();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Trò chuyện cũ' }));
+    return dialog;
+  }
+
+  it('nút Trò chuyện cũ hiện danh sách, câu đang làm đứng đầu', async () => {
+    withOld();
+    const dialog = await openList();
+    await waitFor(() => expect(within(dialog).getAllByRole('button', { name: /Đề 1 · Câu/ })).toHaveLength(2));
+    const items = within(dialog).getAllByRole('button', { name: /Đề 1 · Câu/ });
+    expect(items[0]).toHaveTextContent('(câu đang làm)');
+    expect(items[1]).toHaveTextContent('Đề 1 · Câu 3');
+    expect(items[1]).toHaveTextContent('Trả lời cũ');
+  });
+
+  it('mở cuộc trò chuyện cũ: hiện tin cũ, có dải quay lại; quay lại thì về câu đang làm', async () => {
+    withOld();
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ }));
+    expect(await within(dialog).findByText('Trả lời cũ')).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Hỏi Gemini · Đề 1 · Câu 3' })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: '← Quay lại Đề 1 · Câu 1' }));
+    expect(within(dialog).getByRole('heading', { name: 'Hỏi Gemini · Câu 1' })).toBeInTheDocument();
+    expect(within(dialog).queryByText('Trả lời cũ')).toBeNull();
+  });
+
+  it('hỏi tiếp ở cuộc trò chuyện cũ: lưu vào đúng (attempt, qid) cũ, không đánh dấu câu đang làm', async () => {
+    const s = withOld();
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+    await ask(dialog);
+    await waitFor(() => expect(s.chats.saved.at(-1)?.key).toBe(`u1/e0/${s.oldQid}`));
+    expect(s.ai.calls[0].history.map((m) => m.text)).toEqual(['Câu cũ hỏi gì?', 'Trả lời cũ']);
+    expect(guideOpened(s)).not.toContain(s.qid);
+    expect(s.store.get('e0')!.guideOpened).toContain(s.oldQid);
+  });
+
+  it('lượt cũ đã nộp: hỏi tiếp không sửa lượt đó', async () => {
+    const s = withOld({ submitted: true });
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+    await ask(dialog);
+    await waitFor(() => expect(s.chats.saved.at(-1)?.key).toBe(`u1/e0/${s.oldQid}`));
+    expect(s.store.get('e0')!.guideOpened).toEqual([]);
+  });
+
+  it('ẩn cuộc trò chuyện của lượt đã xóa', async () => {
+    withOld({ extra: { 'u1/gone/1': [{ role: 'user', text: 'mất rồi' }, { role: 'model', text: 'Chat của lượt đã xóa' }] } });
+    const dialog = await openList();
+    await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ });
+    expect(within(dialog).queryByText(/Chat của lượt đã xóa/)).toBeNull();
+  });
+
+  it('chưa có cuộc trò chuyện khác thì báo, không crash (kể cả lỗi tải danh sách)', async () => {
+    const s = setup();
+    s.chats.listError = new Error('offline');
+    const dialog = await openList();
+    expect(await within(dialog).findByText('Chưa có cuộc trò chuyện nào.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /câu đang làm/ })).toBeInTheDocument();
+  });
+
+  it('đăng xuất khi đang ở danh sách thì đóng khung', async () => {
+    const s = withOld();
+    await openList();
+    act(() => s.auth.emit(null));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

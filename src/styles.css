@@ -332,6 +332,13 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini-dock .gemini__form { padding: 8px 10px; }
 .gemini__tools { flex: none; display: flex; align-items: center; gap: 6px; }
 .gemini__tools .icon-btn { font-size: 1.1em; line-height: 1; padding: 6px 10px; }
+/* Danh sách "Trò chuyện cũ" và dải quay lại câu đang làm */
+.gemini__list { list-style: none; margin: 0 auto; padding: 12px; max-width: 820px; display: flex; flex-direction: column; gap: 8px; }
+.gemini__item { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
+.gemini__item small { display: block; margin-top: 2px; color: var(--muted); overflow-wrap: anywhere; }
+.gemini__item.is-current { background: var(--selected-bg); border-color: var(--selected); }
+.gemini__empty { margin: 0; padding: 0 12px 12px; text-align: center; }
+.gemini__back { display: block; width: 100%; text-align: left; padding: 6px 14px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--selected-bg); color: var(--link); font-size: 0.9em; }
 @media (max-width: 600px) { .gemini-dock { right: 8px; left: 8px; bottom: 8px; width: auto; height: min(560px, calc(100vh - 80px)); } }
 @media (prefers-reduced-motion: reduce) { .gemini-dock { animation: none; } }
 .gemini__stem { overflow-wrap: anywhere; }

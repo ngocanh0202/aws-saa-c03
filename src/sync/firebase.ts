@@ -8,7 +8,7 @@ import {
   signOut as fbSignOut,
 } from 'firebase/auth';
 import { get, getDatabase, onValue, ref, set } from 'firebase/database';
-import type { ChatHistoryStore, ChatMessage } from '../ai/types';
+import { summarize, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import type { Attempt } from '../engine/attempt';
 import { looksLikeAttempt } from '../storage/storage';
 import type { FirebaseConfig } from './config';
@@ -112,20 +112,35 @@ export function createFirebaseClients(config: FirebaseConfig): {
   };
 
   const chatRef = (uid: string, attemptId: string, qid: number) => ref(db, `users/${uid}/aiChats/${attemptId}/${qid}`);
+  const parseChat = (val: { json?: unknown } | null): ChatMessage[] => {
+    if (!val || typeof val.json !== 'string') return [];
+    try {
+      const parsed: unknown = JSON.parse(val.json);
+      if (!Array.isArray(parsed)) return [];
+      const ok = parsed.every(
+        (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string',
+      );
+      return ok ? (parsed as ChatMessage[]) : [];
+    } catch {
+      return [];
+    }
+  };
   const chats: ChatHistoryStore = {
     async load(uid, attemptId, qid) {
-      const val = (await get(chatRef(uid, attemptId, qid))).val() as { json?: unknown } | null;
-      if (!val || typeof val.json !== 'string') return [];
-      try {
-        const parsed: unknown = JSON.parse(val.json);
-        if (!Array.isArray(parsed)) return [];
-        const ok = parsed.every(
-          (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string',
-        );
-        return ok ? (parsed as ChatMessage[]) : [];
-      } catch {
-        return [];
+      return parseChat((await get(chatRef(uid, attemptId, qid))).val());
+    },
+    // Đọc thẳng cả nhánh aiChats (ít dữ liệu); bản hỏng hoặc rỗng thì bỏ.
+    async list(uid) {
+      const all = ((await get(ref(db, `users/${uid}/aiChats`))).val() ?? {}) as Record<string, Record<string, { json?: unknown; updatedAt?: unknown }>>;
+      const out: ChatSummary[] = [];
+      for (const [attemptId, byQid] of Object.entries(all)) {
+        for (const [qid, val] of Object.entries(byQid ?? {})) {
+          const messages = parseChat(val);
+          if (messages.length === 0 || !Number.isFinite(Number(qid))) continue;
+          out.push({ attemptId, qid: Number(qid), updatedAt: typeof val.updatedAt === 'number' ? val.updatedAt : 0, last: summarize(messages) });
+        }
       }
+      return out;
     },
     save(uid, attemptId, qid, messages) {
       return set(chatRef(uid, attemptId, qid), { json: JSON.stringify(messages), updatedAt: Date.now() });
