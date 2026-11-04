@@ -46,6 +46,8 @@ jobs:
           VITE_FIREBASE_APP_ID: ${{ vars.VITE_FIREBASE_APP_ID }}
           VITE_RECAPTCHA_SITE_KEY: ${{ vars.VITE_RECAPTCHA_SITE_KEY }}
           VITE_GEMINI_MODEL: ${{ vars.VITE_GEMINI_MODEL }}
+          VITE_LOCAL_AI: ${{ vars.VITE_LOCAL_AI }}
+          VITE_LOCAL_AI_MODEL: ${{ vars.VITE_LOCAL_AI_MODEL }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
