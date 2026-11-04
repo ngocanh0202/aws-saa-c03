@@ -9,6 +9,7 @@ import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
 import { inflightFor, inflightKey } from '../ai/inflight';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
+import { chatSuggestions } from '../ai/suggestions';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import { markGuideOpened } from '../engine/actions';
@@ -567,6 +568,7 @@ function Conversation({
   const sessionRevealed = useRef(target.revealed);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const suggestions = chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services);
 
   useEffect(() => onBusy(busy), [busy, onBusy]);
 
@@ -612,13 +614,14 @@ function Conversation({
    * Chạy ở nền, không phụ thuộc khung chat còn mở hay không: mọi cập nhật đi qua `inflight`, khung
    * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
    */
-  const send = async () => {
-    const text = input.trim();
+  /** Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập). */
+  const send = async (suggestion?: string) => {
+    const text = (suggestion ?? input).trim();
     if (!text || busy || !loaded || cooldown.until() !== null) return;
     const history = messages;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
     const signedIn = () => !sync || signedInUser(sync.getState())?.uid === uid;
-    setInput('');
+    if (suggestion === undefined) setInput('');
     setSendFailed(false);
     setBusyFailed(false);
     setFailMessage(undefined);
@@ -755,6 +758,15 @@ function Conversation({
           <div ref={endRef} />
         </div>
       </div>
+      {!busy && (
+        <div className="gemini__suggest" role="group" aria-label="Câu hỏi gợi ý">
+          {suggestions.map((text) => (
+            <button key={text} type="button" className="chip" disabled={!loaded || until !== null} onClick={() => void send(text)}>
+              {text}
+            </button>
+          ))}
+        </div>
+      )}
       <form className="gemini__form" onSubmit={onSubmit}>
         <textarea
           ref={inputRef}

@@ -376,6 +376,12 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__msg--model > :last-child { margin-bottom: 0; }
 .gemini__msg pre { max-width: 100%; overflow-x: auto; }
 .gemini__notice { margin: 0; padding: 8px 12px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
+/* Câu hỏi gợi ý phía trên ô nhập: máy tính xuống dòng, mobile cuộn ngang */
+.gemini__suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 0; background: var(--surface); border-top: 1px solid var(--border); }
+.gemini__suggest .chip { background: var(--bg); white-space: nowrap; }
+.gemini__suggest .chip:disabled { opacity: 0.5; cursor: not-allowed; }
+.gemini__suggest + .gemini__form { border-top: none; }
+@media (max-width: 600px) { .gemini__suggest { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: none; } }
 .gemini__form { display: flex; gap: 8px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--border); }
 .gemini__form textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
 .gemini__form button { flex: none; align-self: stretch; }

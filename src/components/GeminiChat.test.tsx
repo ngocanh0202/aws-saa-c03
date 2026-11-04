@@ -415,6 +415,19 @@ describe('Hỏi Gemini ở Thi thử', () => {
       await waitFor(() => expect(within(other).getByRole('button', { name: 'Gửi' })).toBeEnabled());
     });
 
+    it('đang đếm ngược sau 429 thì câu hỏi gợi ý bị khóa', async () => {
+      const s = setup();
+      s.ai.busy = [new AiBusyError(429, 90_000)];
+      const dialog = await openChat();
+      await ask(dialog);
+      await within(dialog).findByText(/Thử lại sau 90 giây/);
+      const chips = within(within(dialog).getByRole('group', { name: 'Câu hỏi gợi ý' })).getAllByRole('button');
+      expect(chips.length).toBeGreaterThan(0);
+      for (const c of chips) expect(c).toBeDisabled();
+      fireEvent.click(chips[0]);
+      expect(s.ai.calls[0].sent).toEqual(['Tại sao?']);
+    });
+
     it('thử lại hết lượt mà Gemini không báo thời gian: báo thử lại sau ít phút', async () => {
       const s = setup();
       s.ai.busy = Array.from({ length: 5 }, () => new AiBusyError(503));
@@ -424,6 +437,22 @@ describe('Hỏi Gemini ở Thi thử', () => {
       expect(await within(dialog).findByText('Gemini đang hết lượt, thử lại sau ít phút.')).toBeInTheDocument();
       expect(s.chats.saved).toEqual([]);
     });
+  });
+
+  it('câu hỏi gợi ý: bấm là gửi luôn, không đụng ô nhập; đang trả lời thì ẩn', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    const group = within(dialog).getByRole('group', { name: 'Câu hỏi gợi ý' });
+    fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'đang gõ dở' } });
+    await act(async () => {
+      fireEvent.click(within(group).getByRole('button', { name: 'Dịch đề và các lựa chọn sang tiếng Việt' }));
+    });
+    expect(s.ai.calls[0].sent).toEqual(['Dịch đề và các lựa chọn sang tiếng Việt']);
+    expect(within(dialog).getByRole('textbox')).toHaveValue('đang gõ dở');
+    expect(within(dialog).queryByRole('group', { name: 'Câu hỏi gợi ý' })).toBeNull();
+    await act(async () => s.ai.release());
+    expect(await within(dialog).findByRole('group', { name: 'Câu hỏi gợi ý' })).toBeInTheDocument();
   });
 
   it('startChat nhận tool find_answered_questions', async () => {
