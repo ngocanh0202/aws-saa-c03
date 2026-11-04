@@ -30,6 +30,22 @@ describe('buildAiDeps', () => {
     expect(create).toHaveBeenCalledWith(clients.app, 'x');
   });
 
+  it('có cấu hình Local AI và Firebase thì tạo localAi (không cần reCAPTCHA) và localChats', () => {
+    const local = fakeAi();
+    const createLocal = vi.fn(() => local);
+    const localChats = fakeChats();
+    const deps = buildAiDeps(base, { ...clients, localChats }, vi.fn(), { config: { url: 'https://t', model: 'm' }, create: createLocal });
+    expect(deps.ai).toBeUndefined();
+    expect(deps.localAi).toBe(local);
+    expect(deps.localChats).toBe(localChats);
+    expect(createLocal).toHaveBeenCalledWith('https://t', 'm');
+  });
+
+  it('không có cấu hình Local AI thì không có localAi', () => {
+    const deps = buildAiDeps(base, { ...clients, localChats: fakeChats() }, vi.fn(), { config: null, create: vi.fn() });
+    expect(deps.localAi).toBeUndefined();
+  });
+
   it('không có clients thì không có gì', () => {
     expect(buildAiDeps(null, null, vi.fn())).toEqual({ ai: undefined, chats: undefined });
   });

@@ -20,6 +20,7 @@ export function createFirebaseClients(config: FirebaseConfig): {
   auth: AuthClient;
   remote: RemoteAttempts;
   chats: ChatHistoryStore;
+  localChats: ChatHistoryStore;
   app: FirebaseApp;
 } {
   const { recaptchaSiteKey, geminiModel: _model, ...options } = config;
@@ -111,51 +112,56 @@ export function createFirebaseClients(config: FirebaseConfig): {
     },
   };
 
-  const chatRef = (uid: string, attemptId: string, qid: number) => ref(db, `users/${uid}/aiChats/${attemptId}/${qid}`);
-  const parseChat = (val: { json?: unknown } | null): ChatMessage[] => {
-    if (!val || typeof val.json !== 'string') return [];
-    try {
-      const parsed: unknown = JSON.parse(val.json);
-      if (!Array.isArray(parsed)) return [];
-      const ok = parsed.every(
-        (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string',
-      );
-      return ok ? (parsed as ChatMessage[]) : [];
-    } catch {
-      return [];
-    }
-  };
-  const chats: ChatHistoryStore = {
-    async load(uid, attemptId, qid) {
-      return parseChat((await get(chatRef(uid, attemptId, qid))).val());
-    },
-    // Đọc thẳng cả nhánh aiChats (ít dữ liệu); bản hỏng hoặc rỗng thì bỏ.
-    async list(uid) {
-      const all = ((await get(ref(db, `users/${uid}/aiChats`))).val() ?? {}) as Record<string, Record<string, { json?: unknown; updatedAt?: unknown; title?: unknown }>>;
-      const out: ChatSummary[] = [];
-      for (const [attemptId, byQid] of Object.entries(all)) {
-        for (const [qid, val] of Object.entries(byQid ?? {})) {
-          const messages = parseChat(val);
-          if (messages.length === 0 || !Number.isFinite(Number(qid))) continue;
-          out.push({
-            attemptId,
-            qid: Number(qid),
-            updatedAt: typeof val.updatedAt === 'number' ? val.updatedAt : 0,
-            last: summarize(messages),
-            ...(typeof val.title === 'string' && val.title ? { title: val.title } : {}),
-          });
-        }
+  /** Store lịch sử chat ở nhánh `users/{uid}/<branch>` (aiChats cho Gemini, localChats cho AI thử nghiệm). */
+  const chatStore = (branch: 'aiChats' | 'localChats'): ChatHistoryStore => {
+    const chatRef = (uid: string, attemptId: string, qid: number) => ref(db, `users/${uid}/${branch}/${attemptId}/${qid}`);
+    const parseChat = (val: { json?: unknown } | null): ChatMessage[] => {
+      if (!val || typeof val.json !== 'string') return [];
+      try {
+        const parsed: unknown = JSON.parse(val.json);
+        if (!Array.isArray(parsed)) return [];
+        const ok = parsed.every(
+          (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string',
+        );
+        return ok ? (parsed as ChatMessage[]) : [];
+      } catch {
+        return [];
       }
-      return out;
-    },
-    save(uid, attemptId, qid, messages) {
-      // update (không phải set) để giữ tên người học đã đặt.
-      return update(chatRef(uid, attemptId, qid), { json: JSON.stringify(messages), updatedAt: Date.now() });
-    },
-    rename(uid, attemptId, qid, title) {
-      return set(child(chatRef(uid, attemptId, qid), 'title'), title);
-    },
+    };
+    return {
+      async load(uid, attemptId, qid) {
+        return parseChat((await get(chatRef(uid, attemptId, qid))).val());
+      },
+      // Đọc thẳng cả nhánh aiChats (ít dữ liệu); bản hỏng hoặc rỗng thì bỏ.
+      async list(uid) {
+        const all = ((await get(ref(db, `users/${uid}/${branch}`))).val() ?? {}) as Record<string, Record<string, { json?: unknown; updatedAt?: unknown; title?: unknown }>>;
+        const out: ChatSummary[] = [];
+        for (const [attemptId, byQid] of Object.entries(all)) {
+          for (const [qid, val] of Object.entries(byQid ?? {})) {
+            const messages = parseChat(val);
+            if (messages.length === 0 || !Number.isFinite(Number(qid))) continue;
+            out.push({
+              attemptId,
+              qid: Number(qid),
+              updatedAt: typeof val.updatedAt === 'number' ? val.updatedAt : 0,
+              last: summarize(messages),
+              ...(typeof val.title === 'string' && val.title ? { title: val.title } : {}),
+            });
+          }
+        }
+        return out;
+      },
+      save(uid, attemptId, qid, messages) {
+        // update (không phải set) để giữ tên người học đã đặt.
+        return update(chatRef(uid, attemptId, qid), { json: JSON.stringify(messages), updatedAt: Date.now() });
+      },
+      rename(uid, attemptId, qid, title) {
+        return set(child(chatRef(uid, attemptId, qid), 'title'), title);
+      },
+    };
   };
+  const chats = chatStore('aiChats');
+  const localChats = chatStore('localChats');
 
-  return { auth, remote, chats, app };
+  return { auth, remote, chats, localChats, app };
 }

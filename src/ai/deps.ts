@@ -1,5 +1,5 @@
 import type { FirebaseApp } from 'firebase/app';
-import type { FirebaseConfig } from '../sync/config';
+import type { FirebaseConfig, LocalAiConfig } from '../sync/config';
 import type { AiClient, ChatHistoryStore } from './types';
 
 /** Model mặc định (Gemini 2.5 ngừng hoạt động từ 10/2026). Đổi bằng VITE_GEMINI_MODEL. */
@@ -11,9 +11,12 @@ export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash';
  */
 export function buildAiDeps(
   config: FirebaseConfig | null,
-  clients: { app: FirebaseApp; chats: ChatHistoryStore } | null,
+  clients: { app: FirebaseApp; chats: ChatHistoryStore; localChats?: ChatHistoryStore } | null,
   createGemini: (app: FirebaseApp, model: string) => AiClient,
-): { ai?: AiClient; chats?: ChatHistoryStore } {
+  local?: { config: LocalAiConfig | null; create: (url: string, model?: string) => AiClient },
+): { ai?: AiClient; chats?: ChatHistoryStore; localAi?: AiClient; localChats?: ChatHistoryStore } {
   const ai = clients && config?.recaptchaSiteKey ? createGemini(clients.app, config.geminiModel ?? DEFAULT_GEMINI_MODEL) : undefined;
-  return { ai, chats: clients?.chats };
+  // AI thử nghiệm không cần App Check, nhưng cần Firebase (đăng nhập + lưu lịch sử ở localChats).
+  const localAi = clients?.localChats && local?.config ? local.create(local.config.url, local.config.model) : undefined;
+  return { ai, chats: clients?.chats, localAi, localChats: localAi ? clients?.localChats : undefined };
 }

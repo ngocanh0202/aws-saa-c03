@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFirebaseConfig } from './config';
+import rules from '../../database.rules.json';
+import { readFirebaseConfig, readLocalAiConfig } from './config';
 
 const full = {
   VITE_FIREBASE_API_KEY: 'k',
@@ -40,5 +41,24 @@ describe('readFirebaseConfig', () => {
 
   it('biến rỗng thì null', () => {
     expect(readFirebaseConfig({ ...full, VITE_FIREBASE_API_KEY: '' })).toBeNull();
+  });
+});
+
+describe('readLocalAiConfig', () => {
+  it('không có VITE_LOCAL_AI thì null', () => {
+    expect(readLocalAiConfig({})).toBeNull();
+    expect(readLocalAiConfig({ VITE_LOCAL_AI: '  ' })).toBeNull();
+  });
+
+  it('bỏ dấu / cuối, model tùy chọn', () => {
+    expect(readLocalAiConfig({ VITE_LOCAL_AI: 'https://a.trycloudflare.com/' })).toEqual({ url: 'https://a.trycloudflare.com' });
+    expect(readLocalAiConfig({ VITE_LOCAL_AI: 'https://a.trycloudflare.com', VITE_LOCAL_AI_MODEL: 'qwen' })).toEqual({ url: 'https://a.trycloudflare.com', model: 'qwen' });
+  });
+});
+
+describe('database.rules.json', () => {
+  it('localChats có cùng luật với aiChats', () => {
+    const user = (rules as { rules: { users: { $uid: Record<string, unknown> } } }).rules.users.$uid;
+    expect(user.localChats).toEqual(user.aiChats);
   });
 });

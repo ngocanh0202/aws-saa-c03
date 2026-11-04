@@ -1,4 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
+import type { AiModeStore } from '../ai/ai-mode';
 import type { Cooldown } from '../ai/cooldown';
 import type { AiClient, ChatHistoryStore } from '../ai/types';
 import type { Bank } from '../data/bank';
@@ -19,6 +20,12 @@ export interface AppDeps {
   chats?: ChatHistoryStore;
   /** Khóa Gemini sau lỗi hết lượt (lưu localStorage); không có thì dùng bản trong bộ nhớ. */
   aiCooldown?: Cooldown;
+  /** AI thử nghiệm (LM Studio); chỉ có khi có VITE_LOCAL_AI và Firebase. */
+  localAi?: AiClient;
+  /** Lịch sử chat của AI thử nghiệm (users/{uid}/localChats). */
+  localChats?: ChatHistoryStore;
+  /** Chế độ đang chọn (Gemini/AI thử nghiệm); chỉ có khi có localAi. */
+  aiMode?: AiModeStore;
 }
 
 const AppContext = createContext<AppDeps | null>(null);

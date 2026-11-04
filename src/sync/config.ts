@@ -10,6 +10,22 @@ export interface FirebaseConfig {
   geminiModel?: string;
 }
 
+/** AI thử nghiệm qua LM Studio (Cloudflare Tunnel). */
+export interface LocalAiConfig {
+  /** Địa chỉ gốc API (không có dấu / cuối), ví dụ https://xxx.trycloudflare.com. */
+  url: string;
+  /** Tên model; không có thì LM Studio dùng model đang nạp. */
+  model?: string;
+}
+
+/** Đọc VITE_LOCAL_AI (+ VITE_LOCAL_AI_MODEL). Trống thì null: không có chế độ AI thử nghiệm. */
+export function readLocalAiConfig(env: Record<string, string | undefined>): LocalAiConfig | null {
+  const url = env.VITE_LOCAL_AI?.trim().replace(/\/+$/, '');
+  if (!url) return null;
+  const model = env.VITE_LOCAL_AI_MODEL?.trim();
+  return model ? { url, model } : { url };
+}
+
 /** Đọc cấu hình từ biến VITE_FIREBASE_*. Thiếu hoặc rỗng bất kỳ biến nào thì trả null (web chạy ở chế độ khách). */
 export function readFirebaseConfig(env: Record<string, string | undefined>): FirebaseConfig | null {
   const apiKey = env.VITE_FIREBASE_API_KEY;
