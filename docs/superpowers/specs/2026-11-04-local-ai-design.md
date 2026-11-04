@@ -90,3 +90,13 @@ Người dùng muốn thử dùng một model chạy trên máy của mình (LM 
 - Chi tiết parse SSE, cách nhận diện lỗi CORS/mạng.
 - Hình icon robot và kiểu công tắc trong menu.
 - Nhánh `localChats` được truyền vào `createFirebaseClients` thế nào (tham số đường dẫn hay hai store).
+
+## Để sau: sửa địa chỉ tunnel ngay trên web (chưa làm)
+
+Người dùng chọn sửa qua GitHub Variable, nhưng muốn giữ phương án này nếu sau này cần (đổi địa chỉ tunnel nhanh mà không phải deploy lại):
+
+- Menu tài khoản có ô "Địa chỉ AI thử nghiệm"; dán địa chỉ mới thì **mọi người đã đăng nhập** dùng được ngay.
+- Địa chỉ lưu trên Firebase, ví dụ `config/localAi` (`{ url, updatedAt }`): mọi người đã đăng nhập **đọc** được, chỉ **tài khoản của chủ web** ghi được — rules ghi cứng `uid` của chủ (`".write": "auth.uid === '<uid chủ>'"`), deploy lại rules một lần.
+- Web lắng nghe `config/localAi` (onValue) để địa chỉ đổi là áp dụng ngay; `VITE_LOCAL_AI` khi đó chỉ còn là công tắc bật tính năng (hoặc địa chỉ mặc định khi Firebase chưa có).
+- Kiểm tra địa chỉ hợp lệ (`https://`), hiện cho chủ web thời điểm sửa gần nhất.
+- Lưu chỉ trong trình duyệt (`localStorage`) **không** đáp ứng được, vì người khác không có địa chỉ.
