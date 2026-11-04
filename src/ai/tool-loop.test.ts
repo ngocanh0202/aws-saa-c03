@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_TOOL_ROUNDS, toolLoop, type FunctionCallLike, type ToolTurn, type TurnResult } from './tool-loop';
+import { AiBusyError } from './retry';
 import type { AiTool } from './types';
 
 async function* chunks(list: string[]) {
@@ -50,6 +51,23 @@ describe('toolLoop', () => {
     const s = script([{ calls: [{ name: 'nope', args: {} }] }, { text: ['ok'] }]);
     await collect(toolLoop(s.send, 'x', { tools: [find] }));
     expect(s.sent[1]).toEqual([{ name: 'nope', response: { error: 'unknown tool' } }]);
+  });
+
+  it('lỗi bận lúc gửi thì chờ rồi gửi lại cùng lượt', async () => {
+    const s = script([{ text: ['Được'] }]);
+    let failed = false;
+    const send = async (turn: ToolTurn) => {
+      if (!failed) {
+        failed = true;
+        throw new AiBusyError(429, 10);
+      }
+      return s.send(turn);
+    };
+    const waits: number[] = [];
+    const out = await collect(toolLoop(send, 'hi', { retry: { sleep: async (ms) => void waits.push(ms), onWait: () => undefined } }));
+    expect(out).toEqual(['Được']);
+    expect(waits).toEqual([10]);
+    expect(s.sent).toEqual(['hi']);
   });
 
   it('vượt 3 vòng thì ném lỗi', async () => {

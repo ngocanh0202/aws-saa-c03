@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { AiBusyError } from '../ai/retry';
 import type { ChatMessage } from '../ai/types';
 import { createAttempt } from '../engine/attempt';
 import { selectOption, submitAttempt } from '../engine/actions';
@@ -379,6 +380,52 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(within(again).getByRole('button', { name: 'Gửi' })).toBeEnabled());
   });
 
+  describe('Gemini hết lượt (429/503)', () => {
+    beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
+    afterEach(() => vi.useRealTimers());
+
+    it('tự thử lại sau khi chờ: hiện đếm ngược và lần thử, rồi trả lời bình thường', async () => {
+      const s = setup();
+      s.ai.busy = [new AiBusyError(429, 3000)];
+      s.ai.reply = ['Đã trả lời'];
+      const dialog = await openChat();
+      await ask(dialog);
+      expect(await within(dialog).findByText(/tự thử lại sau 3 giây… \(lần 1\/4\)/)).toBeInTheDocument();
+      await act(() => vi.advanceTimersByTimeAsync(3000));
+      expect(await within(dialog).findByText('Đã trả lời')).toBeInTheDocument();
+      await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    });
+
+    it('phải chờ lâu: báo giờ thử lại, khóa nút Gửi ở mọi câu tới giờ đó rồi tự mở', async () => {
+      const s = setup();
+      s.ai.busy = [new AiBusyError(429, 90_000)];
+      const dialog = await openChat();
+      await ask(dialog);
+      expect(await within(dialog).findByText(/Thử lại sau 90 giây \(lúc \d{1,2}:\d{2}:\d{2}\)/)).toBeInTheDocument();
+      fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: 'Gửi lại' } });
+      expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+      // Câu khác cũng bị khóa (hết lượt là của cả project).
+      fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+      fireEvent.click(screen.getByRole('button', { name: GEMINI }));
+      const other = screen.getByRole('dialog');
+      expect(await within(other).findByText(/Thử lại sau \d+ giây/)).toBeInTheDocument();
+      expect(within(other).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+      await act(() => vi.advanceTimersByTimeAsync(91_000));
+      expect(within(other).queryByText(/Thử lại sau/)).toBeNull();
+      await waitFor(() => expect(within(other).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+    });
+
+    it('thử lại hết lượt mà Gemini không báo thời gian: báo thử lại sau ít phút', async () => {
+      const s = setup();
+      s.ai.busy = Array.from({ length: 5 }, () => new AiBusyError(503));
+      const dialog = await openChat();
+      await ask(dialog);
+      await act(() => vi.advanceTimersByTimeAsync(60_000));
+      expect(await within(dialog).findByText('Gemini đang hết lượt, thử lại sau ít phút.')).toBeInTheDocument();
+      expect(s.chats.saved).toEqual([]);
+    });
+  });
+
   it('startChat nhận tool find_answered_questions', async () => {
     const s = setup();
     const dialog = await openChat();
@@ -549,9 +596,9 @@ describe('Trò chuyện cũ', () => {
         await within(dialog).findByText('Không đổi được tên.');
       };
       await fail();
-      act(() => {
-        vi.advanceTimersByTime(5000);
-      });
+      // Chờ React chạy xong effect đặt hẹn giờ rồi mới cho đồng hồ chạy (máy bận thì effect có thể chậm).
+      await act(async () => {});
+      await act(() => vi.advanceTimersByTimeAsync(5000));
       expect(within(dialog).queryByText('Không đổi được tên.')).toBeNull();
       await fail();
       fireEvent.click(within(dialog).getByRole('button', { name: 'Đổi tên' }));

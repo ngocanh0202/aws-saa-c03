@@ -1,3 +1,4 @@
+import { withRetry } from './retry';
 import type { ChatOptions } from './types';
 
 /** Số lượt mô hình được gọi tool trong một tin nhắn, quá thì dừng để không lặp vô hạn. */
@@ -24,7 +25,9 @@ export interface TurnResult {
 export async function* toolLoop(send: (turn: ToolTurn) => Promise<TurnResult>, text: string, options: ChatOptions = {}): AsyncIterable<string> {
   let turn: ToolTurn = text;
   for (let round = 0; ; round++) {
-    const result = await send(turn);
+    // Lỗi hết lượt/quá tải xảy ra lúc gửi (chưa có chữ nào): chờ rồi gửi lại đúng lượt này.
+    const current = turn;
+    const result = await withRetry(() => send(current), options.retry);
     for await (const chunk of result.chunks) if (chunk) yield chunk;
     const calls = await result.calls();
     if (calls.length === 0) return;

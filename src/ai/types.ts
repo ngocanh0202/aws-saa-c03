@@ -1,3 +1,5 @@
+import type { RetryOptions } from './retry';
+
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
@@ -21,6 +23,8 @@ export interface ChatOptions {
   tools?: AiTool[];
   /** Gọi mỗi lần mô hình yêu cầu chạy tool (để hiện dòng chờ). */
   onToolCall?: (name: string) => void;
+  /** Tự thử lại khi Gemini báo hết lượt/quá tải (onWait để hiện đếm ngược). */
+  retry?: RetryOptions;
 }
 
 export interface AiClient {

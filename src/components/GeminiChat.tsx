@@ -4,7 +4,9 @@ import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
 import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
+import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
 import { inflightFor, inflightKey } from '../ai/inflight';
+import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
@@ -448,6 +450,22 @@ function ChatList({
   );
 }
 
+/** Giờ hết khóa Gemini (null = không khóa); tự cập nhật mỗi giây để đếm ngược. */
+function useCooldown(cooldown: Cooldown): number | null {
+  const [, tick] = useState(0);
+  useEffect(() => cooldown.subscribe(() => tick((x) => x + 1)), [cooldown]);
+  const until = cooldown.until();
+  useEffect(() => {
+    if (until === null) return;
+    const t = setInterval(() => tick((x) => x + 1), 1000);
+    return () => clearInterval(t);
+  }, [until]);
+  return until;
+}
+
+const secondsLeft = (until: number) => Math.max(1, Math.ceil((until - Date.now()) / 1000));
+const clockTime = (ms: number) => new Date(ms).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
 function Conversation({
   uid,
   ai,
@@ -465,8 +483,10 @@ function Conversation({
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
   const key = inflightKey(uid, attemptId, qid);
-  const { store, bank, sync } = useApp();
+  const { store, bank, sync, aiCooldown } = useApp();
   const inflight = inflightFor(chats);
+  const cooldown = aiCooldown ?? memoryCooldownFor(ai);
+  const until = useCooldown(cooldown);
   // Câu trả lời còn chạy từ lần mở khung trước (đã sang câu khác rồi quay lại): theo dõi tiếp.
   const [running] = useState(() => inflight.get(key));
   const [searching, setSearching] = useState(running?.searching ?? false);
@@ -474,6 +494,10 @@ function Conversation({
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
   const [sendFailed, setSendFailed] = useState(false);
+  /** Lần gửi trước hỏng vì Gemini hết lượt/quá tải. */
+  const [busyFailed, setBusyFailed] = useState(false);
+  /** Đang chờ để tự thử lại (lần mấy / tối đa). */
+  const [retry, setRetry] = useState(running?.retry);
   const [saveFailed, setSaveFailed] = useState(false);
   const [busy, setBusy] = useState(running !== undefined);
   const [input, setInput] = useState('');
@@ -498,7 +522,11 @@ function Conversation({
         setMessages(e.messages);
         setBusy(e.kind === 'progress');
         setSearching(e.kind === 'progress' && e.searching);
-        if (e.kind === 'done') setSendFailed(e.failed);
+        setRetry(e.kind === 'progress' ? e.retry : undefined);
+        if (e.kind === 'done') {
+          setSendFailed(e.failed);
+          setBusyFailed(e.failed && !!e.busy);
+        }
       }),
     [inflight, key],
   );
@@ -528,19 +556,26 @@ function Conversation({
    */
   const send = async () => {
     const text = input.trim();
-    if (!text || busy || !loaded) return;
+    if (!text || busy || !loaded || cooldown.until() !== null) return;
     const history = messages;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
     const signedIn = () => !sync || signedInUser(sync.getState())?.uid === uid;
     setInput('');
     setSendFailed(false);
+    setBusyFailed(false);
     setSaveFailed(false);
     let reply = '';
     let searchingNow = false;
+    let retryNow: { attempt: number; max: number } | undefined;
     // Gemini gọi open_guide thì chờ trả lời xong mới mở hướng dẫn (lỗi giữa chừng thì không mở).
     let guideRequested = false;
     const progress = () =>
-      inflight.emit(key, { kind: 'progress', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, searching: searchingNow });
+      inflight.emit(key, {
+        kind: 'progress',
+        messages: reply ? [...asked, { role: 'model', text: reply }] : asked,
+        searching: searchingNow,
+        retry: retryNow,
+      });
     progress();
     try {
       // Một phiên chat cho mỗi lần mở khung; adapter tự cắt và chuẩn hóa history.
@@ -565,11 +600,20 @@ function Conversation({
           searchingNow = true;
           progress();
         },
+        // Gemini hết lượt/quá tải: khóa mọi khung chat tới giờ thử lại và hiện đếm ngược.
+        retry: {
+          onWait: (w) => {
+            cooldown.set(w.until);
+            retryNow = { attempt: w.attempt, max: w.max };
+            progress();
+          },
+        },
       }));
       for await (const chunk of chat.send(text)) {
         if (!signedIn()) throw new Error('signed out');
         if (!chunk) continue;
         searchingNow = false;
+        retryNow = undefined;
         reply += chunk;
         progress();
       }
@@ -582,10 +626,13 @@ function Conversation({
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
         inflight.emit(key, { kind: 'save-failed' });
       });
-    } catch {
+    } catch (e) {
       // Phiên có thể kẹt ở lượt gọi tool chưa có kết quả; lần gửi sau mở phiên mới từ lịch sử chữ.
       chatRef.current = null;
-      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true });
+      const busyError = e instanceof AiBusyError;
+      // Gemini báo phải chờ (quá lâu để tự chờ, hoặc đã thử lại hết lượt): khóa tới giờ đó.
+      if (busyError && e.retryAfterMs) cooldown.set(Date.now() + e.retryAfterMs);
+      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true, busy: busyError });
     }
   };
 
@@ -616,12 +663,24 @@ function Conversation({
             </div>
           ))}
           {busy && messages[messages.length - 1]?.role === 'user' && (
-            <p className="hint">{searching ? 'Gemini đang tìm trong các câu bạn đã làm…' : 'Gemini đang trả lời…'}</p>
-          )}
-          {sendFailed && (
-            <p className="gemini__notice" role="alert">
-              Gemini chưa trả lời được, thử gửi lại nhé.
+            <p className="hint">
+              {retry && until !== null
+                ? `Gemini đang hết lượt, tự thử lại sau ${secondsLeft(until)} giây… (lần ${retry.attempt}/${retry.max})`
+                : searching
+                  ? 'Gemini đang tìm trong các câu bạn đã làm…'
+                  : 'Gemini đang trả lời…'}
             </p>
+          )}
+          {!busy && until !== null ? (
+            <p className="gemini__notice" role="alert">
+              Gemini đang hết lượt. Thử lại sau {secondsLeft(until)} giây (lúc {clockTime(until)}).
+            </p>
+          ) : (
+            sendFailed && (
+              <p className="gemini__notice" role="alert">
+                {busyFailed ? 'Gemini đang hết lượt, thử lại sau ít phút.' : 'Gemini chưa trả lời được, thử gửi lại nhé.'}
+              </p>
+            )
           )}
           {saveFailed && <p className="gemini__notice">Không lưu được lịch sử trò chuyện.</p>}
           <div ref={endRef} />
@@ -638,7 +697,7 @@ function Conversation({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" className="btn-primary" disabled={busy || !loaded}>
+        <button type="submit" className="btn-primary" disabled={busy || !loaded || until !== null}>
           Gửi
         </button>
       </form>

@@ -1,4 +1,5 @@
 import { prepareHistory } from '../ai/prompt';
+import type { AiBusyError } from '../ai/retry';
 import { toolLoop, type FunctionCallLike } from '../ai/tool-loop';
 import { summarize, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatOptions } from '../ai/types';
 
@@ -22,6 +23,8 @@ export interface FakeAi extends AiClient {
   toolCalls?: FunctionCallLike[];
   /** true: send() chờ release() trước cả lượt gọi tool (để thử việc xảy ra trước khi tool chạy). */
   holdFirst?: boolean;
+  /** Mỗi lần gửi (kể cả gửi lại) lấy ra một lỗi ở đầu danh sách và ném, như SDK báo 429/503. */
+  busy: AiBusyError[];
 }
 
 export function fakeAi(): FakeAi {
@@ -30,6 +33,7 @@ export function fakeAi(): FakeAi {
     calls: [],
     reply: ['ok'],
     hold: false,
+    busy: [],
     strictHistory: false,
     release() {
       const list = waiting;
@@ -66,6 +70,8 @@ export function fakeAi(): FakeAi {
           const loop = () =>
             toolLoop(
               async (turn) => {
+                const busy = ai.busy.shift();
+                if (busy) throw busy;
                 if (typeof turn !== 'string') call.toolResults.push(...turn.map((r) => r.response));
                 const calling = typeof turn === 'string' && toolCalls.length > 0;
                 return { chunks: calling ? none() : answer(), calls: async () => (calling ? toolCalls : []) };

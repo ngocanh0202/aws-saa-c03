@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import { AppProvider, type AppDeps } from './app/context';
 import { AppRoutes } from './app/routes';
+import { createCooldown } from './ai/cooldown';
 import { buildAiDeps } from './ai/deps';
 import { createGeminiClient } from './ai/gemini';
 import { bank } from './data/load';
@@ -31,6 +32,7 @@ const deps: AppDeps = {
   newId: () => crypto.randomUUID(),
   sync,
   ...buildAiDeps(config, clients, createGeminiClient),
+  aiCooldown: createCooldown(getBrowserStorage()),
 };
 
 createRoot(document.getElementById('root')!).render(
