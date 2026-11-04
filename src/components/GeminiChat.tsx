@@ -165,7 +165,10 @@ function ChatDialog({
         ? {
             onOpenGuide: () => {
               const latest = store.get(id);
-              if (latest && !latest.guideOpened.includes(qid)) store.save(markGuideOpened(latest, qid));
+              // Câu trả lời chạy nền có thể tới sau khi lượt đã nộp: lượt đã nộp thì không sửa.
+              if (latest?.mode === 'practice' && latest.status === 'in-progress' && !latest.guideOpened.includes(qid)) {
+                store.save(markGuideOpened(latest, qid));
+              }
             },
             revealed: a.guideOpened.includes(qid),
           }

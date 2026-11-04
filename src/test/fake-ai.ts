@@ -20,6 +20,8 @@ export interface FakeAi extends AiClient {
   startError?: Error;
   /** Đặt thì tin nhắn đầu của mỗi chat gọi các tool này (qua toolLoop như adapter thật) rồi mới trả reply. */
   toolCalls?: FunctionCallLike[];
+  /** true: send() chờ release() trước cả lượt gọi tool (để thử việc xảy ra trước khi tool chạy). */
+  holdFirst?: boolean;
 }
 
 export function fakeAi(): FakeAi {
@@ -61,15 +63,21 @@ export function fakeAi(): FakeAi {
         send(text) {
           call.sent.push(text);
           const toolCalls = call.sent.length === 1 ? (ai.toolCalls ?? []) : [];
-          return toolLoop(
-            async (turn) => {
-              if (typeof turn !== 'string') call.toolResults.push(...turn.map((r) => r.response));
-              const calling = typeof turn === 'string' && toolCalls.length > 0;
-              return { chunks: calling ? none() : answer(), calls: async () => (calling ? toolCalls : []) };
-            },
-            text,
-            options,
-          );
+          const loop = () =>
+            toolLoop(
+              async (turn) => {
+                if (typeof turn !== 'string') call.toolResults.push(...turn.map((r) => r.response));
+                const calling = typeof turn === 'string' && toolCalls.length > 0;
+                return { chunks: calling ? none() : answer(), calls: async () => (calling ? toolCalls : []) };
+              },
+              text,
+              options,
+            );
+          if (!ai.holdFirst) return loop();
+          return (async function* () {
+            await new Promise<void>((r) => waiting.push(r));
+            yield* loop();
+          })();
         },
       };
     },

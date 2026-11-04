@@ -111,6 +111,20 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.ai.calls[0].toolResults).toContainEqual({ opened: true });
   });
 
+  it('nộp bài khi Gemini đang trả lời: open_guide không sửa lượt đã nộp', async () => {
+    const s = setup();
+    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
+    s.ai.holdFirst = true;
+    const dialog = await openChat();
+    await ask(dialog, 'Cho tôi đáp án');
+    act(() => {
+      s.store.save(submitAttempt(s.store.get('e1')!, 600));
+    });
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(s.store.get('e1')!.guideOpened).toEqual([]);
+  });
+
   it('người học tự bấm hướng dẫn giữa chừng: lần gửi sau mở phiên mới báo đã thấy đáp án', async () => {
     const s = setup();
     const dialog = await openChat();
