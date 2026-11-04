@@ -99,6 +99,6 @@ export function normalizeHistory(messages: ChatMessage[]): ChatMessage[] {
 }
 
 /** History gửi cho mô hình: cắt còn các tin gần nhất rồi chuẩn hóa. */
-export function prepareHistory(messages: ChatMessage[]): ChatMessage[] {
-  return normalizeHistory(trimHistory(messages));
+export function prepareHistory(messages: ChatMessage[], max = HISTORY_LIMIT): ChatMessage[] {
+  return normalizeHistory(trimHistory(messages, max));
 }

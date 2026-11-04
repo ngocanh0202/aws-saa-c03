@@ -25,6 +25,16 @@ export interface ChatOptions {
   onToolCall?: (name: string) => void;
   /** Tự thử lại khi Gemini báo hết lượt/quá tải (onWait để hiện đếm ngược). */
   retry?: RetryOptions;
+  /** Model đang "suy nghĩ" (reasoning) chưa ra chữ trả lời; Local AI dùng để hiện dòng chờ. */
+  onThinking?: () => void;
+}
+
+/** Lỗi có sẵn câu báo cho người học (vd không kết nối được AI thử nghiệm). */
+export class AiUserError extends Error {
+  constructor(readonly userMessage: string) {
+    super(userMessage);
+    this.name = 'AiUserError';
+  }
 }
 
 export interface AiClient {
