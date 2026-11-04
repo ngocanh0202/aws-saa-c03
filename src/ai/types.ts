@@ -3,6 +3,8 @@ import type { RetryOptions } from './retry';
 export interface ChatMessage {
   role: 'user' | 'model';
   text: string;
+  /** Câu trả lời dùng lại từ lần hỏi trước (câu hỏi giống ≥ 85%), không gửi cho AI. */
+  cached?: boolean;
 }
 
 export interface AiChat {

@@ -453,7 +453,31 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(dialog).getByRole('textbox')).toHaveValue('đang gõ dở');
     expect(within(dialog).queryByRole('group', { name: 'Câu hỏi gợi ý' })).toBeNull();
     await act(async () => s.ai.release());
-    expect(await within(dialog).findByRole('group', { name: 'Câu hỏi gợi ý' })).toBeInTheDocument();
+    const again = await within(dialog).findByRole('group', { name: 'Câu hỏi gợi ý' });
+    // Nằm trong vùng chat, có tiêu đề "Gợi ý"; gợi ý đã hỏi thì biến mất.
+    expect(again.closest('.gemini__log')).not.toBeNull();
+    expect(within(again).getByText('Gợi ý')).toBeInTheDocument();
+    expect(within(again).queryByRole('button', { name: 'Dịch đề và các lựa chọn sang tiếng Việt' })).toBeNull();
+    expect(within(again).getByRole('button', { name: 'Đề này đang hỏi gì?' })).toBeInTheDocument();
+  });
+
+  it('câu hỏi giống ≥ 85% câu đã có trả lời: dùng lại câu trả lời cũ, không gửi cho AI', async () => {
+    const s = setup({ history: [{ role: 'user', text: 'Amazon MQ là gì?' }, { role: 'model', text: 'MQ là message broker' }] });
+    const dialog = await openChat();
+    await within(dialog).findByText('MQ là message broker');
+    await ask(dialog, 'amazon mq la gi');
+    expect(within(dialog).getAllByText('MQ là message broker')).toHaveLength(2);
+    expect(within(dialog).getByText('Trả lời lại từ lần hỏi trước')).toBeInTheDocument();
+    expect(s.ai.calls).toEqual([]);
+    await waitFor(() => expect(s.chats.saved.at(-1)?.messages).toHaveLength(4));
+    expect(s.chats.saved.at(-1)!.messages[3]).toMatchObject({ role: 'model', text: 'MQ là message broker', cached: true });
+  });
+
+  it('câu hỏi không giống câu cũ thì vẫn gửi cho AI', async () => {
+    const s = setup({ history: [{ role: 'user', text: 'Amazon MQ là gì?' }, { role: 'model', text: 'MQ là message broker' }] });
+    const dialog = await openChat();
+    await ask(dialog, 'NAT Gateway khác NAT instance thế nào?');
+    await waitFor(() => expect(s.ai.calls).toHaveLength(1));
   });
 
   it('gửi lỗi: nút ↻ bên trái câu hỏi gửi lại đúng câu đó, không lặp bong bóng', async () => {

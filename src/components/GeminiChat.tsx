@@ -9,6 +9,7 @@ import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
 import { inflightFor, inflightKey } from '../ai/inflight';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
+import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
 import { chatSuggestions } from '../ai/suggestions';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
@@ -568,7 +569,10 @@ function Conversation({
   const sessionRevealed = useRef(target.revealed);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const suggestions = chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services);
+  // Gợi ý đã hỏi (câu người học giống ≥ 85%) thì không hiện lại.
+  const suggestions = chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services).filter(
+    (t) => !messages.some((m) => m.role === 'user' && similarity(m.text, t) >= SIMILAR_THRESHOLD),
+  );
   // Lần gửi trước lỗi và câu hỏi cuối chưa có trả lời: cho gửi lại.
   const canRetry = sendFailed && !busy && messages[messages.length - 1]?.role === 'user';
 
@@ -629,6 +633,14 @@ function Conversation({
     setBusyFailed(false);
     setFailMessage(undefined);
     setSaveFailed(false);
+    // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
+    const cached = findCachedReply(history, text);
+    if (cached !== null) {
+      const done: ChatMessage[] = [...asked, { role: 'model', text: cached, cached: true }];
+      inflight.emit(key, { kind: 'done', messages: done, failed: false });
+      chats.save(uid, attemptId, qid, done).catch(() => inflight.emit(key, { kind: 'save-failed' }));
+      return;
+    }
     let reply = '';
     let searchingNow = false;
     let retryNow: { attempt: number; max: number } | undefined;
@@ -749,6 +761,7 @@ function Conversation({
             ) : (
               <div key={i} className={`gemini__msg gemini__msg--${m.role}`}>
                 {m.role === 'model' ? <Markdown text={m.text} /> : m.text}
+                {m.cached && <p className="gemini__cached">Trả lời lại từ lần hỏi trước</p>}
               </div>
             ),
           )}
@@ -775,18 +788,20 @@ function Conversation({
             )
           )}
           {saveFailed && <p className="gemini__notice">Không lưu được lịch sử trò chuyện.</p>}
+          {/* Gợi ý nằm cuối vùng chat, mỗi dòng một câu; ẩn khi đang trả lời hoặc đã hỏi hết. */}
+          {!busy && loaded && suggestions.length > 0 && (
+            <div className="gemini__suggest" role="group" aria-label="Câu hỏi gợi ý">
+              <p className="gemini__suggest-title">Gợi ý</p>
+              {suggestions.map((text) => (
+                <button key={text} type="button" className="gemini__suggest-item" disabled={until !== null} onClick={() => void send(text)}>
+                  {text}
+                </button>
+              ))}
+            </div>
+          )}
           <div ref={endRef} />
         </div>
       </div>
-      {!busy && (
-        <div className="gemini__suggest" role="group" aria-label="Câu hỏi gợi ý">
-          {suggestions.map((text) => (
-            <button key={text} type="button" className="chip" disabled={!loaded || until !== null} onClick={() => void send(text)}>
-              {text}
-            </button>
-          ))}
-        </div>
-      )}
       <form className="gemini__form" onSubmit={onSubmit}>
         <textarea
           ref={inputRef}
