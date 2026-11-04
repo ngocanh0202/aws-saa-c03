@@ -111,6 +111,30 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.ai.calls[0].toolResults).toContainEqual({ opened: true });
   });
 
+  it('open_guide: chờ Gemini trả lời xong mới mở hướng dẫn, không hiện dòng "đang tìm"', async () => {
+    const s = setup();
+    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog, 'Cho tôi đáp án');
+    await waitFor(() => expect(s.ai.calls[0].toolResults).toHaveLength(1));
+    expect(within(dialog).getByText('Gemini đang trả lời…')).toBeInTheDocument();
+    expect(within(dialog).queryByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeNull();
+    expect(guideOpened(s)).not.toContain(s.qid);
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(guideOpened(s)).toContain(s.qid));
+  });
+
+  it('open_guide nhưng câu trả lời lỗi thì không mở hướng dẫn', async () => {
+    const s = setup();
+    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
+    s.ai.reply = new Error('blocked');
+    const dialog = await openChat();
+    await ask(dialog, 'Cho tôi đáp án');
+    await waitFor(() => expect(within(dialog).getByText('Gemini chưa trả lời được, thử gửi lại nhé.')).toBeInTheDocument());
+    expect(guideOpened(s)).not.toContain(s.qid);
+  });
+
   it('nộp bài khi Gemini đang trả lời: open_guide không sửa lượt đã nộp', async () => {
     const s = setup();
     s.ai.toolCalls = [{ name: 'open_guide', args: {} }];

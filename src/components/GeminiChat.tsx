@@ -5,7 +5,7 @@ import { formatDate, setLabel } from '../app/format';
 import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
 import { inflightFor, inflightKey } from '../ai/inflight';
-import { createSearchTool } from '../ai/search';
+import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import { markGuideOpened } from '../engine/actions';
@@ -530,6 +530,8 @@ function Conversation({
     setSaveFailed(false);
     let reply = '';
     let searchingNow = false;
+    // Gemini gọi open_guide thì chờ trả lời xong mới mở hướng dẫn (lỗi giữa chừng thì không mở).
+    let guideRequested = false;
     const progress = () =>
       inflight.emit(key, { kind: 'progress', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, searching: searchingNow });
     progress();
@@ -542,9 +544,17 @@ function Conversation({
       const chat = (chatRef.current ??= ai.startChat(prompt, history, {
         tools: [
           createSearchTool(store, bank, { setId, attemptId, qid }),
-          ...(target.onOpenGuide ? [createGuideTool(() => openGuide.current?.())] : []),
+          ...(target.onOpenGuide
+            ? [
+                createGuideTool(() => {
+                  guideRequested = true;
+                }),
+              ]
+            : []),
         ],
-        onToolCall: () => {
+        onToolCall: (name) => {
+          // Dòng chờ "đang tìm" chỉ dành cho tool tìm câu.
+          if (name !== SEARCH_TOOL) return;
           searchingNow = true;
           progress();
         },
@@ -560,6 +570,7 @@ function Conversation({
       if (!signedIn()) throw new Error('signed out');
       const done: ChatMessage[] = [...asked, { role: 'model', text: reply }];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
+      if (guideRequested) openGuide.current?.();
       chats.save(uid, attemptId, qid, done).catch(() => {
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
         inflight.emit(key, { kind: 'save-failed' });
