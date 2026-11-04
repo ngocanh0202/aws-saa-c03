@@ -2,6 +2,7 @@ import { act, fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest';
 import { createAiMode } from '../ai/ai-mode';
 import { LOCAL_CONNECT_ERROR } from '../ai/local';
+import { AiBusyError } from '../ai/retry';
 import { AiUserError } from '../ai/types';
 import { createAttempt } from '../engine/attempt';
 import { createStore } from '../storage/storage';
@@ -118,5 +119,27 @@ describe('Chế độ AI thử nghiệm (Local AI)', () => {
     s.localAi.reply = new AiUserError(LOCAL_CONNECT_ERROR);
     await ask(dialog, 'Lần nữa');
     expect(await within(dialog).findByText(LOCAL_CONNECT_ERROR)).toBeInTheDocument();
+  });
+
+  it('Gemini hết lượt (429): khung chat gợi ý chuyển sang AI thử nghiệm, bấm thì mở luôn khung Hỏi AI', async () => {
+    const s = setup();
+    s.ai.busy = [new AiBusyError(429, 90_000)];
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi Gemini' }));
+    const dialog = screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 1' });
+    expect(within(dialog).queryByRole('button', { name: /Chuyển sang AI thử nghiệm/ })).toBeNull();
+    await ask(dialog);
+    fireEvent.click(await within(dialog).findByRole('button', { name: /Chuyển sang AI thử nghiệm/ }));
+    expect(s.aiMode.get()).toBe('local');
+    expect(screen.getByRole('dialog', { name: 'Hỏi AI · Câu 1' })).toBeInTheDocument();
+  });
+
+  it('không có AI thử nghiệm thì không gợi ý chuyển', async () => {
+    const s = setup({ withLocal: false });
+    s.ai.busy = [new AiBusyError(429, 90_000)];
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi Gemini' }));
+    const dialog = screen.getByRole('dialog');
+    await ask(dialog);
+    await within(dialog).findByText(/Thử lại sau/);
+    expect(within(dialog).queryByRole('button', { name: /Chuyển sang AI thử nghiệm/ })).toBeNull();
   });
 });

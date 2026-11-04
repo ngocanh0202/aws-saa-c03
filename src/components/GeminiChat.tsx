@@ -103,9 +103,16 @@ function SignedIn({ sync, brand, ...rest }: Props & { sync: SyncController; ai: 
   return user ? <Launcher key={`${user.uid}:${brand}`} uid={user.uid} brand={brand} {...rest} /> : null;
 }
 
+/** Khung cần tự mở sau khi chuyển Gemini → AI thử nghiệm (`${attemptId}/${qid}`), để người học khỏi bấm lại nút. */
+let openAfterSwitch: string | null = null;
+
 function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
   const id = useId();
-  const [open, setOpen] = useState(false);
+  const launcherKey = keyOf(props.attemptId, props.question.id);
+  const [open, setOpen] = useState(() => openAfterSwitch === launcherKey);
+  useEffect(() => {
+    if (openAfterSwitch === launcherKey) openAfterSwitch = null;
+  }, [launcherKey]);
   const close = useCallback(() => setOpen(false), []);
   useEffect(() => {
     const onOther = (other: string) => other !== id && setOpen(false);
@@ -156,7 +163,15 @@ function ChatDialog({
   brand,
   onClose,
 }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand; onClose: () => void }) {
-  const { store, bank } = useApp();
+  const { store, bank, localAi, aiMode } = useApp();
+  // Gemini hết lượt mà có AI thử nghiệm: cho chuyển sang ngay trong khung, rồi mở lại khung của đúng câu này.
+  const switchToLocal =
+    brand === 'Gemini' && localAi && aiMode
+      ? () => {
+          openAfterSwitch = keyOf(attemptId, question.id);
+          aiMode.set('local');
+        }
+      : undefined;
   /** false = khung chat nhỏ ở góc (trang vẫn dùng được); true = phủ toàn màn hình. */
   const [expanded, setExpanded] = useState(false);
   const [view, setView] = useState<'chat' | 'list'>('chat');
@@ -295,7 +310,7 @@ function ChatDialog({
               ← Quay lại {homeLabel}
             </button>
           )}
-          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} brand={brand} target={target} onBusy={setBusy} />
+          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} brand={brand} target={target} onBusy={setBusy} onSwitchToLocal={switchToLocal} />
         </>
       )}
     </div>,
@@ -524,6 +539,7 @@ function Conversation({
   brand,
   target,
   onBusy,
+  onSwitchToLocal,
 }: {
   uid: string;
   ai: AiClient;
@@ -532,6 +548,8 @@ function Conversation({
   target: Target;
   /** Báo khung ngoài để khóa chuyển cuộc trò chuyện khi đang trả lời. */
   onBusy: (busy: boolean) => void;
+  /** Có thì hiện nút chuyển sang AI thử nghiệm khi Gemini hết lượt. */
+  onSwitchToLocal?: () => void;
 }) {
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
@@ -786,6 +804,11 @@ function Conversation({
                 {failMessage ?? (busyFailed ? `${brand} đang hết lượt, thử lại sau ít phút.` : `${brand} chưa trả lời được, thử gửi lại nhé.`)}
               </p>
             )
+          )}
+          {onSwitchToLocal && !busy && (until !== null || busyFailed) && (
+            <button type="button" className="gemini__switch" onClick={onSwitchToLocal}>
+              🤖 Chuyển sang AI thử nghiệm
+            </button>
           )}
           {saveFailed && <p className="gemini__notice">Không lưu được lịch sử trò chuyện.</p>}
           {/* Gợi ý nằm cuối vùng chat, mỗi dòng một câu; ẩn khi đang trả lời hoặc đã hỏi hết. */}

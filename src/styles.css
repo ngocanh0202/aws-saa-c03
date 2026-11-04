@@ -393,6 +393,8 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__suggest-item:hover:not(:disabled), .gemini__suggest-item:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
 .gemini__suggest-item:disabled { opacity: 0.45; cursor: not-allowed; }
 .gemini-dock .gemini__suggest-item { font-size: 0.82em; padding: 4px 10px; }
+.gemini__switch { align-self: flex-start; padding: 6px 12px; border-radius: 999px; font: inherit; font-size: 0.9em; background: transparent; border: 1px solid var(--accent); color: var(--accent); cursor: pointer; }
+.gemini__switch:hover, .gemini__switch:focus-visible { background: color-mix(in srgb, var(--accent) 12%, transparent); outline: none; }
 .gemini__cached { margin: 6px 0 0; font-size: 0.75em; color: var(--muted); font-style: italic; }
 @media (prefers-reduced-motion: reduce) { .gemini__suggest-item { transition: none; } }
 .gemini__form { display: flex; gap: 8px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--border); }
