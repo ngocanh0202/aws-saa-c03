@@ -49,6 +49,7 @@ Rules đã thêm nhánh `users/$uid/localChats`. Dán lại [`database.rules.jso
 
 - Lỗi kết nối (LM Studio/tunnel tắt, chưa bật CORS) hoặc chờ quá 60 giây chưa có phản hồi: báo "Không kết nối được AI thử nghiệm…".
 - Model có phần "suy nghĩ" (`<think>…</think>` hoặc `reasoning_content`): phần này bị lọc, không hiện, không lưu; trong lúc đó khung hiện "AI đang suy nghĩ…".
+- Có model chỉ in thẻ đóng `</think>` (thẻ mở nằm trong template), nên khi server không tách `reasoning_content` và chữ chưa có thẻ nào, web **giữ câu trả lời lại tới khi xong mới hiện** (không chữ chạy dần) để không lộ phần suy nghĩ. Muốn chữ chạy dần: trong LM Studio bật tùy chọn tách phần suy nghĩ ra `reasoning_content` (Developer → Server Settings, mục reasoning) nếu model hỗ trợ.
 - Cơ chế tự thử lại 429/503 và khóa nút Gửi chỉ áp dụng cho Gemini.
 - Đổi chế độ khi đang mở khung chat thì khung đóng lại; câu trả lời đang chạy vẫn chạy xong và lưu vào đúng chế độ cũ.
 

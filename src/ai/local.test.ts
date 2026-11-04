@@ -52,6 +52,20 @@ describe('createThinkFilter', () => {
   });
 });
 
+describe('createThinkFilter: chỉ có thẻ đóng', () => {
+  it('model bắt đầu thẳng bằng phần suy nghĩ, chỉ có </think> (bị cắt giữa mảnh): không lộ suy nghĩ', () => {
+    const f = createThinkFilter();
+    const out = ['suy nghĩ…', ' tiếp </th', 'ink>Đáp', ' án'].map(f).join('') + f.flush();
+    expect(out).toBe('Đáp án');
+  });
+
+  it('không có thẻ nào: hết stream thì trả đủ chữ', () => {
+    const f = createThinkFilter();
+    const out = ['Xin ', 'chào'].map(f).join('') + f.flush();
+    expect(out).toBe('Xin chào');
+  });
+});
+
 describe('createLocalAiClient', () => {
   afterEach(() => vi.useRealTimers());
 
@@ -61,7 +75,8 @@ describe('createLocalAiClient', () => {
       { role: 'user', text: 'a' },
       { role: 'model', text: 'b' },
     ]);
-    expect(await collect(chat.send('hỏi'))).toEqual(['Vì ', 'S3']);
+    // Chưa biết model có phần suy nghĩ không (không thẻ, không reasoning_content): giữ tới khi hết stream.
+    expect((await collect(chat.send('hỏi'))).join('')).toBe('Vì S3');
     const body = f.bodies[0];
     expect(f.bodies[0].url).toBe('http://x/v1/chat/completions');
     expect(body.body.model).toBe('qwen');
@@ -81,6 +96,11 @@ describe('createLocalAiClient', () => {
     expect('model' in f.bodies[0].body).toBe(false);
     const messages = f.bodies[0].body.messages as unknown[];
     expect(messages.length).toBeLessThanOrEqual(1 + LOCAL_HISTORY_LIMIT + 1);
+  });
+
+  it('server tách reasoning_content thì câu trả lời stream ngay từng mảnh', async () => {
+    const f = fakeFetch([{ pieces: [event({ reasoning_content: 'nghĩ' }), event({ content: 'Một ' }), event({ content: 'hai' }), DONE] }]);
+    expect(await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', []).send('q'))).toEqual(['Một ', 'hai']);
   });
 
   it('phần suy nghĩ không ra chữ: <think> bị lọc, reasoning_content gọi onThinking', async () => {
@@ -142,6 +162,31 @@ describe('createLocalAiClient', () => {
     const f = fakeFetch([{ status: 400, text: '{"error":"Trying to keep the first 9000 tokens when context the overflows. n_ctx: 4096"}' }]);
     const err = await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', []).send('q')).catch((e) => e);
     expect((err as AiUserError).userMessage).toContain('dài quá ngữ cảnh');
+  });
+
+  it('lỗi gửi trong stream (data: {"error":…}) → AiUserError theo nội dung lỗi', async () => {
+    const f = fakeFetch([{ pieces: [`data: ${JSON.stringify({ error: { message: 'Context length exceeded (n_ctx 4096)' } })}
+
+`] }]);
+    const err = await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', []).send('q')).catch((e) => e);
+    expect((err as AiUserError).userMessage).toContain('dài quá ngữ cảnh');
+    const g = fakeFetch([{ pieces: [`event: error
+data: ${JSON.stringify({ error: 'model crashed' })}
+
+`] }]);
+    const err2 = await collect(createLocalAiClient('http://x', undefined, g.impl).startChat('S', []).send('q')).catch((e) => e);
+    expect((err2 as AiUserError).userMessage).toContain('Không kết nối được AI thử nghiệm');
+  });
+
+  it('cùng một phiên hỏi nhiều lần: mỗi lần gửi vẫn chỉ tối đa 12 tin gần nhất, bắt đầu bằng tin người hỏi', async () => {
+    const f = fakeFetch([{ pieces: [event({ content: 'ok' }), DONE] }]);
+    const chat = createLocalAiClient('http://x', undefined, f.impl).startChat('S', []);
+    for (let i = 0; i < 10; i++) await collect(chat.send(`q${i}`));
+    const last = f.bodies.at(-1)!.body.messages as { role: string; content: string }[];
+    expect(last[0]).toEqual({ role: 'system', content: 'S' });
+    expect(last.length - 1).toBeLessThanOrEqual(LOCAL_HISTORY_LIMIT);
+    expect(last[1].role).toBe('user');
+    expect(last.at(-1)).toEqual({ role: 'user', content: 'q9' });
   });
 
   it(`quá ${LOCAL_TIMEOUT_MS / 1000} giây không có phản hồi → lỗi kết nối`, async () => {

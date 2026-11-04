@@ -89,6 +89,20 @@ describe('Chế độ AI thử nghiệm (Local AI)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('đổi chế độ khi câu trả lời Local AI đang chạy: vẫn lưu vào localChats, không vào aiChats', async () => {
+    const s = setup();
+    s.localAi.hold = true;
+    s.localAi.reply = ['Trả lời nền'];
+    fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi AI' }));
+    await ask(screen.getByRole('dialog'));
+    fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+    await act(async () => s.localAi.release());
+    await waitFor(() => expect(s.localChats.saved.at(-1)?.messages.at(-1)?.text).toBe('Trả lời nền'));
+    expect(s.chats.saved).toEqual([]);
+  });
+
   it('lỗi kết nối hiện đúng câu báo; model đang suy nghĩ thì hiện dòng chờ', async () => {
     const s = setup();
     fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
