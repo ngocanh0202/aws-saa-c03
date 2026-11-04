@@ -426,6 +426,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
       for (const c of chips) expect(c).toBeDisabled();
       fireEvent.click(chips[0]);
       expect(s.ai.calls[0].sent).toEqual(['Tại sao?']);
+      expect(within(dialog).getByRole('button', { name: 'Gửi lại câu hỏi' })).toBeDisabled();
     });
 
     it('thử lại hết lượt mà Gemini không báo thời gian: báo thử lại sau ít phút', async () => {
@@ -453,6 +454,24 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(dialog).queryByRole('group', { name: 'Câu hỏi gợi ý' })).toBeNull();
     await act(async () => s.ai.release());
     expect(await within(dialog).findByRole('group', { name: 'Câu hỏi gợi ý' })).toBeInTheDocument();
+  });
+
+  it('gửi lỗi: nút ↻ bên trái câu hỏi gửi lại đúng câu đó, không lặp bong bóng', async () => {
+    const s = setup();
+    s.ai.reply = new Error('blocked');
+    const dialog = await openChat();
+    await ask(dialog, 'Dịch đề');
+    await within(dialog).findByText('Gemini chưa trả lời được, thử gửi lại nhé.');
+    s.ai.reply = ['Bản dịch'];
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi lại câu hỏi' }));
+    });
+    expect(await within(dialog).findByText('Bản dịch')).toBeInTheDocument();
+    expect(within(dialog).getAllByText('Dịch đề')).toHaveLength(1);
+    expect(s.ai.calls.at(-1)!.sent).toEqual(['Dịch đề']);
+    expect(s.ai.calls.at(-1)!.history).toEqual([]);
+    await waitFor(() => expect(s.chats.saved.at(-1)?.messages).toEqual([{ role: 'user', text: 'Dịch đề' }, { role: 'model', text: 'Bản dịch' }]));
+    expect(within(dialog).queryByRole('button', { name: 'Gửi lại câu hỏi' })).toBeNull();
   });
 
   it('startChat nhận tool find_answered_questions', async () => {

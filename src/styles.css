@@ -370,6 +370,10 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__stem { overflow-wrap: anywhere; }
 .gemini__log { max-width: 820px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .gemini__msg { max-width: 85%; padding: 10px 14px; border-radius: var(--radius); border: 1px solid var(--border); overflow-wrap: anywhere; }
+.gemini__retry-row { align-self: flex-end; display: flex; align-items: center; gap: 6px; max-width: 85%; }
+.gemini__retry-row .gemini__msg { max-width: none; min-width: 0; }
+.gemini__retry { flex: none; font-size: 1.1em; line-height: 1; padding: 6px 9px; border-radius: 999px; }
+.gemini__retry:disabled { opacity: 0.5; cursor: not-allowed; }
 .gemini__msg--user { align-self: flex-end; background: var(--selected-bg); white-space: pre-wrap; }
 .gemini__msg--model { align-self: flex-start; background: var(--surface); }
 .gemini__msg--model > :first-child { margin-top: 0; }

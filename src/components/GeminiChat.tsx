@@ -569,6 +569,8 @@ function Conversation({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const suggestions = chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services);
+  // Lần gửi trước lỗi và câu hỏi cuối chưa có trả lời: cho gửi lại.
+  const canRetry = sendFailed && !busy && messages[messages.length - 1]?.role === 'user';
 
   useEffect(() => onBusy(busy), [busy, onBusy]);
 
@@ -615,10 +617,11 @@ function Conversation({
    * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
    */
   /** Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập). */
-  const send = async (suggestion?: string) => {
+  /** base: lịch sử gửi kèm (gửi lại câu hỏi lỗi thì bỏ chính câu đó khỏi lịch sử để không lặp). */
+  const send = async (suggestion?: string, base: ChatMessage[] = messages) => {
     const text = (suggestion ?? input).trim();
     if (!text || busy || !loaded || cooldown.until() !== null) return;
-    const history = messages;
+    const history = base;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
     const signedIn = () => !sync || signedInUser(sync.getState())?.uid === uid;
     if (suggestion === undefined) setInput('');
@@ -727,11 +730,28 @@ function Conversation({
           {loaded && messages.length === 0 && !loadFailed && (
             <p className="hint">Hỏi bất cứ điều gì về câu này, ví dụ vì sao một lựa chọn sai.</p>
           )}
-          {messages.map((m, i) => (
-            <div key={i} className={`gemini__msg gemini__msg--${m.role}`}>
-              {m.role === 'model' ? <Markdown text={m.text} /> : m.text}
-            </div>
-          ))}
+          {messages.map((m, i) =>
+            canRetry && i === messages.length - 1 ? (
+              // Câu hỏi cuối chưa có trả lời (gửi lỗi): nút ↻ bên trái để gửi lại đúng câu đó.
+              <div key={i} className="gemini__retry-row">
+                <button
+                  type="button"
+                  className="icon-btn gemini__retry"
+                  aria-label="Gửi lại câu hỏi"
+                  title="Gửi lại câu hỏi"
+                  disabled={!loaded || until !== null}
+                  onClick={() => void send(m.text, messages.slice(0, -1))}
+                >
+                  ↻
+                </button>
+                <div className="gemini__msg gemini__msg--user">{m.text}</div>
+              </div>
+            ) : (
+              <div key={i} className={`gemini__msg gemini__msg--${m.role}`}>
+                {m.role === 'model' ? <Markdown text={m.text} /> : m.text}
+              </div>
+            ),
+          )}
           {busy && messages[messages.length - 1]?.role === 'user' && (
             <p className="hint">
               {retry && until !== null
