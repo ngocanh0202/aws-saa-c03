@@ -63,6 +63,16 @@ describe('Hỏi Gemini ở trang xem lại', () => {
     expect(buttons[0]).toHaveClass('btn-gemini--inline');
   });
 
+  it('nút nằm giữa câu hỏi và phần hướng dẫn', () => {
+    setup();
+    const button = screen.getAllByRole('button', { name: GEMINI })[0];
+    const item = button.closest('.review-item')!;
+    const card = item.querySelector('.qcard')!;
+    const guide = within(item as HTMLElement).getByRole('complementary', { name: 'Hướng dẫn' });
+    expect(card.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(button.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
   it('lượt Thi thật đã nộp: hỏi được, lưu đúng khóa, không có open_guide, lượt không đổi', async () => {
     const s = setup();
     fireEvent.click(screen.getAllByRole('button', { name: GEMINI })[0]);
