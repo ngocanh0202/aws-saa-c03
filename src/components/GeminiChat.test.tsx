@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { ChatMessage } from '../ai/types';
 import { createAttempt } from '../engine/attempt';
 import { selectOption, submitAttempt } from '../engine/actions';
@@ -533,6 +533,32 @@ describe('Trò chuyện cũ', () => {
     fireEvent.keyDown(input, { key: 'Enter' });
     expect(await within(dialog).findByText('Không đổi được tên.')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /Tên cũ/ })).toBeInTheDocument();
+  });
+
+  it('thông báo đổi tên lỗi tự tắt sau 5 giây, và tắt khi bắt đầu sửa lại', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const s = withOld();
+      s.chats.renameError = new Error('offline');
+      const dialog = await openList();
+      const fail = async () => {
+        fireEvent.click(await within(dialog).findByRole('button', { name: 'Đổi tên' }));
+        const input = within(dialog).getByRole('textbox', { name: 'Tên cuộc trò chuyện' });
+        fireEvent.change(input, { target: { value: 'Mới' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+        await within(dialog).findByText('Không đổi được tên.');
+      };
+      await fail();
+      act(() => {
+        vi.advanceTimersByTime(5000);
+      });
+      expect(within(dialog).queryByText('Không đổi được tên.')).toBeNull();
+      await fail();
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Đổi tên' }));
+      expect(within(dialog).queryByText('Không đổi được tên.')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('câu đang làm chưa có lịch sử thì không đổi tên được', async () => {

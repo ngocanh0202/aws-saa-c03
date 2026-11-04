@@ -292,6 +292,12 @@ function ChatList({
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [renameFailed, setRenameFailed] = useState(false);
+  // Thông báo lỗi đổi tên tự tắt sau 5 giây.
+  useEffect(() => {
+    if (!renameFailed) return;
+    const t = setTimeout(() => setRenameFailed(false), 5000);
+    return () => clearTimeout(t);
+  }, [renameFailed]);
   useEffect(() => {
     let live = true;
     chats.list(uid).then(
@@ -391,6 +397,7 @@ function ChatList({
             onClick={() => {
               setDraft(r.c.title ?? '');
               setEditing(r.key);
+              setRenameFailed(false);
             }}
           >
             ✎
