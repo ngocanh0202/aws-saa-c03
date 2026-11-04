@@ -34,13 +34,19 @@ export interface ChatSummary {
   updatedAt: number;
   /** Tin cuối, đã cắt ~80 ký tự. */
   last: string;
+  /** Tên người học đặt; không có thì dùng tên mặc định "<đề> · Câu <n>". */
+  title?: string;
 }
+
+export const TITLE_MAX = 100;
 
 export interface ChatHistoryStore {
   load(uid: string, attemptId: string, qid: number): Promise<ChatMessage[]>;
   save(uid: string, attemptId: string, qid: number, messages: ChatMessage[]): Promise<void>;
   /** Mọi cuộc trò chuyện của user, ở mọi lượt. */
   list(uid: string): Promise<ChatSummary[]>;
+  /** Đặt tên (null = bỏ tên). Không đổi updatedAt; save sau đó không làm mất tên. */
+  rename(uid: string, attemptId: string, qid: number, title: string | null): Promise<void>;
 }
 
 export const SUMMARY_LENGTH = 80;

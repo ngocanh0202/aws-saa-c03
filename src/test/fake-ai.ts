@@ -81,6 +81,9 @@ export interface FakeChats extends ChatHistoryStore {
   saved: { key: string; messages: ChatMessage[] }[];
   loadError?: Error;
   listError?: Error;
+  renameError?: Error;
+  /** Tên đã đặt theo `${uid}/${attemptId}/${qid}`. */
+  titles: Map<string, string>;
 }
 
 export function fakeChats(initial: Record<string, ChatMessage[]> = {}): FakeChats {
@@ -90,6 +93,7 @@ export function fakeChats(initial: Record<string, ChatMessage[]> = {}): FakeChat
   const updated = new Map([...data.keys()].map((k) => [k, ++clock]));
   const chats: FakeChats = {
     saved: [],
+    titles: new Map(),
     async load(uid, attemptId, qid) {
       if (chats.loadError) throw chats.loadError;
       return data.get(`${uid}/${attemptId}/${qid}`) ?? [];
@@ -100,13 +104,20 @@ export function fakeChats(initial: Record<string, ChatMessage[]> = {}): FakeChat
       updated.set(key, ++clock);
       chats.saved.push({ key, messages });
     },
+    async rename(uid, attemptId, qid, title) {
+      if (chats.renameError) throw chats.renameError;
+      const key = `${uid}/${attemptId}/${qid}`;
+      if (title) chats.titles.set(key, title);
+      else chats.titles.delete(key);
+    },
     async list(uid) {
       if (chats.listError) throw chats.listError;
       return [...data]
         .filter(([key]) => key.startsWith(`${uid}/`))
         .map(([key, messages]) => {
           const [, attemptId, qid] = key.split('/');
-          return { attemptId, qid: Number(qid), updatedAt: updated.get(key) ?? 0, last: summarize(messages) };
+          const title = chats.titles.get(key);
+          return { attemptId, qid: Number(qid), updatedAt: updated.get(key) ?? 0, last: summarize(messages), ...(title ? { title } : {}) };
         });
     },
   };

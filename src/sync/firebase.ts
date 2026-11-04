@@ -7,7 +7,7 @@ import {
   signInWithPopup,
   signOut as fbSignOut,
 } from 'firebase/auth';
-import { get, getDatabase, onValue, ref, set } from 'firebase/database';
+import { child, get, getDatabase, onValue, ref, set, update } from 'firebase/database';
 import { summarize, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import type { Attempt } from '../engine/attempt';
 import { looksLikeAttempt } from '../storage/storage';
@@ -131,19 +131,29 @@ export function createFirebaseClients(config: FirebaseConfig): {
     },
     // Đọc thẳng cả nhánh aiChats (ít dữ liệu); bản hỏng hoặc rỗng thì bỏ.
     async list(uid) {
-      const all = ((await get(ref(db, `users/${uid}/aiChats`))).val() ?? {}) as Record<string, Record<string, { json?: unknown; updatedAt?: unknown }>>;
+      const all = ((await get(ref(db, `users/${uid}/aiChats`))).val() ?? {}) as Record<string, Record<string, { json?: unknown; updatedAt?: unknown; title?: unknown }>>;
       const out: ChatSummary[] = [];
       for (const [attemptId, byQid] of Object.entries(all)) {
         for (const [qid, val] of Object.entries(byQid ?? {})) {
           const messages = parseChat(val);
           if (messages.length === 0 || !Number.isFinite(Number(qid))) continue;
-          out.push({ attemptId, qid: Number(qid), updatedAt: typeof val.updatedAt === 'number' ? val.updatedAt : 0, last: summarize(messages) });
+          out.push({
+            attemptId,
+            qid: Number(qid),
+            updatedAt: typeof val.updatedAt === 'number' ? val.updatedAt : 0,
+            last: summarize(messages),
+            ...(typeof val.title === 'string' && val.title ? { title: val.title } : {}),
+          });
         }
       }
       return out;
     },
     save(uid, attemptId, qid, messages) {
-      return set(chatRef(uid, attemptId, qid), { json: JSON.stringify(messages), updatedAt: Date.now() });
+      // update (không phải set) để giữ tên người học đã đặt.
+      return update(chatRef(uid, attemptId, qid), { json: JSON.stringify(messages), updatedAt: Date.now() });
+    },
+    rename(uid, attemptId, qid, title) {
+      return set(child(chatRef(uid, attemptId, qid), 'title'), title);
     },
   };
 
