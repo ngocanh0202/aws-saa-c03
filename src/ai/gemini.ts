@@ -5,7 +5,10 @@ import { prepareHistory } from './prompt';
 import { toolLoop } from './tool-loop';
 
 function declare(tool: AiTool) {
-  const properties = Object.fromEntries(Object.entries(tool.params).map(([k, description]) => [k, Schema.string({ description })]));
+  const entries = Object.entries(tool.params);
+  // Tool không có tham số (open_guide) thì không gửi parameters.
+  if (entries.length === 0) return { name: tool.name, description: tool.description };
+  const properties = Object.fromEntries(entries.map(([k, description]) => [k, Schema.string({ description })]));
   return { name: tool.name, description: tool.description, parameters: Schema.object({ properties }) };
 }
 

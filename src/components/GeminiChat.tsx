@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, 
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
+import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
 import { inflightFor, inflightKey } from '../ai/inflight';
 import { createSearchTool } from '../ai/search';
@@ -18,8 +19,13 @@ interface Props {
   number: number;
   question: Question;
   order: string[];
-  /** Gọi khi câu trả lời có chữ đầu tiên (để gắn nhãn câu đã xem gợi ý). */
-  onFirstReply: () => void;
+  /**
+   * Mở hướng dẫn như bấm nút (Gemini gọi tool open_guide khi người học xin đáp án). Không truyền
+   * (bài đã nộp…) thì Gemini không có tool này.
+   */
+  onOpenGuide?: () => void;
+  /** Người học đã thấy đáp án và hướng dẫn; mặc định true khi không có onOpenGuide. */
+  revealed?: boolean;
 }
 
 /** User đang đăng nhập (kể cả lúc đang tải/xung đột dữ liệu); không có thì null. */
@@ -80,7 +86,8 @@ interface Target {
   question: Question;
   order: string[];
   setId: number;
-  onFirstReply: () => void;
+  onOpenGuide?: () => void;
+  revealed: boolean;
 }
 
 const keyOf = (attemptId: string, qid: number) => `${attemptId}/${qid}`;
@@ -93,7 +100,8 @@ function ChatDialog({
   number,
   question,
   order,
-  onFirstReply,
+  onOpenGuide,
+  revealed,
   onClose,
 }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; onClose: () => void }) {
   const { store, bank } = useApp();
@@ -121,7 +129,7 @@ function ChatDialog({
   }, [expanded]);
 
   const homeSetId = store.get(attemptId)?.setId ?? 0;
-  const home: Target = { attemptId, number, question, order, setId: homeSetId, onFirstReply };
+  const home: Target = { attemptId, number, question, order, setId: homeSetId, onOpenGuide, revealed: revealed ?? !onOpenGuide };
   const homeLabel = `${setLabel(homeSetId)} · Câu ${number}`;
 
   /** Dựng cuộc trò chuyện ở lượt cũ; lượt hay câu không còn thì null. */
@@ -130,19 +138,23 @@ function ChatDialog({
     const index = a ? a.questions.findIndex((q) => q.qid === qid) : -1;
     const q = bank.questions.get(qid);
     if (!a || a.status === 'incompatible' || index < 0 || !q) return null;
+    const open = a.mode === 'practice' && a.status === 'in-progress';
     return {
       attemptId: id,
       number: index + 1,
       question: q,
       order: a.questions[index].optionOrder,
       setId: a.setId,
-      // Như mở hướng dẫn, nhưng chỉ với lượt Thi thử còn dở; lượt đã nộp thì không đổi.
-      onFirstReply: () => {
-        const latest = store.get(id);
-        if (latest?.mode === 'practice' && latest.status === 'in-progress' && !latest.guideOpened.includes(qid)) {
-          store.save(markGuideOpened(latest, qid));
-        }
-      },
+      // Mở hướng dẫn chỉ có nghĩa với lượt Thi thử còn dở; lượt đã nộp thì không đổi gì.
+      ...(open
+        ? {
+            onOpenGuide: () => {
+              const latest = store.get(id);
+              if (latest && !latest.guideOpened.includes(qid)) store.save(markGuideOpened(latest, qid));
+            },
+            revealed: a.guideOpened.includes(qid),
+          }
+        : { revealed: true }),
     };
   };
 
@@ -313,9 +325,11 @@ function Conversation({
   const chatRef = useRef<AiChat | null>(null);
   // Đã nhận tin từ câu trả lời đang chạy thì lịch sử tải về (có thể cũ hơn) không được ghi đè.
   const fromInflight = useRef(running !== undefined);
-  // Luôn gọi bản onFirstReply mới nhất, kể cả khi stream bắt đầu từ lần render trước.
-  const firstReply = useRef(target.onFirstReply);
-  firstReply.current = target.onFirstReply;
+  // Luôn gọi bản onOpenGuide mới nhất, kể cả khi stream bắt đầu từ lần render trước.
+  const openGuide = useRef(target.onOpenGuide);
+  openGuide.current = target.onOpenGuide;
+  // Trạng thái "đã thấy đáp án" mà phiên chat hiện tại được báo; đổi thì mở phiên mới để Gemini biết.
+  const sessionRevealed = useRef(target.revealed);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
 
@@ -374,8 +388,14 @@ function Conversation({
     try {
       // Một phiên chat cho mỗi lần mở khung; adapter tự cắt và chuẩn hóa history.
       // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
-      const chat = (chatRef.current ??= ai.startChat(buildSystemPrompt(question, order), history, {
-        tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
+      if (chatRef.current && sessionRevealed.current !== target.revealed) chatRef.current = null;
+      sessionRevealed.current = target.revealed;
+      const prompt = buildSystemPrompt(question, order, { vi: bank.vi.get(qid), note: bank.meta.get(qid)?.note, revealed: target.revealed });
+      const chat = (chatRef.current ??= ai.startChat(prompt, history, {
+        tools: [
+          createSearchTool(store, bank, { setId, attemptId, qid }),
+          ...(target.onOpenGuide ? [createGuideTool(() => openGuide.current?.())] : []),
+        ],
         onToolCall: () => {
           searchingNow = true;
           progress();
@@ -385,7 +405,6 @@ function Conversation({
         if (!signedIn()) throw new Error('signed out');
         if (!chunk) continue;
         searchingNow = false;
-        if (!reply) firstReply.current();
         reply += chunk;
         progress();
       }

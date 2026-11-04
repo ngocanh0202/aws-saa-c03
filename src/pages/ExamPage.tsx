@@ -128,10 +128,11 @@ export function ExamPage() {
                   number={index + 1}
                   question={question}
                   order={aq.optionOrder}
-                  onFirstReply={() => {
-                    // Câu trả lời stream về sau nhiều lần lưu: lấy lượt thi mới nhất trong store.
+                  revealed={revealed}
+                  onOpenGuide={() => {
+                    // Gemini gọi tool khi câu trả lời đang stream: lấy lượt thi mới nhất trong store.
                     const latest = store.get(attempt.id);
-                    if (latest) update(markGuideOpened(latest, aq.qid));
+                    if (latest && !latest.guideOpened.includes(aq.qid)) update(markGuideOpened(latest, aq.qid));
                   }}
                 />
               </div>

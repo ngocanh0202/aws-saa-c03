@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { makeMainQuestion, makeQuestion } from '../test/fixtures';
+import type { QuestionVi } from '../data/types';
 import { buildSystemPrompt, normalizeHistory, trimHistory } from './prompt';
 import type { ChatMessage } from './types';
 
@@ -34,6 +35,53 @@ describe('buildSystemPrompt', () => {
     const p = buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D']);
     expect(p).toContain('find_answered_questions');
     expect(p).toContain('Bạn chưa làm câu nào như vậy trong đề này.');
+  });
+});
+
+const VI: QuestionVi = {
+  id: 1,
+  stemVi: 'Đề tiếng Việt',
+  promptVi: 'Hỏi gì?',
+  options: [
+    { key: 'A', textVi: 'Lựa chọn A', reason: 'Lý do A sai' },
+    { key: 'B', textVi: 'Lựa chọn B', reason: 'Lý do B đúng' },
+    { key: 'C', textVi: 'Lựa chọn C', reason: 'Lý do C sai' },
+    { key: 'D', textVi: 'Lựa chọn D', reason: 'Lý do D sai' },
+  ],
+  explanationVi: 'Giải thích chung',
+  keyHint: 'Từ khóa: rẻ nhất',
+  review: { reason: 'Nghi đáp án lỗi thời' },
+};
+
+describe('buildSystemPrompt: đối chiếu và mở hướng dẫn', () => {
+  const q = makeQuestion(1, ['A', 'B', 'C', 'D'], ['B']);
+
+  it('có giải thích tiếng Việt theo nhãn hiển thị, ghi chú và cờ review', () => {
+    const p = buildSystemPrompt(q, ['C', 'A', 'B', 'D'], { vi: VI, note: 'Đáp án đáng ngờ' });
+    expect(p).toContain('Giải thích tiếng Việt');
+    expect(p).toContain('C. Lý do B đúng');
+    expect(p).toContain('A. Lý do C sai');
+    expect(p).toContain('Giải thích chung');
+    expect(p).toContain('Từ khóa: rẻ nhất');
+    expect(p).toContain('Nghi đáp án lỗi thời');
+    expect(p).toContain('Đáp án đáng ngờ');
+  });
+
+  it('không có giải thích tiếng Việt thì bỏ mục đó', () => {
+    expect(buildSystemPrompt(q, ['A', 'B', 'C', 'D'])).not.toContain('Giải thích tiếng Việt');
+  });
+
+  it('chưa mở hướng dẫn: dặn không nói đáp án, xin thì gọi open_guide', () => {
+    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: false });
+    expect(p).toContain('open_guide');
+    expect(p).toContain('không nói ra đáp án');
+    expect(p).not.toContain('đã thấy đáp án');
+  });
+
+  it('đã mở hướng dẫn: cứ trả lời thẳng', () => {
+    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: true });
+    expect(p).toContain('đã thấy đáp án');
+    expect(p).not.toContain('open_guide');
   });
 });
 
