@@ -352,6 +352,20 @@ describe('Hỏi Gemini ở Thi thử', () => {
     );
   });
 
+  it('câu có AI đang trả lời ngầm: nút Hỏi Gemini có viền nổi bật, trả lời xong thì hết', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    expect(screen.queryByRole('button', { name: GEMINI })).toBeNull();
+    await ask(dialog);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    const button = screen.getByRole('button', { name: GEMINI });
+    expect(button).toHaveClass('btn-gemini--running');
+    expect(button).toHaveAttribute('title', 'AI đang trả lời câu này');
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(button).not.toHaveClass('btn-gemini--running'));
+  });
+
   it('đóng khung khi Gemini đang trả lời: vẫn lưu', async () => {
     const s = setup();
     s.ai.hold = true;

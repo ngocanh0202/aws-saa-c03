@@ -6,7 +6,7 @@ import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
-import { inflightFor, inflightKey } from '../ai/inflight';
+import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
@@ -103,6 +103,16 @@ function SignedIn({ sync, brand, ...rest }: Props & { sync: SyncController; ai: 
   return user ? <Launcher key={`${user.uid}:${brand}`} uid={user.uid} brand={brand} {...rest} /> : null;
 }
 
+/** Câu này có câu trả lời đang chạy ngầm (đã đóng khung hay sang câu khác) hay không. */
+function useRunning(inflight: InflightRegistry, key: string): boolean {
+  const [running, setRunning] = useState(() => inflight.get(key) !== undefined);
+  useEffect(() => {
+    setRunning(inflight.get(key) !== undefined);
+    return inflight.subscribe(key, (e) => setRunning(e.kind === 'progress'));
+  }, [inflight, key]);
+  return running;
+}
+
 /** Khung cần tự mở sau khi chuyển Gemini → AI thử nghiệm (`${attemptId}/${qid}`), để người học khỏi bấm lại nút. */
 let openAfterSwitch: string | null = null;
 
@@ -123,11 +133,18 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
     for (const l of [...openListeners]) l(id);
     setOpen(true);
   };
+  const running = useRunning(inflightFor(props.chats), inflightKey(props.uid, props.attemptId, props.question.id));
   // Như chat Messenger: khung chat mở ra thay chỗ nút, đóng lại thì nút hiện lại.
   return open ? (
     <ChatDialog {...props} onClose={close} />
   ) : (
-    <button type="button" className={inline ? 'btn-gemini btn-gemini--inline' : 'btn-gemini'} aria-label={`Hỏi ${props.brand}`} onClick={show}>
+    <button
+      type="button"
+      className={['btn-gemini', inline && 'btn-gemini--inline', running && 'btn-gemini--running'].filter(Boolean).join(' ')}
+      aria-label={`Hỏi ${props.brand}`}
+      title={running ? 'AI đang trả lời câu này' : undefined}
+      onClick={show}
+    >
       {props.brand === 'AI' ? <RobotIcon /> : <GeminiIcon />}
       Hỏi {props.brand}
     </button>

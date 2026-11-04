@@ -121,6 +121,13 @@ tr.is-clickable { cursor: pointer; }
   background: var(--surface); border: 1px solid var(--border); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
 }
 .gemini-icon { flex: none; }
+/* Câu có AI đang trả lời ngầm: viền màu nhấn nhấp nháy nhẹ trên nút Hỏi Gemini/Hỏi AI */
+.btn-gemini.btn-gemini--running { border: 2px solid var(--accent); animation: gemini-running 1.6s ease-in-out infinite; }
+@keyframes gemini-running {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+  50% { box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) { .btn-gemini.btn-gemini--running { animation: none; } }
 /* Trang xem lại: nút nằm trong khối câu, không nổi */
 .btn-gemini.btn-gemini--inline { position: static; margin-top: 12px; padding: 8px 16px; font-size: 1em; box-shadow: none; height: auto; }
 /* Chừa chỗ cuối trang để nút nổi không che nội dung */
