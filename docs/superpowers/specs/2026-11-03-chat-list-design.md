@@ -102,3 +102,26 @@ Thay đổi so với [2026-11-02-gemini-chat-design.md](2026-11-02-gemini-chat-d
 - Câu Thi thử đã có lịch sử: mở ra thấy lịch sử; hỏi tiếp lưu đúng khóa; lượt không bị đổi `guideOpened`.
 - Câu Thi thật: mở ra là cuộc trò chuyện trống, gửi câu đầu thì lưu `aiChats/{attemptId}/{qid}`; lượt không bị đổi.
 - Mở câu thứ hai thì khung câu thứ nhất đóng.
+
+## Phần thêm: Gemini mở hướng dẫn bằng tool, đối chiếu đáp án và giải thích
+
+Thay đổi so với [2026-11-02-gemini-chat-design.md](2026-11-02-gemini-chat-design.md) (quyết định "hỏi Gemini tính như mở hướng dẫn, chữ đầu tiên thì mở hướng dẫn"):
+
+### Quyết định của người dùng
+
+- Hỏi Gemini xong **không tự mở hướng dẫn** nữa (bỏ hẳn cơ chế `onFirstReply` → `markGuideOpened`).
+- Chỉ khi người học **xin đáp án** thì hướng dẫn mới tự mở: Gemini có tool **`open_guide`**; gọi tool thì chạy đúng việc của nút hướng dẫn (`markGuideOpened`, khung hướng dẫn + đáp án hiện ra, câu được gắn nhãn khi chấm).
+- Prompt gửi thêm **giải thích tiếng Việt** của câu (`data/vi`: giải thích chung, lý do đúng/sai từng lựa chọn, `keyHint`, cờ `review` nếu có) và **ghi chú** `note` trong meta, để Gemini **đối chiếu** đáp án với giải thích (hai bên có khớp nhau không, có lỗi thời không).
+
+### Quy tắc
+
+- Prompt dặn Gemini: chưa được xin đáp án thì **không nói ra** đáp án đúng, chỉ gợi ý/giải thích khái niệm; được xin thì gọi `open_guide` rồi mới nói đáp án *(quyết định của tôi: thiếu dòng này thì Gemini vẫn lộ đáp án mà hướng dẫn không mở)*.
+- Khi nói đáp án, Gemini nêu **kết quả đối chiếu**: khớp thì một dòng ngắn; lệch (giải thích VI mâu thuẫn đáp án, `note`/`review` nghi đáp án sai, thông tin lỗi thời) thì nói rõ chỗ lệch *(quyết định của tôi: người dùng chưa chọn thời điểm, chọn "lúc mở đáp án")*.
+- Giải thích VI và ghi chú dùng **nhãn hiển thị** A/B/C của lượt (như phần lựa chọn trong prompt); câu không có `data/vi` thì bỏ qua phần đó.
+- `open_guide` chỉ có tác dụng với lượt **Thi thử chưa nộp**; ở trang xem lại (đã nộp, hướng dẫn luôn hiện) và cuộc trò chuyện cũ đã nộp thì không gửi tool này, prompt ghi "người học đã thấy đáp án, cứ trả lời thẳng".
+- Gemini gọi `open_guide` ở cuộc trò chuyện cũ của một lượt Thi thử chưa nộp khác thì gắn nhãn đúng lượt đó.
+
+## Phần thêm: icon cho web
+
+- Thêm favicon SVG riêng theo tông màu AWS (nền xanh navy `#232f3e`, đám mây/chữ cam `#ff9900`, chữ "SAA"). **Không dùng logo AWS thật** (nhãn hiệu của Amazon) *(quyết định của tôi)*.
+- Đặt ở `public/favicon.svg`, khai báo trong `index.html` (`<link rel="icon" type="image/svg+xml" href="./favicon.svg">`, đường dẫn tương đối vì deploy GitHub Pages dưới thư mục con).
