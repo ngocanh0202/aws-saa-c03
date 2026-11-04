@@ -1,0 +1,108 @@
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { createAiMode } from '../ai/ai-mode';
+import { LOCAL_CONNECT_ERROR } from '../ai/local';
+import { AiUserError } from '../ai/types';
+import { createAttempt } from '../engine/attempt';
+import { createStore } from '../storage/storage';
+import { createSyncController } from '../sync/controller';
+import { fakeAi, fakeChats } from '../test/fake-ai';
+import { fakeAuth, fakeRemote } from '../test/fake-sync';
+import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
+
+const TOGGLE = /Chế độ AI thử nghiệm/;
+
+function setup({ withLocal = true, withGemini = true }: { withLocal?: boolean; withGemini?: boolean } = {}) {
+  const store = createStore(memoryStorage(), { now: () => 500 });
+  const auth = fakeAuth();
+  const remote = fakeRemote();
+  const sync = createSyncController({ store, auth, remote });
+  const ai = fakeAi();
+  const chats = fakeChats();
+  const localAi = fakeAi();
+  const localChats = fakeChats();
+  const aiMode = createAiMode(null);
+  const base = makeDeps({ store, sync });
+  const attempt = createAttempt({ id: 'e1', setId: 1, mode: 'practice', esl: false, seed: 7, now: base.now(), sets: base.bank.sets, questions: base.bank.questions, metas: base.bank.meta });
+  store.save(attempt);
+  renderApp('/exam/e1', {
+    ...base,
+    ...(withGemini ? { ai, chats } : {}),
+    ...(withLocal ? { localAi, localChats, aiMode } : {}),
+  });
+  act(() => auth.emit({ uid: 'u1', name: 'An' }));
+  act(() => remote.emit('u1', new Map([[attempt.id, { attempt, updatedAt: 1 }]])));
+  return { ai, chats, localAi, localChats, aiMode, qid: attempt.questions[0].qid };
+}
+
+async function ask(dialog: HTMLElement, text = 'Tại sao?') {
+  await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+  fireEvent.change(within(dialog).getByRole('textbox'), { target: { value: text } });
+  await act(async () => {
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi' }));
+  });
+}
+
+describe('Chế độ AI thử nghiệm (Local AI)', () => {
+  it('không có Local AI thì menu tài khoản không có nút chế độ', () => {
+    setup({ withLocal: false });
+    expect(screen.queryByRole('button', { name: TOGGLE })).toBeNull();
+  });
+
+  it('mặc định Gemini; bật chế độ thì nút thành "Hỏi AI"', () => {
+    setup();
+    const toggle = screen.getByRole('button', { name: TOGGLE });
+    expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByRole('button', { name: 'Hỏi Gemini' })).toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Hỏi Gemini' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Hỏi AI' })).toBeInTheDocument();
+  });
+
+  it('hỏi ở chế độ thử nghiệm: dùng Local AI, lưu vào localChats, không đụng Gemini', async () => {
+    const s = setup();
+    s.localAi.reply = ['Trả lời local'];
+    fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi AI' }));
+    const dialog = screen.getByRole('dialog', { name: 'Hỏi AI · Câu 1' });
+    await ask(dialog);
+    expect(await within(dialog).findByText('Trả lời local')).toBeInTheDocument();
+    await waitFor(() => expect(s.localChats.saved.at(-1)?.key).toBe(`u1/e1/${s.qid}`));
+    expect(s.chats.saved).toEqual([]);
+    expect(s.ai.calls).toEqual([]);
+    expect(s.localAi.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions', 'open_guide']);
+  });
+
+  it('build không có Gemini (thiếu reCAPTCHA) vẫn dùng được chế độ thử nghiệm', () => {
+    setup({ withGemini: false });
+    expect(screen.queryByRole('button', { name: 'Hỏi Gemini' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+    expect(screen.getByRole('button', { name: 'Hỏi AI' })).toBeInTheDocument();
+  });
+
+  it('đổi chế độ khi đang mở khung chat thì khung đóng', () => {
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi Gemini' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('lỗi kết nối hiện đúng câu báo; model đang suy nghĩ thì hiện dòng chờ', async () => {
+    const s = setup();
+    fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi AI' }));
+    const dialog = screen.getByRole('dialog');
+    s.localAi.thinking = true;
+    s.localAi.hold = true;
+    await ask(dialog);
+    expect(await within(dialog).findByText('AI đang suy nghĩ…')).toBeInTheDocument();
+    await act(async () => s.localAi.release());
+    s.localAi.thinking = false;
+    s.localAi.hold = false;
+    s.localAi.reply = new AiUserError(LOCAL_CONNECT_ERROR);
+    await ask(dialog, 'Lần nữa');
+    expect(await within(dialog).findByText(LOCAL_CONNECT_ERROR)).toBeInTheDocument();
+  });
+});

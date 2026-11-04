@@ -4,11 +4,12 @@ import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
 import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
+import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
 import { inflightFor, inflightKey } from '../ai/inflight';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
-import { TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
+import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
@@ -58,21 +59,49 @@ function GeminiIcon() {
   );
 }
 
-/** Nút "Hỏi Gemini" cho câu đang làm ở Thi thử; chỉ hiện khi có AI và đã đăng nhập Google. */
-export function GeminiButton(props: Props) {
-  const { sync, ai, chats } = useApp();
-  if (!sync || !ai || !chats) return null;
-  return <SignedIn sync={sync} ai={ai} chats={chats} {...props} />;
+function RobotIcon() {
+  return (
+    <svg className="gemini-icon" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="8" width="16" height="11" rx="3" />
+      <path d="M12 4v4M9 13h.01M15 13h.01M9.5 16.5h5M2 12v3M22 12v3" />
+      <circle cx="12" cy="3.5" r="1" />
+    </svg>
+  );
 }
 
-function SignedIn({ sync, ...rest }: Props & { sync: SyncController; ai: AiClient; chats: ChatHistoryStore }) {
+/** Tên hiện trên nút và trong khung: Gemini, hoặc "AI" ở chế độ AI thử nghiệm (LM Studio). */
+type Brand = 'Gemini' | 'AI';
+
+const noSubscribe = () => () => undefined;
+const geminiMode = () => 'gemini' as const;
+
+/** Chế độ đang chọn; không có AI thử nghiệm thì luôn Gemini. */
+export function useAiMode(aiMode: AiModeStore | undefined) {
+  return useSyncExternalStore(aiMode?.subscribe ?? noSubscribe, aiMode?.get ?? geminiMode);
+}
+
+/**
+ * Nút "Hỏi Gemini" (hoặc "Hỏi AI" ở chế độ thử nghiệm); chỉ hiện khi có AI của chế độ đang chọn
+ * và đã đăng nhập Google.
+ */
+export function GeminiButton(props: Props) {
+  const { sync, ai, chats, localAi, localChats, aiMode } = useApp();
+  const mode = useAiMode(aiMode);
+  const local = mode === 'local' && localAi && localChats ? { ai: localAi, chats: localChats } : null;
+  const client = local?.ai ?? ai;
+  const store = local?.chats ?? chats;
+  if (!sync || !client || !store) return null;
+  return <SignedIn sync={sync} ai={client} chats={store} brand={local ? 'AI' : 'Gemini'} {...props} />;
+}
+
+function SignedIn({ sync, brand, ...rest }: Props & { sync: SyncController; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
   const state = useSyncExternalStore(sync.subscribe, sync.getState);
   const user = signedInUser(state);
-  // key theo uid: đăng xuất (hay đổi tài khoản) thì popup và cuộc trò chuyện bị bỏ hẳn.
-  return user ? <Launcher key={user.uid} uid={user.uid} {...rest} /> : null;
+  // key theo uid và chế độ: đăng xuất, đổi tài khoản hay đổi Gemini ↔ AI thử nghiệm thì khung chat đóng hẳn.
+  return user ? <Launcher key={`${user.uid}:${brand}`} uid={user.uid} brand={brand} {...rest} /> : null;
 }
 
-function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore }) {
+function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
   const id = useId();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
@@ -89,9 +118,9 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
   return open ? (
     <ChatDialog {...props} onClose={close} />
   ) : (
-    <button type="button" className={inline ? 'btn-gemini btn-gemini--inline' : 'btn-gemini'} aria-label="Hỏi Gemini" onClick={show}>
-      <GeminiIcon />
-      Hỏi Gemini
+    <button type="button" className={inline ? 'btn-gemini btn-gemini--inline' : 'btn-gemini'} aria-label={`Hỏi ${props.brand}`} onClick={show}>
+      {props.brand === 'AI' ? <RobotIcon /> : <GeminiIcon />}
+      Hỏi {props.brand}
     </button>
   );
 }
@@ -122,8 +151,9 @@ function ChatDialog({
   order,
   onOpenGuide,
   revealed,
+  brand,
   onClose,
-}: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; onClose: () => void }) {
+}: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand; onClose: () => void }) {
   const { store, bank } = useApp();
   /** false = khung chat nhỏ ở góc (trang vẫn dùng được); true = phủ toàn màn hình. */
   const [expanded, setExpanded] = useState(false);
@@ -188,7 +218,7 @@ function ChatDialog({
   const stem = target.question.html ? htmlToText(target.question.stem) : target.question.stem;
   const preview = stem.length > PREVIEW ? `${stem.slice(0, PREVIEW).trimEnd()}…` : stem;
   const title =
-    view === 'list' ? 'Trò chuyện cũ' : atHome ? `Hỏi Gemini · Câu ${number}` : `Hỏi Gemini · ${setLabel(target.setId)} · Câu ${target.number}`;
+    view === 'list' ? 'Trò chuyện cũ' : atHome ? `Hỏi ${brand} · Câu ${number}` : `Hỏi ${brand} · ${setLabel(target.setId)} · Câu ${target.number}`;
   // Bản gọn cho mobile: "Gemini Đ3 · Câu 12" / "Gemini M1 · Câu 5".
   const shortLabel = view === 'list' ? null : atHome ? `Câu ${number}` : `${shortSetLabel(target.setId)} · Câu ${target.number}`;
 
@@ -212,7 +242,7 @@ function ChatDialog({
                 title
               ) : (
                 <>
-                  <span className="gemini__brand">Gemini</span> {shortLabel}
+                  <span className="gemini__brand">{brand}</span> {shortLabel}
                 </>
               )}
             </span>
@@ -263,7 +293,7 @@ function ChatDialog({
               ← Quay lại {homeLabel}
             </button>
           )}
-          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} target={target} onBusy={setBusy} />
+          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} brand={brand} target={target} onBusy={setBusy} />
         </>
       )}
     </div>,
@@ -489,12 +519,14 @@ function Conversation({
   uid,
   ai,
   chats,
+  brand,
   target,
   onBusy,
 }: {
   uid: string;
   ai: AiClient;
   chats: ChatHistoryStore;
+  brand: Brand;
   target: Target;
   /** Báo khung ngoài để khóa chuyển cuộc trò chuyện khi đang trả lời. */
   onBusy: (busy: boolean) => void;
@@ -504,7 +536,8 @@ function Conversation({
   const key = inflightKey(uid, attemptId, qid);
   const { store, bank, sync, aiCooldown } = useApp();
   const inflight = inflightFor(chats);
-  const cooldown = aiCooldown ?? memoryCooldownFor(ai);
+  // Khóa sau lỗi hết lượt chỉ dùng chung cho Gemini; AI thử nghiệm có bản riêng (thực tế không bị 429).
+  const cooldown = brand === 'Gemini' ? (aiCooldown ?? memoryCooldownFor(ai)) : memoryCooldownFor(ai);
   const until = useCooldown(cooldown);
   // Câu trả lời còn chạy từ lần mở khung trước (đã sang câu khác rồi quay lại): theo dõi tiếp.
   const [running] = useState(() => inflight.get(key));
@@ -515,6 +548,10 @@ function Conversation({
   const [sendFailed, setSendFailed] = useState(false);
   /** Lần gửi trước hỏng vì Gemini hết lượt/quá tải. */
   const [busyFailed, setBusyFailed] = useState(false);
+  /** Câu báo lỗi riêng (vd không kết nối được AI thử nghiệm). */
+  const [failMessage, setFailMessage] = useState<string | undefined>();
+  /** Model đang suy nghĩ (reasoning), chưa có chữ trả lời. */
+  const [thinking, setThinking] = useState(running?.thinking ?? false);
   /** Đang chờ để tự thử lại (lần mấy / tối đa). */
   const [retry, setRetry] = useState(running?.retry);
   const [saveFailed, setSaveFailed] = useState(false);
@@ -542,9 +579,11 @@ function Conversation({
         setBusy(e.kind === 'progress');
         setSearching(e.kind === 'progress' && e.searching);
         setRetry(e.kind === 'progress' ? e.retry : undefined);
+        setThinking(e.kind === 'progress' && !!e.thinking);
         if (e.kind === 'done') {
           setSendFailed(e.failed);
           setBusyFailed(e.failed && !!e.busy);
+          setFailMessage(e.message);
         }
       }),
     [inflight, key],
@@ -582,10 +621,12 @@ function Conversation({
     setInput('');
     setSendFailed(false);
     setBusyFailed(false);
+    setFailMessage(undefined);
     setSaveFailed(false);
     let reply = '';
     let searchingNow = false;
     let retryNow: { attempt: number; max: number } | undefined;
+    let thinkingNow = false;
     // Gemini gọi open_guide thì chờ trả lời xong mới mở hướng dẫn (lỗi giữa chừng thì không mở).
     let guideRequested = false;
     const progress = () =>
@@ -594,6 +635,7 @@ function Conversation({
         messages: reply ? [...asked, { role: 'model', text: reply }] : asked,
         searching: searchingNow,
         retry: retryNow,
+        thinking: thinkingNow,
       });
     progress();
     try {
@@ -619,6 +661,11 @@ function Conversation({
           searchingNow = true;
           progress();
         },
+        onThinking: () => {
+          if (thinkingNow) return;
+          thinkingNow = true;
+          progress();
+        },
         // Gemini hết lượt/quá tải: khóa mọi khung chat tới giờ thử lại và hiện đếm ngược.
         retry: {
           onWait: (w) => {
@@ -633,6 +680,7 @@ function Conversation({
         if (!chunk) continue;
         searchingNow = false;
         retryNow = undefined;
+        thinkingNow = false;
         reply += chunk;
         progress();
       }
@@ -651,7 +699,7 @@ function Conversation({
       const busyError = e instanceof AiBusyError;
       // Gemini báo phải chờ (quá lâu để tự chờ, hoặc đã thử lại hết lượt): khóa tới giờ đó.
       if (busyError && e.retryAfterMs) cooldown.set(Date.now() + e.retryAfterMs);
-      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true, busy: busyError });
+      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
     }
   };
 
@@ -684,20 +732,22 @@ function Conversation({
           {busy && messages[messages.length - 1]?.role === 'user' && (
             <p className="hint">
               {retry && until !== null
-                ? `Gemini đang hết lượt, tự thử lại sau ${secondsLeft(until)} giây… (lần ${retry.attempt}/${retry.max})`
+                ? `${brand} đang hết lượt, tự thử lại sau ${secondsLeft(until)} giây… (lần ${retry.attempt}/${retry.max})`
                 : searching
-                  ? 'Gemini đang tìm trong các câu bạn đã làm…'
-                  : 'Gemini đang trả lời…'}
+                  ? `${brand} đang tìm trong các câu bạn đã làm…`
+                  : thinking
+                    ? `${brand} đang suy nghĩ…`
+                    : `${brand} đang trả lời…`}
             </p>
           )}
           {!busy && until !== null ? (
             <p className="gemini__notice" role="alert">
-              Gemini đang hết lượt. Thử lại sau {secondsLeft(until)} giây (lúc {clockTime(until)}).
+              {brand} đang hết lượt. Thử lại sau {secondsLeft(until)} giây (lúc {clockTime(until)}).
             </p>
           ) : (
             sendFailed && (
               <p className="gemini__notice" role="alert">
-                {busyFailed ? 'Gemini đang hết lượt, thử lại sau ít phút.' : 'Gemini chưa trả lời được, thử gửi lại nhé.'}
+                {failMessage ?? (busyFailed ? `${brand} đang hết lượt, thử lại sau ít phút.` : `${brand} chưa trả lời được, thử gửi lại nhé.`)}
               </p>
             )
           )}
@@ -708,7 +758,7 @@ function Conversation({
       <form className="gemini__form" onSubmit={onSubmit}>
         <textarea
           ref={inputRef}
-          aria-label="Câu hỏi cho Gemini"
+          aria-label={`Câu hỏi cho ${brand}`}
           rows={2}
           value={input}
           disabled={busy || !loaded}

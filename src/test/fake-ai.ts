@@ -25,6 +25,8 @@ export interface FakeAi extends AiClient {
   holdFirst?: boolean;
   /** Mỗi lần gửi (kể cả gửi lại) lấy ra một lỗi ở đầu danh sách và ném, như SDK báo 429/503. */
   busy: AiBusyError[];
+  /** true: trước khi trả lời gọi options.onThinking (model đang suy nghĩ). */
+  thinking?: boolean;
 }
 
 export function fakeAi(): FakeAi {
@@ -52,6 +54,7 @@ export function fakeAi(): FakeAi {
       const call = { systemPrompt, history, sent: [] as string[], options, toolResults: [] as object[] };
       ai.calls.push(call);
       async function* answer() {
+        if (ai.thinking) options?.onThinking?.();
         if (ai.hold) await new Promise<void>((r) => waiting.push(r));
         if (ai.reply instanceof Error) throw ai.reply;
         let n = 0;
