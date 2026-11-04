@@ -9,6 +9,7 @@ import type { SyncUser } from '../sync/types';
 import { fakeAi, fakeChats } from '../test/fake-ai';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
+import { formatDate } from '../app/format';
 
 const USER: SyncUser = { uid: 'u1', name: 'An Nguyen' };
 const GEMINI = 'Hỏi Gemini';
@@ -386,20 +387,121 @@ describe('Trò chuyện cũ', () => {
     return { ...s, oldQid };
   }
 
-  async function openList() {
+  /** all = bỏ chọn "Chỉ câu này" để thấy mọi cuộc trò chuyện. */
+  async function openList({ all = true }: { all?: boolean } = {}) {
     const dialog = await openChat();
     fireEvent.click(within(dialog).getByRole('button', { name: 'Trò chuyện cũ' }));
+    if (all) fireEvent.click(within(dialog).getByRole('checkbox', { name: 'Chỉ câu này' }));
     return dialog;
   }
 
-  it('nút Trò chuyện cũ hiện danh sách, câu đang làm đứng đầu', async () => {
-    withOld();
-    const dialog = await openList();
-    await waitFor(() => expect(within(dialog).getAllByRole('button', { name: /Đề 1 · Câu/ })).toHaveLength(2));
-    const items = within(dialog).getAllByRole('button', { name: /Đề 1 · Câu/ });
+  const OLD = (text: string): ChatMessage[] => [{ role: 'user', text: 'hỏi' }, { role: 'model', text }];
+
+  it('mặc định chỉ hiện cuộc trò chuyện cùng câu, cùng đề; câu đang làm đứng đầu', async () => {
+    const probe = withOld();
+    const s = probe;
+    // Thêm: cùng câu ở lượt e0 (cùng đề) và cùng câu ở lượt f2 (đề khác).
+    await s.chats.save('u1', 'e0', s.qid, OLD('Cùng câu cùng đề'));
+    s.store.save({ ...s.store.get('e0')!, id: 'f2', setId: 2 });
+    await s.chats.save('u1', 'f2', s.qid, OLD('Cùng câu đề khác'));
+    const dialog = await openList({ all: false });
+    expect(within(dialog).getByRole('checkbox', { name: 'Chỉ câu này' })).toBeChecked();
+    expect(await within(dialog).findByText(/Cùng câu cùng đề/)).toBeInTheDocument();
+    const items = within(dialog).getAllByRole('button', { name: /Đề \d · Câu/ });
     expect(items[0]).toHaveTextContent('(câu đang làm)');
-    expect(items[1]).toHaveTextContent('Đề 1 · Câu 3');
-    expect(items[1]).toHaveTextContent('Trả lời cũ');
+    expect(within(dialog).queryByText(/Cùng câu đề khác/)).toBeNull();
+    expect(within(dialog).queryByText(/Trả lời cũ/)).toBeNull();
+  });
+
+  it('chưa có cuộc trò chuyện nào về câu này thì báo', async () => {
+    withOld();
+    const dialog = await openList({ all: false });
+    expect(await within(dialog).findByText('Chưa có cuộc trò chuyện nào về câu này.')).toBeInTheDocument();
+  });
+
+  it('bỏ lọc: nhóm theo bộ đề', async () => {
+    const s = withOld();
+    s.store.save({ ...s.store.get('e0')!, id: 'f2', setId: 2 });
+    await s.chats.save('u1', 'f2', s.qid, OLD('Ở đề 2'));
+    const dialog = await openList();
+    expect(await within(dialog).findByRole('heading', { name: 'Đề 1' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Đề 2' })).toBeInTheDocument();
+    expect(within(dialog).getByText(/Trả lời cũ/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Ở đề 2/)).toBeInTheDocument();
+  });
+
+  it('tìm không dấu, bỏ qua lọc', async () => {
+    withOld();
+    const dialog = await openList({ all: false });
+    await within(dialog).findByText('Chưa có cuộc trò chuyện nào về câu này.');
+    fireEvent.change(within(dialog).getByRole('searchbox', { name: 'Tìm cuộc trò chuyện' }), { target: { value: 'de 1 cau 3' } });
+    expect(within(dialog).getByRole('button', { name: /Đề 1 · Câu 3/ })).toBeInTheDocument();
+    expect(within(dialog).getByRole('checkbox', { name: 'Chỉ câu này' })).toBeChecked();
+  });
+
+  it('tìm theo ngày giờ và báo khi không có kết quả', async () => {
+    const s = withOld();
+    const dialog = await openList();
+    await within(dialog).findByText(/Trả lời cũ/);
+    const list = await s.chats.list('u1');
+    const date = formatDate(list[0].updatedAt).slice(0, 5);
+    const box = within(dialog).getByRole('searchbox', { name: 'Tìm cuộc trò chuyện' });
+    fireEvent.change(box, { target: { value: date } });
+    expect(within(dialog).getByText(/Trả lời cũ/)).toBeInTheDocument();
+    fireEvent.change(box, { target: { value: 'zzz' } });
+    expect(within(dialog).getByText('Không tìm thấy cuộc trò chuyện nào.')).toBeInTheDocument();
+  });
+
+  it('đổi tên: Enter lưu, hiện tên mới kèm tên mặc định; tìm được theo tên mới', async () => {
+    const s = withOld();
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Đổi tên' }));
+    const input = within(dialog).getByRole('textbox', { name: 'Tên cuộc trò chuyện' });
+    fireEvent.change(input, { target: { value: '  Multipart upload  ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    const item = await within(dialog).findByRole('button', { name: /Multipart upload/ });
+    expect(item).toHaveTextContent('Đề 1 · Câu 3');
+    expect(s.chats.titles.get(`u1/e0/${s.oldQid}`)).toBe('Multipart upload');
+    fireEvent.change(within(dialog).getByRole('searchbox', { name: 'Tìm cuộc trò chuyện' }), { target: { value: 'multipart' } });
+    expect(within(dialog).getByRole('button', { name: /Multipart upload/ })).toBeInTheDocument();
+  });
+
+  it('đổi tên: Esc hủy (không đóng khung), để trống thì bỏ tên', async () => {
+    const s = withOld();
+    s.chats.titles.set(`u1/e0/${s.oldQid}`, 'Tên cũ');
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Đổi tên' }));
+    let input = within(dialog).getByRole('textbox', { name: 'Tên cuộc trò chuyện' });
+    fireEvent.change(input, { target: { value: 'Không lưu' } });
+    fireEvent.keyDown(input, { key: 'Escape' });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Tên cũ/ })).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đổi tên' }));
+    input = within(dialog).getByRole('textbox', { name: 'Tên cuộc trò chuyện' });
+    fireEvent.change(input, { target: { value: '   ' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    await waitFor(() => expect(s.chats.titles.has(`u1/e0/${s.oldQid}`)).toBe(false));
+    expect(within(dialog).queryByText(/Tên cũ/)).toBeNull();
+  });
+
+  it('đổi tên lỗi thì báo và giữ tên cũ', async () => {
+    const s = withOld();
+    s.chats.titles.set(`u1/e0/${s.oldQid}`, 'Tên cũ');
+    s.chats.renameError = new Error('offline');
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Đổi tên' }));
+    const input = within(dialog).getByRole('textbox', { name: 'Tên cuộc trò chuyện' });
+    fireEvent.change(input, { target: { value: 'Mới' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(await within(dialog).findByText('Không đổi được tên.')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: /Tên cũ/ })).toBeInTheDocument();
+  });
+
+  it('câu đang làm chưa có lịch sử thì không đổi tên được', async () => {
+    withOld();
+    const dialog = await openList({ all: false });
+    await within(dialog).findByText('Chưa có cuộc trò chuyện nào về câu này.');
+    expect(within(dialog).queryByRole('button', { name: 'Đổi tên' })).toBeNull();
   });
 
   it('mở cuộc trò chuyện cũ: hiện tin cũ, có dải quay lại; quay lại thì về câu đang làm', async () => {
@@ -448,8 +550,8 @@ describe('Trò chuyện cũ', () => {
   it('chưa có cuộc trò chuyện khác thì báo, không crash (kể cả lỗi tải danh sách)', async () => {
     const s = setup();
     s.chats.listError = new Error('offline');
-    const dialog = await openList();
-    expect(await within(dialog).findByText('Chưa có cuộc trò chuyện nào.')).toBeInTheDocument();
+    const dialog = await openList({ all: false });
+    expect(await within(dialog).findByText('Chưa có cuộc trò chuyện nào về câu này.')).toBeInTheDocument();
     expect(within(dialog).getByRole('button', { name: /câu đang làm/ })).toBeInTheDocument();
   });
 

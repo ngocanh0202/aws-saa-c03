@@ -337,6 +337,17 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__item { display: block; width: 100%; text-align: left; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 .gemini__item small { display: block; margin-top: 2px; color: var(--muted); overflow-wrap: anywhere; }
 .gemini__item.is-current { background: var(--selected-bg); border-color: var(--selected); }
+.gemini__filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; max-width: 820px; margin: 0 auto; padding: 12px 12px 0; }
+.gemini__filters input[type='search'] { flex: 1 1 180px; width: auto; }
+.gemini__filters label { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.gemini__group { max-width: 820px; margin: 0 auto; }
+.gemini__group h2 { margin: 12px 12px 0; font-size: 0.95em; color: var(--muted); }
+.gemini__group .gemini__list { padding-top: 6px; }
+.gemini__row { display: flex; gap: 6px; align-items: stretch; }
+.gemini__row .gemini__item { flex: 1; min-width: 0; }
+.gemini__row .icon-btn { flex: none; }
+.gemini__rename { flex: 1; min-width: 0; padding: 8px 12px; font: inherit; border-radius: 8px; border: 1px solid var(--selected); background: var(--bg); color: var(--text); }
+.gemini__filters + .gemini__notice { max-width: 820px; margin: 8px auto 0; }
 .gemini__empty { margin: 0; padding: 0 12px 12px; text-align: center; }
 .gemini__back { display: block; width: 100%; text-align: left; padding: 6px 14px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--selected-bg); color: var(--link); font-size: 0.9em; }
 @media (max-width: 600px) { .gemini-dock { right: 8px; left: 8px; bottom: 8px; width: auto; height: min(560px, calc(100vh - 80px)); } }

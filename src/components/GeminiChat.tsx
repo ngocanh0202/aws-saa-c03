@@ -6,7 +6,7 @@ import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
 import { inflightFor, inflightKey } from '../ai/inflight';
 import { createSearchTool } from '../ai/search';
-import type { AiChat, AiClient, ChatHistoryStore, ChatMessage, ChatSummary } from '../ai/types';
+import { TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
@@ -210,7 +210,7 @@ function ChatDialog({
         <ChatList
           uid={uid}
           chats={chats}
-          home={{ attemptId, qid: question.id, label: homeLabel }}
+          home={{ attemptId, qid: question.id, setId: homeSetId, label: homeLabel }}
           resolve={resolve}
           onPick={(id, qid) => {
             setPicked({ attemptId: id, qid });
@@ -232,6 +232,28 @@ function ChatDialog({
   );
 }
 
+/** Chuỗi để tìm: không phân biệt hoa thường và dấu tiếng Việt, gộp khoảng trắng. */
+export function normalizeSearch(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLowerCase()
+    // Dấu câu ("·", ",") thành khoảng trắng để "de 1 cau 3" khớp "Đề 1 · Câu 3"; giữ / và : của ngày giờ.
+    .replace(/[^\p{L}\p{N}/:]+/gu, ' ')
+    .trim();
+}
+
+interface Row {
+  c: ChatSummary;
+  t: Target;
+  key: string;
+  /** "<đề> · Câu <n>". */
+  defaultName: string;
+  current: boolean;
+}
+
 function ChatList({
   uid,
   chats,
@@ -241,11 +263,17 @@ function ChatList({
 }: {
   uid: string;
   chats: ChatHistoryStore;
-  home: { attemptId: string; qid: number; label: string };
+  home: { attemptId: string; qid: number; setId: number; label: string };
   resolve: (attemptId: string, qid: number) => Target | null;
   onPick: (attemptId: string, qid: number) => void;
 }) {
   const [items, setItems] = useState<ChatSummary[] | null>(null);
+  /** Mặc định chỉ hiện cuộc trò chuyện về câu đang làm, ở mọi lượt cùng đề. */
+  const [onlyThis, setOnlyThis] = useState(true);
+  const [query, setQuery] = useState('');
+  const [editing, setEditing] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const [renameFailed, setRenameFailed] = useState(false);
   useEffect(() => {
     let live = true;
     chats.list(uid).then(
@@ -257,37 +285,139 @@ function ChatList({
     };
   }, [chats, uid]);
 
-  // Bỏ câu đang làm (đã đứng đầu) và cuộc trò chuyện của lượt không còn trong máy.
-  const others = (items ?? [])
-    .filter((c) => keyOf(c.attemptId, c.qid) !== keyOf(home.attemptId, home.qid))
+  const homeKey = keyOf(home.attemptId, home.qid);
+  // Bỏ cuộc trò chuyện của lượt không còn trong máy.
+  const rows: Row[] = (items ?? [])
     .map((c) => ({ c, t: resolve(c.attemptId, c.qid) }))
     .filter((x): x is { c: ChatSummary; t: Target } => x.t !== null)
+    .map(({ c, t }) => ({ c, t, key: keyOf(c.attemptId, c.qid), defaultName: `${setLabel(t.setId)} · Câu ${t.number}`, current: keyOf(c.attemptId, c.qid) === homeKey }))
     .sort((x, y) => y.c.updatedAt - x.c.updatedAt);
+
+  const q = normalizeSearch(query);
+  const searching = q.length > 0;
+  const pinned = !searching && onlyThis;
+  const shown = searching
+    ? rows.filter((r) => [r.c.title ?? '', r.defaultName, formatDate(r.c.updatedAt)].some((s) => normalizeSearch(s).includes(q)))
+    : onlyThis
+      ? rows.filter((r) => !r.current && r.c.qid === home.qid && r.t.setId === home.setId)
+      : rows;
+  const homeRow = rows.find((r) => r.current);
+
+  // Bỏ lọc hay đang tìm thì nhóm theo bộ đề, nhóm có hoạt động gần nhất lên trước (rows đã sắp mới nhất trước).
+  const groups: { setId: number; rows: Row[] }[] = [];
+  for (const r of shown) {
+    const g = groups.find((x) => x.setId === r.t.setId);
+    if (g) g.rows.push(r);
+    else groups.push({ setId: r.t.setId, rows: [r] });
+  }
+
+  const save = async (r: Row) => {
+    const title = draft.trim().slice(0, TITLE_MAX) || null;
+    setEditing(null);
+    try {
+      await chats.rename(uid, r.c.attemptId, r.c.qid, title);
+      setRenameFailed(false);
+      setItems((list) => list && list.map((c) => (c === r.c ? { ...c, title: title ?? undefined } : c)));
+    } catch {
+      setRenameFailed(true);
+    }
+  };
+
+  const item = (r: Row | undefined, opts: { label?: string } = {}) => {
+    const key = r?.key ?? homeKey;
+    const name = r?.c.title || r?.defaultName || opts.label!;
+    if (r && editing === r.key) {
+      return (
+        <li key={key} className="gemini__row">
+          <input
+            className="gemini__rename"
+            aria-label="Tên cuộc trò chuyện"
+            autoFocus
+            maxLength={TITLE_MAX}
+            value={draft}
+            placeholder={r.defaultName}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                void save(r);
+              } else if (e.key === 'Escape') {
+                // Không để Esc đóng cả khung chat.
+                e.stopPropagation();
+                setEditing(null);
+              }
+            }}
+          />
+        </li>
+      );
+    }
+    return (
+      <li key={key} className="gemini__row">
+        <button
+          type="button"
+          className={`gemini__item${key === homeKey ? ' is-current' : ''}`}
+          onClick={() => (r ? onPick(r.c.attemptId, r.c.qid) : onPick(home.attemptId, home.qid))}
+        >
+          <strong>{name}</strong>
+          {key === homeKey && <span className="hint"> (câu đang làm)</span>}
+          {r && <span className="hint"> · {formatDate(r.c.updatedAt)}</span>}
+          {r?.c.title && <small>{r.defaultName}</small>}
+          {r && <small>{r.c.last}</small>}
+        </button>
+        {r && (
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Đổi tên"
+            title="Đổi tên"
+            onClick={() => {
+              setDraft(r.c.title ?? '');
+              setEditing(r.key);
+            }}
+          >
+            ✎
+          </button>
+        )}
+      </li>
+    );
+  };
 
   return (
     <div className="service-modal__body">
-      <ul className="gemini__list">
-        <li>
-          <button type="button" className="gemini__item is-current" onClick={() => onPick(home.attemptId, home.qid)}>
-            <strong>{home.label}</strong> <span className="hint">(câu đang làm)</span>
-          </button>
-        </li>
-        {others.map(({ c, t }) => (
-          <li key={keyOf(c.attemptId, c.qid)}>
-            <button type="button" className="gemini__item" onClick={() => onPick(c.attemptId, c.qid)}>
-              <strong>
-                {setLabel(t.setId)} · Câu {t.number}
-              </strong>{' '}
-              <span className="hint">· {formatDate(c.updatedAt)}</span>
-              <small>{c.last}</small>
-            </button>
-          </li>
-        ))}
-      </ul>
+      <div className="gemini__filters">
+        <input
+          type="search"
+          aria-label="Tìm cuộc trò chuyện"
+          placeholder="Tìm theo tên hoặc ngày…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <label>
+          <input type="checkbox" checked={onlyThis} onChange={(e) => setOnlyThis(e.target.checked)} /> Chỉ câu này
+        </label>
+      </div>
+      {renameFailed && <p className="gemini__notice">Không đổi được tên.</p>}
+      {pinned ? (
+        <ul className="gemini__list">
+          {item(homeRow, { label: home.label })}
+          {shown.map((r) => item(r))}
+        </ul>
+      ) : (
+        groups.map((g) => (
+          <section key={g.setId} className="gemini__group">
+            <h2>{setLabel(g.setId)}</h2>
+            <ul className="gemini__list">{g.rows.map((r) => item(r))}</ul>
+          </section>
+        ))
+      )}
       {items === null ? (
         <p className="hint gemini__empty">Đang tải…</p>
       ) : (
-        others.length === 0 && <p className="hint gemini__empty">Chưa có cuộc trò chuyện nào.</p>
+        shown.length === 0 && (
+          <p className="hint gemini__empty">
+            {searching ? 'Không tìm thấy cuộc trò chuyện nào.' : onlyThis ? 'Chưa có cuộc trò chuyện nào về câu này.' : 'Chưa có cuộc trò chuyện nào.'}
+          </p>
+        )
       )}
     </div>
   );
