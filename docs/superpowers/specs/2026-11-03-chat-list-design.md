@@ -74,3 +74,31 @@ Hiện nút 🕘 liệt kê **mọi** cuộc trò chuyện của người học,
 
 - Bố cục và CSS cụ thể của ô tìm, công tắc, tiêu đề nhóm, ô đổi tên.
 - Cách bỏ dấu tiếng Việt (ví dụ `normalize('NFD')` rồi bỏ dấu kết hợp, đổi `đ` → `d`).
+
+## Phần thêm: Hỏi Gemini ở trang xem lại bài (sau khi nộp)
+
+Thay đổi so với [2026-11-02-gemini-chat-design.md](2026-11-02-gemini-chat-design.md): spec đó không cho nút Gemini ở trang xem lại (`ResultPage`) và không cho Thi thật dùng Gemini. Người dùng đổi lại: bài **đã nộp** thì không còn lo gian lận, nên trang xem lại có Gemini cho **cả Thi thử lẫn Thi thật**.
+
+### Quyết định của người dùng
+
+- Mở một lượt từ trang Lịch sử (trang xem lại bài), **mỗi câu hỏi** có nút "Hỏi Gemini".
+- Bấm nút thì mở đúng cuộc trò chuyện của câu đó ở lượt đó (`aiChats/{attemptId}/{qid}`), giống lúc làm Thi thử: đã hỏi lúc làm bài thì thấy lịch sử và hỏi tiếp được; chưa có thì là cuộc trò chuyện mới, gửi câu đầu là tạo.
+- **Không có nút "Thêm mới".** Mỗi câu ở mỗi lượt chỉ có một cuộc trò chuyện (đúng theo khóa lưu hiện có).
+- Lượt Thi thật cũng vậy: lúc thi không có Gemini, nhưng sau khi nộp thì bấm "Hỏi Gemini" ở từng câu là bắt đầu cuộc trò chuyện mới cho câu đó.
+- Danh sách "Trò chuyện cũ" (nút 🕘, lọc/tìm/đổi tên ở trên) dùng được như trong lúc thi.
+
+### Quy tắc
+
+- Chỉ hiện khi đã đăng nhập Google và có `ai` (như hiện nay).
+- Lượt đã nộp **không bị sửa**: hỏi Gemini ở đây không gọi `markGuideOpened`; tool `find_answered_questions` vẫn chạy (phạm vi cùng đề) và chỉ gắn nhãn câu thuộc lượt Thi thử **chưa nộp** khác, như quy tắc cũ.
+- Trong lúc làm Thi thật vẫn **không** có nút Gemini (không đổi).
+- Nút ở trang xem lại nằm **ngay trong khối của từng câu** (cạnh hướng dẫn), không phải nút nổi góc phải như trang thi, vì trang xem lại có tới 65 câu *(quyết định của tôi)*.
+- Chỉ một khung chat mở tại một thời điểm: mở câu khác thì khung đang mở đóng lại (câu trả lời đang chạy vẫn chạy nền và được lưu, như hiện nay) *(quyết định của tôi)*.
+- Tiêu đề khung: "Hỏi Gemini · Câu <n>" như trang thi.
+
+### Kiểm thử thêm
+
+- Trang xem lại có nút ở mỗi câu khi đã đăng nhập; không có khi chưa đăng nhập hay không có `ai`.
+- Câu Thi thử đã có lịch sử: mở ra thấy lịch sử; hỏi tiếp lưu đúng khóa; lượt không bị đổi `guideOpened`.
+- Câu Thi thật: mở ra là cuộc trò chuyện trống, gửi câu đầu thì lưu `aiChats/{attemptId}/{qid}`; lượt không bị đổi.
+- Mở câu thứ hai thì khung câu thứ nhất đóng.
