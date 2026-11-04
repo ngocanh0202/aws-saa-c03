@@ -125,3 +125,4 @@ Thay đổi so với [2026-11-02-gemini-chat-design.md](2026-11-02-gemini-chat-d
 
 - Thêm favicon SVG riêng theo tông màu AWS (nền xanh navy `#232f3e`, đám mây/chữ cam `#ff9900`, chữ "SAA"). **Không dùng logo AWS thật** (nhãn hiệu của Amazon) *(quyết định của tôi)*.
 - Đặt ở `public/favicon.svg`, khai báo trong `index.html` (`<link rel="icon" type="image/svg+xml" href="./favicon.svg">`, đường dẫn tương đối vì deploy GitHub Pages dưới thư mục con).
+- Người học **tự bấm nút hướng dẫn** khi đang có phiên chat (hướng dẫn chưa được báo cho Gemini): lần gửi kế tiếp mở phiên mới từ lịch sử chữ với prompt `revealed: true` (kèm giải thích VI và ghi chú), để Gemini biết người học đã thấy đáp án và hướng dẫn *(yêu cầu thêm của người dùng 04/11)*.

@@ -42,7 +42,8 @@
 - `gemini.ts` `declare()`: tool không có tham số thì bỏ `parameters`.
 
 - [ ] Test (RED): prompt có giải thích VI theo nhãn hiển thị (`order` đảo → lý do của key gốc `B` đứng sau nhãn hiển thị tương ứng), có `note`, có cờ `review`; không có vi thì không có mục "Giải thích tiếng Việt"; `revealed: false` có câu dặn không nói đáp án và `open_guide`; `revealed: true` có "đã thấy đáp án". `guide-tool.test.ts`: `run` gọi `open` và trả `{ opened: true }`. `GeminiChat.test.tsx`: thay 3 test "chữ đầu tiên…" bằng: có chữ trả lời thì **không** gắn nhãn; `s.ai.toolCalls = [{ name: 'open_guide', args: {} }]` → câu được gắn nhãn và khung hướng dẫn hiện; tools gửi cho `startChat` gồm `find_answered_questions` và `open_guide`. Cập nhật test chạy nền và test cuộc trò chuyện cũ không còn kỳ vọng nhãn từ chữ đầu.
-- [ ] Cài đặt; `ExamPage` truyền `onOpenGuide` (bản mới nhất trong store → `markGuideOpened`) và `revealed`.
+- [ ] Test thêm (RED): đang chat, người học bấm nút hướng dẫn của trang → lần gửi sau `s.ai.calls.length === 2` và prompt mới chứa "đã thấy đáp án".
+- [ ] Cài đặt; `ExamPage` truyền `onOpenGuide`; `Conversation` nhớ `revealed` của phiên, khác `target.revealed` thì bỏ `chatRef` để mở phiên mới (bản mới nhất trong store → `markGuideOpened`) và `revealed`.
 - [ ] `npm run check` → PASS; commit `feat(ai): open_guide tool and answer cross-check context`.
 
 ### Task 2: Dữ liệu tên cuộc trò chuyện
