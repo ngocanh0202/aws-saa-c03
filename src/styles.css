@@ -381,6 +381,9 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__suggest .chip { background: var(--bg); white-space: nowrap; }
 .gemini__suggest .chip:disabled { opacity: 0.5; cursor: not-allowed; }
 .gemini__suggest + .gemini__form { border-top: none; }
+/* Khung chat nhỏ (chưa mở rộng) và mobile: một dòng cuộn ngang, chip nhỏ, để gợi ý không chiếm chỗ */
+.gemini-dock .gemini__suggest { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: thin; }
+.gemini-dock .gemini__suggest .chip { font-size: 0.78em; padding: 2px 8px; }
 @media (max-width: 600px) { .gemini__suggest { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: none; } }
 .gemini__form { display: flex; gap: 8px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--border); }
 .gemini__form textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
