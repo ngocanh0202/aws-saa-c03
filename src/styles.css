@@ -381,14 +381,24 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__msg pre { max-width: 100%; overflow-x: auto; }
 .gemini__notice { margin: 0; padding: 8px 12px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
 /* Câu hỏi gợi ý phía trên ô nhập: máy tính xuống dòng, mobile cuộn ngang */
-.gemini__suggest { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 16px 0; background: var(--surface); border-top: 1px solid var(--border); }
-.gemini__suggest .chip { background: var(--bg); white-space: nowrap; }
-.gemini__suggest .chip:disabled { opacity: 0.5; cursor: not-allowed; }
-.gemini__suggest + .gemini__form { border-top: none; }
-/* Khung chat nhỏ (chưa mở rộng) và mobile: một dòng cuộn ngang, chip nhỏ, để gợi ý không chiếm chỗ */
-.gemini-dock .gemini__suggest { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: thin; }
+/* Câu hỏi gợi ý: dính ngay trên ô nhập, luôn ở cuối khung, căn giữa; nền trong suốt liền với vùng chat,
+   mỗi gợi ý chỉ có viền màu (không tô nền) */
+.gemini__suggest { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; padding: 6px 16px 8px; background: transparent; }
+.gemini__suggest .chip { background: transparent; border: 1px solid var(--selected); color: var(--selected); white-space: nowrap; transition: border-color 0.15s ease, color 0.15s ease; }
+.gemini__suggest .chip:hover:not(:disabled), .gemini__suggest .chip:focus-visible { border-color: var(--accent); color: var(--accent); outline: none; }
+.gemini__suggest .chip:disabled { opacity: 0.45; cursor: not-allowed; }
+.gemini__suggest + .gemini__form { border-top: none; padding-top: 0; background: transparent; }
+/* Khung chat nhỏ (chưa mở rộng) và mobile: một dòng cuộn ngang; margin auto ở hai đầu để vẫn căn giữa khi không tràn */
+.gemini-dock .gemini__suggest { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 4px 10px 6px; scrollbar-width: none; }
+.gemini-dock .gemini__suggest .chip:first-child { margin-left: auto; }
+.gemini-dock .gemini__suggest .chip:last-child { margin-right: auto; }
 .gemini-dock .gemini__suggest .chip { font-size: 0.78em; padding: 2px 8px; }
-@media (max-width: 600px) { .gemini__suggest { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: none; } }
+@media (max-width: 600px) {
+  .gemini__suggest { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding: 4px 10px 6px; scrollbar-width: none; }
+  .gemini__suggest .chip:first-child { margin-left: auto; }
+  .gemini__suggest .chip:last-child { margin-right: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .gemini__suggest .chip { transition: none; } }
 .gemini__form { display: flex; gap: 8px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--border); }
 .gemini__form textarea {
   flex: 1; min-width: 0; resize: none; font: inherit; line-height: 1.4; padding: 9px 12px;
@@ -400,7 +410,6 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 /* Focus: viền màu chọn + vòng sáng mềm thay cho outline mặc định của trình duyệt */
 .gemini__form textarea:focus { outline: none; border-color: var(--selected); box-shadow: 0 0 0 3px color-mix(in srgb, var(--selected) 22%, transparent); background: var(--surface); }
 .gemini__form textarea:disabled { opacity: 0.6; cursor: not-allowed; }
-.gemini__form:focus-within { background: color-mix(in srgb, var(--selected) 4%, var(--surface)); }
 /* Ô tìm và ô đổi tên trong danh sách "Trò chuyện cũ" dùng cùng kiểu focus */
 .gemini__filters input[type='search'], .gemini__rename { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .gemini__filters input[type='search']:focus, .gemini__rename:focus { outline: none; border-color: var(--selected); box-shadow: 0 0 0 3px color-mix(in srgb, var(--selected) 22%, transparent); }
