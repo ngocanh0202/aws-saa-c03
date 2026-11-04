@@ -26,7 +26,12 @@ interface Props {
   onOpenGuide?: () => void;
   /** Người học đã thấy đáp án và hướng dẫn; mặc định true khi không có onOpenGuide. */
   revealed?: boolean;
+  /** Nút nằm trong khối câu (trang xem lại có nhiều câu) thay vì nổi ở góc phải. */
+  inline?: boolean;
 }
+
+/** Chỉ một khung chat mở tại một thời điểm: mở khung này thì báo các khung khác đóng lại. */
+const openListeners = new Set<(id: string) => void>();
 
 /** User đang đăng nhập (kể cả lúc đang tải/xung đột dữ liệu); không có thì null. */
 export function signedInUser(state: SyncState): SyncUser | null {
@@ -65,14 +70,24 @@ function SignedIn({ sync, ...rest }: Props & { sync: SyncController; ai: AiClien
   return user ? <Launcher key={user.uid} uid={user.uid} {...rest} /> : null;
 }
 
-function Launcher(props: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore }) {
+function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore }) {
+  const id = useId();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
+  useEffect(() => {
+    const onOther = (other: string) => other !== id && setOpen(false);
+    openListeners.add(onOther);
+    return () => void openListeners.delete(onOther);
+  }, [id]);
+  const show = () => {
+    for (const l of [...openListeners]) l(id);
+    setOpen(true);
+  };
   // Như chat Messenger: khung chat mở ra thay chỗ nút, đóng lại thì nút hiện lại.
   return open ? (
     <ChatDialog {...props} onClose={close} />
   ) : (
-    <button type="button" className="btn-gemini" aria-label="Hỏi Gemini" onClick={() => setOpen(true)}>
+    <button type="button" className={inline ? 'btn-gemini btn-gemini--inline' : 'btn-gemini'} aria-label="Hỏi Gemini" onClick={show}>
       <GeminiIcon />
       Hỏi Gemini
     </button>

@@ -4,6 +4,7 @@ import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
 import { formatDate, modeName, setLabel } from '../app/format';
 import { DomainTable } from '../components/DomainTable';
+import { GeminiButton } from '../components/GeminiChat';
 import { GuidePanel } from '../components/GuidePanel';
 import { QuestionCard } from '../components/QuestionCard';
 import { DOMAIN_SHORT } from '../data/constants';
@@ -95,6 +96,8 @@ export function ResultPage() {
             </div>
             <QuestionCard heading={`Câu ${index + 1}`} question={question} order={aq.optionOrder} selected={selected} reveal showOrigLabels={!bank.vi.has(aq.qid) && !question.html} />
             <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
+            {/* Bài đã nộp: hỏi được cả Thi thật, không mở/gắn nhãn hướng dẫn (đã hiện sẵn). */}
+            <GeminiButton inline attemptId={attempt.id} number={index + 1} question={question} order={aq.optionOrder} />
           </article>
         );
       })}
