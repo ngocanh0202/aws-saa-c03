@@ -27,6 +27,14 @@ describe('buildSystemPrompt', () => {
     expect(buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'])).toContain('tiếng Việt');
   });
 
+  it('cho hỏi ngoài câu đang làm; cần thông tin mới thì dùng tool tìm kiếm và dẫn link, không bịa link', () => {
+    const p = buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D']);
+    expect(p).toContain('ngoài câu đang làm');
+    expect(p).toContain('thông tin mới nhất');
+    expect(p).toContain('link nguồn');
+    expect(p).toContain('không bịa link');
+  });
+
   it('dặn không dùng LaTeX', () => {
     expect(buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'])).toContain('Không dùng LaTeX');
   });

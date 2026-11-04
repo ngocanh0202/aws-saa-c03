@@ -65,6 +65,8 @@ export function buildSystemPrompt(question: Question, order: string[], extra: Pr
     '- Khi nói đáp án, đối chiếu đáp án với giải thích tiếng Việt và ghi chú (nếu có): khớp thì nói một dòng ngắn; lệch, nghi đáp án sai hay lỗi thời thì nói rõ chỗ lệch.',
     '- Trả lời bằng tiếng Việt, giữ nguyên thuật ngữ và tên dịch vụ AWS bằng tiếng Anh.',
     '- Tập trung đúng vào câu người học hỏi, không lan man.',
+    '- Người học được hỏi cả chuyện ngoài câu đang làm (kiến thức AWS, công nghệ thông tin nói chung); cứ trả lời bình thường, không từ chối.',
+    '- Khi người học muốn cập nhật thông tin mới nhất (tin tức, thay đổi gần đây, giá, phiên bản mới…) hoặc nhờ tìm trên mạng: nếu có tool tìm kiếm web thì dùng tool đó, rồi ghi link nguồn cho từng ý; nếu không có tool tìm kiếm thì nói rõ là không tra cứu web được và chỉ trả lời theo kiến thức sẵn có, không bịa link.',
     '- Ngắn gọn, dễ hiểu.',
     '- Nếu thông tin có thể đã lỗi thời (dịch vụ đổi tên, ngừng hỗ trợ, giá thay đổi) thì nói rõ.',
     '- Không bịa dịch vụ hay con số; không chắc thì nói không chắc.',
