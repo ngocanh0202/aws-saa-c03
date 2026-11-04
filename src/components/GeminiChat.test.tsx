@@ -615,6 +615,15 @@ describe('Trò chuyện cũ', () => {
     expect(within(dialog).queryByRole('button', { name: 'Đổi tên' })).toBeNull();
   });
 
+  it('tiêu đề có bản rút gọn cho mobile (Đ1 · Câu 3), tên đọc màn hình vẫn đầy đủ', async () => {
+    withOld();
+    const dialog = await openList();
+    fireEvent.click(await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ }));
+    const heading = within(dialog).getByRole('heading', { name: 'Hỏi Gemini · Đề 1 · Câu 3' });
+    expect(heading.querySelector('.gemini__title-short')).toHaveTextContent('Gemini Đ1 · Câu 3');
+    expect(heading.querySelector('.gemini__title-full')).toHaveTextContent('Hỏi Gemini · Đề 1 · Câu 3');
+  });
+
   it('mở cuộc trò chuyện cũ: hiện tin cũ, có dải quay lại; quay lại thì về câu đang làm', async () => {
     withOld();
     const dialog = await openList();

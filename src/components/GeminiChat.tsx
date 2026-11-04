@@ -96,6 +96,9 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
   );
 }
 
+/** "Đề 3" → "Đ3", "Main 1" → "M1" (tiêu đề khung chat trên mobile). */
+const shortSetLabel = (setId: number) => (setId > 100 ? `M${setId - 100}` : `Đ${setId}`);
+
 /** Cuộc trò chuyện đang mở trong khung: câu đang làm (home) hoặc một câu ở lượt cũ. */
 interface Target {
   attemptId: string;
@@ -186,6 +189,8 @@ function ChatDialog({
   const preview = stem.length > PREVIEW ? `${stem.slice(0, PREVIEW).trimEnd()}…` : stem;
   const title =
     view === 'list' ? 'Trò chuyện cũ' : atHome ? `Hỏi Gemini · Câu ${number}` : `Hỏi Gemini · ${setLabel(target.setId)} · Câu ${target.number}`;
+  // Bản gọn cho mobile: "Gemini Đ3 · Câu 12" / "Gemini M1 · Câu 5".
+  const shortLabel = view === 'list' ? null : atHome ? `Câu ${number}` : `${shortSetLabel(target.setId)} · Câu ${target.number}`;
 
   return createPortal(
     <div
@@ -197,7 +202,21 @@ function ChatDialog({
     >
       <header className="service-modal__bar">
         <div className="service-modal__title">
-          <h1 id="gemini-title">{title}</h1>
+          {/* Tên đầy đủ cho trình đọc màn hình (aria-label); CSS chọn bản dài hay bản gọn để hiển thị. */}
+          <h1 id="gemini-title" aria-label={title}>
+            <span className="gemini__title-full" aria-hidden="true">
+              {title}
+            </span>
+            <span className="gemini__title-short" aria-hidden="true">
+              {shortLabel === null ? (
+                title
+              ) : (
+                <>
+                  <span className="gemini__brand">Gemini</span> {shortLabel}
+                </>
+              )}
+            </span>
+          </h1>
           {view === 'chat' && <p className="hint gemini__stem">{preview}</p>}
         </div>
         <div className="gemini__tools">
