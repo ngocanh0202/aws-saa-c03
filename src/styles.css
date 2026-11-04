@@ -390,7 +390,21 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini-dock .gemini__suggest .chip { font-size: 0.78em; padding: 2px 8px; }
 @media (max-width: 600px) { .gemini__suggest { flex-wrap: nowrap; overflow-x: auto; padding: 6px 10px 0; scrollbar-width: none; } }
 .gemini__form { display: flex; gap: 8px; padding: 10px 16px; background: var(--surface); border-top: 1px solid var(--border); }
-.gemini__form textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 8px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); }
+.gemini__form textarea {
+  flex: 1; min-width: 0; resize: none; font: inherit; line-height: 1.4; padding: 9px 12px;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+.gemini__form textarea::placeholder { color: var(--muted); }
+.gemini__form textarea:hover:not(:disabled) { border-color: color-mix(in srgb, var(--selected) 45%, var(--border)); }
+/* Focus: viền màu chọn + vòng sáng mềm thay cho outline mặc định của trình duyệt */
+.gemini__form textarea:focus { outline: none; border-color: var(--selected); box-shadow: 0 0 0 3px color-mix(in srgb, var(--selected) 22%, transparent); background: var(--surface); }
+.gemini__form textarea:disabled { opacity: 0.6; cursor: not-allowed; }
+.gemini__form:focus-within { background: color-mix(in srgb, var(--selected) 4%, var(--surface)); }
+/* Ô tìm và ô đổi tên trong danh sách "Trò chuyện cũ" dùng cùng kiểu focus */
+.gemini__filters input[type='search'], .gemini__rename { transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.gemini__filters input[type='search']:focus, .gemini__rename:focus { outline: none; border-color: var(--selected); box-shadow: 0 0 0 3px color-mix(in srgb, var(--selected) 22%, transparent); }
+@media (prefers-reduced-motion: reduce) { .gemini__form textarea, .gemini__filters input[type='search'], .gemini__rename { transition: none; } }
 .gemini__form button { flex: none; align-self: stretch; }
 @media (max-width: 600px) { .gemini__log { padding: 12px; } .gemini__msg { max-width: 92%; } }
 .guide__tabs { display: flex; gap: 6px; margin: 12px 0 4px; }
