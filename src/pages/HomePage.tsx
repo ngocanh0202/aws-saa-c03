@@ -29,6 +29,7 @@ export function HomePage() {
   const summaries = usable.filter((a) => a.status === 'submitted').map((a) => summarize(a, bank.questions));
   const recent = [...summaries].sort((a, b) => b.submittedAt - a.submittedAt).slice(0, 10);
   const hiddenCount = all.length - usable.length;
+  const mainSets = bank.mainSets.filter((s) => !bank.hiddenMainSets.has(s.id));
 
   const start = (setId: number, mode: Mode) => {
     const attempt = createAttempt({
@@ -75,7 +76,7 @@ export function HomePage() {
       </label>
       <p className="hint">Nhớ đăng ký ESL +30 với AWS trước khi đặt lịch thi thật.</p>
 
-      {bank.mainSets.length > 0 && (
+      {mainSets.length > 0 && (
         <section className="set-section" aria-labelledby="main-title">
           <div className="set-section__head">
             <h2 id="main-title">Main</h2>
@@ -93,10 +94,10 @@ export function HomePage() {
             </label>
           </div>
           <p className="hint">
-            {bank.mainSets.length} đề cố định × 65 câu từ <code>question-doc-main</code>. Lựa chọn luôn được xáo; thứ tự câu hỏi giữ như file gốc trừ khi bật xáo.
+            {mainSets.length} đề cố định × 65 câu từ <code>question-doc-main</code>. Lựa chọn luôn được xáo; thứ tự câu hỏi giữ như file gốc trừ khi bật xáo.
           </p>
           <div className="set-grid">
-            {bank.mainSets.map((set) => (
+            {mainSets.map((set) => (
               <SetCard key={set.id} setId={set.id} subtitle={set.file} summaries={summaries} onStart={start} />
             ))}
           </div>

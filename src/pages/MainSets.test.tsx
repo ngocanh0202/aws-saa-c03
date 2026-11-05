@@ -47,6 +47,19 @@ describe('Trang chủ — đề Main và Sub', () => {
     expect(within(guide).queryByText(/gốc:/)).not.toBeInTheDocument();
   });
 
+  it('đề main trùng (ptX_2) bị ẩn khỏi trang chủ nhưng trang thống kê vẫn mở được', () => {
+    const bank = makeBank({ main: true });
+    const twin = { id: 102, file: 'pt1_2.json', title: 'Main 2', questionIds: MAIN_IDS };
+    const deps = makeDeps({ bank: { ...bank, mainSets: [...bank.mainSets, twin], hiddenMainSets: new Set([102]) } });
+    const { unmount } = renderApp('/', deps);
+    expect(within(mainSection()).getByRole('heading', { name: /^Main 1/ })).toBeInTheDocument();
+    expect(within(mainSection()).queryByRole('heading', { name: /^Main 2/ })).not.toBeInTheDocument();
+    expect(within(mainSection()).getByText(/^1 đề cố định/)).toBeInTheDocument();
+    unmount();
+    renderApp('/set/102', deps);
+    expect(screen.getByRole('heading', { name: 'Thống kê Main 2' })).toBeInTheDocument();
+  });
+
   it('trang thống kê và kết quả gọi tên đề là "Main 1"', () => {
     const deps = makeDeps({ bank: makeBank({ main: true }) });
     renderApp('/set/101', deps);

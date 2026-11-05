@@ -1,4 +1,4 @@
-import { expandMainMetas, expandTwins } from './main-meta';
+import { duplicateMainSetIds, expandMainMetas, expandTwins } from './main-meta';
 
 describe('expandMainMetas', () => {
   it('câu trùng dùng lại meta (kể cả note) của câu gốc, đổi id', () => {
@@ -27,5 +27,21 @@ describe('expandTwins', () => {
     const a = { id: 10101, stemVi: 'a', promptVi: '', options: [], explanationVi: '', keyHint: '' };
     const b = { ...a, id: 10201, stemVi: 'b' };
     expect(expandTwins([a, b], [[10101, 10201]])).toEqual([a, b]);
+  });
+});
+
+describe('duplicateMainSetIds', () => {
+  const sets = [
+    { id: 101, file: 'pt1_1.json', title: 'Main 1', questionIds: [10101, 10102] },
+    { id: 102, file: 'pt1_2.json', title: 'Main 2', questionIds: [10201, 10202] },
+    { id: 103, file: 'pt2_1.json', title: 'Main 3', questionIds: [10301, 10302] },
+  ];
+
+  it('chỉ trả đề có mọi câu là câu trùng của đề khác', () => {
+    expect(duplicateMainSetIds(sets, [[10101, 10202], [10102, 10201], [10101, 10301]])).toEqual(new Set([102]));
+  });
+
+  it('không có twins thì không ẩn đề nào', () => {
+    expect(duplicateMainSetIds(sets, [])).toEqual(new Set());
   });
 });

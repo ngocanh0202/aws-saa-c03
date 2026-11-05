@@ -3,7 +3,7 @@ import questions from '../../data/questions.json';
 import registry from '../../data/service-registry.json';
 import sets from '../../data/sets.json';
 import { buildBank } from './bank';
-import { expandMainMetas, expandTwins } from './main-meta';
+import { duplicateMainSetIds, expandMainMetas, expandTwins } from './main-meta';
 import type { ExternalSet, MainFile, Question, QuestionMeta, QuestionVi, ServiceNote, ServiceRef, SetsFile } from './types';
 
 const mainMetaFiles = import.meta.glob<QuestionMeta[]>('../../data/main-meta/*.json', { eager: true, import: 'default' });
@@ -24,6 +24,7 @@ export const bank = buildBank({
   serviceNotes: Object.values(serviceNoteFiles),
   sets: sets as unknown as SetsFile,
   mainSets: mainFile.sets,
+  hiddenMainSets: duplicateMainSetIds(mainFile.sets, mainFile.twins),
   externals: Object.values(externalFiles),
   externalVis: groupBySlug(externalViFiles),
 });

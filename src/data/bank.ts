@@ -15,6 +15,8 @@ export interface Bank {
   sets: SetsFile;
   /** 12 đề cố định của bộ main (id 101…112); câu và meta đã gộp vào questions/meta. */
   mainSets: MainSet[];
+  /** Đề main trùng hoàn toàn với đề khác (ptX_2 = ptX_1 xáo lại): ẩn khỏi trang chủ. */
+  hiddenMainSets: Set<number>;
   externals: ExternalBook[];
 }
 
@@ -26,6 +28,7 @@ export function buildBank(input: {
   serviceNotes?: ServiceNote[];
   sets: SetsFile;
   mainSets?: MainSet[];
+  hiddenMainSets?: Set<number>;
   externals?: ExternalSet[];
   externalVis?: Record<string, QuestionVi[]>;
 }): Bank {
@@ -42,6 +45,7 @@ export function buildBank(input: {
     questionsByService,
     sets: input.sets,
     mainSets: input.mainSets ?? [],
+    hiddenMainSets: input.hiddenMainSets ?? new Set(),
     externals: (input.externals ?? []).map((set) => ({
       ...set,
       vi: new Map((input.externalVis?.[set.slug] ?? []).map((v) => [v.id, v])),
