@@ -34,7 +34,7 @@ Lệnh in ra một địa chỉ dạng `https://xxxx.trycloudflare.com`. **Đị
   (Chạy ở máy có thể dùng thẳng `http://localhost:1234`.)
 - **GitHub Pages:** vào **Settings → Secrets and variables → Actions → Variables**, đặt `VITE_LOCAL_AI` (và `VITE_LOCAL_AI_MODEL` nếu muốn), rồi vào **Actions → Deploy → Run workflow** để build lại.
 
-Mỗi khi địa chỉ tunnel đổi: sửa Variable `VITE_LOCAL_AI` rồi **Run workflow** lại. Trước khi deploy xong, web vẫn trỏ tới địa chỉ cũ và báo "Không kết nối được AI thử nghiệm. Kiểm tra LM Studio và Cloudflare Tunnel."
+Mỗi khi địa chỉ tunnel đổi: sửa Variable `VITE_LOCAL_AI` rồi **Run workflow** lại. Trước khi deploy xong, web vẫn trỏ tới địa chỉ cũ và báo "Không kết nối được AI thử nghiệm. Vui lòng liên hệ buihngocanh2@gmail.com."
 
 ## 4. Deploy lại rules Firebase
 
