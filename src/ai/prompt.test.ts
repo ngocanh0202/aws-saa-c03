@@ -27,6 +27,13 @@ describe('buildSystemPrompt', () => {
     expect(buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'])).toContain('tiếng Việt');
   });
 
+  it('tắt tìm trên web: không dặn tra cứu web, chỉ trả lời theo kiến thức sẵn có', () => {
+    const p = buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D'], { webSearch: false });
+    expect(p).not.toContain('link nguồn');
+    expect(p).toContain('Không tra cứu web');
+    expect(p).toContain('không bịa link');
+  });
+
   it('cho hỏi ngoài câu đang làm; cần thông tin mới thì dùng tool tìm kiếm và dẫn link, không bịa link', () => {
     const p = buildSystemPrompt(makeQuestion(1), ['A', 'B', 'C', 'D']);
     expect(p).toContain('ngoài câu đang làm');

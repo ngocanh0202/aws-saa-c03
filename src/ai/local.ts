@@ -1,3 +1,4 @@
+import { samplingBody } from './local-settings';
 import { prepareHistory } from './prompt';
 import { toolLoop, type FunctionCallLike } from './tool-loop';
 import { AiUserError, type AiClient, type AiTool } from './types';
@@ -155,6 +156,7 @@ interface Delta {
 
 /**
  * AI thử nghiệm qua LM Studio (API kiểu OpenAI: POST /v1/chat/completions, stream SSE, tool calling).
+ * `options.settings`: tham số người học chỉnh (temperature…); tắt stream thì đọc cả JSON một lần.
  * Chỉ dùng fetch. Lỗi kết nối/HTTP thành AiUserError có câu báo cho người học.
  */
 export function createLocalAiClient(baseUrl: string, model?: string, fetchImpl: typeof fetch = (...a) => fetch(...a)): AiClient {
@@ -168,6 +170,8 @@ export function createLocalAiClient(baseUrl: string, model?: string, fetchImpl: 
         ),
       ];
       const tools = options.tools?.length ? options.tools.map(toolSpec) : undefined;
+      const settings = options.settings;
+      const streaming = settings?.stream ?? true;
       let lastCallIds: string[] = [];
 
       const request = async () => {
@@ -193,7 +197,13 @@ export function createLocalAiClient(baseUrl: string, model?: string, fetchImpl: 
             fetchImpl(url, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...(model ? { model } : {}), messages: windowed(convo), stream: true, ...(tools ? { tools } : {}) }),
+              body: JSON.stringify({
+                ...(model ? { model } : {}),
+                messages: windowed(convo),
+                ...(settings ? samplingBody(settings) : {}),
+                stream: streaming,
+                ...(tools ? { tools } : {}),
+              }),
               signal: controller.signal,
             }),
           );
@@ -201,7 +211,7 @@ export function createLocalAiClient(baseUrl: string, model?: string, fetchImpl: 
           clearTimeout(timer);
           throw e instanceof AiUserError ? e : new AiUserError(LOCAL_CONNECT_ERROR);
         }
-        if (!res.ok || !res.body) {
+        if (!res.ok || (streaming && !res.body)) {
           clearTimeout(timer);
           const text = await res.text().catch(() => '');
           throw res.status < 500 ? errorFor(text) : new AiUserError(LOCAL_CONNECT_ERROR);
@@ -211,9 +221,19 @@ export function createLocalAiClient(baseUrl: string, model?: string, fetchImpl: 
         let answer = '';
         const calls: { id: string; name: string; args: string }[] = [];
         const body = res.body;
+        /** Tắt stream: cả câu trả lời nằm trong một JSON, đổi thành một "delta" để đi chung đường với stream. */
+        async function* whole(): AsyncIterable<unknown> {
+          const json = JSON.parse(await read(res.text())) as { error?: unknown; choices?: { message?: Delta }[] };
+          if (json.error) {
+            yield json;
+            return;
+          }
+          const message = json.choices?.[0]?.message ?? {};
+          yield { choices: [{ delta: { ...message, tool_calls: message.tool_calls?.map((tc, i) => ({ index: i, ...tc })) } }] };
+        }
         async function* chunks(): AsyncIterable<string> {
           try {
-            for await (const event of readSse(body, read)) {
+            for await (const event of streaming && body ? readSse(body, read) : whole()) {
               // Server báo lỗi ngay trong stream (data: {"error": …}), vd quá ngữ cảnh hay model hỏng.
               const streamError = (event as { error?: unknown }).error;
               if (streamError) throw errorFor(typeof streamError === 'string' ? streamError : JSON.stringify(streamError));

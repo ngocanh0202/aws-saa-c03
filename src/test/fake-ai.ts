@@ -1,3 +1,4 @@
+import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { prepareHistory } from '../ai/prompt';
 import type { AiBusyError } from '../ai/retry';
 import { toolLoop, type FunctionCallLike } from '../ai/tool-loop';
@@ -139,4 +140,28 @@ export function fakeChats(initial: Record<string, ChatMessage[]> = {}): FakeChat
     },
   };
   return chats;
+}
+
+export interface FakeLocalSettings extends LocalSettingsStore {
+  data: Map<string, LocalAiSettings>;
+  /** Đặt thì load() ném lỗi này. */
+  loadError?: Error;
+  saves: { uid: string; settings: LocalAiSettings }[];
+}
+
+/** Store cài đặt ⚙ trong bộ nhớ (thay users/{uid}/aiSettings). */
+export function fakeLocalSettings(initial: Record<string, LocalAiSettings> = {}): FakeLocalSettings {
+  const store: FakeLocalSettings = {
+    data: new Map(Object.entries(initial)),
+    saves: [],
+    async load(uid) {
+      if (store.loadError) throw store.loadError;
+      return store.data.get(uid) ?? DEFAULT_LOCAL_SETTINGS;
+    },
+    async save(uid, settings) {
+      store.saves.push({ uid, settings });
+      store.data.set(uid, settings);
+    },
+  };
+  return store;
 }

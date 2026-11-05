@@ -1,3 +1,4 @@
+import type { LocalAiSettings } from './local-settings';
 import type { RetryOptions } from './retry';
 
 export interface ChatMessage {
@@ -29,6 +30,8 @@ export interface ChatOptions {
   retry?: RetryOptions;
   /** Model đang "suy nghĩ" (reasoning) chưa ra chữ trả lời; Local AI dùng để hiện dòng chờ. */
   onThinking?: () => void;
+  /** Tham số người học chỉnh trong ⚙ (chỉ AI thử nghiệm dùng; Gemini bỏ qua). */
+  settings?: LocalAiSettings;
 }
 
 /** Lỗi có sẵn câu báo cho người học (vd không kết nối được AI thử nghiệm). */

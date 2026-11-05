@@ -23,6 +23,18 @@
             }
           }
         },
+        "aiSettings": {
+          ".validate": "newData.hasChildren(['temperature', 'top_p', 'top_k', 'min_p', 'presence_penalty', 'stream', 'webSearch'])",
+          "temperature": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 2" },
+          "top_p": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 1" },
+          "top_k": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1000 && newData.val() % 1 === 0" },
+          "min_p": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 1" },
+          "presence_penalty": { ".validate": "newData.isNumber() && newData.val() >= -2 && newData.val() <= 2" },
+          "max_tokens": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 32768 && newData.val() % 1 === 0" },
+          "stream": { ".validate": "newData.isBoolean()" },
+          "webSearch": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        },
         "$other": { ".validate": false }
       }
     }

@@ -38,7 +38,16 @@ Mỗi khi địa chỉ tunnel đổi: sửa Variable `VITE_LOCAL_AI` rồi **Run
 
 ## 4. Deploy lại rules Firebase
 
-Rules đã thêm nhánh `users/$uid/localChats`. Dán lại [`database.rules.json`](../database.rules.json) ở **Realtime Database → Rules** rồi **Publish** (xem [firebase-setup.md](firebase-setup.md), bước 3). Chưa publish thì lưu lịch sử AI thử nghiệm sẽ bị từ chối.
+Rules đã thêm nhánh `users/$uid/localChats` và `users/$uid/aiSettings` (cài đặt ⚙, kiểm tra từng số đúng khoảng). Dán lại [`database.rules.json`](../database.rules.json) ở **Realtime Database → Rules** rồi **Publish** (xem [firebase-setup.md](firebase-setup.md), bước 3). Chưa publish thì lưu lịch sử và cài đặt AI thử nghiệm sẽ bị từ chối.
+
+## Cài đặt ⚙ (tham số model)
+
+Trong khung "Hỏi AI" có nút **⚙** (Gemini không có). Bấm vào hiện popup chỉnh `temperature`, `top_p`, `top_k`, `min_p`, `presence_penalty`, `max_tokens`, `stream` và **Tìm trên web**; di chuột (hoặc chạm) vào tên tham số để xem hướng dẫn. Ô sai thì báo lỗi và khóa nút Lưu; **Mặc định** đưa về giá trị ban đầu (xem `DEFAULT_LOCAL_SETTINGS` trong `src/ai/local-settings.ts`).
+
+- Lưu theo tài khoản ở `users/{uid}/aiSettings`, dùng chung mọi máy; áp dụng từ câu hỏi tiếp theo. Tải lỗi thì hỏi bằng mặc định và khóa ⚙ (không ghi đè bản trên Firebase).
+- Các số được gửi thật trong body `/v1/chat/completions`. `top_k` và `min_p` không thuộc chuẩn OpenAI: LM Studio/Unsloth (nền llama.cpp) thường nhận, server nào không hỗ trợ thì bỏ qua mà không báo lỗi. Xem request thật ở **Developer → Server Logs** của LM Studio.
+- `max_tokens` trống = không giới hạn (không gửi). Tắt `stream` thì nhận cả câu trả lời một lần, tool calling vẫn chạy.
+- "Tìm trên web" chỉ đổi câu dặn trong prompt; LM Studio/Unsloth không tự tra cứu web.
 
 ## Lưu ý bảo mật
 

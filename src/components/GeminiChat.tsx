@@ -7,6 +7,7 @@ import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
 import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
+import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
@@ -16,6 +17,7 @@ import { htmlToText } from '../data/html-text';
 import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
 import type { SyncController, SyncState, SyncUser } from '../sync/types';
+import { LocalSettingsDialog } from './LocalSettingsDialog';
 import { Markdown } from './Markdown';
 
 interface Props {
@@ -180,7 +182,28 @@ function ChatDialog({
   brand,
   onClose,
 }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand; onClose: () => void }) {
-  const { store, bank, localAi, aiMode } = useApp();
+  const { store, bank, localAi, aiMode, localSettings } = useApp();
+  // Nút ⚙ chỉ có ở AI thử nghiệm; cài đặt lưu theo tài khoản, chưa tải xong hoặc tải lỗi thì dùng mặc định.
+  const settingsStore = brand === 'AI' ? localSettings : undefined;
+  const [settings, setSettings] = useState<LocalAiSettings>(DEFAULT_LOCAL_SETTINGS);
+  const [settingsState, setSettingsState] = useState<'loading' | 'ready' | 'failed'>('loading');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  useEffect(() => {
+    if (!settingsStore) return;
+    let live = true;
+    settingsStore.load(uid).then(
+      (s) => {
+        if (!live) return;
+        setSettings(s);
+        setSettingsState('ready');
+      },
+      // Tải lỗi: vẫn hỏi được bằng mặc định, nhưng khóa ⚙ để không ghi đè bản trên Firebase.
+      () => live && setSettingsState('failed'),
+    );
+    return () => {
+      live = false;
+    };
+  }, [settingsStore, uid]);
   // Gemini hết lượt mà có AI thử nghiệm: cho chuyển sang ngay trong khung, rồi mở lại khung của đúng câu này.
   const switchToLocal =
     brand === 'Gemini' && localAi && aiMode
@@ -284,6 +307,18 @@ function ChatDialog({
           {view === 'chat' && <p className="hint gemini__stem">{preview}</p>}
         </div>
         <div className="gemini__tools">
+          {settingsStore && (
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label="Cài đặt Hỏi AI"
+              title={settingsState === 'failed' ? 'Không tải được cài đặt, đang dùng mặc định' : 'Cài đặt Hỏi AI'}
+              disabled={settingsState !== 'ready'}
+              onClick={() => setSettingsOpen(true)}
+            >
+              ⚙
+            </button>
+          )}
           <button
             type="button"
             className="icon-btn"
@@ -327,8 +362,28 @@ function ChatDialog({
               ← Quay lại {homeLabel}
             </button>
           )}
-          <Conversation key={keyOf(target.attemptId, target.question.id)} uid={uid} ai={ai} chats={chats} brand={brand} target={target} onBusy={setBusy} onSwitchToLocal={switchToLocal} />
+          <Conversation
+            key={keyOf(target.attemptId, target.question.id)}
+            uid={uid}
+            ai={ai}
+            chats={chats}
+            brand={brand}
+            target={target}
+            settings={settingsStore ? settings : undefined}
+            onBusy={setBusy}
+            onSwitchToLocal={switchToLocal}
+          />
         </>
+      )}
+      {settingsOpen && settingsStore && (
+        <LocalSettingsDialog
+          initial={settings}
+          onSave={async (next) => {
+            await settingsStore.save(uid, next);
+            setSettings(next);
+          }}
+          onClose={() => setSettingsOpen(false)}
+        />
       )}
     </div>,
     document.body,
@@ -555,6 +610,7 @@ function Conversation({
   chats,
   brand,
   target,
+  settings,
   onBusy,
   onSwitchToLocal,
 }: {
@@ -563,6 +619,8 @@ function Conversation({
   chats: ChatHistoryStore;
   brand: Brand;
   target: Target;
+  /** Cài đặt ⚙ (chỉ AI thử nghiệm); đổi thì lần gửi sau mở phiên mới. */
+  settings?: LocalAiSettings;
   /** Báo khung ngoài để khóa chuyển cuộc trò chuyện khi đang trả lời. */
   onBusy: (busy: boolean) => void;
   /** Có thì hiện nút chuyển sang AI thử nghiệm khi Gemini hết lượt. */
@@ -602,6 +660,7 @@ function Conversation({
   openGuide.current = target.onOpenGuide;
   // Trạng thái "đã thấy đáp án" mà phiên chat hiện tại được báo; đổi thì mở phiên mới để Gemini biết.
   const sessionRevealed = useRef(target.revealed);
+  const sessionSettings = useRef(settings);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   // Gợi ý đã hỏi (câu người học giống ≥ 85%) thì không hiện lại.
@@ -694,10 +753,17 @@ function Conversation({
     try {
       // Một phiên chat cho mỗi lần mở khung; adapter tự cắt và chuẩn hóa history.
       // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
-      if (chatRef.current && sessionRevealed.current !== target.revealed) chatRef.current = null;
+      if (chatRef.current && (sessionRevealed.current !== target.revealed || sessionSettings.current !== settings)) chatRef.current = null;
       sessionRevealed.current = target.revealed;
-      const prompt = buildSystemPrompt(question, order, { vi: bank.vi.get(qid), note: bank.meta.get(qid)?.note, revealed: target.revealed });
+      sessionSettings.current = settings;
+      const prompt = buildSystemPrompt(question, order, {
+        vi: bank.vi.get(qid),
+        note: bank.meta.get(qid)?.note,
+        revealed: target.revealed,
+        webSearch: settings?.webSearch,
+      });
       const chat = (chatRef.current ??= ai.startChat(prompt, history, {
+        settings,
         tools: [
           createSearchTool(store, bank, { setId, attemptId, qid }),
           ...(target.onOpenGuide

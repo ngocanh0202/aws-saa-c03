@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LOCAL_HISTORY_LIMIT, LOCAL_TIMEOUT_MS, createLocalAiClient, createThinkFilter } from './local';
+import { DEFAULT_LOCAL_SETTINGS } from './local-settings';
 import { AiUserError, type AiTool, type ChatMessage } from './types';
 
 const enc = new TextEncoder();
@@ -135,6 +136,44 @@ describe('createLocalAiClient', () => {
     const second = f.bodies[1].body.messages as Record<string, unknown>[];
     expect(second.at(-2)).toEqual({ role: 'assistant', content: null, tool_calls: [{ id: 'c1', type: 'function', function: { name: 'find', arguments: '{"query":"multipart"}' } }] });
     expect(second.at(-1)).toEqual({ role: 'tool', tool_call_id: 'c1', content: JSON.stringify({ got: 'multipart' }) });
+  });
+
+  it('gửi kèm tham số trong cài đặt (max_tokens trống thì không gửi)', async () => {
+    const f = fakeFetch([{ pieces: [event({ content: 'ok' }), DONE] }]);
+    const settings = { ...DEFAULT_LOCAL_SETTINGS, temperature: 0.2, top_k: 5, max_tokens: 300 };
+    await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', [], { settings }).send('q'));
+    expect(f.bodies[0].body).toMatchObject({ temperature: 0.2, top_p: 0.8, top_k: 5, min_p: 0, presence_penalty: 0, max_tokens: 300, stream: true });
+    await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', [], { settings: DEFAULT_LOCAL_SETTINGS }).send('q'));
+    expect('max_tokens' in f.bodies[1].body).toBe(false);
+  });
+
+  it('tắt stream: nhận cả câu trả lời một lần, lọc <think>', async () => {
+    const json = (message: object) => JSON.stringify({ choices: [{ message }] });
+    const f = fakeFetch([{ text: json({ role: 'assistant', content: '<think>x</think>Trả lời đủ' }) }]);
+    const settings = { ...DEFAULT_LOCAL_SETTINGS, stream: false };
+    const out = await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', [], { settings }).send('q'));
+    expect(out.join('')).toBe('Trả lời đủ');
+    expect(f.bodies[0].body.stream).toBe(false);
+  });
+
+  it('tắt stream vẫn chạy tool calling', async () => {
+    const json = (message: object) => JSON.stringify({ choices: [{ message }] });
+    const f = fakeFetch([
+      { text: json({ role: 'assistant', content: null, tool_calls: [{ id: 'c1', type: 'function', function: { name: 'find', arguments: '{"query":"s3"}' } }] }) },
+      { text: json({ role: 'assistant', content: 'Xong' }) },
+    ]);
+    const settings = { ...DEFAULT_LOCAL_SETTINGS, stream: false };
+    const out = await collect(createLocalAiClient('http://x', undefined, f.impl).startChat('S', [], { settings, tools: [find] }).send('q'));
+    expect(out.join('')).toBe('Xong');
+    expect((f.bodies[1].body.messages as unknown[]).slice(-1)).toEqual([{ role: 'tool', tool_call_id: 'c1', content: JSON.stringify({ got: 's3' }) }]);
+  });
+
+  it('tắt stream mà server trả lỗi trong JSON → AiUserError', async () => {
+    const f = fakeFetch([{ text: JSON.stringify({ error: 'model crashed' }) }, { text: 'không phải JSON' }]);
+    const settings = { ...DEFAULT_LOCAL_SETTINGS, stream: false };
+    const client = createLocalAiClient('http://x', undefined, f.impl);
+    await expect(collect(client.startChat('S', [], { settings }).send('q'))).rejects.toBeInstanceOf(AiUserError);
+    await expect(collect(client.startChat('S', [], { settings }).send('q'))).rejects.toBeInstanceOf(AiUserError);
   });
 
   it('lượt sau nhớ câu trả lời lượt trước', async () => {

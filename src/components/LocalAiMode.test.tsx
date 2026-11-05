@@ -7,7 +7,8 @@ import { AiUserError } from '../ai/types';
 import { createAttempt } from '../engine/attempt';
 import { createStore } from '../storage/storage';
 import { createSyncController } from '../sync/controller';
-import { fakeAi, fakeChats } from '../test/fake-ai';
+import { DEFAULT_LOCAL_SETTINGS } from '../ai/local-settings';
+import { fakeAi, fakeChats, fakeLocalSettings } from '../test/fake-ai';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
 
@@ -23,17 +24,18 @@ function setup({ withLocal = true, withGemini = true }: { withLocal?: boolean; w
   const localAi = fakeAi();
   const localChats = fakeChats();
   const aiMode = createAiMode(null);
+  const localSettings = fakeLocalSettings();
   const base = makeDeps({ store, sync });
   const attempt = createAttempt({ id: 'e1', setId: 1, mode: 'practice', esl: false, seed: 7, now: base.now(), sets: base.bank.sets, questions: base.bank.questions, metas: base.bank.meta });
   store.save(attempt);
   renderApp('/exam/e1', {
     ...base,
     ...(withGemini ? { ai, chats } : {}),
-    ...(withLocal ? { localAi, localChats, aiMode } : {}),
+    ...(withLocal ? { localAi, localChats, localSettings, aiMode } : {}),
   });
   act(() => auth.emit({ uid: 'u1', name: 'An' }));
   act(() => remote.emit('u1', new Map([[attempt.id, { attempt, updatedAt: 1 }]])));
-  return { ai, chats, localAi, localChats, aiMode, qid: attempt.questions[0].qid };
+  return { ai, chats, localAi, localChats, localSettings, aiMode, qid: attempt.questions[0].qid };
 }
 
 async function ask(dialog: HTMLElement, text = 'Tại sao?') {
@@ -141,5 +143,59 @@ describe('Chế độ AI thử nghiệm (Local AI)', () => {
     await ask(dialog);
     await within(dialog).findByText(/Thử lại sau/);
     expect(within(dialog).queryByRole('button', { name: /Chuyển sang AI thử nghiệm/ })).toBeNull();
+  });
+
+  describe('cài đặt ⚙', () => {
+    it('Gemini không có nút ⚙; Hỏi AI có, mở popup trong khung, Esc chỉ đóng popup', async () => {
+      setup();
+      fireEvent.click(screen.getByRole('button', { name: 'Hỏi Gemini' }));
+      expect(screen.queryByRole('button', { name: 'Cài đặt Hỏi AI' })).toBeNull();
+      fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+      fireEvent.click(screen.getByRole('button', { name: 'Hỏi AI' }));
+      const gear = screen.getByRole('button', { name: 'Cài đặt Hỏi AI' });
+      await waitFor(() => expect(gear).toBeEnabled());
+      fireEvent.click(gear);
+      const popup = screen.getByRole('dialog', { name: 'Cài đặt Hỏi AI' });
+      fireEvent.keyDown(within(popup).getByRole('textbox', { name: 'top_p' }), { key: 'Escape' });
+      expect(screen.queryByRole('dialog', { name: 'Cài đặt Hỏi AI' })).toBeNull();
+      expect(screen.getByRole('dialog', { name: 'Hỏi AI · Câu 1' })).toBeInTheDocument();
+    });
+
+    it('dùng cài đặt đã lưu của tài khoản; lưu mới thì lần hỏi sau dùng bản mới', async () => {
+      const s = setup();
+      s.localSettings.data.set('u1', { ...DEFAULT_LOCAL_SETTINGS, temperature: 0.2 });
+      fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+      fireEvent.click(screen.getByRole('button', { name: 'Hỏi AI' }));
+      const dialog = screen.getByRole('dialog', { name: 'Hỏi AI · Câu 1' });
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Cài đặt Hỏi AI' })).toBeEnabled());
+      await ask(dialog);
+      await within(dialog).findByText('ok');
+      expect(s.localAi.calls[0].options?.settings?.temperature).toBe(0.2);
+
+      fireEvent.click(screen.getByRole('button', { name: 'Cài đặt Hỏi AI' }));
+      const popup = screen.getByRole('dialog', { name: 'Cài đặt Hỏi AI' });
+      fireEvent.change(within(popup).getByRole('textbox', { name: 'temperature' }), { target: { value: '1' } });
+      fireEvent.click(within(popup).getByRole('checkbox', { name: 'Tìm trên web' }));
+      await act(async () => {
+        fireEvent.click(within(popup).getByRole('button', { name: 'Lưu' }));
+      });
+      expect(s.localSettings.saves.at(-1)).toEqual({ uid: 'u1', settings: { ...DEFAULT_LOCAL_SETTINGS, temperature: 1, webSearch: false } });
+      await ask(dialog, 'Hỏi tiếp');
+      await waitFor(() => expect(s.localAi.calls).toHaveLength(2));
+      expect(s.localAi.calls[1].options?.settings?.temperature).toBe(1);
+      expect(s.localAi.calls[1].systemPrompt).toContain('Không tra cứu web');
+    });
+
+    it('tải cài đặt lỗi: vẫn hỏi bằng mặc định, khóa ⚙ để không ghi đè', async () => {
+      const s = setup();
+      s.localSettings.loadError = new Error('offline');
+      fireEvent.click(screen.getByRole('button', { name: TOGGLE }));
+      fireEvent.click(screen.getByRole('button', { name: 'Hỏi AI' }));
+      const dialog = screen.getByRole('dialog', { name: 'Hỏi AI · Câu 1' });
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Cài đặt Hỏi AI' })).toHaveAttribute('title', 'Không tải được cài đặt, đang dùng mặc định'));
+      expect(screen.getByRole('button', { name: 'Cài đặt Hỏi AI' })).toBeDisabled();
+      await ask(dialog);
+      expect(s.localAi.calls[0].options?.settings).toEqual(DEFAULT_LOCAL_SETTINGS);
+    });
   });
 });

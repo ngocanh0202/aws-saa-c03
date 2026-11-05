@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { FirebaseConfig } from '../sync/config';
 import { buildAiDeps, DEFAULT_GEMINI_MODEL } from './deps';
-import { fakeAi, fakeChats } from '../test/fake-ai';
+import { fakeAi, fakeChats, fakeLocalSettings } from '../test/fake-ai';
 
 const base: FirebaseConfig = { apiKey: 'k', authDomain: 'a', databaseURL: 'd', projectId: 'p', appId: 'i' };
 const clients = { app: {} as never, chats: fakeChats() };
@@ -34,7 +34,9 @@ describe('buildAiDeps', () => {
     const local = fakeAi();
     const createLocal = vi.fn(() => local);
     const localChats = fakeChats();
-    const deps = buildAiDeps(base, { ...clients, localChats }, vi.fn(), { config: { url: 'https://t', model: 'm' }, create: createLocal });
+    const localSettings = fakeLocalSettings();
+    const deps = buildAiDeps(base, { ...clients, localChats, localSettings }, vi.fn(), { config: { url: 'https://t', model: 'm' }, create: createLocal });
+    expect(deps.localSettings).toBe(localSettings);
     expect(deps.ai).toBeUndefined();
     expect(deps.localAi).toBe(local);
     expect(deps.localChats).toBe(localChats);

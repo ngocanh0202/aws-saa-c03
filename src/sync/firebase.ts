@@ -8,6 +8,7 @@ import {
   signOut as fbSignOut,
 } from 'firebase/auth';
 import { child, get, getDatabase, onValue, ref, set, update } from 'firebase/database';
+import { parseLocalSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { summarize, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import type { Attempt } from '../engine/attempt';
 import { looksLikeAttempt } from '../storage/storage';
@@ -21,6 +22,7 @@ export function createFirebaseClients(config: FirebaseConfig): {
   remote: RemoteAttempts;
   chats: ChatHistoryStore;
   localChats: ChatHistoryStore;
+  localSettings: LocalSettingsStore;
   app: FirebaseApp;
 } {
   const { recaptchaSiteKey, geminiModel: _model, ...options } = config;
@@ -163,5 +165,15 @@ export function createFirebaseClients(config: FirebaseConfig): {
   const chats = chatStore('aiChats');
   const localChats = chatStore('localChats');
 
-  return { auth, remote, chats, localChats, app };
+  /** Cài đặt ⚙ của AI thử nghiệm, một bản cho mỗi tài khoản (max_tokens null thì không lưu trường đó). */
+  const localSettings: LocalSettingsStore = {
+    async load(uid) {
+      return parseLocalSettings((await get(ref(db, `users/${uid}/aiSettings`))).val());
+    },
+    save(uid, settings) {
+      return set(ref(db, `users/${uid}/aiSettings`), settings);
+    },
+  };
+
+  return { auth, remote, chats, localChats, localSettings, app };
 }
