@@ -1,7 +1,8 @@
-import { useSyncExternalStore } from 'react';
+import { useState, useSyncExternalStore } from 'react';
 import type { AiModeStore } from '../ai/ai-mode';
 import { useApp } from '../app/context';
 import { useAiMode } from './GeminiChat';
+import { SignInDialog, SignInIcon } from './SignInDialog';
 import type { SyncController } from '../sync/types';
 
 function statusText(online: boolean, pending: number): string {
@@ -11,6 +12,7 @@ function statusText(online: boolean, pending: number): string {
 
 function Menu({ sync, english }: { sync: SyncController; english: boolean }) {
   const state = useSyncExternalStore(sync.subscribe, sync.getState);
+  const [choosing, setChoosing] = useState(false);
   if (state.kind === 'signed-out' || state.kind === 'error') {
     return (
       <span className="account">
@@ -19,9 +21,11 @@ function Menu({ sync, english }: { sync: SyncController; english: boolean }) {
             {state.message}
           </span>
         )}
-        <button type="button" className="icon-btn" onClick={() => void sync.signIn()}>
-          {english ? 'Sign in with Google' : 'Đăng nhập Google'}
+        <button type="button" className="icon-btn account__signin" onClick={() => setChoosing(true)}>
+          <SignInIcon />
+          {english ? 'Sign in' : 'Đăng nhập'}
         </button>
+        {choosing && <SignInDialog sync={sync} english={english} onClose={() => setChoosing(false)} />}
       </span>
     );
   }

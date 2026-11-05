@@ -13,7 +13,7 @@ Web chạy thử tại: [exam-aws-ssa-03](https://ngocanh0202.github.io/aws-saa-
 - **Chấm điểm** theo thang 100–1000, đậu khi đạt từ 720 điểm. Có bảng phân tích theo domain cho từng lượt thi và từng đề.
 - **Xem lại bài làm** kèm hướng dẫn tiếng Việt cho mọi câu, và ghi chú cho từng dịch vụ AWS.
 - **Câu hỏi External:** các bộ câu hỏi luyện thêm lấy từ file HTML trong `external/`.
-- **Đăng nhập Google (tùy chọn):** đồng bộ lượt thi realtime giữa các thiết bị qua Firebase Realtime Database. Ví dụ đang làm trên máy tính thì mở điện thoại làm tiếp đúng lượt đó. Khi chưa đăng nhập, dữ liệu được lưu trong `localStorage`.
+- **Đăng nhập Google, Email/Mật khẩu hoặc Facebook (tùy chọn):** đồng bộ lượt thi realtime giữa các thiết bị qua Firebase Realtime Database. Ví dụ đang làm trên máy tính thì mở điện thoại làm tiếp đúng lượt đó. Khi chưa đăng nhập, dữ liệu được lưu trong `localStorage`.
 
 ## Chạy ở máy
 

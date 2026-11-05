@@ -17,6 +17,8 @@ Repo này là `anhbhn-kstns/exam-aws-ssa-03`, nên tên miền GitHub Pages cầ
 1. Menu trái: **Build → Authentication**, bấm **Get started** nếu là lần đầu.
 2. Tab **Sign-in method**, chọn **Google** trong danh sách nhà cung cấp.
 3. Bật công tắc **Enable**, chọn **Public-facing name** và **Support email**, rồi bấm **Save**.
+   - Tùy chọn: bật thêm **Email/Password** (người dùng tự đăng ký trên web, không bắt xác nhận email; muốn mật khẩu khó hơn thì đặt ở **Settings → Password policy**) và **Facebook** (cần App ID/App secret của app Facebook, và dán **OAuth redirect URI** Firebase đưa vào **Facebook Login → Settings → Valid OAuth Redirect URIs**). Nút "Đăng nhập" trên web mở popup chọn Google, Email/Mật khẩu hoặc Facebook; cách nào chưa bật thì báo "Cách đăng nhập này chưa được bật".
+   - Mặc định Firebase để **một tài khoản cho mỗi email**: người đã đăng ký bằng Google mà đăng nhập Facebook cùng email sẽ được báo dùng lại cách cũ. Mỗi tài khoản có `uid` riêng, rules chỉ cho đọc/ghi `users/{uid}` của chính mình.
 4. Vẫn trong **Authentication**, mở tab **Settings → Authorized domains**.
 5. Bấm **Add domain**, nhập `anhbhn-kstns.github.io` rồi bấm **Add**. (`localhost` đã có sẵn nên chạy `npm run dev` không cần thêm.)
 

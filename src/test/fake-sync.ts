@@ -1,10 +1,12 @@
 import type { Attempt } from '../engine/attempt';
 import type { RemoteRecord, RemoteSnapshot } from '../sync/merge';
-import type { AuthClient, RemoteAttempts, SyncUser } from '../sync/types';
+import type { AuthClient, RemoteAttempts, SignInMethod, SyncUser } from '../sync/types';
 
 export interface FakeAuth extends AuthClient {
   emit(user: SyncUser | null): void;
   signInCount: number;
+  /** Cách đăng nhập của từng lần signIn. */
+  signInMethods: SignInMethod[];
   signOutCount: number;
   /** Đặt lỗi thì lần signIn kế tiếp bị từ chối với lỗi này. */
   signInError: Error | null;
@@ -15,14 +17,16 @@ export function fakeAuth(): FakeAuth {
   const listeners = new Set<(user: SyncUser | null) => void>();
   const auth: FakeAuth = {
     signInCount: 0,
+    signInMethods: [],
     signOutCount: 0,
     signInError: null,
     onUserChanged(cb) {
       listeners.add(cb);
       return () => void listeners.delete(cb);
     },
-    async signIn() {
+    async signIn(method) {
       auth.signInCount += 1;
+      auth.signInMethods.push(method);
       const err = auth.signInError;
       auth.signInError = null;
       if (err) throw err;

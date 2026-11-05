@@ -1,9 +1,12 @@
 import { type FirebaseApp, initializeApp } from 'firebase/app';
 import { ReCaptchaEnterpriseProvider, initializeAppCheck } from 'firebase/app-check';
 import {
+  FacebookAuthProvider,
   GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   getAuth,
   onAuthStateChanged,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut as fbSignOut,
 } from 'firebase/auth';
@@ -54,15 +57,20 @@ export function createFirebaseClients(config: FirebaseConfig): {
         if (!u) return cb(null);
         const user: SyncUser = {
           uid: u.uid,
-          name: u.displayName ?? u.email ?? 'Google',
+          name: u.displayName ?? u.email ?? 'Tài khoản',
           photoURL: u.photoURL ?? undefined,
         };
         cb(user);
       });
     },
-    async signIn() {
+    async signIn(method) {
+      if (method.kind === 'email') {
+        // Không bắt xác nhận email: đăng ký xong là đăng nhập luôn.
+        await (method.mode === 'sign-up' ? createUserWithEmailAndPassword : signInWithEmailAndPassword)(fbAuth, method.email, method.password);
+        return;
+      }
       try {
-        await signInWithPopup(fbAuth, new GoogleAuthProvider());
+        await signInWithPopup(fbAuth, method.kind === 'facebook' ? new FacebookAuthProvider() : new GoogleAuthProvider());
       } catch (err) {
         const code = (err as { code?: string } | null)?.code;
         if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return;

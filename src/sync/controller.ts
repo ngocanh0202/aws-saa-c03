@@ -1,4 +1,5 @@
 import type { AttemptStore, StoreEntry } from '../storage/storage';
+import { authErrorMessage } from './auth-messages';
 import { findGuestConflicts, planSync, type RemoteSnapshot } from './merge';
 import type { AuthClient, RemoteAttempts, SyncController, SyncState, SyncUser } from './types';
 
@@ -17,14 +18,6 @@ interface Session {
   rejected: Set<string>;
 }
 
-function signInMessage(err: unknown): string {
-  const code = (err as { code?: unknown } | null)?.code;
-  if (code === 'auth/popup-blocked') {
-    return 'Trình duyệt đã chặn cửa sổ đăng nhập. Hãy cho phép popup cho trang này rồi bấm đăng nhập lại.';
-  }
-  const message = err instanceof Error ? err.message : String(err);
-  return `Không đăng nhập được: ${message}`;
-}
 
 export function createSyncController(deps: {
   store: AttemptStore;
@@ -174,7 +167,7 @@ export function createSyncController(deps: {
       listeners.add(listener);
       return () => void listeners.delete(listener);
     },
-    async signIn() {
+    async signIn(method = { kind: 'google' }) {
       if (state.kind === 'error' && currentUser && !session) {
         openSession(currentUser);
         return;
@@ -182,10 +175,11 @@ export function createSyncController(deps: {
       if (state.kind !== 'signed-out' && state.kind !== 'error') return;
       if (state.kind === 'error') setState({ kind: 'signed-out' });
       try {
-        await auth.signIn();
+        await auth.signIn(method);
       } catch (err) {
+        if (method.kind === 'email') throw new Error(authErrorMessage(err));
         // Phiên đã mở trong lúc chờ (onUserChanged chạy trước) thì không đè lỗi lên.
-        if (state.kind === 'signed-out') setState({ kind: 'error', message: signInMessage(err) });
+        if (state.kind === 'signed-out') setState({ kind: 'error', message: authErrorMessage(err) });
       }
     },
     async signOut() {

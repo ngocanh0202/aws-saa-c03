@@ -4,6 +4,7 @@ import { createStore, type AttemptStore } from '../storage/storage';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { memoryStorage } from '../test/fixtures';
 import { createSyncController } from './controller';
+import { SUPPORT_HINT } from './auth-messages';
 import type { RemoteSnapshot } from './merge';
 import type { SyncUser } from './types';
 
@@ -206,12 +207,39 @@ describe('createSyncController', () => {
     auth.signInError = new Error('network down');
     await ctl.signIn();
     expect(auth.signInCount).toBe(2);
-    expect(ctl.getState()).toEqual({ kind: 'error', message: 'Không đăng nhập được: network down' });
+    expect(ctl.getState()).toEqual({ kind: 'error', message: `Không đăng nhập được: network down. ${SUPPORT_HINT}` });
 
     await ctl.signIn();
     expect(ctl.getState()).toEqual({ kind: 'signed-out' });
     auth.emit(A);
     expect(ctl.getState()).toEqual({ kind: 'loading', user: A });
+  });
+
+  it('signIn truyền cách đăng nhập cho auth (mặc định Google)', async () => {
+    const { auth, ctl } = setup();
+    auth.emit(null);
+    await ctl.signIn();
+    await ctl.signIn({ kind: 'facebook' });
+    expect(auth.signInMethods).toEqual([{ kind: 'google' }, { kind: 'facebook' }]);
+  });
+
+  it('Facebook trùng email với tài khoản khác: báo đăng nhập bằng cách cũ', async () => {
+    const { auth, ctl } = setup();
+    auth.emit(null);
+    auth.signInError = Object.assign(new Error('x'), { code: 'auth/account-exists-with-different-credential' });
+    await ctl.signIn({ kind: 'facebook' });
+    expect(ctl.getState()).toEqual({ kind: 'error', message: expect.stringContaining('đã đăng ký bằng cách đăng nhập khác') });
+  });
+
+  it('email lỗi: ném lỗi có câu báo tiếng Việt để form hiện, không đổi state', async () => {
+    const { auth, ctl } = setup();
+    auth.emit(null);
+    auth.signInError = Object.assign(new Error('x'), { code: 'auth/invalid-credential' });
+    await expect(ctl.signIn({ kind: 'email', mode: 'sign-in', email: 'a@b.c', password: 'secret1' })).rejects.toThrow('Email hoặc mật khẩu không đúng.');
+    expect(ctl.getState()).toEqual({ kind: 'signed-out' });
+    auth.signInError = Object.assign(new Error('x'), { code: 'auth/email-already-in-use' });
+    await expect(ctl.signIn({ kind: 'email', mode: 'sign-up', email: 'a@b.c', password: 'secret1' })).rejects.toThrow(/đã có tài khoản/);
+    expect(auth.signInMethods.at(-1)).toEqual({ kind: 'email', mode: 'sign-up', email: 'a@b.c', password: 'secret1' });
   });
 
   it('signIn khi đã đăng nhập thì không gọi auth', async () => {

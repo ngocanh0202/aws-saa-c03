@@ -1,4 +1,4 @@
-import { act, fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { createAttempt, type Attempt } from '../engine/attempt';
 import { createSyncController } from '../sync/controller';
@@ -37,24 +37,98 @@ function setup(before?: (store: ReturnType<typeof createStore>) => void) {
 describe('AccountMenu', () => {
   it('không có cấu hình Firebase thì không có nút đăng nhập', () => {
     renderApp('/', makeDeps());
-    expect(screen.queryByText('Đăng nhập Google')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Đăng nhập' })).toBeNull();
   });
 
   it('auth chưa báo lần đầu (đang khởi tạo): không hiện nút đăng nhập', () => {
     const { auth, deps } = setup();
     renderApp('/', deps);
-    expect(screen.queryByRole('button', { name: 'Đăng nhập Google' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Đăng nhập' })).toBeNull();
     expect(screen.getByText('Đang tải…')).toBeTruthy();
     act(() => auth.emit(null));
-    expect(screen.getByRole('button', { name: 'Đăng nhập Google' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Đăng nhập' })).toBeTruthy();
   });
 
-  it('chưa đăng nhập: bấm "Đăng nhập Google" gọi signIn', () => {
+  it('chưa đăng nhập: "Đăng nhập" (có icon) mở popup 3 cách có icon; Google gọi signIn và đóng popup; Facebook đang tắt', () => {
     const { auth, deps } = setup();
     renderApp('/', deps);
     act(() => auth.emit(null));
-    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập Google' }));
-    expect(auth.signInCount).toBe(1);
+    const open = screen.getByRole('button', { name: 'Đăng nhập' });
+    expect(open.querySelector('svg')).not.toBeNull();
+    fireEvent.click(open);
+    const popup = screen.getByRole('dialog', { name: 'Đăng nhập' });
+    for (const name of ['Google', 'Email/Mật khẩu', 'Facebook']) {
+      expect(within(popup).getByRole('button', { name: new RegExp(`^${name}`) }).querySelector('svg')).not.toBeNull();
+    }
+    const facebook = within(popup).getByRole('button', { name: /^Facebook/ });
+    expect(facebook).toBeDisabled();
+    fireEvent.click(facebook);
+    expect(auth.signInCount).toBe(0);
+    fireEvent.click(within(popup).getByRole('button', { name: 'Google' }));
+    expect(auth.signInMethods).toEqual([{ kind: 'google' }]);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('Email/Mật khẩu: đóng popup chọn cách, mở form riêng; Esc đóng form', () => {
+    const { auth, deps } = setup();
+    renderApp('/', deps);
+    act(() => auth.emit(null));
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Email/Mật khẩu' }));
+    expect(screen.queryByRole('dialog', { name: 'Đăng nhập' })).toBeNull();
+    const form = screen.getByRole('dialog', { name: 'Đăng nhập bằng email' });
+    fireEvent.keyDown(within(form).getByLabelText('Email'), { key: 'Escape' });
+    expect(screen.queryByRole('dialog')).toBeNull();
+    expect(auth.signInCount).toBe(0);
+  });
+
+  it('form email: kiểm tra trước khi gửi, đăng nhập thì gọi signIn email', async () => {
+    const { auth, deps } = setup();
+    renderApp('/', deps);
+    act(() => auth.emit(null));
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Email/Mật khẩu' }));
+    const form = screen.getByRole('dialog', { name: 'Đăng nhập bằng email' });
+    fireEvent.click(within(form).getByRole('button', { name: 'Đăng nhập' }));
+    expect(within(form).getByRole('alert')).toHaveTextContent('Email không hợp lệ.');
+    fireEvent.change(within(form).getByLabelText('Email'), { target: { value: ' an@example.com ' } });
+    fireEvent.change(within(form).getByLabelText('Mật khẩu'), { target: { value: '123' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Đăng nhập' }));
+    expect(within(form).getByRole('alert')).toHaveTextContent('ít nhất 6 ký tự');
+    expect(auth.signInCount).toBe(0);
+    fireEvent.change(within(form).getByLabelText('Mật khẩu'), { target: { value: 'secret1' } });
+    await act(async () => {
+      fireEvent.click(within(form).getByRole('button', { name: 'Đăng nhập' }));
+    });
+    expect(auth.signInMethods).toEqual([{ kind: 'email', mode: 'sign-in', email: 'an@example.com', password: 'secret1' }]);
+  });
+
+  it('form email: lỗi từ Firebase hiện trong form; chuyển sang Đăng ký cần nhập lại mật khẩu khớp', async () => {
+    const { auth, deps } = setup();
+    renderApp('/', deps);
+    act(() => auth.emit(null));
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Email/Mật khẩu' }));
+    let form = screen.getByRole('dialog', { name: 'Đăng nhập bằng email' });
+    fireEvent.change(within(form).getByLabelText('Email'), { target: { value: 'an@example.com' } });
+    fireEvent.change(within(form).getByLabelText('Mật khẩu'), { target: { value: 'secret1' } });
+    auth.signInError = Object.assign(new Error('x'), { code: 'auth/invalid-credential' });
+    await act(async () => {
+      fireEvent.click(within(form).getByRole('button', { name: 'Đăng nhập' }));
+    });
+    expect(within(form).getByRole('alert')).toHaveTextContent('Email hoặc mật khẩu không đúng.');
+
+    fireEvent.click(within(form).getByRole('button', { name: 'Chưa có tài khoản? Đăng ký' }));
+    form = screen.getByRole('dialog', { name: 'Đăng ký bằng email' });
+    expect(within(form).getByLabelText('Email')).toHaveValue('an@example.com');
+    fireEvent.change(within(form).getByLabelText('Nhập lại mật khẩu'), { target: { value: 'secret2' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Tạo tài khoản' }));
+    expect(within(form).getByRole('alert')).toHaveTextContent('Mật khẩu nhập lại không khớp.');
+    fireEvent.change(within(form).getByLabelText('Nhập lại mật khẩu'), { target: { value: 'secret1' } });
+    await act(async () => {
+      fireEvent.click(within(form).getByRole('button', { name: 'Tạo tài khoản' }));
+    });
+    expect(auth.signInMethods.at(-1)).toEqual({ kind: 'email', mode: 'sign-up', email: 'an@example.com', password: 'secret1' });
   });
 
   it('đã đồng bộ: hiện tên và "Đăng xuất"; bấm thì gọi signOut', () => {
@@ -69,7 +143,7 @@ describe('AccountMenu', () => {
     expect(auth.signOutCount).toBe(1);
   });
 
-  it('màn hình Thi thật dùng "Sign in with Google"', () => {
+  it('màn hình Thi thật dùng chữ tiếng Anh ("Sign in")', () => {
     const { store, sync, auth } = setup();
     const deps = makeDeps({ store, sync });
     store.save(
@@ -77,7 +151,9 @@ describe('AccountMenu', () => {
     );
     renderApp('/exam/real-1', deps);
     act(() => auth.emit(null));
-    expect(screen.getByRole('button', { name: 'Sign in with Google' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    const popup = screen.getByRole('dialog', { name: 'Sign in' });
+    expect(within(popup).getByRole('button', { name: 'Email/Password' })).toBeTruthy();
   });
 
   it('có xung đột: hộp thoại hiện số lượt thi; bấm "Dùng dữ liệu trên cloud" gọi resolveConflict(\'cloud\')', () => {
@@ -114,7 +190,8 @@ describe('AccountMenu', () => {
     act(() => auth.emit(USER));
     act(() => remote.emitError(USER.uid, new Error('permission_denied')));
     expect(screen.getByRole('alert').textContent).toContain('Security Rules');
-    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập Google' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Google' }));
     expect(auth.signInCount).toBe(0);
     expect(screen.getByText('Đang tải…')).toBeTruthy();
     act(() => remote.emit(USER.uid, new Map()));

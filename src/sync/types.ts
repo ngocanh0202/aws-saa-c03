@@ -7,9 +7,16 @@ export interface SyncUser {
   photoURL?: string;
 }
 
+/** Cách đăng nhập: Google/Facebook mở cửa sổ của nhà cung cấp; email dùng form của web. */
+export type SignInMethod =
+  | { kind: 'google' }
+  | { kind: 'facebook' }
+  | { kind: 'email'; mode: 'sign-in' | 'sign-up'; email: string; password: string };
+
 export interface AuthClient {
   onUserChanged(cb: (user: SyncUser | null) => void): () => void;
-  signIn(): Promise<void>;
+  /** Người dùng tự đóng cửa sổ Google/Facebook thì resolve, không ném lỗi. */
+  signIn(method: SignInMethod): Promise<void>;
   signOut(): Promise<void>;
 }
 
@@ -41,8 +48,9 @@ export interface SyncController {
   /**
    * Lỗi (popup bị chặn…) → state 'error' với thông báo tiếng Việt; bấm lại thì quay về 'signed-out' rồi thử lại.
    * Ở 'error' mà auth vẫn còn user (lỗi đọc cloud) thì mở lại phiên cho user đó, không mở popup.
+   * Mặc định Google. Email: lỗi không đổi state mà ném Error có câu báo tiếng Việt để form hiện.
    */
-  signIn(): Promise<void>;
+  signIn(method?: SignInMethod): Promise<void>;
   signOut(): Promise<void>;
   resolveConflict(choice: 'cloud' | 'push'): void;
   /** Offset theo server khi có phiên đăng nhập; không có phiên thì 0 (khách dùng Date.now()). */
