@@ -110,4 +110,35 @@ describe('Markdown', () => {
       expect(container.textContent).toContain('EFS');
     });
   });
+
+  describe('link', () => {
+    const links = (container: HTMLElement) => [...container.querySelectorAll('a')].map((a) => [a.textContent, a.getAttribute('href')]);
+
+    it('[chữ](url) thành link mở tab mới', () => {
+      const { container } = render(<Markdown text="Link: [https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html)" />);
+      expect(links(container)).toEqual([['https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html', 'https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html']]);
+      const a = container.querySelector('a')!;
+      expect(a).toHaveAttribute('target', '_blank');
+      expect(a).toHaveAttribute('rel', 'noopener noreferrer');
+      expect(container.textContent).toBe('Link: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/user-data.html');
+    });
+
+    it('chữ **đậm** trong link, link trong danh sách và trong bảng', () => {
+      const { container } = render(<Markdown text={'- Xem [**EC2** docs](https://aws.amazon.com/ec2/)\n\n| a |\n|---|\n| [S3](https://aws.amazon.com/s3/) |'} />);
+      expect(links(container)).toEqual([['EC2 docs', 'https://aws.amazon.com/ec2/'], ['S3', 'https://aws.amazon.com/s3/']]);
+      expect(container.querySelector('a strong')?.textContent).toBe('EC2');
+    });
+
+    it('URL trần cũng thành link; bỏ dấu câu ở cuối', () => {
+      const { container } = render(<Markdown text="Nguồn: https://aws.amazon.com/s3/pricing/. Hoặc (https://aws.amazon.com/ec2/)" />);
+      expect(links(container)).toEqual([['https://aws.amazon.com/s3/pricing/', 'https://aws.amazon.com/s3/pricing/'], ['https://aws.amazon.com/ec2/', 'https://aws.amazon.com/ec2/']]);
+      expect(container.textContent).toBe('Nguồn: https://aws.amazon.com/s3/pricing/. Hoặc (https://aws.amazon.com/ec2/)');
+    });
+
+    it('chỉ nhận http/https: javascript: và URL trong `code` giữ nguyên là chữ', () => {
+      const { container } = render(<Markdown text={'[bấm](javascript:alert(1)) và `https://x.com`'} />);
+      expect(container.querySelector('a')).toBeNull();
+      expect(container.querySelector('code')?.textContent).toBe('https://x.com');
+    });
+  });
 });

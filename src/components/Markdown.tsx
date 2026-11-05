@@ -26,17 +26,43 @@ function latex(text: string): string {
   });
 }
 
-function inline(text: string): ReactNode[] {
+/** Link chỉ nhận http/https (không có javascript: …), luôn mở tab mới. */
+function link(href: string, children: ReactNode, key: number): ReactNode {
+  return (
+    <a key={key} href={href} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+}
+
+/** links = false: đang ở trong chữ của một link, không dựng link lồng nhau. */
+function inline(text: string, links = true): ReactNode[] {
   const out: ReactNode[] = [];
-  const re = /\*\*([^*\n]+)\*\*|`([^`\n]+)`/g;
+  // [chữ](url) · **đậm** · `code` · URL trần
+  const re = links
+    ? /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^*\n]+)\*\*|`([^`\n]+)`|(https?:\/\/[^\s<>()]+)/g
+    : // Hai nhóm rỗng giữ đúng số thứ tự nhóm của **đậm** và `code`.
+      /()()\*\*([^*\n]+)\*\*|`([^`\n]+)`/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
+    let end = m.index + m[0].length;
+    if (m[5] !== undefined) {
+      // Dấu câu ngay sau URL trần ("…/pricing/.") không thuộc URL.
+      const url = m[5].replace(/[.,;:!?'"]+$/, '');
+      if (/^https?:\/\/$/.test(url)) continue;
+      end = m.index + url.length;
+      if (m.index > last) out.push(latex(text.slice(last, m.index)));
+      out.push(link(url, url, out.length));
+      last = end;
+      re.lastIndex = end;
+      continue;
+    }
     if (m.index > last) out.push(latex(text.slice(last, m.index)));
-    out.push(
-      m[1] !== undefined ? <strong key={out.length}>{latex(m[1])}</strong> : <code key={out.length}>{m[2]}</code>,
-    );
-    last = m.index + m[0].length;
+    if (m[1] !== undefined && m[2]) out.push(link(m[2], inline(m[1], false), out.length));
+    else if (m[3] !== undefined) out.push(<strong key={out.length}>{latex(m[3])}</strong>);
+    else out.push(<code key={out.length}>{m[4]}</code>);
+    last = end;
   }
   if (last < text.length) out.push(latex(text.slice(last)));
   return out;
