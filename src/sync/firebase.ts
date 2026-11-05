@@ -59,6 +59,8 @@ export function createFirebaseClients(config: FirebaseConfig): {
           uid: u.uid,
           name: u.displayName ?? u.email ?? 'Tài khoản',
           photoURL: u.photoURL ?? undefined,
+          email: u.email ?? undefined,
+          emailVerified: u.emailVerified,
         };
         cb(user);
       });

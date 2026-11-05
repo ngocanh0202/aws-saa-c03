@@ -5,6 +5,8 @@ export interface SyncUser {
   uid: string;
   name: string;
   photoURL?: string;
+  email?: string;
+  emailVerified?: boolean;
 }
 
 /** Cách đăng nhập: Google/Facebook mở cửa sổ của nhà cung cấp; email dùng form của web. */
