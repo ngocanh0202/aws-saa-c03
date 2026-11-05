@@ -58,4 +58,56 @@ describe('Markdown', () => {
     const open = render(<Markdown text={'```\nfoo'} />);
     expect(open.container.querySelector('pre')?.textContent).toBe('foo');
   });
+
+  describe('bảng', () => {
+    const rows = (container: HTMLElement) =>
+      [...container.querySelectorAll('tr')].map((tr) => [...tr.querySelectorAll('th,td')].map((c) => c.textContent));
+
+    it('bảng Markdown thành <table>, ô có **đậm** và `code`', () => {
+      const text = [
+        'So sánh:',
+        '| | EFS | EBS |',
+        '|---|:---:|---|',
+        '| Loại | **File system** (NFS) | Block storage |',
+        '| Truy cập | `mount -t nfs4` | `/dev/xvda` |',
+        '',
+        'Hết.',
+      ].join('\n');
+      const { container } = render(<Markdown text={text} />);
+      expect(rows(container)).toEqual([
+        ['', 'EFS', 'EBS'],
+        ['Loại', 'File system (NFS)', 'Block storage'],
+        ['Truy cập', 'mount -t nfs4', '/dev/xvda'],
+      ]);
+      expect(container.querySelectorAll('thead th')).toHaveLength(3);
+      expect(container.querySelector('td strong')?.textContent).toBe('File system');
+      expect(container.querySelector('td code')?.textContent).toBe('mount -t nfs4');
+      expect(container.querySelector('p')?.textContent).toBe('So sánh:');
+      expect(container.querySelectorAll('p')[1]?.textContent).toBe('Hết.');
+    });
+
+    it('bảng bị dồn trên một dòng: tách hàng theo số cột của dòng phân cách', () => {
+      const text =
+        '| | EFS | EBS | S3 | |---|---|---|---| | Loại | File system (NFS) | Block storage | Object storage | | Scale | Tự động | Phải chọn size trước | Gần như vô hạn |';
+      const { container } = render(<Markdown text={text} />);
+      expect(rows(container)).toEqual([
+        ['', 'EFS', 'EBS', 'S3'],
+        ['Loại', 'File system (NFS)', 'Block storage', 'Object storage'],
+        ['Scale', 'Tự động', 'Phải chọn size trước', 'Gần như vô hạn'],
+      ]);
+    });
+
+    it('hàng thiếu ô thì thêm ô trống, thừa thì bỏ; dòng có | nhưng không có dòng phân cách vẫn là chữ', () => {
+      const { container } = render(<Markdown text={'| a | b |\n|---|---|\n| 1 |\n| 2 | 3 | 4 |'} />);
+      expect(rows(container)).toEqual([['a', 'b'], ['1', ''], ['2', '3']]);
+      const plain = render(<Markdown text="Chọn A | B tùy trường hợp" />).container;
+      expect(plain.querySelector('table')).toBeNull();
+    });
+
+    it('đang stream mới có dòng tiêu đề (chưa có dòng phân cách): hiện như chữ, chưa dựng bảng', () => {
+      const { container } = render(<Markdown text="| | EFS | EBS |" />);
+      expect(container.querySelector('table')).toBeNull();
+      expect(container.textContent).toContain('EFS');
+    });
+  });
 });
