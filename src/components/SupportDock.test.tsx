@@ -14,7 +14,7 @@ const USER = { uid: 'u1', name: 'An', email: 'an@x.com', emailVerified: true };
 const report: ErrorReport = { message: 'Không tải được dữ liệu', code: 'E42', page: '#/history', at: 1_700_000_000_000 };
 const other: ErrorReport = { message: 'Lỗi khác', page: '#/', at: 1_700_000_001_000 };
 
-function setup({ exam }: { exam?: 'practice' | 'real' } = {}) {
+function setup({ exam, user = USER }: { exam?: 'practice' | 'real'; user?: typeof USER } = {}) {
   const store = createStore(memoryStorage(), { now: () => 500 });
   const auth = fakeAuth();
   const remote = fakeRemote();
@@ -30,7 +30,7 @@ function setup({ exam }: { exam?: 'practice' | 'real' } = {}) {
     remoteData.set(attempt.id, { attempt, updatedAt: 1 });
   }
   renderApp(exam ? '/exam/e1' : '/', { ...base, support, ai, chats });
-  act(() => auth.emit(USER));
+  act(() => auth.emit(user));
   act(() => remote.emit('u1', remoteData));
   return { support, auth };
 }
@@ -144,6 +144,23 @@ describe('Khung Liên hệ admin (người học)', () => {
     act(() => openSupport());
     fireEvent.click(within(dialog()).getByRole('button', { name: 'Đóng' }));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('tin dài hơn 4000 ký tự bị cắt còn 4000', async () => {
+    const { support } = setup();
+    act(() => openSupport());
+    expect(within(dialog()).getByRole('textbox')).toHaveAttribute('maxLength', '4000');
+    await sendText('x'.repeat(4100));
+    expect(support.sent[0].msg.text).toHaveLength(4000);
+  });
+
+  it('tên dài hơn 100 ký tự bị cắt khi gửi', async () => {
+    const { support } = setup({ user: { ...USER, name: 'n'.repeat(150), email: `${'e'.repeat(250)}@x.com` } });
+    act(() => openSupport());
+    await sendText('Xin chào');
+    expect(support.sent).toHaveLength(1);
+    expect(support.index.get('u1')?.name).toHaveLength(100);
+    expect(support.index.get('u1')?.email).toHaveLength(200);
   });
 
   it('màn hình Thi thật: chữ tiếng Anh', () => {

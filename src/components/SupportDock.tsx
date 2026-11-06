@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate } from '../app/format';
 import { isAdmin } from '../support/admin';
-import { mailtoHref, type ErrorReport, type SupportMessage } from '../support/model';
+import { LIMITS, mailtoHref, type ErrorReport, type SupportMessage } from '../support/model';
 import { onOpenSupport } from '../support/open';
 import type { SupportStore } from '../support/types';
 import type { SyncController, SyncUser } from '../sync/types';
@@ -170,14 +170,15 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
   }, [messages.length]);
 
   const send = async () => {
-    const text = input.trim();
+    // Cắt theo giới hạn của rules, nếu không rules từ chối và người học thấy báo lỗi mạng sai.
+    const text = input.trim().slice(0, LIMITS.text);
     if (busy || (!text && !attachment)) return;
     setBusy(true);
     setFailed(false);
     try {
       // Đã đăng xuất/đổi tài khoản giữa chừng thì không gửi.
       if (signedInUser(sync.getState())?.uid !== sender.uid) throw new Error('signed out');
-      await support.send(uid, { from: reader, text, ...(attachment ? { error: attachment } : {}) }, { name: sender.name, ...(sender.email ? { email: sender.email } : {}) });
+      await support.send(uid, { from: reader, text, ...(attachment ? { error: attachment } : {}) }, { name: sender.name.slice(0, LIMITS.name), ...(sender.email ? { email: sender.email.slice(0, LIMITS.email) } : {}) });
       setInput('');
       onAttachmentChange?.(undefined);
     } catch {
@@ -248,7 +249,7 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
         </div>
       )}
       <form className="gemini__form" onSubmit={onSubmit}>
-        <textarea aria-label={t.input} rows={2} value={input} placeholder={t.placeholder} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown} />
+        <textarea aria-label={t.input} rows={2} maxLength={LIMITS.text} value={input} placeholder={t.placeholder} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown} />
         <button type="submit" className="btn-primary" disabled={busy || (!input.trim() && !attachment)}>
           {t.send}
         </button>
