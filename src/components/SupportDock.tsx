@@ -26,6 +26,12 @@ const TEXT = {
     placeholder: 'Nhập tin nhắn…',
     send: 'Gửi',
     failed: 'Không gửi được. Kiểm tra mạng rồi thử lại, hoặc gửi email tới ',
+    tooFast: 'Gửi nhanh quá, đợi vài giây rồi gửi lại.',
+    wait: 'Đợi vài giây rồi gửi tiếp',
+    expand: 'Mở rộng',
+    expandTitle: 'Mở rộng toàn màn hình',
+    collapse: 'Thu nhỏ',
+    closeWide: '✕ Đóng',
     loadFailed: 'Không tải được tin nhắn.',
     error: 'Lỗi',
     code: 'Mã',
@@ -43,6 +49,12 @@ const TEXT = {
     placeholder: 'Type a message…',
     send: 'Send',
     failed: 'Could not send. Check your connection and try again, or email ',
+    tooFast: 'Sending too fast, wait a few seconds and try again.',
+    wait: 'Wait a few seconds',
+    expand: 'Expand',
+    expandTitle: 'Expand to full screen',
+    collapse: 'Collapse',
+    closeWide: '✕ Close',
     loadFailed: 'Could not load messages.',
     error: 'Error',
     code: 'Code',
@@ -51,6 +63,49 @@ const TEXT = {
   },
 };
 type Text = (typeof TEXT)['vi'];
+
+/** Rules chỉ cho người học ghi supportIndex/{uid}/updatedAt cách lần trước ≥ 3 giây. */
+const THROTTLE_MS = 3000;
+
+/** Lỗi rules của Firebase (PERMISSION_DENIED); với tin hợp lệ thì gần như chỉ do gửi nhanh quá. */
+function isPermissionDenied(e: unknown): boolean {
+  const { code, message } = (e ?? {}) as { code?: unknown; message?: unknown };
+  return /permission[_ ]denied/i.test(`${String(code ?? '')} ${String(message ?? '')}`);
+}
+
+/** Phủ toàn màn hình hay khung nhỏ ở góc (giống Hỏi Gemini); phủ thì khóa cuộn trang. */
+export function useExpanded(): [expanded: boolean, toggle: () => void] {
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => {
+    if (!expanded) return;
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, [expanded]);
+  return [expanded, useCallback(() => setExpanded((x) => !x), [])];
+}
+
+/** Lớp và thuộc tính của khung theo trạng thái mở rộng. */
+export function dockProps(expanded: boolean) {
+  return { className: expanded ? 'service-modal gemini' : 'gemini-dock gemini', 'aria-modal': expanded || undefined };
+}
+
+/** Nút ⤢/⤡ và nút đóng ở thanh tiêu đề; dùng chung cho khung người học và hộp thư admin. */
+export function DockTools({ expanded, onToggleExpand, onClose, english = false }: { expanded: boolean; onToggleExpand: () => void; onClose: () => void; english?: boolean }) {
+  const t = english ? TEXT.en : TEXT.vi;
+  return (
+    <div className="gemini__tools">
+      <button type="button" className="icon-btn" aria-label={expanded ? t.collapse : t.expand} title={expanded ? t.collapse : t.expandTitle} onClick={onToggleExpand}>
+        {expanded ? '⤡' : '⤢'}
+      </button>
+      <button type="button" className={expanded ? 'service-modal__close' : 'icon-btn'} aria-label={t.close} title={t.close} onClick={onClose}>
+        {expanded ? t.closeWide : '✕'}
+      </button>
+    </div>
+  );
+}
 
 /**
  * Khung chat hỗ trợ ở góc phải (cùng kiểu Hỏi AI). Chỉ hiện khi có đồng bộ, có store hỗ trợ và
@@ -105,10 +160,11 @@ function UserDock({ user, sync, support, english }: { user: SyncUser; sync: Sync
   const [attachment, setAttachment] = useState<ErrorReport | undefined>();
   // Có lỗi mới thì thay lỗi cũ; chữ đang gõ giữ nguyên.
   const [open, close] = useSupportOpen((req) => req.error && setAttachment(req.error));
+  const [expanded, toggleExpand] = useExpanded();
 
   if (!open) return null;
   return createPortal(
-    <div className="gemini-dock gemini" role="dialog" aria-label={t.title} lang={english ? 'en' : 'vi'}>
+    <div {...dockProps(expanded)} role="dialog" aria-label={t.title} lang={english ? 'en' : 'vi'}>
       <SupportThreadView
         uid={user.uid}
         reader="user"
@@ -118,6 +174,8 @@ function UserDock({ user, sync, support, english }: { user: SyncUser; sync: Sync
         sync={sync}
         support={support}
         onClose={close}
+        expanded={expanded}
+        onToggleExpand={toggleExpand}
         attachment={attachment}
         onAttachmentChange={setAttachment}
       />
@@ -134,6 +192,9 @@ interface ThreadProps {
   title: string;
   onBack?: () => void;
   onClose: () => void;
+  /** Khung đang phủ toàn màn hình (trạng thái giữ ở khung chứa). */
+  expanded: boolean;
+  onToggleExpand: () => void;
   english?: boolean;
   /** Người đang gửi (tên/email ghi vào supportIndex khi là người học). */
   sender: SyncUser;
@@ -144,13 +205,17 @@ interface ThreadProps {
 }
 
 /** Nội dung một cuộc trò chuyện hỗ trợ: thanh tiêu đề, danh sách tin, ô nhập. Dùng chung cho người học và admin. */
-export function SupportThreadView({ uid, reader, title, onBack, onClose, english = false, sender, sync, support, attachment, onAttachmentChange }: ThreadProps) {
+export function SupportThreadView({ uid, reader, title, onBack, onClose, expanded, onToggleExpand, english = false, sender, sync, support, attachment, onAttachmentChange }: ThreadProps) {
   const t = english ? TEXT.en : TEXT.vi;
+  const { now } = useApp();
   const [messages, setMessages] = useState<SupportMessage[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const [failed, setFailed] = useState<false | 'network' | 'tooFast'>(false);
+  /** Người học: lúc sớm nhất rules cho gửi tiếp (updatedAt + 3 giây; tin admin cũng đổi updatedAt). */
+  const [nextAt, setNextAt] = useState(0);
+  const [waiting, setWaiting] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(
@@ -170,11 +235,21 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
   useEffect(
     () =>
       support.listenOwnIndex(uid, (thread) => {
+        if (reader === 'user') setNextAt(thread ? thread.updatedAt + THROTTLE_MS : 0);
         const unread = reader === 'user' ? thread?.unreadByUser : thread?.unreadByAdmin;
         if (unread) support.markRead(uid, reader).catch(() => undefined);
       }),
     [support, uid, reader],
   );
+
+  // Tắt nút Gửi tới nextAt rồi tự bật lại.
+  useEffect(() => {
+    const left = nextAt - now();
+    setWaiting(left > 0);
+    if (left <= 0) return;
+    const id = setTimeout(() => setWaiting(false), left);
+    return () => clearTimeout(id);
+  }, [nextAt, now]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: 'end' });
@@ -183,17 +258,21 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
   const send = async () => {
     // Cắt theo giới hạn của rules, nếu không rules từ chối và người học thấy báo lỗi mạng sai.
     const text = input.trim().slice(0, LIMITS.text);
-    if (busy || (!text && !attachment)) return;
+    if (busy || waiting || (!text && !attachment)) return;
     setBusy(true);
     setFailed(false);
     try {
       // Đã đăng xuất/đổi tài khoản giữa chừng thì không gửi.
       if (signedInUser(sync.getState())?.uid !== sender.uid) throw new Error('signed out');
-      await support.send(uid, { from: reader, text, ...(attachment ? { error: attachment } : {}) }, { name: sender.name.slice(0, LIMITS.name), ...(sender.email ? { email: sender.email.slice(0, LIMITS.email) } : {}) });
+      await support.send(uid, { from: reader, text, ...(attachment ? { error: attachment } : {}) }, {
+        name: sender.name.slice(0, LIMITS.name),
+        // Rules đòi email đúng bằng email đăng nhập: cắt thì chắc chắn bị từ chối, nên quá dài thì bỏ.
+        ...(sender.email && sender.email.length <= LIMITS.email ? { email: sender.email } : {}),
+      });
       setInput('');
       onAttachmentChange?.(undefined);
-    } catch {
-      setFailed(true);
+    } catch (e) {
+      setFailed(isPermissionDenied(e) ? 'tooFast' : 'network');
     } finally {
       setBusy(false);
     }
@@ -217,11 +296,7 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
         <div className="service-modal__title">
           <h1>{title}</h1>
         </div>
-        <div className="gemini__tools">
-          <button type="button" className="icon-btn" aria-label={t.close} title={t.close} onClick={onClose}>
-            ✕
-          </button>
-        </div>
+        <DockTools expanded={expanded} onToggleExpand={onToggleExpand} onClose={onClose} english={english} />
       </header>
       {onBack && (
         <button type="button" className="gemini__back" onClick={onBack}>
@@ -239,7 +314,12 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
               {m.error && <ErrorBlock error={m.error} t={t} />}
             </div>
           ))}
-          {failed && (
+          {failed === 'tooFast' && (
+            <p className="gemini__notice" role="alert">
+              {t.tooFast}
+            </p>
+          )}
+          {failed === 'network' && (
             <p className="gemini__notice" role="alert">
               {t.failed}
               <a href={mailtoHref(attachment)}>buihngocanh2@gmail.com</a>.
@@ -259,9 +339,10 @@ export function SupportThreadView({ uid, reader, title, onBack, onClose, english
           </button>
         </div>
       )}
+      {waiting && <p className="hint support__wait">{t.wait}</p>}
       <form className="gemini__form" onSubmit={onSubmit}>
         <textarea aria-label={t.input} rows={2} maxLength={LIMITS.text} value={input} placeholder={t.placeholder} onChange={(e) => setInput(e.target.value)} onKeyDown={onKeyDown} />
-        <button type="submit" className="btn-primary" disabled={busy || (!input.trim() && !attachment)}>
+        <button type="submit" className="btn-primary" disabled={busy || waiting || (!input.trim() && !attachment)}>
           {t.send}
         </button>
       </form>

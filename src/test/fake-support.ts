@@ -13,8 +13,15 @@ export interface FakeSupport extends SupportStore {
   sent: { uid: string; msg: Msg }[];
 }
 
-/** Store hỗ trợ trong bộ nhớ; listener được gọi đồng bộ. */
-export function fakeSupport(): FakeSupport {
+/** Lỗi rules trả về khi người học gửi trong vòng 3 giây (giống PERMISSION_DENIED của Firebase). */
+export const throttleError = () => Object.assign(new Error('PERMISSION_DENIED: Permission denied'), { code: 'PERMISSION_DENIED' });
+
+/**
+ * Store hỗ trợ trong bộ nhớ; listener được gọi đồng bộ.
+ * `now`: đồng hồ "server" giả. Có thì `at`/`updatedAt` lấy theo nó và giả lập rules: người học
+ * gửi khi chưa qua `updatedAt` cũ + 3000 thì bị từ chối. Không có thì đồng hồ đếm 1, 2, 3… và không chặn.
+ */
+export function fakeSupport({ now }: { now?: () => number } = {}): FakeSupport {
   let clock = 0;
   let nextId = 0;
   const threadLs = new Map<string, Set<(m: SupportMessage[]) => void>>();
@@ -61,10 +68,11 @@ export function fakeSupport(): FakeSupport {
         s.sendError = undefined;
         throw e;
       }
-      const at = ++clock;
+      const at = now ? now() : ++clock;
+      const old = s.index.get(uid);
+      if (now && msg.from === 'user' && old && at < old.updatedAt + 3000) throw throttleError();
       const message: SupportMessage = { id: `m${++nextId}`, at, from: msg.from, text: msg.text, ...(msg.error ? { error: msg.error } : {}) };
       s.threads.set(uid, [...(s.threads.get(uid) ?? []), message]);
-      const old = s.index.get(uid);
       const base = { updatedAt: at, last: lastText(msg.text, msg.error), lastFrom: msg.from };
       const thread: SupportThread =
         msg.from === 'user'

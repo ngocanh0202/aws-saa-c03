@@ -191,6 +191,8 @@ describe('AccountMenu', () => {
     function signedIn(user: SyncUser, withSupport = true, exam?: 'real') {
       const { store, auth, remote, sync } = setup();
       const support = fakeSupport();
+      const ownSpy = vi.spyOn(support, 'listenOwnIndex');
+      const inboxSpy = vi.spyOn(support, 'listenInbox');
       const base = makeDeps({ store, sync });
       const data = new Map();
       if (exam) {
@@ -201,8 +203,10 @@ describe('AccountMenu', () => {
       renderApp(exam ? '/exam/r1' : '/', { ...base, ...(withSupport ? { support } : {}) });
       act(() => auth.emit(user));
       act(() => remote.emit(user.uid, data));
-      return { support };
+      return { support, ownSpy, inboxSpy };
     }
+
+    const summaryDot = (name: string) => within(document.querySelector('.account__summary') as HTMLElement).queryByRole('img', { name });
 
     it('người thường: nút mở khung; tin mới có nhãn phụ', () => {
       signedIn(NORMAL);
@@ -222,10 +226,39 @@ describe('AccountMenu', () => {
       expect(btn).toHaveTextContent('(có tin mới)');
     });
 
-    it('admin: "Hộp thư hỗ trợ (2)", không có "Liên hệ admin"', () => {
+    it('admin: có mục "Hộp thư hỗ trợ", không có "Liên hệ admin"', () => {
       signedIn(ADMIN);
       expect(screen.queryByRole('button', { name: /Liên hệ admin/ })).toBeNull();
       expect(screen.getByRole('button', { name: /Hộp thư hỗ trợ/ })).toHaveTextContent('📥 Hộp thư hỗ trợ');
+    });
+
+    it('người thường có tin mới: chấm trên nút tài khoản (menu chưa mở), chỉ nghe một lần', async () => {
+      const { support, ownSpy } = signedIn(NORMAL);
+      expect(summaryDot('Có tin nhắn hỗ trợ mới')).toBeNull();
+      await act(async () => {
+        await support.send('u1', { from: 'admin', text: 'Chào' }, { name: 'Admin' });
+      });
+      expect(summaryDot('Có tin nhắn hỗ trợ mới')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Liên hệ admin, có tin mới/ })).toBeInTheDocument();
+      expect(ownSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('admin có thread chưa đọc: chấm trên nút tài khoản, chỉ nghe một lần', async () => {
+      const { support, inboxSpy } = signedIn(ADMIN);
+      expect(summaryDot('Có tin nhắn hỗ trợ mới')).toBeNull();
+      await act(async () => {
+        await support.send('x1', { from: 'user', text: 'a' }, { name: 'X1' });
+      });
+      expect(summaryDot('Có tin nhắn hỗ trợ mới')).toBeInTheDocument();
+      expect(inboxSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('Thi thật: chấm có nhãn tiếng Anh', async () => {
+      const { support } = signedIn(NORMAL, true, 'real');
+      await act(async () => {
+        await support.send('u1', { from: 'admin', text: 'Hi' }, { name: 'Admin' });
+      });
+      expect(summaryDot('New support message')).toBeInTheDocument();
     });
 
     it('admin: đếm thread chưa đọc', async () => {

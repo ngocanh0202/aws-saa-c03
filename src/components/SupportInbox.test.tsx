@@ -112,10 +112,23 @@ describe('Hộp thư hỗ trợ (admin)', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 
+  it('mở rộng / thu nhỏ ở danh sách, giữ nguyên khi mở cuộc trò chuyện', () => {
+    setup();
+    act(() => openSupport());
+    expect(dialog()).toHaveClass('gemini-dock');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Mở rộng' }));
+    expect(dialog()).toHaveClass('service-modal');
+    fireEvent.click(items()[0]);
+    expect(dialog()).toHaveClass('service-modal');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Thu nhỏ' }));
+    expect(dialog()).toHaveClass('gemini-dock');
+  });
+
   it('màn hình Thi thật: chữ tiếng Anh', () => {
     setup({ seed: false, exam: 'real' });
     act(() => openSupport());
     const d = screen.getByRole('dialog', { name: 'Support inbox' });
     expect(within(d).getByText('No conversations yet.')).toBeInTheDocument();
+    expect(within(d).getByRole('button', { name: 'Expand' })).toBeInTheDocument();
   });
 });

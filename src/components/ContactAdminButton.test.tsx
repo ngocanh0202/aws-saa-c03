@@ -39,6 +39,25 @@ describe('ContactAdminButton', () => {
     expect(within(d).getByText('⚠ Lỗi đính kèm: Lỗi thử')).toBeInTheDocument();
   });
 
+  it('admin đã đăng nhập: là link mailto (không mở hộp thư của chính mình rồi mất lỗi)', () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    const auth = fakeAuth();
+    const remote = fakeRemote();
+    const sync = createSyncController({ store, auth, remote });
+    const deps = { ...makeDeps({ store, sync }), support: fakeSupport() };
+    const admin = { uid: 'adm', name: 'Admin', email: 'buihngocanh2@gmail.com', emailVerified: true };
+    render(
+      <AppProvider deps={deps}>
+        <ContactAdminButton message="Lỗi thử" code="E1" />
+      </AppProvider>,
+    );
+    act(() => auth.emit(admin));
+    act(() => remote.emit('adm', new Map()));
+    expect(screen.queryByRole('button', { name: 'Liên hệ admin' })).toBeNull();
+    const link = screen.getByRole('link', { name: 'Liên hệ admin' });
+    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('Lỗi thử');
+  });
+
   it('chưa đăng nhập: là link mailto có message mã hóa', () => {
     const deps = makeDeps();
     render(

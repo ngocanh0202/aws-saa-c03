@@ -12,7 +12,7 @@ import { ContactAdminButton } from './ContactAdminButton';
 
 const SAVE_FAILED = 'Không lưu được cài đặt. Kiểm tra kết nối rồi thử lại.';
 
-type Texts =Record<LocalNumberKey, string>;
+type Texts = Record<LocalNumberKey, string>;
 
 const textsOf = (s: LocalAiSettings): Texts =>
   Object.fromEntries(LOCAL_NUMBER_PARAMS.map((p) => [p.key, s[p.key] === null ? '' : String(s[p.key])])) as Texts;

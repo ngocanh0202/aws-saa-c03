@@ -80,10 +80,10 @@ Khung chat "Liên hệ admin" cho người học đã đăng nhập nhắn thẳ
 1. Publish lại `database.rules.json` ở **Realtime Database → Rules** (đã có hai nhánh mới `support/{uid}` lưu tin nhắn và `supportIndex/{uid}` lưu chỉ mục cho hộp thư admin). Nhánh `users/` giữ nguyên: admin không đọc được dữ liệu học của người khác.
 2. Admin phải đăng nhập bằng **Google** với email đã xác nhận `buihngocanh2@gmail.com` (rules kiểm tra `email_verified === true`; đăng nhập email/mật khẩu chưa xác nhận sẽ không có quyền admin).
 3. Kiểm tra rules tự động: `npm run test:rules` (chạy Firebase emulator, cần cài Java; test ở `rules-tests/support.rules.test.ts`).
-4. Nếu không chạy được emulator, kiểm tra tay ở **Rules Playground** (6 ca bắt buộc):
-   - Đăng nhập là A: đọc rồi ghi `support/B` → **từ chối**.
-   - Người thường (không phải admin): đọc `supportIndex` → **từ chối**.
-   - Tài khoản email admin nhưng `email_verified: false`: đọc `supportIndex` → **từ chối**.
-   - Người học ghi tin `from: 'admin'` vào `support/<uid của mình>/<id>` → **từ chối**.
-   - Ghi đè một tin đã có → **từ chối** (tin đã gửi không sửa/xóa được).
-   - Admin (email đã xác nhận) đọc `users/B/attempts` → **từ chối**.
+4. Nếu không chạy được emulator, kiểm tra tay ở **Rules Playground** (6 ca bắt buộc). Tin nhắn nằm ở `support/<uid>/messages/<id>` với nội dung `{from, text, at}`. Rules bắt tin của người học phải ghi **cùng lúc** với `supportIndex/<uid>/updatedAt` bằng giờ server, nên ca ghi của người học phải chọn kiểu **Update** ở location `/` (multi-path), giờ server ghi là `{".sv": "timestamp"}`. Nếu ghi `set` riêng một tin thì rules luôn từ chối dù `from` đúng, nên ca đó đạt mà không kiểm tra được gì.
+   - Đăng nhập là A (uid `A`): **Read** `support/B` → **từ chối**; **Update** ở `/` với `{"support/B/messages/m1": {"from": "user", "text": "hi", "at": {".sv": "timestamp"}}, "supportIndex/B/updatedAt": {".sv": "timestamp"}}` → **từ chối**.
+   - Người thường (không phải admin): **Read** `supportIndex` → **từ chối**.
+   - Tài khoản email admin nhưng `email_verified: false`: **Read** `supportIndex` → **từ chối**.
+   - Người học A ghi tin `from: 'admin'`: **Update** ở `/` với `{"support/A/messages/m1": {"from": "admin", "text": "hi", "at": {".sv": "timestamp"}}, "supportIndex/A/updatedAt": {".sv": "timestamp"}}` → **từ chối**. Đổi `"admin"` thành `"user"` thì phải **cho phép** (ca đối chứng; nếu `supportIndex/A/updatedAt` mới ghi trong vòng 3 giây thì bị từ chối vì giới hạn tần suất).
+   - Ghi đè một tin đã có → **từ chối** (tin đã gửi không sửa/xóa được). Ca này cần một tin có thật: gửi trước một tin từ web (hoặc lấy một `<id>` có sẵn ở tab **Data**), rồi đăng nhập là admin (email đã xác nhận, để loại trừ điều kiện `supportIndex`) chạy **Set** `support/<uid>/messages/<id có sẵn>` với `{"from": "admin", "text": "sửa", "at": {".sv": "timestamp"}}` → **từ chối**. Với một `<id>` chưa có thì cùng lệnh này được **cho phép**.
+   - Admin (email đã xác nhận): **Read** `users/B/attempts` → **từ chối**.

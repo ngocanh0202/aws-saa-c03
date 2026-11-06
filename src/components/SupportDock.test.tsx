@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createAttempt } from '../engine/attempt';
 import { createStore } from '../storage/storage';
 import type { ErrorReport } from '../support/model';
@@ -14,15 +14,16 @@ const USER = { uid: 'u1', name: 'An', email: 'an@x.com', emailVerified: true };
 const report: ErrorReport = { message: 'Không tải được dữ liệu', code: 'E42', page: '#/history', at: 1_700_000_000_000 };
 const other: ErrorReport = { message: 'Lỗi khác', page: '#/', at: 1_700_000_001_000 };
 
-function setup({ exam, user = USER }: { exam?: 'practice' | 'real'; user?: typeof USER } = {}) {
+function setup({ exam, user = USER, now, serverNow }: { exam?: 'practice' | 'real'; user?: typeof USER; now?: () => number; serverNow?: () => number } = {}) {
   const store = createStore(memoryStorage(), { now: () => 500 });
   const auth = fakeAuth();
   const remote = fakeRemote();
   const sync = createSyncController({ store, auth, remote });
-  const support = fakeSupport();
+  // serverNow: đồng hồ của "server" giả (bật giới hạn 3 giây); now: đồng hồ của máy người học.
+  const support = fakeSupport(serverNow ? { now: serverNow } : {});
   const ai = fakeAi();
   const chats = fakeChats();
-  const base = makeDeps({ store, sync });
+  const base = makeDeps({ store, sync, ...(now ? { now } : {}) });
   const remoteData = new Map();
   if (exam) {
     const attempt = createAttempt({ id: 'e1', setId: 1, mode: exam, esl: false, seed: 7, now: base.now(), sets: base.bank.sets, questions: base.bank.questions, metas: base.bank.meta });
@@ -154,13 +155,85 @@ describe('Khung Liên hệ admin (người học)', () => {
     expect(support.sent[0].msg.text).toHaveLength(4000);
   });
 
-  it('tên dài hơn 100 ký tự bị cắt khi gửi', async () => {
+  it('tên dài hơn 100 ký tự bị cắt; email quá 200 ký tự thì không gửi (rules đòi đúng email đăng nhập)', async () => {
     const { support } = setup({ user: { ...USER, name: 'n'.repeat(150), email: `${'e'.repeat(250)}@x.com` } });
     act(() => openSupport());
     await sendText('Xin chào');
     expect(support.sent).toHaveLength(1);
     expect(support.index.get('u1')?.name).toHaveLength(100);
-    expect(support.index.get('u1')?.email).toHaveLength(200);
+    expect(support.index.get('u1')?.email).toBeUndefined();
+  });
+
+  it('email đúng 200 ký tự: gửi nguyên văn', async () => {
+    const email = `${'e'.repeat(194)}@x.com`;
+    const { support } = setup({ user: { ...USER, email } });
+    act(() => openSupport());
+    await sendText('Xin chào');
+    expect(support.index.get('u1')?.email).toBe(email);
+  });
+
+  it('giới hạn 3 giây: nút Gửi tắt kèm gợi ý tới updatedAt + 3000, rồi bật lại', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    try {
+      let t = 2_000_000;
+      const { support } = setup({ now: () => t, serverNow: () => t });
+      act(() => openSupport());
+      await sendText('Một');
+      fireEvent.change(within(dialog()).getByRole('textbox'), { target: { value: 'Hai' } });
+      expect(within(dialog()).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+      expect(within(dialog()).getByText('Đợi vài giây rồi gửi tiếp')).toBeInTheDocument();
+      t += 3000;
+      act(() => {
+        vi.advanceTimersByTime(3000);
+      });
+      expect(within(dialog()).getByRole('button', { name: 'Gửi' })).toBeEnabled();
+      expect(within(dialog()).queryByText('Đợi vài giây rồi gửi tiếp')).toBeNull();
+      await act(async () => {
+        fireEvent.click(within(dialog()).getByRole('button', { name: 'Gửi' }));
+      });
+      expect(support.sent.map((x) => x.msg.text)).toEqual(['Một', 'Hai']);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('giới hạn 3 giây tính cả tin admin vừa trả lời', async () => {
+    const t = 2_000_000;
+    const { support } = setup({ now: () => t + 1000, serverNow: () => t });
+    await act(async () => {
+      await support.send('u1', { from: 'admin', text: 'Chào An' }, { name: 'Admin' });
+    });
+    act(() => openSupport());
+    fireEvent.change(within(dialog()).getByRole('textbox'), { target: { value: 'Cảm ơn' } });
+    expect(within(dialog()).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+  });
+
+  it('server vẫn từ chối vì gửi nhanh (đồng hồ máy lệch): báo gửi nhanh quá, giữ chữ', async () => {
+    let server = 2_000_000;
+    // Máy người học chạy nhanh hơn server 10 giây nên tưởng đã hết 3 giây.
+    const { support } = setup({ now: () => server + 10_000, serverNow: () => server });
+    act(() => openSupport());
+    await sendText('Một');
+    server += 1000;
+    await sendText('Hai');
+    expect(support.sent).toHaveLength(1);
+    expect(within(dialog()).getByRole('textbox')).toHaveValue('Hai');
+    expect(within(dialog()).getByRole('alert')).toHaveTextContent('Gửi nhanh quá, đợi vài giây rồi gửi lại.');
+    expect(within(dialog()).getByRole('alert')).not.toHaveTextContent('Kiểm tra mạng');
+  });
+
+  it('mở rộng / thu nhỏ toàn màn hình', () => {
+    setup();
+    act(() => openSupport());
+    expect(dialog()).toHaveClass('gemini-dock');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Mở rộng' }));
+    expect(dialog()).toHaveClass('service-modal');
+    expect(dialog()).toHaveAttribute('aria-modal', 'true');
+    expect(document.body.style.overflow).toBe('hidden');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Thu nhỏ' }));
+    expect(dialog()).toHaveClass('gemini-dock');
+    expect(dialog()).not.toHaveClass('service-modal');
+    expect(document.body.style.overflow).toBe('');
   });
 
   it('màn hình Thi thật: chữ tiếng Anh', () => {
@@ -168,5 +241,7 @@ describe('Khung Liên hệ admin (người học)', () => {
     act(() => openSupport());
     const d = screen.getByRole('dialog', { name: 'Contact admin' });
     expect(within(d).getByRole('button', { name: 'Send' })).toBeInTheDocument();
+    fireEvent.click(within(d).getByRole('button', { name: 'Expand' }));
+    expect(within(d).getByRole('button', { name: 'Collapse' })).toBeInTheDocument();
   });
 });

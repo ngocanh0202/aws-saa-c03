@@ -4,20 +4,18 @@ import { formatDate } from '../app/format';
 import type { SupportThread } from '../support/model';
 import type { SupportStore } from '../support/types';
 import type { SyncController, SyncUser } from '../sync/types';
-import { SupportThreadView, useSupportOpen } from './SupportDock';
+import { DockTools, dockProps, SupportThreadView, useExpanded, useSupportOpen } from './SupportDock';
 
 /** Chữ giao diện; màn hình Thi thật dùng tiếng Anh. */
 const TEXT = {
   vi: {
     title: 'Hộp thư hỗ trợ',
-    close: 'Đóng',
     empty: 'Chưa có cuộc trò chuyện nào.',
     loadFailed: 'Không tải được danh sách.',
     unread: 'Chưa đọc',
   },
   en: {
     title: 'Support inbox',
-    close: 'Close',
     empty: 'No conversations yet.',
     loadFailed: 'Could not load conversations.',
     unread: 'Unread',
@@ -40,6 +38,8 @@ interface Props {
 export function SupportInbox({ user, sync, support, english }: Props) {
   const t = english ? TEXT.en : TEXT.vi;
   const [open, close] = useSupportOpen();
+  // Giữ ở đây để mở cuộc trò chuyện hay quay lại danh sách vẫn giữ cỡ khung.
+  const [expanded, toggleExpand] = useExpanded();
   const [threads, setThreads] = useState<SupportThread[]>([]);
   const [loadFailed, setLoadFailed] = useState(false);
   const [selected, setSelected] = useState<string | null>(null);
@@ -59,7 +59,7 @@ export function SupportInbox({ user, sync, support, english }: Props) {
   if (!open) return null;
   const current = selected === null ? undefined : threads.find((x) => x.uid === selected);
   return createPortal(
-    <div className="gemini-dock gemini" role="dialog" aria-label={t.title} lang={english ? 'en' : 'vi'}>
+    <div {...dockProps(expanded)} role="dialog" aria-label={t.title} lang={english ? 'en' : 'vi'}>
       {selected !== null ? (
         <SupportThreadView
           key={selected}
@@ -72,6 +72,8 @@ export function SupportInbox({ user, sync, support, english }: Props) {
           support={support}
           onBack={() => setSelected(null)}
           onClose={close}
+          expanded={expanded}
+          onToggleExpand={toggleExpand}
         />
       ) : (
         <>
@@ -79,11 +81,7 @@ export function SupportInbox({ user, sync, support, english }: Props) {
             <div className="service-modal__title">
               <h1>{t.title}</h1>
             </div>
-            <div className="gemini__tools">
-              <button type="button" className="icon-btn" aria-label={t.close} title={t.close} onClick={close}>
-                ✕
-              </button>
-            </div>
+            <DockTools expanded={expanded} onToggleExpand={toggleExpand} onClose={close} english={english} />
           </header>
           <div className="service-modal__body">
             {loadFailed && <p className="gemini__notice">{t.loadFailed}</p>}
