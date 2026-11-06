@@ -6,6 +6,7 @@ import { useTheme } from '../app/theme';
 import { externalHref } from '../pages/ExternalListPage';
 import { AccountMenu } from './AccountMenu';
 import { ConflictDialog } from './ConflictDialog';
+import { SupportDock } from './SupportDock';
 import { SyncLoading } from './SyncLoading';
 
 export function Layout() {
@@ -81,6 +82,7 @@ export function Layout() {
       <Outlet />
       <ConflictDialog />
       <SyncLoading />
+      <SupportDock english={english} />
     </>
   );
 }
