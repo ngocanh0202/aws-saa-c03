@@ -37,6 +37,45 @@
         },
         "$other": { ".validate": false }
       }
+    },
+    "support": {
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || (auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
+        "messages": {
+          "$id": {
+            ".write": "auth != null && !data.exists() && ((newData.child('from').val() === 'user' && auth.uid === $uid) || (newData.child('from').val() === 'admin' && auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
+            ".validate": "newData.hasChildren(['from', 'text', 'at'])",
+            "from": { ".validate": "newData.val() === 'user' || newData.val() === 'admin'" },
+            "text": { ".validate": "newData.isString() && newData.val().length <= 4000" },
+            "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+            "error": {
+              ".validate": "newData.hasChildren(['message', 'page', 'at'])",
+              "message": { ".validate": "newData.isString() && newData.val().length <= 1000" },
+              "code": { ".validate": "newData.isString() && newData.val().length <= 100" },
+              "page": { ".validate": "newData.isString() && newData.val().length <= 500" },
+              "at": { ".validate": "newData.isNumber()" },
+              "$other": { ".validate": false }
+            },
+            "$other": { ".validate": false }
+          }
+        }
+      }
+    },
+    "supportIndex": {
+      ".read": "auth != null && auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true",
+      ".indexOn": ["updatedAt"],
+      "$uid": {
+        ".read": "auth != null && (auth.uid === $uid || (auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
+        ".write": "auth != null && (auth.uid === $uid || (auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
+        "name": { ".validate": "newData.isString() && newData.val().length <= 100" },
+        "email": { ".validate": "newData.isString() && newData.val().length <= 200 && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || newData.val() === auth.token.email)" },
+        "updatedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000 && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || !data.exists() || newData.val() >= data.val() + 3000)" },
+        "last": { ".validate": "newData.isString() && newData.val().length <= 81" },
+        "lastFrom": { ".validate": "newData.val() === 'user' || newData.val() === 'admin'" },
+        "unreadByAdmin": { ".validate": "newData.isBoolean()" },
+        "unreadByUser": { ".validate": "newData.isBoolean()" },
+        "$other": { ".validate": false }
+      }
     }
   }
 }

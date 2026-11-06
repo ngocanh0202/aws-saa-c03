@@ -10,11 +10,13 @@ import {
   signInWithPopup,
   signOut as fbSignOut,
 } from 'firebase/auth';
-import { child, get, getDatabase, onValue, ref, set, update } from 'firebase/database';
+import { child, get, getDatabase, onValue, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
 import { parseLocalSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { summarize, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import type { Attempt } from '../engine/attempt';
 import { looksLikeAttempt } from '../storage/storage';
+import { lastText, type ErrorReport, type SupportMessage, type SupportThread } from '../support/model';
+import type { SupportStore } from '../support/types';
 import type { FirebaseConfig } from './config';
 import type { RemoteSnapshot } from './merge';
 import type { AuthClient, RemoteAttempts, SyncUser } from './types';
@@ -26,6 +28,7 @@ export function createFirebaseClients(config: FirebaseConfig): {
   chats: ChatHistoryStore;
   localChats: ChatHistoryStore;
   localSettings: LocalSettingsStore;
+  support: SupportStore;
   app: FirebaseApp;
 } {
   const { recaptchaSiteKey, geminiModel: _model, ...options } = config;
@@ -185,5 +188,97 @@ export function createFirebaseClients(config: FirebaseConfig): {
     },
   };
 
-  return { auth, remote, chats, localChats, localSettings, app };
+  /** Khung hỗ trợ: tin ở support/{uid}/messages, tóm tắt ở supportIndex/{uid}. */
+  const support: SupportStore = {
+    listenThread(uid, cb, onError) {
+      return onValue(
+        ref(db, `support/${uid}/messages`),
+        (snap) => {
+          const out: SupportMessage[] = [];
+          snap.forEach((c) => {
+            const m = parseMessage(c.key, c.val());
+            if (m) out.push(m);
+          });
+          cb(out.sort((a, b) => a.at - b.at));
+        },
+        (err) => onError(err),
+      );
+    },
+    listenOwnIndex(uid, cb) {
+      return onValue(
+        ref(db, `supportIndex/${uid}`),
+        (snap) => cb(parseThread(uid, snap.val())),
+        () => cb(null),
+      );
+    },
+    listenInbox(cb, onError) {
+      return onValue(
+        query(ref(db, 'supportIndex'), orderByChild('updatedAt')),
+        (snap) => {
+          const out: SupportThread[] = [];
+          snap.forEach((c) => {
+            const t = c.key ? parseThread(c.key, c.val()) : null;
+            if (t) out.push(t);
+          });
+          cb(out.sort((a, b) => b.updatedAt - a.updatedAt));
+        },
+        (err) => onError(err),
+      );
+    },
+    send(uid, msg, who) {
+      const id = push(ref(db, `support/${uid}/messages`)).key!;
+      const idx = `supportIndex/${uid}`;
+      const paths: Record<string, unknown> = {
+        [`support/${uid}/messages/${id}`]: { from: msg.from, text: msg.text, at: serverTimestamp(), ...(msg.error ? { error: msg.error } : {}) },
+        [`${idx}/updatedAt`]: serverTimestamp(),
+        [`${idx}/last`]: lastText(msg.text, msg.error),
+        [`${idx}/lastFrom`]: msg.from,
+      };
+      // Ghi từng đường dẫn con để không xóa cờ của phía bên kia.
+      if (msg.from === 'user') {
+        paths[`${idx}/name`] = who.name;
+        if (who.email) paths[`${idx}/email`] = who.email;
+        paths[`${idx}/unreadByAdmin`] = true;
+      } else {
+        paths[`${idx}/unreadByUser`] = true;
+      }
+      return update(ref(db), paths);
+    },
+    async markRead(uid, reader) {
+      const idx = ref(db, `supportIndex/${uid}`);
+      // Chưa có bản ghi thì bỏ qua, không tạo bản ghi rỗng.
+      if (!(await get(idx)).exists()) return;
+      await set(child(idx, reader === 'user' ? 'unreadByUser' : 'unreadByAdmin'), false);
+    },
+  };
+
+  return { auth, remote, chats, localChats, localSettings, support, app };
+}
+
+function parseError(v: unknown): ErrorReport | undefined {
+  const e = v as Partial<ErrorReport> | null;
+  if (!e || typeof e.message !== 'string' || typeof e.page !== 'string' || typeof e.at !== 'number') return undefined;
+  return { message: e.message, page: e.page, at: e.at, ...(typeof e.code === 'string' ? { code: e.code } : {}) };
+}
+
+function parseMessage(id: string | null, v: unknown): SupportMessage | null {
+  const m = v as { from?: unknown; text?: unknown; at?: unknown; error?: unknown } | null;
+  if (!id || !m || (m.from !== 'user' && m.from !== 'admin') || typeof m.text !== 'string' || typeof m.at !== 'number') return null;
+  const error = parseError(m.error);
+  return { id, from: m.from, text: m.text, at: m.at, ...(error ? { error } : {}) };
+}
+
+function parseThread(uid: string, v: unknown): SupportThread | null {
+  const t = v as Partial<SupportThread> | null;
+  if (!t || typeof t.updatedAt !== 'number' || (t.lastFrom !== 'user' && t.lastFrom !== 'admin')) return null;
+  return {
+    uid,
+    name: typeof t.name === 'string' ? t.name : '',
+    ...(typeof t.email === 'string' ? { email: t.email } : {}),
+    updatedAt: t.updatedAt,
+    last: typeof t.last === 'string' ? t.last : '',
+    lastFrom: t.lastFrom,
+    unreadByAdmin: t.unreadByAdmin === true,
+    unreadByUser: t.unreadByUser === true,
+  };
 }

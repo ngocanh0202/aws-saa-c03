@@ -18,7 +18,8 @@
     "data": "npm run parse && npm run sets && npm run main && npm run validate",
     "check": "npm run validate && npm run test && npm run typecheck",
     "main": "tsx scripts/main.ts",
-    "main:show": "tsx scripts/show-main.ts"
+    "main:show": "tsx scripts/show-main.ts",
+    "test:rules": "firebase emulators:exec --only database --project demo-saa \"vitest run --config vitest.rules.config.ts\""
   },
   "dependencies": {
     "firebase": "^13.1.0",
@@ -27,6 +28,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -36,6 +38,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "fflate": "^0.8.3",
+    "firebase-tools": "^15.35.0",
     "jsdom": "^30.1.1",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

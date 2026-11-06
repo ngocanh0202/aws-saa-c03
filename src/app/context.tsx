@@ -5,6 +5,7 @@ import type { LocalSettingsStore } from '../ai/local-settings';
 import type { AiClient, ChatHistoryStore } from '../ai/types';
 import type { Bank } from '../data/bank';
 import type { AttemptStore } from '../storage/storage';
+import type { SupportStore } from '../support/types';
 import type { SyncController } from '../sync/types';
 
 export interface AppDeps {
@@ -29,6 +30,8 @@ export interface AppDeps {
   localSettings?: LocalSettingsStore;
   /** Chế độ đang chọn (Gemini/AI thử nghiệm); chỉ có khi có localAi. */
   aiMode?: AiModeStore;
+  /** Khung hỗ trợ "Liên hệ admin"; chỉ có khi cấu hình Firebase. */
+  support?: SupportStore;
 }
 
 const AppContext = createContext<AppDeps | null>(null);

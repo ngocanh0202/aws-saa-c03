@@ -16,5 +16,5 @@
     "noUnusedParameters": true,
     "types": ["vite/client", "vitest/globals", "node", "@testing-library/jest-dom"]
   },
-  "include": ["src", "scripts", "vite.config.ts"]
+  "include": ["src", "scripts", "rules-tests", "vite.config.ts", "vitest.rules.config.ts"]
 }

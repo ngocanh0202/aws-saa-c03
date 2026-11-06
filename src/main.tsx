@@ -38,6 +38,7 @@ const deps: AppDeps = {
   ...aiDeps,
   aiCooldown: createCooldown(getBrowserStorage()),
   aiMode: aiDeps.localAi ? createAiMode(getBrowserStorage()) : undefined,
+  support: clients?.support,
 };
 
 createRoot(document.getElementById('root')!).render(
