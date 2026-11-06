@@ -18,6 +18,7 @@ import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
 import type { SyncController, SyncState, SyncUser } from '../sync/types';
 import { claimChatFocus, onChatFocus } from './chat-focus';
+import { ContactAdminButton } from './ContactAdminButton';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
 import { Markdown } from './Markdown';
 
@@ -44,6 +45,8 @@ export function signedInUser(state: SyncState): SyncUser | null {
 }
 
 const PREVIEW = 80;
+const LOAD_FAILED = 'Không tải được lịch sử trò chuyện.';
+const SAVE_FAILED = 'Không lưu được lịch sử trò chuyện.';
 
 function GeminiIcon() {
   const id = useId();
@@ -831,11 +834,17 @@ function Conversation({
     }
   };
 
+  const sendFailMessage = failMessage ?? (busyFailed ? `${brand} đang hết lượt, thử lại sau ít phút.` : `${brand} chưa trả lời được, thử gửi lại nhé.`);
+
   return (
     <>
       <div className="service-modal__body">
         <div className="gemini__log" aria-live="polite">
-          {loadFailed && <p className="gemini__notice">Không tải được lịch sử trò chuyện.</p>}
+          {loadFailed && (
+            <p className="gemini__notice">
+              <span>{LOAD_FAILED}</span> <ContactAdminButton message={LOAD_FAILED} />
+            </p>
+          )}
           {loaded && messages.length === 0 && !loadFailed && (
             <p className="hint">Hỏi bất cứ điều gì về câu này, ví dụ vì sao một lựa chọn sai.</p>
           )}
@@ -880,7 +889,7 @@ function Conversation({
           ) : (
             sendFailed && (
               <p className="gemini__notice" role="alert">
-                {failMessage ?? (busyFailed ? `${brand} đang hết lượt, thử lại sau ít phút.` : `${brand} chưa trả lời được, thử gửi lại nhé.`)}
+                <span>{sendFailMessage}</span> <ContactAdminButton message={sendFailMessage} />
               </p>
             )
           )}
@@ -889,7 +898,11 @@ function Conversation({
               🤖 Chuyển sang AI thử nghiệm
             </button>
           )}
-          {saveFailed && <p className="gemini__notice">Không lưu được lịch sử trò chuyện.</p>}
+          {saveFailed && (
+            <p className="gemini__notice">
+              <span>{SAVE_FAILED}</span> <ContactAdminButton message={SAVE_FAILED} />
+            </p>
+          )}
           {/* Gợi ý nằm cuối vùng chat, mỗi dòng một câu; ẩn khi đang trả lời hoặc đã hỏi hết. */}
           {!busy && loaded && suggestions.length > 0 && (
             <div className="gemini__suggest" role="group" aria-label="Câu hỏi gợi ý">

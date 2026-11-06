@@ -3,6 +3,7 @@ import { isAdmin } from '../support/admin';
 import { openSupport } from '../support/open';
 import type { AiModeStore } from '../ai/ai-mode';
 import { useApp } from '../app/context';
+import { ContactAdminButton } from './ContactAdminButton';
 import { useAiMode } from './GeminiChat';
 import { SignInDialog, SignInIcon } from './SignInDialog';
 import type { SyncController, SyncUser } from '../sync/types';
@@ -20,7 +21,8 @@ function Menu({ sync, english }: { sync: SyncController; english: boolean }) {
       <span className="account">
         {state.kind === 'error' && (
           <span className="account__error" role="alert">
-            {state.message}
+            {state.message}{' '}
+            <ContactAdminButton message={state.message} english={english} />
           </span>
         )}
         <button type="button" className="icon-btn account__signin" onClick={() => setChoosing(true)}>

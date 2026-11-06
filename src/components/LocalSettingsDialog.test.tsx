@@ -1,11 +1,17 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_LOCAL_SETTINGS } from '../ai/local-settings';
+import { AppProvider } from '../app/context';
+import { makeDeps } from '../test/fixtures';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
 
 function setup(initial = DEFAULT_LOCAL_SETTINGS, onSave = vi.fn(async () => undefined)) {
   const onClose = vi.fn();
-  render(<LocalSettingsDialog initial={initial} onSave={onSave} onClose={onClose} />);
+  render(
+    <AppProvider deps={makeDeps()}>
+      <LocalSettingsDialog initial={initial} onSave={onSave} onClose={onClose} />
+    </AppProvider>,
+  );
   return { onSave, onClose };
 }
 

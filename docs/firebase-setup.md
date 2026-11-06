@@ -72,3 +72,18 @@ Nút "Hỏi Gemini" chỉ hiện ở chế độ Thi thử khi đã cấu hình 
 2. Deploy lại `database.rules.json` (đã có nhánh `users/$uid/aiChats` lưu lịch sử chat theo từng câu, và `users/$uid/localChats` cho chế độ AI thử nghiệm, xem [local-ai.md](local-ai.md)) ở **Realtime Database → Rules**.
 3. App Check (**bắt buộc** cho Gemini: Firebase yêu cầu App Check cho AI Logic từ 02/11/2026; thiếu khóa thì web ẩn nút "Hỏi Gemini"): tạo khóa **reCAPTCHA Enterprise** cho domain web, đăng ký trong **App Check → Apps → Web** rồi đặt khóa vào `VITE_RECAPTCHA_SITE_KEY` (cả `.env.local` và Variables trên GitHub, cùng `VITE_GEMINI_MODEL` nếu muốn đổi model). Nên theo dõi quota và đặt ngân sách trong Google Cloud/Firebase console.
 4. Chạy ở localhost: thêm `localhost` vào domain của khóa reCAPTCHA, hoặc dùng debug token: mở web ở localhost, lấy token in ra console trình duyệt (`App Check debug token: ...`; cần đặt `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true` trước khi app khởi tạo, ví dụ trong DevTools rồi tải lại), rồi đăng ký trong **App Check → Apps → Web → Manage debug tokens**.
+
+## Hỗ trợ (Liên hệ admin)
+
+Khung chat "Liên hệ admin" cho người học đã đăng nhập nhắn thẳng tới admin; admin xem và trả lời ở "Hộp thư hỗ trợ" trong menu tài khoản.
+
+1. Publish lại `database.rules.json` ở **Realtime Database → Rules** (đã có hai nhánh mới `support/{uid}` lưu tin nhắn và `supportIndex/{uid}` lưu chỉ mục cho hộp thư admin). Nhánh `users/` giữ nguyên: admin không đọc được dữ liệu học của người khác.
+2. Admin phải đăng nhập bằng **Google** với email đã xác nhận `buihngocanh2@gmail.com` (rules kiểm tra `email_verified === true`; đăng nhập email/mật khẩu chưa xác nhận sẽ không có quyền admin).
+3. Kiểm tra rules tự động: `npm run test:rules` (chạy Firebase emulator, cần cài Java; test ở `rules-tests/support.rules.test.ts`).
+4. Nếu không chạy được emulator, kiểm tra tay ở **Rules Playground** (6 ca bắt buộc):
+   - Đăng nhập là A: đọc rồi ghi `support/B` → **từ chối**.
+   - Người thường (không phải admin): đọc `supportIndex` → **từ chối**.
+   - Tài khoản email admin nhưng `email_verified: false`: đọc `supportIndex` → **từ chối**.
+   - Người học ghi tin `from: 'admin'` vào `support/<uid của mình>/<id>` → **từ chối**.
+   - Ghi đè một tin đã có → **từ chối** (tin đã gửi không sửa/xóa được).
+   - Admin (email đã xác nhận) đọc `users/B/attempts` → **từ chối**.

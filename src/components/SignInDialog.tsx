@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import type { SignInMethod, SyncController } from '../sync/types';
+import { ContactAdminButton } from './ContactAdminButton';
 
 const MIN_PASSWORD = 6;
 
@@ -208,7 +209,7 @@ function EmailForm({ sync, english, onBack, onClose }: { sync: SyncController; e
         )}
         {error && (
           <p className="settings__error" role="alert">
-            {error}
+            {error} <ContactAdminButton message={error} english={english} />
           </p>
         )}
         <button type="submit" className="btn-primary" disabled={busy}>

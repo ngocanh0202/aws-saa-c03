@@ -8,8 +8,11 @@ import {
   type LocalNumberKey,
   type LocalNumberParam,
 } from '../ai/local-settings';
+import { ContactAdminButton } from './ContactAdminButton';
 
-type Texts = Record<LocalNumberKey, string>;
+const SAVE_FAILED = 'Không lưu được cài đặt. Kiểm tra kết nối rồi thử lại.';
+
+type Texts =Record<LocalNumberKey, string>;
 
 const textsOf = (s: LocalAiSettings): Texts =>
   Object.fromEntries(LOCAL_NUMBER_PARAMS.map((p) => [p.key, s[p.key] === null ? '' : String(s[p.key])])) as Texts;
@@ -144,7 +147,7 @@ export function LocalSettingsDialog({
         </div>
         {saveFailed && (
           <p className="settings__error" role="alert">
-            Không lưu được cài đặt. Kiểm tra kết nối rồi thử lại.
+            {SAVE_FAILED} <ContactAdminButton message={SAVE_FAILED} />
           </p>
         )}
         <div className="settings__actions">
