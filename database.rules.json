@@ -44,7 +44,7 @@
         "messages": {
           "$id": {
             ".write": "auth != null && !data.exists() && ((newData.child('from').val() === 'user' && auth.uid === $uid) || (newData.child('from').val() === 'admin' && auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
-            ".validate": "newData.hasChildren(['from', 'text', 'at']) && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || newData.parent().parent().parent().parent().child('supportIndex').child($uid).child('updatedAt').val() === newData.child('at').val())",
+            ".validate": "newData.hasChildren(['from', 'text', 'at']) && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || (newData.child('at').val() === now && newData.parent().parent().parent().parent().child('supportIndex').child($uid).child('updatedAt').val() === now))",
             "from": { ".validate": "newData.val() === 'user' || newData.val() === 'admin'" },
             "text": { ".validate": "newData.isString() && newData.val().length <= 4000 && (newData.val().length > 0 || newData.parent().hasChild('error'))" },
             "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },

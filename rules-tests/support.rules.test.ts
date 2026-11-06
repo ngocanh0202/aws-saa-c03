@@ -107,6 +107,19 @@ describe('support rules: các ca khác', () => {
     await assertFails(db(user('A')).ref('support/A/messages/m1').set({ from: 'user', text: 'x', at: Date.now() }));
   });
 
+  it('ghi tin thẳng với at = updatedAt đang lưu (không ghi index) bị từ chối', async () => {
+    const u = Date.now() - 10000;
+    await seedIndex('A', u);
+    await assertFails(db(user('A')).ref('support/A/messages/m1').set({ from: 'user', text: 'x', at: u }));
+    await assertFails(db(user('A')).ref('support/A/messages/m2').set({ from: 'user', text: 'x', at: TS }));
+    // Gửi kiểu adapter vẫn được (đã quá 3 giây so với u).
+    await assertSucceeds(send(user('A'), 'A', 'm3', 'user'));
+  });
+
+  it('lần gửi đầu tiên (chưa có supportIndex) được', async () => {
+    await assertSucceeds(send(user('B'), 'B', 'm1', 'user'));
+  });
+
   it('admin trả lời và đọc được cuộc trò chuyện', async () => {
     await assertSucceeds(send(user('A'), 'A', 'm1', 'user'));
     await assertSucceeds(send(admin(), 'A', 'm2', 'admin'));
