@@ -17,6 +17,7 @@ import { htmlToText } from '../data/html-text';
 import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
 import type { SyncController, SyncState, SyncUser } from '../sync/types';
+import { claimChatFocus, onChatFocus } from './chat-focus';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
 import { Markdown } from './Markdown';
 
@@ -36,9 +37,6 @@ interface Props {
   /** Nút nằm trong khối câu (trang xem lại có nhiều câu) thay vì nổi ở góc phải. */
   inline?: boolean;
 }
-
-/** Chỉ một khung chat mở tại một thời điểm: mở khung này thì báo các khung khác đóng lại. */
-const openListeners = new Set<(id: string) => void>();
 
 /** User đang đăng nhập (kể cả lúc đang tải/xung đột dữ liệu); không có thì null. */
 export function signedInUser(state: SyncState): SyncUser | null {
@@ -127,12 +125,10 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
   }, [launcherKey]);
   const close = useCallback(() => setOpen(false), []);
   useEffect(() => {
-    const onOther = (other: string) => other !== id && setOpen(false);
-    openListeners.add(onOther);
-    return () => void openListeners.delete(onOther);
+    return onChatFocus((other) => other !== id && setOpen(false));
   }, [id]);
   const show = () => {
-    for (const l of [...openListeners]) l(id);
+    claimChatFocus(id);
     setOpen(true);
   };
   const running = useRunning(inflightFor(props.chats), inflightKey(props.uid, props.attemptId, props.question.id));
