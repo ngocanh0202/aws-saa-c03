@@ -1,5 +1,5 @@
 /** Lỗi không rõ nguyên nhân thì kèm dòng này để người dùng biết hỏi ai. */
-export const SUPPORT_HINT = 'Nếu vẫn lỗi, liên hệ buihngocanh2@gmail.com.';
+export const SUPPORT_HINT = 'Nếu vẫn lỗi, vui lòng liên hệ admin.';
 
 /** Mã lỗi Firebase Auth → câu báo tiếng Việt. */
 const MESSAGES: Record<string, string> = {
@@ -14,7 +14,7 @@ const MESSAGES: Record<string, string> = {
   'auth/weak-password': 'Mật khẩu quá yếu: cần ít nhất 6 ký tự.',
   'auth/password-does-not-meet-requirements': 'Mật khẩu chưa đủ mạnh theo quy định của trang. Thử mật khẩu dài hơn, có chữ hoa, chữ thường và số.',
   'auth/invalid-email': 'Email không hợp lệ.',
-  'auth/user-disabled': 'Tài khoản này đã bị khóa. Liên hệ buihngocanh2@gmail.com.',
+  'auth/user-disabled': 'Tài khoản này đã bị khóa. Vui lòng liên hệ admin.',
   'auth/too-many-requests': 'Thử sai quá nhiều lần. Đợi một lúc rồi thử lại.',
   'auth/network-request-failed': 'Mất kết nối mạng. Kiểm tra mạng rồi thử lại.',
   'auth/operation-not-allowed': `Cách đăng nhập này chưa được bật. ${SUPPORT_HINT}`,

@@ -1,6 +1,6 @@
 import { useEffect, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { isAdmin } from '../support/admin';
-import { openSupport } from '../support/open';
+import { onRequestSignIn, openSupport } from '../support/open';
 import type { AiModeStore } from '../ai/ai-mode';
 import { useApp } from '../app/context';
 import { ContactAdminButton } from './ContactAdminButton';
@@ -16,6 +16,8 @@ function statusText(online: boolean, pending: number): string {
 function Menu({ sync, english }: { sync: SyncController; english: boolean }) {
   const state = useSyncExternalStore(sync.subscribe, sync.getState);
   const [choosing, setChoosing] = useState(false);
+  // Nút "Liên hệ admin" khi chưa đăng nhập nhờ mở popup đăng nhập.
+  useEffect(() => onRequestSignIn(() => setChoosing(true)), []);
   if (state.kind === 'signed-out' || state.kind === 'error') {
     return (
       <span className="account">

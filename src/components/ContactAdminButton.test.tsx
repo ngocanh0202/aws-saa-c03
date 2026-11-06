@@ -39,54 +39,77 @@ describe('ContactAdminButton', () => {
     expect(within(d).getByText('⚠ Lỗi đính kèm: Lỗi thử')).toBeInTheDocument();
   });
 
-  it('admin đã đăng nhập: là link mailto (không mở hộp thư của chính mình rồi mất lỗi)', () => {
+  it('admin đã đăng nhập: là nút, bấm mở hộp thư hỗ trợ (không có link email)', () => {
     const store = createStore(memoryStorage(), { now: () => 500 });
     const auth = fakeAuth();
     const remote = fakeRemote();
     const sync = createSyncController({ store, auth, remote });
     const deps = { ...makeDeps({ store, sync }), support: fakeSupport() };
     const admin = { uid: 'adm', name: 'Admin', email: 'buihngocanh2@gmail.com', emailVerified: true };
+    renderApp('/', deps);
+    act(() => auth.emit(admin));
+    act(() => remote.emit('adm', new Map()));
     render(
       <AppProvider deps={deps}>
         <ContactAdminButton message="Lỗi thử" code="E1" />
       </AppProvider>,
     );
-    act(() => auth.emit(admin));
-    act(() => remote.emit('adm', new Map()));
-    expect(screen.queryByRole('button', { name: 'Liên hệ admin' })).toBeNull();
-    const link = screen.getByRole('link', { name: 'Liên hệ admin' });
-    expect(decodeURIComponent(link.getAttribute('href') ?? '')).toContain('Lỗi thử');
+    expect(screen.queryByRole('link', { name: 'Liên hệ admin' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Liên hệ admin' }));
+    expect(screen.getByRole('dialog', { name: 'Hộp thư hỗ trợ' })).toBeInTheDocument();
   });
 
-  it('chưa đăng nhập: là link mailto có message mã hóa', () => {
-    const deps = makeDeps();
+  it('chưa đăng nhập: là nút, bấm mở popup đăng nhập; đăng nhập xong khung chat tự mở kèm lỗi', () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    const auth = fakeAuth();
+    const remote = fakeRemote();
+    const sync = createSyncController({ store, auth, remote });
+    const deps = { ...makeDeps({ store, sync }), support: fakeSupport() };
+    renderApp('/', deps);
+    act(() => auth.emit(null));
     render(
       <AppProvider deps={deps}>
         <ContactAdminButton message="Lỗi thử" />
       </AppProvider>,
     );
-    const link = screen.getByRole('link', { name: 'Liên hệ admin' });
-    const href = link.getAttribute('href') ?? '';
-    expect(href).toMatch(/^mailto:/);
-    expect(decodeURIComponent(href)).toContain('Lỗi thử');
+    expect(screen.queryByRole('link', { name: 'Liên hệ admin' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Liên hệ admin' }));
+    expect(screen.getByRole('dialog', { name: 'Đăng nhập' })).toBeInTheDocument();
+    act(() => auth.emit(USER));
+    act(() => remote.emit('u1', new Map()));
+    const d = screen.getByRole('dialog', { name: 'Liên hệ admin' });
+    expect(within(d).getByText('⚠ Lỗi đính kèm: Lỗi thử')).toBeInTheDocument();
+  });
+
+  it('không có Firebase (không đăng nhập được): không hiện nút', () => {
+    render(
+      <AppProvider deps={makeDeps()}>
+        <ContactAdminButton message="Lỗi thử" />
+      </AppProvider>,
+    );
+    expect(screen.queryByRole('button', { name: 'Liên hệ admin' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Liên hệ admin' })).toBeNull();
   });
 
   it('english: nhãn Contact admin', () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    const sync = createSyncController({ store, auth: fakeAuth(), remote: fakeRemote() });
     render(
-      <AppProvider deps={makeDeps()}>
+      <AppProvider deps={{ ...makeDeps({ store, sync }), support: fakeSupport() }}>
         <ContactAdminButton message="x" english />
       </AppProvider>,
     );
-    expect(screen.getByRole('link', { name: 'Contact admin' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Contact admin' })).toBeInTheDocument();
   });
 });
 
 describe('Nút Liên hệ admin ở các chỗ báo lỗi', () => {
-  it('SignInDialog lỗi email: link mailto', async () => {
+  it('SignInDialog lỗi email: nút Liên hệ admin; đăng nhập xong khung chat mở kèm lỗi đó', async () => {
     const store = createStore(memoryStorage(), { now: () => 500 });
     const auth = fakeAuth();
-    const sync = createSyncController({ store, auth, remote: fakeRemote() });
-    renderApp('/', makeDeps({ store, sync }));
+    const remote = fakeRemote();
+    const sync = createSyncController({ store, auth, remote });
+    renderApp('/', { ...makeDeps({ store, sync }), support: fakeSupport() });
     act(() => auth.emit(null));
     fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
     fireEvent.click(screen.getByRole('button', { name: 'Email/Mật khẩu' }));
@@ -99,15 +122,19 @@ describe('Nút Liên hệ admin ở các chỗ báo lỗi', () => {
     });
     const alert = within(form).getByRole('alert');
     expect(alert).toHaveTextContent('Email hoặc mật khẩu không đúng.');
-    const link = within(form).getByRole('link', { name: 'Liên hệ admin' });
-    expect(link.getAttribute('href')).toMatch(/^mailto:/);
+    expect(within(form).queryByRole('link', { name: 'Liên hệ admin' })).toBeNull();
+    fireEvent.click(within(form).getByRole('button', { name: 'Liên hệ admin' }));
+    act(() => auth.emit(USER));
+    act(() => remote.emit('u1', new Map()));
+    const d = screen.getByRole('dialog', { name: 'Liên hệ admin' });
+    expect(within(d).getByText('⚠ Lỗi đính kèm: Email hoặc mật khẩu không đúng.')).toBeInTheDocument();
   });
 
-  it('AccountMenu lỗi (state error): link mailto', async () => {
+  it('AccountMenu lỗi (state error): nút Liên hệ admin mở popup đăng nhập', async () => {
     const store = createStore(memoryStorage(), { now: () => 500 });
     const auth = fakeAuth();
     const sync = createSyncController({ store, auth, remote: fakeRemote() });
-    renderApp('/', makeDeps({ store, sync }));
+    renderApp('/', { ...makeDeps({ store, sync }), support: fakeSupport() });
     act(() => auth.emit(null));
     auth.signInError = new Error('network down');
     await act(async () => {
@@ -115,7 +142,9 @@ describe('Nút Liên hệ admin ở các chỗ báo lỗi', () => {
     });
     const alert = screen.getByRole('alert');
     expect(alert).toHaveTextContent('Không đăng nhập được');
-    expect(screen.getByRole('link', { name: 'Liên hệ admin' }).getAttribute('href')).toMatch(/^mailto:/);
+    expect(screen.queryByRole('link', { name: 'Liên hệ admin' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Liên hệ admin' }));
+    expect(screen.getByRole('dialog', { name: 'Đăng nhập' })).toBeInTheDocument();
   });
 
   it('Hỏi AI gửi lỗi kết nối: nút mở khung hỗ trợ với lỗi đó, khung Hỏi AI đóng', async () => {
@@ -159,7 +188,6 @@ describe('Nút Liên hệ admin ở các chỗ báo lỗi', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }));
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent('Không lưu được cài đặt');
-    // Chưa đăng nhập ở đây -> link.
-    expect(within(alert).getByRole('link', { name: 'Liên hệ admin' })).toBeInTheDocument();
+    expect(within(alert).getByRole('button', { name: 'Liên hệ admin' })).toBeInTheDocument();
   });
 });

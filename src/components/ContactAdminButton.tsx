@@ -1,32 +1,30 @@
 import { useSyncExternalStore } from 'react';
 import { useApp } from '../app/context';
-import { isAdmin } from '../support/admin';
-import { mailtoHref } from '../support/model';
-import { errorReportHere, openSupport } from '../support/open';
+import { errorReportHere, openSupport, openSupportAfterSignIn, requestSignIn } from '../support/open';
 import { signedInUser } from './GeminiChat';
 
 const noSubscribe = () => () => undefined;
 const noState = () => null;
 
 /**
- * Nút "Liên hệ admin" cạnh câu báo lỗi: người học đã đăng nhập thì mở khung hỗ trợ kèm lỗi;
- * chưa đăng nhập, không có Firebase, hoặc chính là admin (khung của admin là hộp thư, không đính kèm lỗi) thì là link mailto.
+ * Nút "Liên hệ admin" cạnh câu báo lỗi, luôn mở cửa sổ chat (không gửi email): đã đăng nhập thì mở
+ * khung hỗ trợ kèm lỗi (admin thì mở hộp thư); chưa đăng nhập thì mở popup đăng nhập, đăng nhập xong
+ * khung hỗ trợ tự mở kèm lỗi. Không có Firebase (không đăng nhập được) thì không hiện nút.
  */
 export function ContactAdminButton({ message, code, english }: { message: string; code?: string; english?: boolean }) {
   const { sync, support } = useApp();
   const state = useSyncExternalStore(sync?.subscribe ?? noSubscribe, sync?.getState ?? noState);
-  const user = state === null ? null : signedInUser(state);
-  const label = english ? 'Contact admin' : 'Liên hệ admin';
-  if (user && !isAdmin(user) && support) {
-    return (
-      <button type="button" className="btn-link" onClick={() => openSupport({ error: errorReportHere({ message, code }) })}>
-        {label}
-      </button>
-    );
-  }
+  if (!sync || !support || state === null) return null;
+  const user = signedInUser(state);
+  const onClick = () => {
+    const req = { error: errorReportHere({ message, code }) };
+    if (user) return openSupport(req);
+    openSupportAfterSignIn(req);
+    requestSignIn();
+  };
   return (
-    <a className="btn-link" href={mailtoHref(errorReportHere({ message, code }))}>
-      {label}
-    </a>
+    <button type="button" className="btn-link" onClick={onClick}>
+      {english ? 'Contact admin' : 'Liên hệ admin'}
+    </button>
   );
 }

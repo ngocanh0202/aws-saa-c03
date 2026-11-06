@@ -43,7 +43,7 @@ Admin là người có `auth.token.email == 'buihngocanh2@gmail.com'` **và** `a
 
 `SyncUser` cần thêm `email?: string` và `emailVerified?: boolean` (adapter Firebase điền từ `User.email`, `User.emailVerified`).
 
-Lưu ý: khi `SyncState` là `'error'` hoặc đang ở form đăng nhập thì chưa có user, nên nút "Liên hệ admin" ở `AccountMenu` (lỗi) và `SignInDialog` luôn là link `mailto` (xem dưới).
+Lưu ý: khi `SyncState` là `'error'` hoặc đang ở form đăng nhập thì chưa có user, nên nút "Liên hệ admin" ở `AccountMenu` (lỗi) và `SignInDialog` mở popup đăng nhập; đăng nhập xong khung hỗ trợ tự mở kèm lỗi (xem dưới).
 
 ### Dữ liệu *(quyết định của Claude)*
 
@@ -92,7 +92,7 @@ Các chỗ hiện có (cần thêm nút, đính kèm đúng câu báo đang hi�
 Nên làm một component dùng chung (vd `<ContactAdminButton error={{ message, code? }} />`) và một chỗ điều phối mở khung hỗ trợ từ bất kỳ đâu (vd store nhỏ `openSupport(attachment?)` trong `AppDeps` hoặc module-level như `openListeners`).
 
 - **Đã đăng nhập**: mở khung hỗ trợ với lỗi đính kèm.
-- **Chưa đăng nhập hoặc không có Firebase** *(quyết định của Claude)*: nút là link `mailto:buihngocanh2@gmail.com` với tiêu đề "Lỗi trên web luyện thi SAA-C03" và nội dung gồm câu báo, mã lỗi, trang, thời gian (đã `encodeURIComponent`).
+- **Chưa đăng nhập** *(người dùng chốt 2026-11-06: luôn dùng cửa sổ chat, không gửi email)*: nút mở popup đăng nhập; lỗi được giữ (tối đa 2 phút) và khung hỗ trợ tự mở kèm lỗi ngay khi đăng nhập xong. Admin bấm thì mở hộp thư. Không có Firebase thì không hiện nút. Link `mailto` chỉ còn là đường dự phòng khi khung chat gửi lỗi (mục dưới).
 - Không gửi gì cho tới khi người học bấm Gửi (hoặc tự gửi email).
 
 ### Giao diện phía admin
@@ -108,7 +108,7 @@ Không gửi được tin (mất mạng, rules từ chối): giữ chữ trong �
 ## Kiểm thử
 
 - Hàm thuần (dựng tin, cắt `last`, dựng nội dung `mailto`, kiểm tra admin) có test Vitest.
-- UI test bằng store giả (như `fake-ai.ts`/`fake-sync.ts`): người học gửi tin có/không có lỗi; gỡ lỗi đính kèm; admin thấy danh sách, số chưa đọc, trả lời; nút "Liên hệ admin" ở từng chỗ báo lỗi mở khung với đúng lỗi; chưa đăng nhập thì ra `mailto`.
+- UI test bằng store giả (như `fake-ai.ts`/`fake-sync.ts`): người học gửi tin có/không có lỗi; gỡ lỗi đính kèm; admin thấy danh sách, số chưa đọc, trả lời; nút "Liên hệ admin" ở từng chỗ báo lỗi mở khung với đúng lỗi; chưa đăng nhập thì mở popup đăng nhập rồi khung tự mở kèm lỗi.
 - **Rules**: muốn kiểm tra tự động cần Firebase Emulator (`firebase-tools` + Java) và `@firebase/rules-unit-testing`; repo hiện chưa có. Builder chọn: thêm emulator test (nếu máy có Java) hoặc ghi danh sách ca cần thử bằng **Rules Playground** trong Firebase Console vào `docs/firebase-setup.md`. Các ca bắt buộc: người A đọc/ghi `support/B` bị từ chối; người thường đọc `supportIndex` bị từ chối; tài khoản email chưa xác nhận trùng địa chỉ admin không đọc được `supportIndex`; người học ghi tin `from: 'admin'` bị từ chối; sửa tin đã có bị từ chối; admin đọc `users/B/attempts` bị từ chối.
 
 ## Để builder quyết định

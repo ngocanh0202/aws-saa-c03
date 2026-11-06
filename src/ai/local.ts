@@ -8,7 +8,7 @@ export const LOCAL_HISTORY_LIMIT = 12;
 /** Chờ phản hồi đầu tiên (model cục bộ có thể nạp chậm); quá thì coi như không kết nối được. */
 export const LOCAL_TIMEOUT_MS = 60_000;
 
-export const LOCAL_CONNECT_ERROR = 'Không kết nối được AI thử nghiệm. Vui lòng liên hệ buihngocanh2@gmail.com.';
+export const LOCAL_CONNECT_ERROR = 'Không kết nối được AI thử nghiệm. Vui lòng liên hệ admin.';
 export const LOCAL_CONTEXT_ERROR = 'Cuộc trò chuyện dài quá ngữ cảnh của model đang nạp. Tăng Context Length trong LM Studio hoặc hỏi ngắn hơn.';
 
 /** Lỗi do quá ngữ cảnh thì báo riêng, còn lại coi là không kết nối được. */
