@@ -44,9 +44,9 @@
         "messages": {
           "$id": {
             ".write": "auth != null && !data.exists() && ((newData.child('from').val() === 'user' && auth.uid === $uid) || (newData.child('from').val() === 'admin' && auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
-            ".validate": "newData.hasChildren(['from', 'text', 'at'])",
+            ".validate": "newData.hasChildren(['from', 'text', 'at']) && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || newData.parent().parent().parent().parent().child('supportIndex').child($uid).child('updatedAt').val() === newData.child('at').val())",
             "from": { ".validate": "newData.val() === 'user' || newData.val() === 'admin'" },
-            "text": { ".validate": "newData.isString() && newData.val().length <= 4000" },
+            "text": { ".validate": "newData.isString() && newData.val().length <= 4000 && (newData.val().length > 0 || newData.parent().hasChild('error'))" },
             "at": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
             "error": {
               ".validate": "newData.hasChildren(['message', 'page', 'at'])",
@@ -66,10 +66,10 @@
       ".indexOn": ["updatedAt"],
       "$uid": {
         ".read": "auth != null && (auth.uid === $uid || (auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
-        ".write": "auth != null && (auth.uid === $uid || (auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true))",
+        ".write": "auth != null && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || (auth.uid === $uid && newData.child('updatedAt').exists()))",
         "name": { ".validate": "newData.isString() && newData.val().length <= 100" },
         "email": { ".validate": "newData.isString() && newData.val().length <= 200 && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || newData.val() === auth.token.email)" },
-        "updatedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000 && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || !data.exists() || newData.val() >= data.val() + 3000)" },
+        "updatedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000 && ((auth.token.email === 'buihngocanh2@gmail.com' && auth.token.email_verified === true) || (newData.val() === now && (!data.exists() || newData.val() >= data.val() + 3000)))" },
         "last": { ".validate": "newData.isString() && newData.val().length <= 81" },
         "lastFrom": { ".validate": "newData.val() === 'user' || newData.val() === 'admin'" },
         "unreadByAdmin": { ".validate": "newData.isBoolean()" },
