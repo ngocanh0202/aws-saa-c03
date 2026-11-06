@@ -439,6 +439,11 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .support__chip { display: flex; align-items: center; gap: 8px; margin: 0 10px; padding: 6px 10px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); font-size: 0.85em; }
 .support__chip span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .support__chip .icon-btn { padding: 2px 8px; }
+/* Hộp thư admin: tên, email, chấm chưa đọc. */
+.support__who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.support__email { color: var(--muted); font-size: 0.85em; overflow-wrap: anywhere; }
+.support__dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--link); }
+.support__empty { padding: 12px; }
 /* Câu hỏi gợi ý phía trên ô nhập: máy tính xuống dòng, mobile cuộn ngang */
 /* Câu hỏi gợi ý: cuối vùng chat, có đường kẻ trên và tiêu đề "Gợi ý", mỗi dòng một câu;
    chỉ viền màu, không tô nền */

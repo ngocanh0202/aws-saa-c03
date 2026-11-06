@@ -1,14 +1,15 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate } from '../app/format';
 import { isAdmin } from '../support/admin';
 import { LIMITS, mailtoHref, type ErrorReport, type SupportMessage } from '../support/model';
-import { onOpenSupport } from '../support/open';
+import { onOpenSupport, type SupportRequest } from '../support/open';
 import type { SupportStore } from '../support/types';
 import type { SyncController, SyncUser } from '../sync/types';
 import { claimChatFocus, onChatFocus } from './chat-focus';
 import { signedInUser } from './GeminiChat';
+import { SupportInbox } from './SupportInbox';
 
 const FOCUS_ID = 'support';
 
@@ -17,7 +18,7 @@ const TEXT = {
   vi: {
     title: 'Liên hệ admin',
     close: 'Đóng',
-    back: '← Quay lại',
+    back: '← Danh sách',
     empty: 'Gửi câu hỏi hoặc báo lỗi cho admin. Admin sẽ trả lời ở đây.',
     attached: '⚠ Lỗi đính kèm: ',
     remove: 'Gỡ lỗi đính kèm',
@@ -65,28 +66,29 @@ function SignedIn({ sync, support, english }: { sync: SyncController; support: S
   const state = useSyncExternalStore(sync.subscribe, sync.getState);
   const user = signedInUser(state);
   if (!user) return null;
-  // Admin: hộp thư hỗ trợ (Task 6).
-  if (isAdmin(user)) return null;
   // key theo uid: đăng xuất/đổi tài khoản thì khung đóng hẳn, không gửi dưới uid cũ.
+  if (isAdmin(user)) return <SupportInbox key={user.uid} user={user} sync={sync} support={support} english={english} />;
   return <UserDock key={user.uid} user={user} sync={sync} support={support} english={english} />;
 }
 
-function UserDock({ user, sync, support, english }: { user: SyncUser; sync: SyncController; support: SupportStore; english: boolean }) {
-  const t = english ? TEXT.en : TEXT.vi;
+/**
+ * Mở/đóng khung hỗ trợ: mở bằng `openSupport()` (giành quyền khung chat duy nhất), đóng khi khung
+ * chat khác mở hoặc bấm Esc. Dùng chung cho người học và admin.
+ */
+export function useSupportOpen(onOpen?: (req: SupportRequest) => void): [open: boolean, close: () => void] {
   const [open, setOpen] = useState(false);
-  const [attachment, setAttachment] = useState<ErrorReport | undefined>();
+  const onOpenRef = useRef(onOpen);
+  onOpenRef.current = onOpen;
   useEffect(
     () =>
       onOpenSupport((req) => {
         claimChatFocus(FOCUS_ID);
-        // Có lỗi mới thì thay lỗi cũ; chữ đang gõ giữ nguyên.
-        if (req.error) setAttachment(req.error);
+        onOpenRef.current?.(req);
         setOpen(true);
       }),
     [],
   );
   useEffect(() => onChatFocus((other) => other !== FOCUS_ID && setOpen(false)), []);
-  const close = () => setOpen(false);
 
   useEffect(() => {
     if (!open) return;
@@ -94,6 +96,15 @@ function UserDock({ user, sync, support, english }: { user: SyncUser; sync: Sync
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open]);
+
+  return [open, useCallback(() => setOpen(false), [])];
+}
+
+function UserDock({ user, sync, support, english }: { user: SyncUser; sync: SyncController; support: SupportStore; english: boolean }) {
+  const t = english ? TEXT.en : TEXT.vi;
+  const [attachment, setAttachment] = useState<ErrorReport | undefined>();
+  // Có lỗi mới thì thay lỗi cũ; chữ đang gõ giữ nguyên.
+  const [open, close] = useSupportOpen((req) => req.error && setAttachment(req.error));
 
   if (!open) return null;
   return createPortal(
