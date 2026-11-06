@@ -4,6 +4,7 @@ import { createAttempt, type Attempt } from '../engine/attempt';
 import { createSyncController } from '../sync/controller';
 import type { SyncUser } from '../sync/types';
 import { createStore } from '../storage/storage';
+import { fakeSupport } from '../test/fake-support';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
 
@@ -181,6 +182,87 @@ describe('AccountMenu', () => {
     act(() => remote.emit(USER.uid, new Map()));
     act(() => remote.setOnline(false));
     expect(screen.getByText('Mất kết nối, sẽ đồng bộ khi có mạng')).toBeTruthy();
+  });
+
+  describe('mục hỗ trợ', () => {
+    const NORMAL: SyncUser = { uid: 'u1', name: 'An', email: 'an@x.com', emailVerified: true };
+    const ADMIN: SyncUser = { uid: 'a1', name: 'Admin', email: 'buihngocanh2@gmail.com', emailVerified: true };
+
+    function signedIn(user: SyncUser, withSupport = true, exam?: 'real') {
+      const { store, auth, remote, sync } = setup();
+      const support = fakeSupport();
+      const base = makeDeps({ store, sync });
+      const data = new Map();
+      if (exam) {
+        const a = createAttempt({ id: 'r1', setId: 1, mode: exam, esl: false, seed: 7, now: 100, sets: base.bank.sets, questions: base.bank.questions, metas: base.bank.meta });
+        store.save(a);
+        data.set(a.id, { attempt: a, updatedAt: 1 });
+      }
+      renderApp(exam ? '/exam/r1' : '/', { ...base, ...(withSupport ? { support } : {}) });
+      act(() => auth.emit(user));
+      act(() => remote.emit(user.uid, data));
+      return { support };
+    }
+
+    it('người thường: nút mở khung; tin mới có nhãn phụ', () => {
+      signedIn(NORMAL);
+      const btn = screen.getByRole('button', { name: /Liên hệ admin$/ });
+      expect(btn).toHaveTextContent('💬 Liên hệ admin');
+      expect(screen.queryByRole('button', { name: /Hộp thư hỗ trợ/ })).toBeNull();
+      fireEvent.click(btn);
+      expect(screen.getByRole('dialog', { name: 'Liên hệ admin' })).toBeInTheDocument();
+    });
+
+    it('người thường: unreadByUser thì nút có aria-label "Liên hệ admin, có tin mới"', async () => {
+      const { support } = signedIn(NORMAL);
+      await act(async () => {
+        await support.send('u1', { from: 'admin', text: 'Chào' }, { name: 'Admin' });
+      });
+      const btn = screen.getByRole('button', { name: /Liên hệ admin, có tin mới/ });
+      expect(btn).toHaveTextContent('(có tin mới)');
+    });
+
+    it('admin: "Hộp thư hỗ trợ (2)", không có "Liên hệ admin"', () => {
+      signedIn(ADMIN);
+      expect(screen.queryByRole('button', { name: /Liên hệ admin/ })).toBeNull();
+      expect(screen.getByRole('button', { name: /Hộp thư hỗ trợ/ })).toHaveTextContent('📥 Hộp thư hỗ trợ');
+    });
+
+    it('admin: đếm thread chưa đọc', async () => {
+      const { support } = signedIn(ADMIN);
+      await act(async () => {
+        await support.send('x1', { from: 'user', text: 'a' }, { name: 'X1' });
+        await support.send('x2', { from: 'user', text: 'b' }, { name: 'X2' });
+      });
+      const btn = screen.getByRole('button', { name: /Hộp thư hỗ trợ/ });
+      expect(btn).toHaveTextContent('📥 Hộp thư hỗ trợ (2)');
+      fireEvent.click(btn);
+      expect(screen.getByRole('dialog', { name: 'Hộp thư hỗ trợ' })).toBeInTheDocument();
+    });
+
+    it('không có support trong deps: không có hai mục', () => {
+      signedIn(NORMAL, false);
+      expect(screen.queryByRole('button', { name: /Liên hệ admin/ })).toBeNull();
+      expect(screen.queryByRole('button', { name: /Hộp thư hỗ trợ/ })).toBeNull();
+    });
+
+    it('Thi thật: nhãn tiếng Anh', () => {
+      signedIn(NORMAL, true, 'real');
+      expect(screen.getByRole('button', { name: /Contact admin$/ })).toHaveTextContent('💬 Contact admin');
+    });
+
+    it('Thi thật, admin: "Support inbox"', () => {
+      signedIn(ADMIN, true, 'real');
+      expect(screen.getByRole('button', { name: /Support inbox/ })).toHaveTextContent('📥 Support inbox');
+    });
+
+    it('bấm mục thì đóng menu', () => {
+      signedIn(NORMAL);
+      const details = document.querySelector('details.account') as HTMLDetailsElement;
+      details.open = true;
+      fireEvent.click(screen.getByRole('button', { name: /Liên hệ admin$/ }));
+      expect(details.open).toBe(false);
+    });
   });
 
   it('không đọc được cloud: hiện lỗi kèm nút đăng nhập; bấm thì mở lại phiên, không mở popup', () => {

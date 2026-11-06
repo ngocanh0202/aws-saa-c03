@@ -1,9 +1,11 @@
-import { useState, useSyncExternalStore } from 'react';
+import { useEffect, useState, useSyncExternalStore, type MouseEvent } from 'react';
+import { isAdmin } from '../support/admin';
+import { openSupport } from '../support/open';
 import type { AiModeStore } from '../ai/ai-mode';
 import { useApp } from '../app/context';
 import { useAiMode } from './GeminiChat';
 import { SignInDialog, SignInIcon } from './SignInDialog';
-import type { SyncController } from '../sync/types';
+import type { SyncController, SyncUser } from '../sync/types';
 
 function statusText(online: boolean, pending: number): string {
   if (!online) return 'Mất kết nối, sẽ đồng bộ khi có mạng';
@@ -42,11 +44,49 @@ function Menu({ sync, english }: { sync: SyncController; english: boolean }) {
       <div className="topbar__menu-list account__panel">
         <p className="account__status">{statusText(online, pending)}</p>
         <AiModeToggle english={english} />
+        <SupportEntry user={user} english={english} />
         <button type="button" className="icon-btn" onClick={() => void sync.signOut()}>
           {english ? 'Sign out' : 'Đăng xuất'}
         </button>
       </div>
     </details>
+  );
+}
+
+/** Mục hỗ trợ: người học "Liên hệ admin", admin "Hộp thư hỗ trợ (n)". Chỉ nghe dữ liệu khi đã đăng nhập. */
+function SupportEntry({ user, english }: { user: SyncUser; english: boolean }) {
+  const { support } = useApp();
+  const admin = isAdmin(user);
+  const [unread, setUnread] = useState(0);
+  useEffect(() => {
+    if (!support) return;
+    setUnread(0);
+    if (admin) return support.listenInbox((list) => setUnread(list.filter((t) => t.unreadByAdmin).length), () => {});
+    return support.listenOwnIndex(user.uid, (t) => setUnread(t?.unreadByUser ? 1 : 0));
+  }, [support, admin, user.uid]);
+  if (!support) return null;
+  const open = (e: MouseEvent<HTMLButtonElement>) => {
+    // Đóng menu để khung hỗ trợ không bị che.
+    const details = e.currentTarget.closest('details');
+    if (details) details.open = false;
+    openSupport();
+  };
+  if (admin) {
+    const label = english ? 'Support inbox' : 'Hộp thư hỗ trợ';
+    return (
+      <button type="button" className="icon-btn" onClick={open}>
+        📥 {label}
+        {unread > 0 ? ` (${unread})` : ''}
+      </button>
+    );
+  }
+  const label = english ? 'Contact admin' : 'Liên hệ admin';
+  const fresh = english ? 'new message' : 'có tin mới';
+  return (
+    <button type="button" className="icon-btn" aria-label={unread > 0 ? `${label}, ${fresh}` : undefined} onClick={open}>
+      💬 {label}
+      {unread > 0 ? ` (${fresh})` : ''}
+    </button>
   );
 }
 
