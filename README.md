@@ -77,6 +77,12 @@ Mỗi lần push lên `main`, GitHub Actions ([.github/workflows/pages.yml](.git
 - [Quy tắc soạn hướng dẫn tiếng Việt](docs/vi-style-guide.md)
 - [Thang chấm độ khó](docs/difficulty-rubric.md)
 
+## Setup Local AI trên kaggle (Thử nghiệm)
+Sử dụng [Kaggle LM Studio](https://www.kaggle.com/code/buianh0202/kaggle-lmstudio) để deploy AI local trên session kaggle, thì sẽ lấy được API và model AI.
+Chú ý:
+- Session trên kaggle chỉ dùng được 12h
+- Chỉ sử dụng được 30h/tuần, thứ 7 reset lại
+
 ## Lưu ý về nội dung
 
 Ngân hàng câu hỏi được giữ nguyên, không thêm câu và không sửa đáp án gốc. Câu nào nghi ngờ đáp án thì được gắn cờ `review` kèm lý do. Đề thi chính thức có 15 câu không tính điểm, nhưng web chấm cả 65 câu.
