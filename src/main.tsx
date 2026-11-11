@@ -5,6 +5,7 @@ import { AppProvider, type AppDeps } from './app/context';
 import { AppRoutes } from './app/routes';
 import { createAiMode } from './ai/ai-mode';
 import { createNotesStore } from './notes/store';
+import { startNotesSync } from './notes/sync';
 import { createCooldown } from './ai/cooldown';
 import { createLocalAiClient } from './ai/local';
 import { buildAiDeps } from './ai/deps';
@@ -27,6 +28,9 @@ const now = () => Date.now() + (sync?.serverOffset() ?? 0);
 const store = createStore(getBrowserStorage(), { now, watch: true });
 sync = clients ? createSyncController({ store, auth: clients.auth, remote: clients.remote }) : undefined;
 
+const notes = createNotesStore(getBrowserStorage());
+if (clients) startNotesSync({ notes, auth: clients.auth, remote: clients.notes });
+
 const aiDeps = buildAiDeps(config, clients, createGeminiClient, { config: readLocalAiConfig(import.meta.env), create: createLocalAiClient });
 
 const deps: AppDeps = {
@@ -35,7 +39,7 @@ const deps: AppDeps = {
   now,
   newSeed: randomSeed,
   newId: () => crypto.randomUUID(),
-  notes: createNotesStore(getBrowserStorage()),
+  notes,
   sync,
   ...aiDeps,
   aiCooldown: createCooldown(getBrowserStorage()),
