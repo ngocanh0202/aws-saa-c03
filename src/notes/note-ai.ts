@@ -3,6 +3,7 @@ import { AiGateBusyError, type AiGate, type AiJob, type AiJobTarget } from '../a
 import type { LocalAiSettings } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
 import { AiUserError, type AiClient } from '../ai/types';
+import { createIdleWatchdog } from '../ai/watchdog';
 import type { Question } from '../data/types';
 import { NOTE_AI_REQUEST, buildNotePrompt } from './ai-prompt';
 import { setNote } from './model';
@@ -64,13 +65,21 @@ export async function draftNote(deps: DraftNoteDeps, job: DraftNoteJob): Promise
     await gate.run(aiJob, async () => {
       errors.delete(job.highlightId);
       try {
+        // AI im lặng quá lâu (kể cả trước chữ đầu tiên) thì báo lỗi và nhả gate; chữ đến sau bị bỏ.
+        const watchdog = createIdleWatchdog();
         // Adapter tự thử lại khi 429/503 (retry.onWait); mỗi lần chờ thì khóa mọi nút AI tới giờ thử lại.
         const chat = client.startChat(buildNotePrompt(job.question, job.text), [], {
           settings,
-          retry: { onWait: (w) => cooldown.set(w.until) },
+          retry: {
+            onWait: (w) => {
+              cooldown.set(w.until);
+              watchdog.touch(w.until);
+            },
+          },
+          onThinking: () => watchdog.touch(),
         });
         let reply = '';
-        for await (const chunk of chat.send(NOTE_AI_REQUEST)) reply += chunk;
+        for await (const chunk of watchdog.wrap(chat.send(NOTE_AI_REQUEST))) reply += chunk;
         reply = reply.trim();
         if (!reply) throw new Error('empty reply');
         if (notes.owner() !== owner) return;

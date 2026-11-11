@@ -813,6 +813,29 @@ describe('Mỗi lúc một yêu cầu AI', () => {
     }
   });
 
+  it('AI im lặng 90 giây: nhả gate, báo lỗi; chữ đến sau bị bỏ', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const s = setup();
+      s.ai.hold = true;
+      s.ai.reply = ['Chữ đến muộn'];
+      const dialog = await openChat();
+      await ask(dialog);
+      expect(s.base.aiGate.current()).not.toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(89_000));
+      expect(s.base.aiGate.current()).not.toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      await waitFor(() => expect(within(dialog).getByText('AI không phản hồi, vui lòng thử lại.')).toBeInTheDocument());
+      expect(s.base.aiGate.current()).toBeNull();
+      await act(async () => s.ai.release());
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      expect(within(dialog).queryByText('Chữ đến muộn')).toBeNull();
+      expect(s.chats.saved).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('đóng khung trước khi xong thì có thông báo', async () => {
     const s = setup();
     s.ai.hold = true;

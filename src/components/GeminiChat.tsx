@@ -10,6 +10,7 @@ import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight'
 import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
+import { createIdleWatchdog, type IdleWatchdog } from '../ai/watchdog';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
 import { chatSuggestions } from '../ai/suggestions';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
@@ -682,6 +683,7 @@ function Conversation({
   const [busy, setBusy] = useState(running !== undefined);
   const [input, setInput] = useState('');
   const chatRef = useRef<AiChat | null>(null);
+  const watchdogRef = useRef<IdleWatchdog | null>(null);
   // Đã nhận tin từ câu trả lời đang chạy thì lịch sử tải về (có thể cũ hơn) không được ghi đè.
   const fromInflight = useRef(running !== undefined);
   // Trạng thái "đã thấy đáp án" mà phiên chat hiện tại được báo; đổi thì mở phiên mới để Gemini biết.
@@ -778,6 +780,10 @@ function Conversation({
     modelMsg: (t: string) => ChatMessage,
     signedIn: () => boolean,
   ) => {
+    // AI im lặng quá lâu (kể cả trước chữ đầu tiên) thì báo lỗi và nhả gate; chữ đến sau bị bỏ.
+    // Phiên chat dùng lại qua nhiều lần gửi nên các callback của phiên đọc watchdog qua ref.
+    const watchdog = createIdleWatchdog();
+    watchdogRef.current = watchdog;
     let reply = '';
     let searchingNow = false;
     let retryNow: { attempt: number; max: number } | undefined;
@@ -807,12 +813,14 @@ function Conversation({
         settings,
         tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
         onToolCall: (name) => {
+          watchdogRef.current?.touch();
           // Dòng chờ "đang tìm" chỉ dành cho tool tìm câu.
           if (name !== SEARCH_TOOL) return;
           searchingNow = true;
           progress();
         },
         onThinking: () => {
+          watchdogRef.current?.touch();
           if (thinkingNow) return;
           thinkingNow = true;
           progress();
@@ -820,13 +828,14 @@ function Conversation({
         // Gemini hết lượt/quá tải: khóa mọi khung chat tới giờ thử lại và hiện đếm ngược.
         retry: {
           onWait: (w) => {
+            watchdogRef.current?.touch(w.until);
             cooldown.set(w.until);
             retryNow = { attempt: w.attempt, max: w.max };
             progress();
           },
         },
       }));
-      for await (const chunk of chat.send(text)) {
+      for await (const chunk of watchdog.wrap(chat.send(text))) {
         if (!signedIn()) throw new Error('signed out');
         if (!chunk) continue;
         searchingNow = false;

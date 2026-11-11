@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AiGateBusyError, createAiGate, type AiJob } from '../ai/gate';
 import { createCooldown } from '../ai/cooldown';
 import { DEFAULT_LOCAL_SETTINGS } from '../ai/local-settings';
@@ -139,5 +139,27 @@ describe('draftNote', () => {
     expect(s.client.calls).toHaveLength(0);
     expect(lastNoteError('h1')).toBeUndefined();
     release();
+  });
+});
+
+describe('draftNote: AI im lặng', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('90 giây không có chữ: nhả gate, ghi lỗi; chữ đến sau không được lưu', async () => {
+    vi.useFakeTimers();
+    const s = setup();
+    s.client.reply = ['Chữ đến muộn'];
+    s.client.hold = true;
+    const done = draftNote(s.deps, s.job);
+    await vi.advanceTimersByTimeAsync(89_000);
+    expect(s.gate.current()).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(1_000);
+    await done;
+    expect(s.gate.current()).toBeNull();
+    expect(s.finished.map(([, ok]) => ok)).toEqual([false]);
+    expect(lastNoteError('h1')).toBe('AI không phản hồi, vui lòng thử lại.');
+    s.client.release();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(noteOf(s)).toBe('');
   });
 });
