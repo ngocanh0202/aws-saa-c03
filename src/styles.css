@@ -506,7 +506,7 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 /* Popup đổi cỡ: ô nhập giãn theo popup, các phần khác giữ cỡ. */
 .hl-pop > *, .hl-sheet > * { flex-shrink: 0; }
 .hl-pop textarea, .hl-sheet textarea { flex: 1 1 auto; }
-.hl-pop textarea { resize: none; }
+.hl-pop textarea, .hl-sheet textarea { resize: none; }
 .hl-pop__actions { margin-right: 8px; }
 .hl-pop__grip { position: absolute; right: 1px; bottom: 1px; display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 0 0 8px 0; background: transparent; color: var(--muted); cursor: nwse-resize; touch-action: none; }
 .hl-pop__grip:hover, .hl-pop__grip:focus-visible { color: var(--text); }
