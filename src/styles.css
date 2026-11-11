@@ -499,10 +499,17 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .hl-btn--primary, .hl-btn--primary:hover { background: var(--primary); color: var(--primary-text); }
 .hl-toolbar { position: absolute; z-index: 60; display: flex; gap: 2px; padding: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); }
 .hl-toolbar--bottom { position: fixed; left: 0; right: 0; bottom: 0; justify-content: center; gap: 12px; padding: 8px 16px calc(8px + env(safe-area-inset-bottom)); border: 0; border-top: 1px solid var(--border); border-radius: 0; box-shadow: 0 -4px 14px rgba(0, 0, 0, 0.15); }
-.hl-pop { position: absolute; z-index: 60; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); }
+.hl-pop { position: absolute; z-index: 60; display: flex; flex-direction: column; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); }
 .hl-pop::before { content: ''; position: absolute; top: -7px; left: var(--arrow, 24px); width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--border); border-top: 1px solid var(--border); transform: rotate(45deg); }
 .hl-pop textarea, .hl-sheet textarea { display: block; width: 100%; min-height: 72px; resize: vertical; font: inherit; font-size: 16px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
 .hl-pop__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+/* Popup đổi cỡ: ô nhập giãn theo popup, các phần khác giữ cỡ. */
+.hl-pop > *, .hl-sheet > * { flex-shrink: 0; }
+.hl-pop textarea, .hl-sheet textarea { flex: 1 1 auto; }
+.hl-pop textarea { resize: none; }
+.hl-pop__actions { margin-right: 8px; }
+.hl-pop__grip { position: absolute; right: 1px; bottom: 1px; display: grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 0; border-radius: 0 0 8px 0; background: transparent; color: var(--muted); cursor: nwse-resize; touch-action: none; }
+.hl-pop__grip:hover, .hl-pop__grip:focus-visible { color: var(--text); }
 .hl-btn:disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
 .hl-pop textarea:disabled, .hl-sheet textarea:disabled { opacity: 0.7; cursor: not-allowed; }
 .hl-pop__locked { margin: 6px 0 0; font-size: 0.85em; color: var(--muted); }
@@ -510,8 +517,12 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .hl--drafting { animation: hl-pulse 1.2s ease-in-out infinite; }
 @keyframes hl-pulse { 50% { opacity: 0.45; } }
 .hl-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.4); }
-.hl-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 71; max-height: 80vh; overflow-y: auto; background: var(--surface); color: var(--text); border-top: 1px solid var(--border); border-radius: 14px 14px 0 0; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.25); animation: hl-sheet-in 0.18s ease-out; }
-.hl-sheet__grab { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 8px; }
+.hl-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 71; display: flex; flex-direction: column; max-height: 80vh; overflow-y: auto; background: var(--surface); color: var(--text); border-top: 1px solid var(--border); border-radius: 14px 14px 0 0; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.25); animation: hl-sheet-in 0.18s ease-out; }
+/* Vùng chạm cao 44px, vạch nhìn thấy vẫn 40×4. */
+.hl-sheet__grab { position: relative; height: 44px; margin: -8px -16px -12px; cursor: ns-resize; touch-action: none; border-radius: 14px 14px 0 0; }
+.hl-sheet__grab::before { content: ''; position: absolute; top: 12px; left: 50%; width: 40px; height: 4px; margin-left: -20px; border-radius: 2px; background: var(--border); }
+.hl-sheet__grab:hover::before, .hl-sheet__grab:focus-visible::before { background: var(--muted); }
+.hl-sheet__grab:focus-visible { outline: 2px solid var(--muted); outline-offset: -3px; }
 .hl-quote { margin: 0 0 8px; padding-left: 8px; border-left: 3px solid var(--hl-line); color: var(--muted); font-size: 0.85em; max-height: 4.8em; overflow: hidden; }
 @keyframes hl-sheet-in { from { transform: translateY(100%); } to { transform: none; } }
 @media (max-width: 639px) {
