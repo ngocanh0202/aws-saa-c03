@@ -738,8 +738,10 @@ function Conversation({
     endRef.current?.scrollIntoView?.({ block: 'end' });
   }, [messages]);
 
-  /** Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập). */
-  /** base: lịch sử gửi kèm (gửi lại câu hỏi lỗi thì bỏ chính câu đó khỏi lịch sử để không lặp). */
+  /**
+   * Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập).
+   * base: lịch sử gửi kèm (gửi lại câu hỏi lỗi thì bỏ chính câu đó khỏi lịch sử để không lặp).
+   */
   const send = async (suggestion?: string, base: ChatMessage[] = messages) => {
     const text = (suggestion ?? input).trim();
     if (!text || busy || !loaded || cooldown.until() !== null || aiGate.current() !== null) return;

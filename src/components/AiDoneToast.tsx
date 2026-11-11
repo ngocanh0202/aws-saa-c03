@@ -23,15 +23,17 @@ const goLabel = (label: string) => `Đến ${label.replace(/^Câu\b/, 'câu')}`;
 export function AiDoneToast() {
   const { aiGate, store } = useApp();
   const navigate = useNavigate();
-  const [shown, setShown] = useState<{ job: AiJob; ok: boolean; n: number } | null>(null);
+  const [shown, setShown] = useState<{ job: AiJob; ok: boolean } | null>(null);
 
-  useEffect(() => {
-    let n = 0;
-    return aiGate.onFinished((job, ok) => {
-      if (aiGate.viewing() === targetKey(job.target)) return;
-      setShown({ job, ok, n: ++n });
-    });
-  }, [aiGate]);
+  // Mỗi lần xong là một object mới nên hẹn giờ ẩn được đặt lại.
+  useEffect(
+    () =>
+      aiGate.onFinished((job, ok) => {
+        if (aiGate.viewing() === targetKey(job.target)) return;
+        setShown({ job, ok });
+      }),
+    [aiGate],
+  );
 
   // Đang làm Thi thật thì giữ lại thông báo mới nhất, rời trang thi (hoặc nộp bài) mới hiện.
   const { pathname } = useLocation();
