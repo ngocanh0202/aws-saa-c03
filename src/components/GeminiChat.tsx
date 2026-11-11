@@ -703,7 +703,8 @@ function Conversation({
     setFailMessage(undefined);
     setSaveFailed(false);
     // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
-    const cached = findCachedReply(history, text);
+    // Vừa mở hướng dẫn thì trả lời cũ (từ lúc chưa thấy đáp án) không dùng lại được.
+    const cached = sessionRevealed.current !== target.revealed ? null : findCachedReply(history, text);
     if (cached !== null) {
       const done: ChatMessage[] = [...asked, { role: 'model', text: cached, cached: true }];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });

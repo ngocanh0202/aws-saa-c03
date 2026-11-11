@@ -118,6 +118,18 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.ai.calls[1].history.map((m) => m.text)).toEqual(['Tại sao?', 'ok']);
   });
 
+  it('hỏi lại y câu sau khi bấm Xem hướng dẫn: không dùng câu trả lời cũ, gọi AI với prompt có đáp án', async () => {
+    const s = setup();
+    const dialog = await openChat();
+    await ask(dialog, 'Đáp án là gì?');
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+    await ask(dialog, 'Đáp án là gì?');
+    await waitFor(() => expect(s.ai.calls).toHaveLength(2));
+    expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
+  });
+
   it('lưu lịch sử lỗi thì báo trong popup', async () => {
     const s = setup();
     s.chats.save = async () => {
