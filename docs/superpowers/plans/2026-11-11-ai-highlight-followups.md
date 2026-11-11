@@ -95,7 +95,7 @@
 - Test: `src/components/GeminiChat.test.tsx`.
 
 **Interfaces:**
-- Consumes: Task 1 `createHighlightTool`, `HIGHLIGHT_TOOL`, `newHighlightId` (export sẵn ở `src/notes/Highlighter.tsx`); Task 2 toàn bộ.
+- Consumes: Task 1 `createHighlightTool`, `HIGHLIGHT_TOOL`, `newHighlightId` (hiện là hàm nội bộ ở `src/notes/Highlighter.tsx:80` — chuyển sang `src/notes/model.ts` và export, Highlighter import lại); Task 2 toàn bộ.
 
 - [ ] **Step 1: Write failing tests** (`GeminiChat.test.tsx`, theo kiểu test hiện có với `fakeAi().toolCalls`):
   - Lượt Thi thử đang làm: `ai.calls[0].options.tools` có `highlight_keywords`; gợi ý cố định có `'Tô từ khóa quan trọng trong đề'`. Lượt Thi thật / trang xem lại: không có cả hai.
