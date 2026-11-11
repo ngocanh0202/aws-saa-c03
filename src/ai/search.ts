@@ -45,7 +45,7 @@ export interface SearchContext {
 
 export const SEARCH_LIMIT = 5;
 
-type SearchBank = Pick<Bank, 'questions' | 'meta' | 'services'>;
+type SearchBank = Pick<Bank, 'questions' | 'meta' | 'services' | 'canonical'>;
 
 /** Từ không mang nghĩa khi tìm (đề và lựa chọn bằng tiếng Anh; "amazon"/"aws" có trong hầu hết tên dịch vụ). */
 const STOPWORDS = new Set(['the', 'and', 'for', 'with', 'from', 'into', 'that', 'this', 'which', 'what', 'use', 'using', 'question', 'aws', 'amazon']);
@@ -72,11 +72,15 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
 
   const ctxAttempt = attempts.find((a) => a.id === ctx.attemptId);
   const seenIn = (a: Attempt, qid: number) => a.status === 'submitted' || (a.mode === 'practice' && a.guideOpened.includes(qid));
-  // Câu thuộc lượt đang hỏi thì chỉ tính lượt đó (lượt cũ đã nộp không được lộ đáp án câu đang làm dở).
-  const visible = (qid: number) =>
-    ctxAttempt?.questions.some((q) => q.qid === qid)
-      ? seenIn(ctxAttempt, qid)
-      : attempts.some((a) => a.setId === ctx.setId && a.questions.some((q) => q.qid === qid) && seenIn(a, qid));
+  // Câu thuộc lượt đang hỏi (kể cả câu trùng nguyên văn, so theo canonical) thì chỉ tính lượt đó:
+  // lượt cũ đã nộp không được lộ đáp án câu đang làm dở.
+  const inCtx = new Map<number, number>();
+  for (const q of ctxAttempt?.questions ?? []) inCtx.set(bank.canonical(q.qid), q.qid);
+  const visible = (qid: number) => {
+    const own = inCtx.get(bank.canonical(qid));
+    if (ctxAttempt && own !== undefined) return seenIn(ctxAttempt, own);
+    return attempts.some((a) => a.setId === ctx.setId && a.questions.some((q) => q.qid === qid) && seenIn(a, qid));
+  };
 
   const byQid = new Map<number, { tries: (SearchTry & { at: number })[] }>();
   for (const a of attempts) {

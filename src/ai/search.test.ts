@@ -17,7 +17,7 @@ const MULTIPART: Question = {
   ],
 };
 
-function bank(extra: Question[] = []) {
+function bank(extra: Question[] = [], twins: [number, number][] = []) {
   const questions = new Map<number, Question>([
     [1, makeQuestion(1)],
     [5, MULTIPART],
@@ -26,7 +26,8 @@ function bank(extra: Question[] = []) {
   ]);
   const meta = new Map<number, QuestionMeta>([[1, { id: 1, domain: 1, difficulty: 1, services: ['s3'] }]]);
   const services = new Map([['s3', { id: 's3', name: 'Amazon S3', category: 'Storage' }]]);
-  return { questions, meta, services };
+  const canon = new Map(twins.map(([a, b]) => [Math.max(a, b), Math.min(a, b)]));
+  return { questions, meta, services, canonical: (qid: number) => canon.get(qid) ?? qid };
 }
 
 function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attempt['status']; at?: number; guideOpened?: number[]; answers: Record<number, string[]> }): Attempt {
@@ -176,6 +177,38 @@ describe('searchAnswered: ẩn đáp án câu chưa thấy', () => {
     const [hit] = run([attempt('a2', { status: 'in-progress', answers: { 5: ['B'] }, guideOpened: [5] })]);
     expect(hit.answerHidden).toBe(false);
     expect(hit.options.some((o) => o.correct === true)).toBe(true);
+  });
+});
+
+describe('searchAnswered: câu trùng (twin)', () => {
+  // 246/253 trùng nguyên văn: canonical(253) = 246.
+  const twinBank = () => bank([{ ...MULTIPART, id: 246 }, { ...MULTIPART, id: 253 }], [[246, 253]]);
+  const CUR = { setId: 1, attemptId: 'b', qid: 246 };
+
+  it('câu trùng của câu đang làm (chưa mở hướng dẫn) nằm ở lượt khác đã nộp: ẩn đáp án', () => {
+    const a = attempt('a', { status: 'submitted', answers: { 253: ['B'] } });
+    const b = attempt('b', { status: 'in-progress', answers: { 246: ['A'] } });
+    const hits = searchAnswered('multipart', CUR, [a, b], twinBank());
+    expect(hits.map((h) => h.qid).sort()).toEqual([246, 253]);
+    for (const h of hits) {
+      expect(h.answerHidden).toBe(true);
+      expect(JSON.stringify(h)).not.toContain('"correct"');
+    }
+  });
+
+  it('câu trùng của câu đang làm đã mở hướng dẫn: có đáp án', () => {
+    const a = attempt('a', { status: 'submitted', answers: { 253: ['B'] } });
+    const b = attempt('b', { status: 'in-progress', answers: { 246: ['A'] }, guideOpened: [246] });
+    const hit = searchAnswered('multipart', CUR, [a, b], twinBank()).find((h) => h.qid === 253)!;
+    expect(hit.answerHidden).toBe(false);
+  });
+
+  it('lượt đang hỏi có mặt nhưng không chứa câu (cũng không chứa câu trùng): theo lượt khác đã nộp', () => {
+    const a = attempt('a', { status: 'submitted', answers: { 5: ['B'] } });
+    const b = attempt('b', { status: 'in-progress', answers: { 1: ['A'] } });
+    const [hit] = searchAnswered('multipart', CUR, [a, b], twinBank()).filter((h) => h.qid === 5);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.tries[0].correct).toBe(true);
   });
 });
 
