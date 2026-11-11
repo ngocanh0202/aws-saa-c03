@@ -1,0 +1,368 @@
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useApp } from '../app/context';
+import type { AiJobTarget } from '../ai/gate';
+import { IconClose, IconDelete, IconHighlight, IconNote, IconSave } from '../components/icons';
+import type { Question } from '../data/types';
+import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
+import { addHighlight, locate, NOTE_MAX, removeHighlight, setNote, type HighlightPart, type QuestionNotes } from './model';
+
+const MOBILE_QUERY = '(max-width: 639px)';
+const POP_WIDTH = 360;
+
+export interface HighlighterProps {
+  /** Canonical id: khóa lưu ghi chú. */
+  qid: number;
+  question: Question;
+  stemEl: HTMLElement | null;
+  promptEl: HTMLElement | null;
+  /** Nhãn câu ("Câu 3") và đích của việc AI, dùng ở Task 8–9. */
+  label?: string;
+  target?: (highlightId: string) => AiJobTarget;
+  /** Nút AI trong popup (Task 9). */
+  aiSlot?: (ctx: { highlightId: string; text: string }) => ReactNode;
+}
+
+interface Box {
+  top: number;
+  left: number;
+  bottom: number;
+  width: number;
+}
+
+interface Pending {
+  part: HighlightPart;
+  start: number;
+  end: number;
+  text: string;
+  box: Box | null;
+}
+
+interface OpenPop {
+  id: string;
+  draft: string;
+  /** Ghi chú đã lưu lúc mở (hoặc lần đồng bộ gần nhất từ store). */
+  base: string;
+  box: Box | null;
+}
+
+function useMobile(): boolean {
+  const [mobile, setMobile] = useState(() => window.matchMedia?.(MOBILE_QUERY)?.matches ?? false);
+  useEffect(() => {
+    const mq = window.matchMedia?.(MOBILE_QUERY);
+    if (!mq) return;
+    const on = () => setMobile(mq.matches);
+    mq.addEventListener?.('change', on);
+    return () => mq.removeEventListener?.('change', on);
+  }, []);
+  return mobile;
+}
+
+function toBox(r: DOMRect | undefined | null): Box | null {
+  if (!r) return null;
+  return { top: r.top + window.scrollY, bottom: r.bottom + window.scrollY, left: r.left + window.scrollX, width: r.width };
+}
+
+function rangeBox(r: Range): Box | null {
+  return typeof r.getBoundingClientRect === 'function' ? toBox(r.getBoundingClientRect()) : null;
+}
+
+/** Dòng của mark gần điểm bấm nhất (đoạn tô dài có thể nằm trên nhiều dòng). */
+function markBox(mark: Element, clientY?: number): Box | null {
+  const rects = Array.from(mark.getClientRects?.() ?? []);
+  if (rects.length === 0) return toBox(mark.getBoundingClientRect?.());
+  const hit = clientY === undefined ? undefined : rects.find((r) => clientY >= r.top && clientY <= r.bottom);
+  return toBox(hit ?? rects[rects.length - 1]);
+}
+
+function newHighlightId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+const emptyNotes = (qid: number): QuestionNotes => ({ qid, highlights: [], updatedAt: 0 });
+
+export function Highlighter({ qid, stemEl, promptEl, aiSlot }: HighlighterProps) {
+  const { notes: store, now } = useApp();
+  const notes = useSyncExternalStore(store.subscribe, () => store.get(qid));
+  const mobile = useMobile();
+  const [pending, setPending] = useState<Pending | null>(null);
+  const [open, setOpen] = useState<OpenPop | null>(null);
+  const popRef = useRef<HTMLDivElement>(null);
+  const toolbarPress = useRef(false);
+
+  const elOf = useCallback((part: HighlightPart) => (part === 'stem' ? stemEl : promptEl), [stemEl, promptEl]);
+
+  // Vẽ mark sau mỗi lần dữ liệu đổi; dọn sạch trước lần commit kế tiếp của React để DOM khớp với React.
+  useLayoutEffect(() => {
+    const parts: [HighlightPart, HTMLElement | null][] = [
+      ['stem', stemEl],
+      ['prompt', promptEl],
+    ];
+    for (const [part, el] of parts) {
+      if (!el) continue;
+      const partText = el.textContent ?? '';
+      const marks: MarkSpec[] = [];
+      for (const h of notes?.highlights ?? []) {
+        if (h.part !== part) continue;
+        const at = locate(h, partText);
+        if (at) marks.push({ id: h.id, ...at, hasNote: h.note !== '' });
+      }
+      applyHighlights(el, marks);
+    }
+    return () => {
+      for (const [, el] of parts) if (el) applyHighlights(el, []);
+    };
+  }, [notes, stemEl, promptEl]);
+
+  // Đoạn chọn hợp lệ → thanh Tô.
+  useEffect(() => {
+    const onChange = () => {
+      if (toolbarPress.current) return;
+      const sel = document.getSelection();
+      if (!sel || sel.rangeCount === 0) return setPending(null);
+      const range = sel.getRangeAt(0);
+      for (const part of ['stem', 'prompt'] as const) {
+        const el = elOf(part);
+        const off = el && selectionOffsets(el, range);
+        if (off) return setPending({ part, ...off, box: rangeBox(range) });
+      }
+      setPending(null);
+    };
+    // Chạm/bấm thanh Tô có thể làm mất đoạn chọn (điện thoại); bỏ qua thay đổi trong lúc đó, nhả tay một lúc thì nghe lại.
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onUp = () => {
+      if (!toolbarPress.current) return;
+      clearTimeout(timer);
+      timer = setTimeout(() => (toolbarPress.current = false), 400);
+    };
+    document.addEventListener('selectionchange', onChange);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('mouseup', onUp);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('selectionchange', onChange);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('mouseup', onUp);
+    };
+  }, [elOf]);
+
+  // Bản mới nhất cho các trình nghe sự kiện và lúc unmount.
+  const latest = useRef({ open, notes, qid });
+  useLayoutEffect(() => {
+    latest.current = { open, notes, qid };
+  });
+
+  /** Lưu bản đang gõ nếu khác bản đã lưu. */
+  const commit = useCallback(
+    (o: OpenPop) => {
+      const cur = store.get(latest.current.qid);
+      const h = cur?.highlights.find((x) => x.id === o.id);
+      if (cur && h && h.note !== o.draft) store.save(setNote(cur, o.id, o.draft, now()));
+    },
+    [store, now],
+  );
+
+  const close = useCallback(() => {
+    const o = latest.current.open;
+    if (!o) return;
+    commit(o);
+    setOpen(null);
+  }, [commit]);
+
+  const openPop = useCallback(
+    (id: string, box: Box | null) => {
+      const cur = latest.current.open;
+      if (cur) {
+        if (cur.id === id) return;
+        commit(cur);
+      }
+      const note = store.get(latest.current.qid)?.highlights.find((h) => h.id === id)?.note ?? '';
+      setOpen({ id, draft: note, base: note, box });
+    },
+    [commit, store],
+  );
+
+  // Đổi câu / rời trang: tự lưu.
+  useEffect(
+    () => () => {
+      const o = latest.current.open;
+      if (o) commit(o);
+    },
+    [commit],
+  );
+
+  // Bấm hoặc Enter/Space trên mark → mở popup.
+  useEffect(() => {
+    const els = [stemEl, promptEl].filter((e): e is HTMLElement => e !== null);
+    const markOf = (t: EventTarget | null) => (t instanceof Element ? t.closest('mark[data-hl]') : null);
+    const onClick = (e: MouseEvent) => {
+      const m = markOf(e.target);
+      if (m) openPop((m as HTMLElement).dataset.hl!, markBox(m, e.clientY));
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const m = markOf(e.target);
+      if (!m) return;
+      e.preventDefault();
+      openPop((m as HTMLElement).dataset.hl!, markBox(m));
+    };
+    for (const el of els) {
+      el.addEventListener('click', onClick);
+      el.addEventListener('keydown', onKey);
+    }
+    return () => {
+      for (const el of els) {
+        el.removeEventListener('click', onClick);
+        el.removeEventListener('keydown', onKey);
+      }
+    };
+  }, [stemEl, promptEl, openPop]);
+
+  // Esc / bấm ra ngoài → đóng (tự lưu).
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close();
+    };
+    const onDown = (e: MouseEvent) => {
+      const t = e.target;
+      if (!(t instanceof Node)) return;
+      if (popRef.current?.contains(t)) return;
+      // Bấm vào mark khác: trình nghe click sẽ lưu bản cũ rồi mở bản mới.
+      if (t instanceof Element && t.closest('mark[data-hl]')) return;
+      close();
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [open !== null, close]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Đoạn đang mở bị xóa (máy khác, đồng bộ) → đóng; ghi chú đổi từ nơi khác (AI) mà chưa gõ gì → cập nhật ô nhập.
+  const openNote = open ? notes?.highlights.find((h) => h.id === open.id) : undefined;
+  useEffect(() => {
+    if (!open) return;
+    if (!openNote) return setOpen(null);
+    if (openNote.note !== open.base && open.draft === open.base) setOpen({ ...open, draft: openNote.note, base: openNote.note });
+  }, [open, openNote]);
+
+  useEffect(() => {
+    if (open) popRef.current?.querySelector('textarea')?.focus();
+  }, [open?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const add = (withNote: boolean) => {
+    toolbarPress.current = false;
+    if (!pending) return;
+    const el = elOf(pending.part);
+    if (!el) return;
+    const cur = store.get(qid) ?? emptyNotes(qid);
+    const { notes: next, id } = addHighlight(cur, pending, el.textContent ?? '', newHighlightId(), now());
+    store.save(next);
+    document.getSelection()?.removeAllRanges();
+    setPending(null);
+    if (withNote) openPop(id, pending.box);
+  };
+
+  const remove = () => {
+    if (!open) return;
+    const cur = store.get(qid);
+    if (cur) store.save(removeHighlight(cur, open.id, now()));
+    setOpen(null);
+  };
+
+  const save = () => {
+    if (!open) return;
+    commit(open);
+    setOpen(null);
+  };
+
+  const keepSelection = {
+    onPointerDown: () => {
+      toolbarPress.current = true;
+    },
+    onMouseDown: (e: ReactMouseEvent) => {
+      toolbarPress.current = true;
+      e.preventDefault();
+    },
+  };
+
+  let toolbar: ReactNode = null;
+  if (pending && !open) {
+    const style = mobile || !pending.box ? undefined : { top: pending.box.bottom + 8, left: Math.max(8, pending.box.left) };
+    toolbar = (
+      <div className={`hl-toolbar${mobile ? ' hl-toolbar--bottom' : ''}`} style={style} role="toolbar" aria-label="Tô đoạn đã chọn" {...keepSelection}>
+        <button type="button" className="hl-btn" aria-label="Tô" title="Tô" onClick={() => add(false)}>
+          <IconHighlight />
+        </button>
+        <button type="button" className="hl-btn" aria-label="Tô và ghi chú" title="Tô và ghi chú" onClick={() => add(true)}>
+          <IconNote />
+        </button>
+      </div>
+    );
+  }
+
+  let popup: ReactNode = null;
+  if (open && openNote) {
+    const body = (
+      <>
+        {mobile && <blockquote className="hl-quote">{openNote.text}</blockquote>}
+        <textarea
+          aria-label="Ghi chú"
+          maxLength={NOTE_MAX}
+          value={open.draft}
+          placeholder="Ghi chú cho đoạn này…"
+          onChange={(e) => setOpen({ ...open, draft: e.target.value })}
+        />
+        <div className="hl-pop__actions">
+          {aiSlot?.({ highlightId: open.id, text: openNote.text })}
+          <button type="button" className="hl-btn" aria-label="Xóa đoạn tô" title="Xóa đoạn tô" onClick={remove}>
+            <IconDelete />
+          </button>
+          {mobile && (
+            <button type="button" className="hl-btn" aria-label="Đóng" title="Đóng" onClick={close}>
+              <IconClose />
+            </button>
+          )}
+          <button type="button" className="hl-btn hl-btn--primary" aria-label="Lưu ghi chú" title="Lưu ghi chú" onClick={save}>
+            <IconSave />
+          </button>
+        </div>
+      </>
+    );
+    if (mobile) {
+      popup = (
+        <>
+          <div className="hl-backdrop" onClick={close} />
+          <div ref={popRef} className="hl-sheet" role="dialog" aria-label="Ghi chú cho đoạn tô">
+            <div className="hl-sheet__grab" aria-hidden="true" />
+            {body}
+          </div>
+        </>
+      );
+    } else {
+      const vw = document.documentElement.clientWidth || window.innerWidth;
+      const width = Math.min(POP_WIDTH, vw - 16);
+      const box = open.box;
+      const left = box ? Math.min(Math.max(8, box.left - 16), Math.max(8, vw - width - 8 + window.scrollX)) : 8;
+      const arrow = box ? Math.min(Math.max(12, box.left + Math.min(box.width / 2, 24) - left - 6), width - 24) : 24;
+      const style = { top: (box?.bottom ?? 0) + 10, left, width, ['--arrow' as string]: `${arrow}px` };
+      popup = (
+        <div ref={popRef} className="hl-pop" style={style} role="dialog" aria-label="Ghi chú cho đoạn tô">
+          {body}
+        </div>
+      );
+    }
+  }
+
+  if (!toolbar && !popup) return null;
+  return createPortal(
+    <div className="hl-layer" lang="vi">
+      {toolbar}
+      {popup}
+    </div>,
+    document.body,
+  );
+}

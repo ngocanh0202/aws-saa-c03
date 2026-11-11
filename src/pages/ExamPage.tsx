@@ -111,6 +111,15 @@ export function ExamPage() {
             showOrigLabels={revealed && !bank.vi.has(aq.qid) && !question.html}
             chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
             onSelect={revealed ? undefined : (key) => update(selectOption(attempt, aq.qid, key, question.choose))}
+            annotate={
+              attempt.mode === 'practice'
+                ? {
+                    qid: bank.canonical(aq.qid),
+                    label: `Câu ${index + 1}`,
+                    target: (hl) => ({ page: 'attempt', attemptId: attempt.id, qid: aq.qid, highlightId: hl }),
+                  }
+                : undefined
+            }
           />
 
           <div className="exam__pager">

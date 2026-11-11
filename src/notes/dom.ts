@@ -22,6 +22,16 @@ export function selectionOffsets(
   return { start, end, text };
 }
 
+// Khoảng trắng nằm thẳng trong các thẻ này chỉ là ngắt dòng giữa thẻ khối; bọc <mark> vào đó sinh thẻ sai chỗ (vd. trong <ul>).
+const BLOCK_PARENTS = new Set([
+  'ADDRESS', 'ARTICLE', 'ASIDE', 'BLOCKQUOTE', 'BODY', 'DETAILS', 'DIV', 'DL', 'FIELDSET', 'FIGURE', 'FOOTER', 'FORM',
+  'HEADER', 'MAIN', 'NAV', 'OL', 'SECTION', 'TABLE', 'TBODY', 'TFOOT', 'THEAD', 'TR', 'UL',
+]);
+
+function isLayoutWhitespace(node: Text): boolean {
+  return node.data.trim() === '' && BLOCK_PARENTS.has(node.parentElement?.tagName ?? '');
+}
+
 function removeMarks(container: HTMLElement): void {
   container.querySelectorAll('mark[data-hl]').forEach((m) => m.replaceWith(...Array.from(m.childNodes)));
   container.normalize();
@@ -51,6 +61,7 @@ export function applyHighlights(container: HTMLElement, marks: MarkSpec[]): void
 
   for (const { node, from } of nodes) {
     const to = from + node.length;
+    if (isLayoutWhitespace(node)) continue;
     const segs = kept
       .filter((m) => m.start < to && m.end > from)
       .map((m) => ({ m, a: Math.max(m.start, from) - from, b: Math.min(m.end, to) - from }));

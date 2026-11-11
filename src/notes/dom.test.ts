@@ -79,4 +79,18 @@ describe('applyHighlights', () => {
     expect(c.querySelector('mark')).toBeNull();
     expect(c.innerHTML).toBe('<p>abc</p>');
   });
+  it('không bọc text node toàn khoảng trắng nằm giữa các thẻ khối (vd. giữa <li>)', () => {
+    const c = setup('<ul>\n<li>one</li>\n<li>two</li>\n</ul>');
+    const t = c.textContent ?? '';
+    applyHighlights(c, [{ id: 'h', start: t.indexOf('one'), end: t.indexOf('two') + 3, hasNote: false }]);
+    const marks = Array.from(c.querySelectorAll('mark'));
+    expect(marks.map((m) => m.textContent)).toEqual(['one', 'two']);
+    expect(marks.every((m) => m.parentElement?.tagName === 'LI')).toBe(true);
+    expect(c.textContent).toBe(t);
+  });
+  it('vẫn bọc khoảng trắng giữa hai thẻ nội dòng trong <p>', () => {
+    const c = setup('<p><b>a</b> <i>b</i></p>');
+    applyHighlights(c, [{ id: 'h', start: 0, end: 3, hasNote: false }]);
+    expect(Array.from(c.querySelectorAll('mark')).map((m) => m.textContent)).toEqual(['a', ' ', 'b']);
+  });
 });
