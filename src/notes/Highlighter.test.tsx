@@ -195,3 +195,158 @@ describe('Highlighter — Thi thật', () => {
     expect(screen.queryByRole('button', { name: 'Tô' })).not.toBeInTheDocument();
   });
 });
+
+/** jsdom không có layout: popup/sheet có cỡ theo style (mặc định 360×150 / sheet cao 300), góc trên trái popup ở (100, 200). */
+function mockLayout() {
+  const orig = HTMLElement.prototype.getBoundingClientRect;
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const pop = this.classList.contains('hl-pop');
+    const sheet = this.classList.contains('hl-sheet');
+    if (!pop && !sheet) return orig.call(this);
+    const w = parseFloat(this.style.width) || (pop ? 360 : window.innerWidth);
+    const h = parseFloat(this.style.height) || (pop ? 150 : 300);
+    const left = pop ? 100 : 0;
+    const top = pop ? 200 : window.innerHeight - h;
+    return { left, top, width: w, height: h, right: left + w, bottom: top + h, x: left, y: top, toJSON() {} } as DOMRect;
+  });
+}
+
+const SIZE_KEY = 'saa-c03:note-popup-size:v1';
+
+describe('Highlighter — đổi cỡ ô ghi chú (máy tính)', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  function openPop() {
+    vi.stubGlobal('innerWidth', 1000);
+    vi.stubGlobal('innerHeight', 700);
+    mockLayout();
+    const { deps, canon } = setup('practice');
+    const { container } = renderApp('/exam/e1', deps);
+    highlightStem(container, 'Tô và ghi chú');
+    const pop = screen.getByRole('dialog', { name: 'Ghi chú cho đoạn tô' });
+    const grip = within(pop).getByRole('button', { name: 'Kéo để đổi cỡ ô ghi chú' });
+    return { deps, canon, container, pop, grip };
+  }
+
+  it('kéo góc phải dưới làm popup to ra, không quá mép màn hình, không nhỏ hơn cỡ mặc định; lưu cỡ', () => {
+    const { pop, grip } = openPop();
+    expect(grip).toHaveAttribute('title', 'Kéo để đổi cỡ ô ghi chú');
+    fireEvent.pointerDown(grip, { pointerId: 1, clientX: 460, clientY: 350, button: 0 });
+    fireEvent.pointerMove(grip, { pointerId: 1, clientX: 560, clientY: 400 });
+    expect(pop.style.width).toBe('460px');
+    expect(pop.style.height).toBe('200px');
+    // Vượt mép: phải = 1000 - 8 - 100, dưới = 700 - 8 - 200.
+    fireEvent.pointerMove(grip, { pointerId: 1, clientX: 5000, clientY: 5000 });
+    expect(pop.style.width).toBe('892px');
+    expect(pop.style.height).toBe('492px');
+    // Nhỏ hơn mặc định: giữ mặc định.
+    fireEvent.pointerMove(grip, { pointerId: 1, clientX: 0, clientY: 0 });
+    expect(pop.style.width).toBe('360px');
+    expect(pop.style.height).toBe('150px');
+    fireEvent.pointerMove(grip, { pointerId: 1, clientX: 500, clientY: 380 });
+    fireEvent.pointerUp(grip, { pointerId: 1, clientX: 500, clientY: 380 });
+    expect(JSON.parse(localStorage.getItem(SIZE_KEY)!)).toEqual({ desktop: { w: 400, h: 180 } });
+    // Thả rồi di chuột: không đổi nữa.
+    fireEvent.pointerMove(grip, { pointerId: 1, clientX: 700, clientY: 600 });
+    expect(pop.style.width).toBe('400px');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+  });
+
+  it('phím mũi tên trên góc kéo đổi cỡ 16px', () => {
+    const { pop, grip } = openPop();
+    fireEvent.keyDown(grip, { key: 'ArrowRight' });
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    fireEvent.keyDown(grip, { key: 'ArrowDown' });
+    expect(pop.style.width).toBe('376px');
+    expect(pop.style.height).toBe('182px');
+    fireEvent.keyDown(grip, { key: 'ArrowLeft' });
+    fireEvent.keyDown(grip, { key: 'ArrowUp' });
+    expect(pop.style.width).toBe('360px');
+    expect(pop.style.height).toBe('166px');
+    expect(JSON.parse(localStorage.getItem(SIZE_KEY)!)).toEqual({ desktop: { w: 360, h: 166 } });
+  });
+
+  it('mở lại thì dùng cỡ đã lưu (kẹp theo màn hình); dữ liệu hỏng thì bỏ qua', () => {
+    localStorage.setItem(SIZE_KEY, JSON.stringify({ desktop: { w: 500, h: 9999 } }));
+    const { pop } = openPop();
+    expect(pop.style.width).toBe('500px');
+    expect(pop.style.height).toBe('492px');
+    fireEvent.keyDown(document, { key: 'Escape' });
+    localStorage.setItem(SIZE_KEY, '{hỏng');
+    fireEvent.click(document.querySelector('mark.hl')!);
+    const again = screen.getByRole('dialog', { name: 'Ghi chú cho đoạn tô' });
+    expect(again.style.width).toBe('360px');
+    expect(again.style.height).toBe('');
+  });
+});
+
+describe('Highlighter — đổi cỡ ô ghi chú (điện thoại)', () => {
+  afterEach(() => {
+    localStorage.clear();
+    vi.unstubAllGlobals();
+  });
+
+  function openSheet() {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 639px)', addEventListener() {}, removeEventListener() {} }));
+    vi.stubGlobal('innerWidth', 375);
+    vi.stubGlobal('innerHeight', 800);
+    mockLayout();
+    const { deps, canon } = setup('practice');
+    const { container } = renderApp('/exam/e1', deps);
+    const t = firstText(stemText(container));
+    select(t, 0, t, 4);
+    fireEvent.click(screen.getByRole('button', { name: 'Tô và ghi chú' }));
+    const sheet = screen.getByRole('dialog', { name: 'Ghi chú cho đoạn tô' });
+    const handle = within(sheet).getByRole('separator', { name: 'Kéo lên để mở rộng, kéo xuống để thu nhỏ' });
+    return { deps, canon, container, sheet, handle };
+  }
+
+  it('kéo thanh lên làm sheet cao hơn, tối đa 90vh; kéo xuống không thấp hơn mặc định; lưu cỡ', () => {
+    const { sheet, handle } = openSheet();
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180, clientY: 500 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 400 });
+    expect(sheet.style.height).toBe('400px');
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 0 });
+    expect(sheet.style.height).toBe('720px');
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 560 });
+    expect(sheet.style.height).toBe('300px');
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 450 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 180, clientY: 450 });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem(SIZE_KEY)!)).toEqual({ mobile: { h: 350 } });
+  });
+
+  it('kéo xuống quá cỡ nhỏ nhất hơn 80px thì đóng và tự lưu bản đang gõ', () => {
+    const { deps, canon, handle } = openSheet();
+    fireEvent.change(screen.getByRole('textbox', { name: 'Ghi chú' }), { target: { value: 'kéo đóng' } });
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180, clientY: 500 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 570 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 180, clientY: 570 });
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.pointerDown(handle, { pointerId: 1, clientX: 180, clientY: 500 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 180, clientY: 590 });
+    fireEvent.pointerUp(handle, { pointerId: 1, clientX: 180, clientY: 590 });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(deps.notes.get(canon)!.highlights[0].note).toBe('kéo đóng');
+  });
+
+  it('phím mũi tên trên thanh kéo đổi cỡ 10vh; mở lại dùng cỡ đã lưu', () => {
+    const { container, sheet, handle } = openSheet();
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    expect(sheet.style.height).toBe('380px');
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(sheet.style.height).toBe('380px');
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    fireEvent.keyDown(handle, { key: 'ArrowDown' });
+    expect(sheet.style.height).toBe('300px');
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    fireEvent.keyDown(handle, { key: 'ArrowUp' });
+    fireEvent.click(document.querySelector('.hl-backdrop')!);
+    fireEvent.click(container.querySelector('mark.hl')!);
+    expect(screen.getByRole('dialog', { name: 'Ghi chú cho đoạn tô' }).style.height).toBe('380px');
+  });
+});

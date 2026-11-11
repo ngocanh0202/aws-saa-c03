@@ -2,11 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExter
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
-import { IconClose, IconDelete, IconHighlight, IconNote, IconSave } from '../components/icons';
+import { IconClose, IconDelete, IconHighlight, IconNote, IconResize, IconSave } from '../components/icons';
 import type { Question } from '../data/types';
 import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
 import { addHighlight, locate, NOTE_MAX, removeHighlight, setNote, type HighlightPart, type QuestionNotes } from './model';
 import { NoteAiButton } from './NoteAiButton';
+import { usePopupResize } from './usePopupResize';
 
 const MOBILE_QUERY = '(max-width: 639px)';
 const POP_WIDTH = 360;
@@ -310,6 +311,8 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
     if (openNote.note !== open.base && open.draft === open.base) setOpen({ ...open, draft: openNote.note, base: openNote.note });
   }, [open, openNote]);
 
+  const resize = usePopupResize({ ref: popRef, openKey: open ? `${open.id}:${mobile ? 'm' : 'd'}` : null, mobile, onDismiss: close });
+
   useEffect(() => {
     if (open) popRef.current?.querySelector('textarea')?.focus();
   }, [open?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -403,8 +406,16 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
       popup = (
         <>
           <div className="hl-backdrop" onClick={close} />
-          <div ref={popRef} className="hl-sheet" role="dialog" aria-label="Ghi chú cho đoạn tô">
-            <div className="hl-sheet__grab" aria-hidden="true" />
+          <div ref={popRef} className="hl-sheet" style={resize.style} role="dialog" aria-label="Ghi chú cho đoạn tô">
+            <div
+              className="hl-sheet__grab"
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Kéo lên để mở rộng, kéo xuống để thu nhỏ"
+              title="Kéo lên để mở rộng, kéo xuống để thu nhỏ"
+              tabIndex={0}
+              {...resize.handlers}
+            />
             {body}
           </div>
         </>
@@ -415,10 +426,13 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
       const box = open.box;
       const left = box ? Math.min(Math.max(8, box.left - 16), Math.max(8, vw - width - 8 + window.scrollX)) : 8;
       const arrow = box ? Math.min(Math.max(12, box.left + Math.min(box.width / 2, 24) - left - 6), width - 24) : 24;
-      const style = { top: (box?.bottom ?? 0) + 10, left, width, ['--arrow' as string]: `${arrow}px` };
+      const style = { top: (box?.bottom ?? 0) + 10, left, width, ['--arrow' as string]: `${arrow}px`, ...resize.style };
       popup = (
         <div ref={popRef} className="hl-pop" style={style} role="dialog" aria-label="Ghi chú cho đoạn tô">
           {body}
+          <button type="button" className="hl-pop__grip" aria-label="Kéo để đổi cỡ ô ghi chú" title="Kéo để đổi cỡ ô ghi chú" {...resize.handlers}>
+            <IconResize size={14} />
+          </button>
         </div>
       );
     }

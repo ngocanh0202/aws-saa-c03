@@ -57,6 +57,12 @@ export const IconClose = (p: IconProps) => (
     <path d="M6 6l12 12M18 6L6 18" />
   </Svg>
 );
+/** Góc kéo đổi cỡ (hai vạch chéo ở góc phải dưới). */
+export const IconResize = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M20 10L10 20M20 16l-4 4" />
+  </Svg>
+);
 export const IconRetry = (p: IconProps) => (
   <Svg {...p}>
     <path d="M20 11a8 8 0 10-2.3 5.7" />
