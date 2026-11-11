@@ -68,7 +68,9 @@ export async function draftNote(deps: DraftNoteDeps, job: DraftNoteJob): Promise
         // AI im lặng quá lâu (kể cả trước chữ đầu tiên) thì báo lỗi và nhả gate; chữ đến sau bị bỏ.
         const watchdog = createIdleWatchdog();
         // Adapter tự thử lại khi 429/503 (retry.onWait); mỗi lần chờ thì khóa mọi nút AI tới giờ thử lại.
-        const chat = client.startChat(buildNotePrompt(job.question, job.text), [], {
+        // Ghi chú đang có lúc bấm (popup đã lưu chữ đang gõ trước khi chạy): AI trả lời câu hỏi hoặc bổ sung.
+        const current = notes.get(job.qid)?.highlights.find((x) => x.id === job.highlightId)?.note ?? '';
+        const chat = client.startChat(buildNotePrompt(job.question, job.text, current), [], {
           settings,
           retry: {
             onWait: (w) => {
