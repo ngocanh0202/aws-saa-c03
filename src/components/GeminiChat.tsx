@@ -5,6 +5,7 @@ import { formatDate, setLabel } from '../app/format';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
+import { AiGateBusyError, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
 import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
@@ -114,8 +115,20 @@ let openAfterSwitch: string | null = null;
 
 function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
   const id = useId();
+  const { aiGate } = useApp();
   const launcherKey = keyOf(props.attemptId, props.question.id);
-  const [open, setOpen] = useState(() => openAfterSwitch === launcherKey);
+  const { attemptId } = props;
+  const qid = props.question.id;
+  /** Yêu cầu mở từ thông báo "Đến câu …" (khung chat của đúng câu này, không phải ghi chú). */
+  const isMine = useCallback(
+    (t: AiJobTarget) => t.page === 'attempt' && t.attemptId === attemptId && t.qid === qid && !t.highlightId,
+    [attemptId, qid],
+  );
+  const [open, setOpen] = useState(() => {
+    if (openAfterSwitch === launcherKey) return true;
+    const pending = aiGate.peekOpen();
+    return pending !== null && isMine(pending);
+  });
   useEffect(() => {
     if (openAfterSwitch === launcherKey) openAfterSwitch = null;
   }, [launcherKey]);
@@ -123,10 +136,18 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
   useEffect(() => {
     return onChatFocus((other) => other !== id && setOpen(false));
   }, [id]);
-  const show = () => {
+  const show = useCallback(() => {
     claimChatFocus(id);
     setOpen(true);
-  };
+  }, [id]);
+  // Nhận yêu cầu mở (lúc mount, hoặc khi đang ở sẵn câu này mà người học bấm "Đến câu …").
+  useEffect(() => {
+    const take = () => {
+      if (aiGate.takeOpen(isMine)) show();
+    };
+    take();
+    return aiGate.subscribe(take);
+  }, [aiGate, isMine, show]);
   const running = useRunning(inflightFor(props.chats), inflightKey(props.uid, props.attemptId, props.question.id));
   // Như chat Messenger: khung chat mở ra thay chỗ nút, đóng lại thì nút hiện lại.
   return open ? (
@@ -607,8 +628,20 @@ function Conversation({
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
   const key = inflightKey(uid, attemptId, qid);
-  const { store, bank, sync, aiCooldown } = useApp();
+  const { store, bank, sync, aiCooldown, aiGate } = useApp();
   const inflight = inflightFor(chats);
+  // Mỗi tab chỉ một yêu cầu AI: yêu cầu ở chỗ khác đang chạy thì khóa ô nhập của khung này.
+  const gateTarget: AiJobTarget = { page: 'attempt', attemptId, qid };
+  const myKey = targetKey(gateTarget);
+  const gateJob = useAiGate();
+  const locked = gateJob !== null && targetKey(gateJob.target) !== myKey ? gateJob : null;
+  // Khung đang mở câu này: trả lời xong thì không cần thông báo.
+  useEffect(() => {
+    aiGate.setViewing(myKey);
+    return () => {
+      if (aiGate.viewing() === myKey) aiGate.setViewing(null);
+    };
+  }, [aiGate, myKey]);
   // Khóa sau lỗi hết lượt chỉ dùng chung cho Gemini; AI thử nghiệm có bản riêng (thực tế không bị 429).
   const cooldown = brand === 'Gemini' ? (aiCooldown ?? memoryCooldownFor(ai)) : memoryCooldownFor(ai);
   const until = useCooldown(cooldown);
@@ -685,15 +718,11 @@ function Conversation({
     endRef.current?.scrollIntoView?.({ block: 'end' });
   }, [messages]);
 
-  /**
-   * Chạy ở nền, không phụ thuộc khung chat còn mở hay không: mọi cập nhật đi qua `inflight`, khung
-   * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
-   */
   /** Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập). */
   /** base: lịch sử gửi kèm (gửi lại câu hỏi lỗi thì bỏ chính câu đó khỏi lịch sử để không lặp). */
   const send = async (suggestion?: string, base: ChatMessage[] = messages) => {
     const text = (suggestion ?? input).trim();
-    if (!text || busy || !loaded || cooldown.until() !== null) return;
+    if (!text || busy || !loaded || cooldown.until() !== null || aiGate.current() !== null) return;
     const history = base;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
     // Câu trả lời tạo lúc chưa xem đáp án được gắn `hidden` để không dùng lại sau khi xem.
@@ -712,6 +741,25 @@ function Conversation({
       chats.save(uid, attemptId, qid, done).catch(() => inflight.emit(key, { kind: 'save-failed' }));
       return;
     }
+    const job = { kind: 'chat' as const, label: `Câu ${target.number}`, target: gateTarget };
+    // Chạy qua gate. Lỗi của AI đã báo trong khung; gate bận (đã chặn ở trên, chỉ xảy ra khi đua) thì trả lại chữ.
+    await aiGate.run(job, () => answer(text, history, asked, modelMsg, signedIn)).catch((e) => {
+      if (e instanceof AiGateBusyError && suggestion === undefined) setInput(text);
+    });
+  };
+
+  /**
+   * Chạy ở nền, không phụ thuộc khung chat còn mở hay không: mọi cập nhật đi qua `inflight`, khung
+   * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
+   * Ném lại lỗi để gate biết yêu cầu hỏng.
+   */
+  const answer = async (
+    text: string,
+    history: ChatMessage[],
+    asked: ChatMessage[],
+    modelMsg: (t: string) => ChatMessage,
+    signedIn: () => boolean,
+  ) => {
     let reply = '';
     let searchingNow = false;
     let retryNow: { attempt: number; max: number } | undefined;
@@ -784,6 +832,7 @@ function Conversation({
       // Gemini báo phải chờ (quá lâu để tự chờ, hoặc đã thử lại hết lượt): khóa tới giờ đó.
       if (busyError && e.retryAfterMs) cooldown.set(Date.now() + e.retryAfterMs);
       inflight.emit(key, { kind: 'done', messages: reply ? [...asked, modelMsg(reply)] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
+      throw e;
     }
   };
 
@@ -823,7 +872,7 @@ function Conversation({
                   className="icon-btn gemini__retry"
                   aria-label="Gửi lại câu hỏi"
                   title="Gửi lại câu hỏi"
-                  disabled={!loaded || until !== null}
+                  disabled={!loaded || until !== null || locked !== null}
                   onClick={() => void send(m.text, messages.slice(0, -1))}
                 >
                   ↻
@@ -874,7 +923,7 @@ function Conversation({
             <div className="gemini__suggest" role="group" aria-label="Câu hỏi gợi ý">
               <p className="gemini__suggest-title">Gợi ý</p>
               {suggestions.map((text) => (
-                <button key={text} type="button" className="gemini__suggest-item" disabled={until !== null} onClick={() => void send(text)}>
+                <button key={text} type="button" className="gemini__suggest-item" disabled={until !== null || locked !== null} onClick={() => void send(text)}>
                   {text}
                 </button>
               ))}
@@ -889,15 +938,20 @@ function Conversation({
           aria-label={`Câu hỏi cho ${brand}`}
           rows={2}
           value={input}
-          disabled={busy || !loaded}
+          disabled={busy || !loaded || locked !== null}
           placeholder="Nhập câu hỏi…"
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" className="btn-primary" disabled={busy || !loaded || until !== null}>
+        <button type="submit" className="btn-primary" disabled={busy || !loaded || until !== null || locked !== null}>
           Gửi
         </button>
       </form>
+      {locked && (
+        <p className="gemini__locked" role="note">
+          {locked.kind === 'note' ? `AI đang soạn ghi chú ở ${locked.label}` : `AI đang trả lời ở ${locked.label}`}
+        </p>
+      )}
     </>
   );
 }

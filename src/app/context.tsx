@@ -1,6 +1,7 @@
 import { createContext, useContext, type ReactNode } from 'react';
 import type { AiModeStore } from '../ai/ai-mode';
 import type { Cooldown } from '../ai/cooldown';
+import type { AiGate } from '../ai/gate';
 import type { LocalSettingsStore } from '../ai/local-settings';
 import type { AiClient, ChatHistoryStore } from '../ai/types';
 import type { Bank } from '../data/bank';
@@ -17,6 +18,8 @@ export interface AppDeps {
   newId: () => string;
   /** Đoạn tô và ghi chú theo câu, tách ngăn theo tài khoản. */
   notes: NotesStore;
+  /** Mỗi tab chỉ một yêu cầu AI tại một thời điểm (chat hoặc soạn ghi chú). */
+  aiGate: AiGate;
   /** Không có khi chưa cấu hình Firebase. */
   sync?: SyncController;
   /** Chỉ có khi cấu hình Firebase. */

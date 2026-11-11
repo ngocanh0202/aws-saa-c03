@@ -5,6 +5,7 @@ import { useStoreVersion } from '../app/use-store';
 import { useTheme } from '../app/theme';
 import { externalHref } from '../pages/ExternalListPage';
 import { AccountMenu } from './AccountMenu';
+import { AiDoneToast } from './AiDoneToast';
 import { ConflictDialog } from './ConflictDialog';
 import { SupportDock } from './SupportDock';
 import { SyncLoading } from './SyncLoading';
@@ -83,6 +84,7 @@ export function Layout() {
       <ConflictDialog />
       <SyncLoading />
       <SupportDock english={english} />
+      <AiDoneToast />
     </>
   );
 }

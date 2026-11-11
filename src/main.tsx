@@ -7,6 +7,7 @@ import { createAiMode } from './ai/ai-mode';
 import { createNotesStore } from './notes/store';
 import { startNotesSync } from './notes/sync';
 import { createCooldown } from './ai/cooldown';
+import { createAiGate } from './ai/gate';
 import { createLocalAiClient } from './ai/local';
 import { buildAiDeps } from './ai/deps';
 import { createGeminiClient } from './ai/gemini';
@@ -40,6 +41,7 @@ const deps: AppDeps = {
   newSeed: randomSeed,
   newId: () => crypto.randomUUID(),
   notes,
+  aiGate: createAiGate(),
   sync,
   ...aiDeps,
   aiCooldown: createCooldown(getBrowserStorage()),

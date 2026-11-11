@@ -749,3 +749,77 @@ describe('Trò chuyện cũ', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
   });
 });
+
+describe('Mỗi lúc một yêu cầu AI', () => {
+  async function askAtQ1ThenOpenQ2() {
+    const s = setup();
+    s.ai.hold = true;
+    s.ai.reply = ['Xong câu 1'];
+    const first = await openChat();
+    await ask(first, 'Hỏi câu 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+    fireEvent.click(screen.getByRole('button', { name: GEMINI }));
+    const second = screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 2' });
+    return { s, second };
+  }
+
+  it('câu khác đang chờ AI: ô nhập và nút Gửi bị khóa, có dòng báo; xong thì mở khóa và hiện thông báo', async () => {
+    const { s, second } = await askAtQ1ThenOpenQ2();
+    await waitFor(() => expect(within(second).getByText('AI đang trả lời ở Câu 1')).toBeInTheDocument());
+    expect(within(second).getByRole('textbox')).toBeDisabled();
+    expect(within(second).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(within(second).getByRole('textbox')).toBeEnabled());
+    expect(within(second).getByRole('button', { name: 'Gửi' })).toBeEnabled();
+    expect(within(second).queryByText('AI đang trả lời ở Câu 1')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('AI đã trả lời ở Câu 1');
+  });
+
+  it('bấm Đến câu 1: về câu 1 và khung chat câu 1 tự mở', async () => {
+    const { s } = await askAtQ1ThenOpenQ2();
+    await act(async () => s.ai.release());
+    fireEvent.click(await screen.findByRole('button', { name: 'Đến câu 1' }));
+    expect(screen.getByText('Câu 1/65')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Hỏi Gemini · Câu 1' });
+    expect(await within(dialog).findByText('Xong câu 1')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('đang mở khung của chính câu đó lúc xong thì không thông báo', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('trang kết quả: yêu cầu mở từ thông báo thì khung chat của đúng câu tự mở', async () => {
+    const s = setup();
+    act(() => s.store.save(submitAttempt(s.store.get('e1')!, 600)));
+    await screen.findByTestId('result-page');
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this);
+    };
+    try {
+      act(() => s.base.aiGate.requestOpen({ page: 'attempt', attemptId: 'e1', qid: s.qid }));
+      expect(await screen.findByRole('dialog', { name: 'Hỏi Gemini · Câu 1' })).toBeInTheDocument();
+      expect(s.base.aiGate.peekOpen()).toBeNull();
+      expect(scrolled.map((el) => el.id)).toContain(`review-q-${s.qid}`);
+    } finally {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
+  });
+
+  it('đóng khung trước khi xong thì có thông báo', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
+    await act(async () => s.ai.release());
+    expect(await screen.findByRole('status')).toHaveTextContent('AI đã trả lời ở Câu 1');
+  });
+});
