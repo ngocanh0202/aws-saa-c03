@@ -78,9 +78,8 @@ export function buildSystemPrompt(question: Question, order: string[], extra: Pr
     '- Không dùng LaTeX hay công thức trong dấu $ (như $\\rightarrow$); viết thẳng ký tự như →, ≤, ×.',
     '- Khi người học muốn tìm lại một câu đã làm, gọi tool find_answered_questions với từ khóa tiếng Anh hoặc tên dịch vụ AWS.',
     '- Tool trả về rỗng thì chỉ trả lời: "Bạn chưa làm câu nào như vậy trong đề này." Không bịa câu hỏi.',
-    '- Tìm thấy thì nêu đề, các lựa chọn, người học đã chọn gì, đúng hay sai, đáp án đúng, rồi phân tích tình huống và so sánh với câu đang làm. Nhiều câu thì liệt kê ngắn để người học chọn.',
+    '- Tìm thấy thì nêu đề, các lựa chọn, người học đã chọn gì, đúng hay sai, đáp án đúng (chỉ khi câu đó không có answerHidden; có answerHidden thì không đoán, không nói đáp án), rồi phân tích tình huống và so sánh với câu đang làm. Nhiều câu thì liệt kê ngắn để người học chọn.',
     '- Không dùng chữ cái A/B/C để chỉ lựa chọn của câu tìm được; nhắc bằng nội dung lựa chọn.',
-    '- Câu tìm được có answerHidden thì không đoán và không nói đáp án câu đó.',
   ].join('\n');
 }
 

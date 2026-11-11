@@ -104,8 +104,12 @@ describe('buildSystemPrompt: đối chiếu và mở hướng dẫn', () => {
     expect(p).toContain('đã thấy đáp án');
   });
 
-  it('dặn câu tìm được có answerHidden thì không nói đáp án', () => {
-    expect(buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: true })).toContain('answerHidden');
+  it('dặn câu tìm được có answerHidden thì không nói đáp án, ngay trong dòng bảo nêu đáp án đúng', () => {
+    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: true });
+    const line = p.split('\n').find((l) => l.startsWith('- Tìm thấy thì nêu đề'))!;
+    expect(line).toContain('đáp án đúng (chỉ khi câu đó không có answerHidden; có answerHidden thì không đoán, không nói đáp án)');
+    // Không còn dòng dặn riêng lặp lại.
+    expect(p.split('\n').filter((l) => l.includes('answerHidden'))).toEqual([line]);
   });
 });
 
