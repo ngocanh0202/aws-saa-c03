@@ -10,6 +10,23 @@ const notes = (qid: number, updatedAt: number, note = '', text = 'Stem'): Questi
 });
 
 describe('NotesPage', () => {
+  it('đề nhiều đoạn: đoạn tô ở đoạn thứ hai vẫn tìm thấy (không báo mất)', () => {
+    const bank = makeBank();
+    const q = bank.questions.get(1)!;
+    q.stem = 'Para one.\n\nPara two.';
+    const deps = makeDeps({ bank });
+    deps.notes.save({ qid: 1, updatedAt: 1, highlights: [{ id: 'p', part: 'stem', start: 14, end: 18, text: 'two.', note: '', updatedAt: 1 }] });
+    renderApp('/notes', deps);
+    expect(screen.queryByText('Không còn tìm thấy đoạn này trong đề')).not.toBeInTheDocument();
+  });
+
+  it('đề main HTML: đoạn tô tìm thấy', () => {
+    const deps = makeDeps({ bank: makeBank({ main: true }) });
+    deps.notes.save({ qid: 10101, updatedAt: 1, highlights: [{ id: 'm', part: 'stem', start: 10, end: 15, text: '10101', note: '', updatedAt: 1 }] });
+    renderApp('/notes', deps);
+    expect(screen.queryByText('Không còn tìm thấy đoạn này trong đề')).not.toBeInTheDocument();
+  });
+
   it('chưa có ghi chú → dòng hướng dẫn', () => {
     renderApp('/notes', makeDeps());
     expect(screen.getByRole('heading', { name: 'Ghi chú của tôi' })).toBeInTheDocument();
