@@ -4,6 +4,7 @@ import { AppProvider, type AppDeps } from '../app/context';
 import { AppRoutes } from '../app/routes';
 import { buildBank, type Bank } from '../data/bank';
 import type { Difficulty, Domain, Question, QuestionMeta } from '../data/types';
+import { createNotesStore } from '../notes/store';
 import { createStore } from '../storage/storage';
 
 function range(from: number, to: number): number[] {
@@ -117,6 +118,7 @@ export function makeDeps(overrides: Partial<AppDeps> = {}): AppDeps {
     now: () => 1_000_000,
     newSeed: () => 42,
     newId: () => `att-${++n}`,
+    notes: createNotesStore(memoryStorage()),
     ...overrides,
   };
 }

@@ -4,6 +4,7 @@ import type { Cooldown } from '../ai/cooldown';
 import type { LocalSettingsStore } from '../ai/local-settings';
 import type { AiClient, ChatHistoryStore } from '../ai/types';
 import type { Bank } from '../data/bank';
+import type { NotesStore } from '../notes/store';
 import type { AttemptStore } from '../storage/storage';
 import type { SupportStore } from '../support/types';
 import type { SyncController } from '../sync/types';
@@ -14,6 +15,8 @@ export interface AppDeps {
   now: () => number;
   newSeed: () => number;
   newId: () => string;
+  /** Đoạn tô và ghi chú theo câu, tách ngăn theo tài khoản. */
+  notes: NotesStore;
   /** Không có khi chưa cấu hình Firebase. */
   sync?: SyncController;
   /** Chỉ có khi cấu hình Firebase. */

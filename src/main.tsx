@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom';
 import { AppProvider, type AppDeps } from './app/context';
 import { AppRoutes } from './app/routes';
 import { createAiMode } from './ai/ai-mode';
+import { createNotesStore } from './notes/store';
 import { createCooldown } from './ai/cooldown';
 import { createLocalAiClient } from './ai/local';
 import { buildAiDeps } from './ai/deps';
@@ -34,6 +35,7 @@ const deps: AppDeps = {
   now,
   newSeed: randomSeed,
   newId: () => crypto.randomUUID(),
+  notes: createNotesStore(getBrowserStorage()),
   sync,
   ...aiDeps,
   aiCooldown: createCooldown(getBrowserStorage()),
