@@ -63,3 +63,9 @@ export const IconLock = (p: IconProps) => (
     <path d="M8 11V7a4 4 0 018 0v4" />
   </Svg>
 );
+export const IconRetry = (p: IconProps) => (
+  <Svg {...p}>
+    <path d="M20 11a8 8 0 10-2.3 5.7" />
+    <path d="M20 4v7h-7" />
+  </Svg>
+);

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
-import type { AiJobTarget } from '../ai/gate';
+import { targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { IconClose, IconDelete, IconHighlight, IconNote, IconSave } from '../components/icons';
 import type { Question } from '../data/types';
 import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
 import { addHighlight, locate, NOTE_MAX, removeHighlight, setNote, type HighlightPart, type QuestionNotes } from './model';
+import { NoteAiButton } from './NoteAiButton';
 
 const MOBILE_QUERY = '(max-width: 639px)';
 const POP_WIDTH = 360;
@@ -19,7 +20,7 @@ export interface HighlighterProps {
   /** Nhãn câu ("Câu 3") và đích của việc AI, dùng ở Task 8–9. */
   label?: string;
   target?: (highlightId: string) => AiJobTarget;
-  /** Nút AI trong popup (Task 9). */
+  /** Nút AI trong popup; mặc định là NoteAiButton (cần label và target). */
   aiSlot?: (ctx: { highlightId: string; text: string }) => ReactNode;
 }
 
@@ -80,10 +81,25 @@ function newHighlightId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/** Các <mark> của một đoạn tô (đoạn dài có thể bị tách thành nhiều mark). */
+function marksOf(el: HTMLElement, id: string): HTMLElement[] {
+  return Array.from(el.querySelectorAll<HTMLElement>('mark[data-hl]')).filter((m) => m.dataset.hl === id);
+}
+
 const emptyNotes = (qid: number): QuestionNotes => ({ qid, highlights: [], updatedAt: 0 });
 
-export function Highlighter({ qid, stemEl, promptEl, aiSlot }: HighlighterProps) {
-  const { notes: store, now } = useApp();
+export function Highlighter({ qid, question, stemEl, promptEl, label, target, aiSlot }: HighlighterProps) {
+  const { notes: store, now, aiGate } = useApp();
+  /** Yêu cầu AI đang chạy trong tab: khóa mọi ô ghi chú (kể cả đoạn đang được soạn). */
+  const gateJob = useAiGate();
+  const draftingId = gateJob?.kind === 'note' ? gateJob.target.highlightId : undefined;
+  const slot =
+    aiSlot ??
+    (label && target
+      ? ({ highlightId, text }: { highlightId: string; text: string }) => (
+          <NoteAiButton question={question} qid={qid} highlightId={highlightId} text={text} label={label} target={target(highlightId)} />
+        )
+      : undefined);
   const notes = useSyncExternalStore(store.subscribe, () => store.get(qid));
   const mobile = useMobile();
   const [pending, setPending] = useState<Pending | null>(null);
@@ -109,11 +125,13 @@ export function Highlighter({ qid, stemEl, promptEl, aiSlot }: HighlighterProps)
         if (at) marks.push({ id: h.id, ...at, hasNote: h.note !== '' });
       }
       applyHighlights(el, marks);
+      // Đoạn AI đang soạn: nhấp nháy nhẹ.
+      if (draftingId) for (const m of marksOf(el, draftingId)) m.classList.add('hl--drafting');
     }
     return () => {
       for (const [, el] of parts) if (el) applyHighlights(el, []);
     };
-  }, [notes, stemEl, promptEl]);
+  }, [notes, stemEl, promptEl, draftingId]);
 
   // Đoạn chọn hợp lệ → thanh Tô.
   useEffect(() => {
@@ -219,6 +237,40 @@ export function Highlighter({ qid, stemEl, promptEl, aiSlot }: HighlighterProps)
     };
   }, [stemEl, promptEl, openPop]);
 
+  // "Đến câu …" của việc AI soạn ghi chú: mở popup của đúng đoạn tô (khi đoạn đó thuộc câu này).
+  useEffect(() => {
+    if (!stemEl && !promptEl) return;
+    const take = () => {
+      const has = (id: string | undefined) => id !== undefined && !!store.get(latest.current.qid)?.highlights.some((h) => h.id === id);
+      const t = aiGate.takeOpen((x) => has(x.highlightId));
+      if (!t?.highlightId) return;
+      const m = [stemEl, promptEl].flatMap((el) => (el ? marksOf(el, t.highlightId!) : []))[0];
+      m?.scrollIntoView?.({ block: 'center' });
+      openPop(t.highlightId, m ? markBox(m) : null);
+    };
+    take();
+    return aiGate.subscribe(take);
+  }, [aiGate, store, stemEl, promptEl, openPop]);
+
+  // Popup đang mở là "chỗ đang nhìn": AI soạn xong đoạn này thì không cần thông báo.
+  const viewKey = open && target ? targetKey(target(open.id)) : null;
+  useEffect(() => {
+    if (!viewKey) return;
+    aiGate.setViewing(viewKey);
+    return () => {
+      if (aiGate.viewing() === viewKey) aiGate.setViewing(null);
+    };
+  }, [aiGate, viewKey]);
+
+  // Có yêu cầu AI bắt đầu khi đang gõ dở: lưu bản đang gõ trước, để chữ AI nối vào sau chữ của người học.
+  const locked = gateJob !== null;
+  useEffect(() => {
+    const o = latest.current.open;
+    if (!locked || !o || o.draft === o.base) return;
+    commit(o);
+    setOpen({ ...o, base: o.draft });
+  }, [locked, commit]);
+
   // Esc / bấm ra ngoài → đóng (tự lưu).
   useEffect(() => {
     if (!open) return;
@@ -314,10 +366,16 @@ export function Highlighter({ qid, stemEl, promptEl, aiSlot }: HighlighterProps)
           maxLength={NOTE_MAX}
           value={open.draft}
           placeholder="Ghi chú cho đoạn này…"
+          disabled={locked}
           onChange={(e) => setOpen({ ...open, draft: e.target.value })}
         />
+        {gateJob && (
+          <p className="hl-pop__locked" role="note">
+            {gateJob.kind === 'note' ? `AI đang soạn ghi chú ở ${gateJob.label}` : `AI đang trả lời ở ${gateJob.label}`}
+          </p>
+        )}
         <div className="hl-pop__actions">
-          {aiSlot?.({ highlightId: open.id, text: openNote.text })}
+          {slot?.({ highlightId: open.id, text: openNote.text })}
           <button type="button" className="hl-btn" aria-label="Xóa đoạn tô" title="Xóa đoạn tô" onClick={remove}>
             <IconDelete />
           </button>

@@ -502,7 +502,13 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .hl-pop { position: absolute; z-index: 60; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); }
 .hl-pop::before { content: ''; position: absolute; top: -7px; left: var(--arrow, 24px); width: 12px; height: 12px; background: var(--surface); border-left: 1px solid var(--border); border-top: 1px solid var(--border); transform: rotate(45deg); }
 .hl-pop textarea, .hl-sheet textarea { display: block; width: 100%; min-height: 72px; resize: vertical; font: inherit; font-size: 16px; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; }
-.hl-pop__actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+.hl-pop__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+.hl-btn:disabled { opacity: 0.45; cursor: not-allowed; background: transparent; }
+.hl-pop textarea:disabled, .hl-sheet textarea:disabled { opacity: 0.7; cursor: not-allowed; }
+.hl-pop__locked { margin: 6px 0 0; font-size: 0.85em; color: var(--muted); }
+.hl-pop__error { order: -1; flex: 1 0 100%; margin: 0; font-size: 0.85em; color: var(--bad); }
+.hl--drafting { animation: hl-pulse 1.2s ease-in-out infinite; }
+@keyframes hl-pulse { 50% { opacity: 0.45; } }
 .hl-backdrop { position: fixed; inset: 0; z-index: 70; background: rgba(0, 0, 0, 0.4); }
 .hl-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 71; max-height: 80vh; overflow-y: auto; background: var(--surface); color: var(--text); border-top: 1px solid var(--border); border-radius: 14px 14px 0 0; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.25); animation: hl-sheet-in 0.18s ease-out; }
 .hl-sheet__grab { width: 40px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 8px; }
@@ -511,7 +517,7 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 @media (max-width: 639px) {
   .hl-btn { width: 44px; height: 44px; }
 }
-@media (prefers-reduced-motion: reduce) { .hl-sheet { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hl-sheet, .hl--drafting { animation: none; } }
 /* Thông báo khi một yêu cầu AI xong (góc trên bên phải; điện thoại: đầu màn hình, rộng hết trừ lề 16px) */
 .ai-toast {
   position: fixed; top: 16px; right: 16px; z-index: 80; max-width: 360px; display: flex; flex-direction: column; gap: 8px;

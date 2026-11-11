@@ -7,7 +7,7 @@ import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
 import { AiGateBusyError, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
-import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings } from '../ai/local-settings';
+import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
@@ -15,7 +15,7 @@ import { chatSuggestions } from '../ai/suggestions';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import type { Question } from '../data/types';
-import type { SyncController, SyncState, SyncUser } from '../sync/types';
+import type { SyncState, SyncUser } from '../sync/types';
 import { claimChatFocus, onChatFocus } from './chat-focus';
 import { ContactAdminButton } from './ContactAdminButton';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
@@ -69,7 +69,7 @@ function RobotIcon() {
 }
 
 /** Tên hiện trên nút và trong khung: Gemini, hoặc "AI" ở chế độ AI thử nghiệm (LM Studio). */
-type Brand = 'Gemini' | 'AI';
+export type Brand = 'Gemini' | 'AI';
 
 const noSubscribe = () => () => undefined;
 const geminiMode = () => 'gemini' as const;
@@ -79,25 +79,43 @@ export function useAiMode(aiMode: AiModeStore | undefined) {
   return useSyncExternalStore(aiMode?.subscribe ?? noSubscribe, aiMode?.get ?? geminiMode);
 }
 
+const noState = () => null;
+
+export interface ActiveAi {
+  client: AiClient;
+  brand: Brand;
+  uid: string;
+  /** Chỉ có ở AI thử nghiệm: tham số ⚙ lưu theo tài khoản. */
+  settingsStore?: LocalSettingsStore;
+  /** Nơi lưu lịch sử chat của chế độ đang chọn. */
+  chats: ChatHistoryStore;
+}
+
+/**
+ * AI đang dùng (theo chế độ trong menu tài khoản), chỉ khi có `sync`, đã đăng nhập Google và có đủ
+ * client + nơi lưu chat của chế độ đó; không thì null. Dùng chung cho nút chat và nút AI soạn ghi chú.
+ */
+export function useActiveAi(): ActiveAi | null {
+  const { sync, ai, chats, localAi, localChats, aiMode, localSettings } = useApp();
+  const mode = useAiMode(aiMode);
+  const state = useSyncExternalStore(sync?.subscribe ?? noSubscribe, sync?.getState ?? noState);
+  const local = mode === 'local' && localAi && localChats ? { ai: localAi, chats: localChats } : null;
+  const client = local?.ai ?? ai;
+  const store = local?.chats ?? chats;
+  const user = state ? signedInUser(state) : null;
+  if (!sync || !client || !store || !user) return null;
+  return { client, brand: local ? 'AI' : 'Gemini', uid: user.uid, chats: store, ...(local && localSettings ? { settingsStore: localSettings } : {}) };
+}
+
 /**
  * Nút "Hỏi Gemini" (hoặc "Hỏi AI" ở chế độ thử nghiệm); chỉ hiện khi có AI của chế độ đang chọn
  * và đã đăng nhập Google.
  */
 export function GeminiButton(props: Props) {
-  const { sync, ai, chats, localAi, localChats, aiMode } = useApp();
-  const mode = useAiMode(aiMode);
-  const local = mode === 'local' && localAi && localChats ? { ai: localAi, chats: localChats } : null;
-  const client = local?.ai ?? ai;
-  const store = local?.chats ?? chats;
-  if (!sync || !client || !store) return null;
-  return <SignedIn sync={sync} ai={client} chats={store} brand={local ? 'AI' : 'Gemini'} {...props} />;
-}
-
-function SignedIn({ sync, brand, ...rest }: Props & { sync: SyncController; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
-  const state = useSyncExternalStore(sync.subscribe, sync.getState);
-  const user = signedInUser(state);
+  const active = useActiveAi();
+  if (!active) return null;
   // key theo uid và chế độ: đăng xuất, đổi tài khoản hay đổi Gemini ↔ AI thử nghiệm thì khung chat đóng hẳn.
-  return user ? <Launcher key={`${user.uid}:${brand}`} uid={user.uid} brand={brand} {...rest} /> : null;
+  return <Launcher key={`${active.uid}:${active.brand}`} uid={active.uid} ai={active.client} chats={active.chats} brand={active.brand} {...props} />;
 }
 
 /** Câu này có câu trả lời đang chạy ngầm (đã đóng khung hay sang câu khác) hay không. */

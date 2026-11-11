@@ -148,7 +148,7 @@ describe('Highlighter — Thi thử', () => {
     expect(deps.notes.get(canon)!.highlights).toEqual([]);
   });
 
-  it('aiSlot không đặt thì popup không có nút AI', () => {
+  it('không có AI (chưa đăng nhập) thì popup không có nút AI', () => {
     const { deps } = setup('practice');
     const { container } = renderApp('/exam/e1', deps);
     highlightStem(container, 'Tô và ghi chú');
