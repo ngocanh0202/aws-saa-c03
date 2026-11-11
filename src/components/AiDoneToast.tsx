@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../app/context';
+import { useStoreVersion } from '../app/use-store';
 import { targetKey, type AiJob } from '../ai/gate';
 
 const HIDE_AFTER = 10_000;
@@ -32,14 +33,21 @@ export function AiDoneToast() {
     });
   }, [aiGate]);
 
-  // Đếm lại 10 giây mỗi khi có thông báo mới.
+  // Đang làm Thi thật thì giữ lại thông báo mới nhất, rời trang thi (hoặc nộp bài) mới hiện.
+  const { pathname } = useLocation();
+  useStoreVersion();
+  const examId = matchPath('/exam/:id', pathname)?.params.id;
+  const exam = examId ? store.get(examId) : undefined;
+  const held = exam?.mode === 'real' && exam.status === 'in-progress';
+
+  // Đếm lại 10 giây mỗi khi có thông báo mới (tính từ lúc hiện ra).
   useEffect(() => {
-    if (!shown) return;
+    if (!shown || held) return;
     const t = setTimeout(() => setShown(null), HIDE_AFTER);
     return () => clearTimeout(t);
-  }, [shown]);
+  }, [shown, held]);
 
-  if (!shown) return null;
+  if (!shown || held) return null;
   const { job, ok } = shown;
   const go = () => {
     const t = job.target;

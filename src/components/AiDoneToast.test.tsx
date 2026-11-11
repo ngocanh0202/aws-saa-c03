@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { AppProvider } from '../app/context';
 import { targetKey, type AiJob } from '../ai/gate';
 import { createAttempt } from '../engine/attempt';
@@ -12,15 +12,26 @@ function Where() {
   return <p data-testid="where">{useLocation().pathname}</p>;
 }
 
-function setup() {
+/** Rời trang thi (như khi nộp bài). */
+function GoResult() {
+  const navigate = useNavigate();
+  return (
+    <button type="button" onClick={() => navigate('/result/r1')}>
+      rời
+    </button>
+  );
+}
+
+function setup(path = '/') {
   const deps = makeDeps();
   const attempt = createAttempt({ id: 'e1', setId: 1, mode: 'practice', esl: false, seed: 7, now: 1, sets: deps.bank.sets, questions: deps.bank.questions, metas: deps.bank.meta });
   deps.store.save(attempt);
   render(
     <AppProvider deps={deps}>
-      <MemoryRouter initialEntries={['/']}>
+      <MemoryRouter initialEntries={[path]}>
         <AiDoneToast />
         <Where />
+        <GoResult />
       </MemoryRouter>
     </AppProvider>,
   );
@@ -108,5 +119,43 @@ describe('AiDoneToast', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Đến Main 1 · Câu 5' }));
     expect(s.gate.peekOpen()).toEqual(job.target);
     expect(screen.getByTestId('where')).toHaveTextContent('/notes');
+  });
+
+  it('đang làm Thi thật: không hiện thông báo; rời trang thi thì hiện thông báo mới nhất', async () => {
+    const deps0 = makeDeps();
+    const real = createAttempt({ id: 'r1', setId: 1, mode: 'real', esl: false, seed: 7, now: 1, sets: deps0.bank.sets, questions: deps0.bank.questions, metas: deps0.bank.meta });
+    vi.useFakeTimers();
+    const s = setup('/exam/r1');
+    s.deps.store.save(real);
+    await s.finish(chat('Câu 3', 3));
+    await s.finish(chat('Câu 4', 4));
+    expect(screen.queryByRole('status')).toBeNull();
+    // Không tự hết hạn trong lúc bị giữ lại.
+    act(() => vi.advanceTimersByTime(60_000));
+    act(() => {
+      s.deps.store.save(submitAttempt(real, 2));
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'rời' }));
+    expect(screen.getByTestId('where')).toHaveTextContent('/result/r1');
+    expect(screen.getByRole('status')).toHaveTextContent('AI đã trả lời ở Câu 4');
+  });
+
+  it('Thi thử đang làm hoặc Thi thật đã nộp: vẫn hiện thông báo ở trang thi', async () => {
+    const s = setup('/exam/e1');
+    await s.finish(chat());
+    expect(screen.getByRole('status')).toBeInTheDocument();
+  });
+
+  it('Thi thật được nộp ngay tại trang (chưa đổi route): hiện thông báo', async () => {
+    const deps0 = makeDeps();
+    const real = createAttempt({ id: 'r1', setId: 1, mode: 'real', esl: false, seed: 7, now: 1, sets: deps0.bank.sets, questions: deps0.bank.questions, metas: deps0.bank.meta });
+    const s = setup('/exam/r1');
+    s.deps.store.save(real);
+    await s.finish(chat());
+    expect(screen.queryByRole('status')).toBeNull();
+    act(() => {
+      s.deps.store.save(submitAttempt(real, 2));
+    });
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 });
