@@ -7,18 +7,18 @@ export interface NotesStore {
   setOwner(uid: string | null): void;
   owner(): string | null;
   get(qid: number): QuestionNotes | undefined;
-  /** Ngăn hiện tại, updatedAt giảm dần, bềEbản ghi rỗng. */
+  /** Ngăn hiện tại, updatedAt giảm dần, bỏ bản ghi rỗng. */
   list(): QuestionNotes[];
   /** Ghi ngăn hiện tại, báo người nghe. */
   save(notes: QuestionNotes): void;
   /** Ghi bản từ cloud vào ngăn uid (không báo "cần đẩy"). */
   applyRemote(uid: string, notes: QuestionNotes): void;
-  /** Gộp ngăn khách vào ngăn uid theo mergeNotes, xóa ngăn khách; trả vềEcác bản cần đẩy lên. */
+  /** Gộp ngăn khách vào ngăn uid theo mergeNotes, xóa ngăn khách; trả về các bản cần đẩy lên. */
   adoptGuest(uid: string): QuestionNotes[];
-  /** KềEcả bản rỗng, cho đồng bềE */
+  /** Kể cả bản rỗng, cho đồng bộ. */
   all(uid: string): QuestionNotes[];
   subscribe(listener: () => void): () => void;
-  /** Báo mỗi lần save() ềEngăn có owner (đềEđồng bềEđẩy lên). */
+  /** Báo mỗi lần save() ở ngăn có owner (để đồng bộ đẩy lên). */
   onLocalChange(cb: (uid: string, notes: QuestionNotes) => void): () => void;
 }
 
@@ -52,7 +52,7 @@ export function createNotesStore(storage: Storage | null): NotesStore {
         }
       }
     } catch {
-      // storage bềEchặn hoặc dữ liệu hỏng: bắt đầu từ ngăn rỗng
+      // storage bị chặn hoặc dữ liệu hỏng: bắt đầu từ ngăn rỗng
     }
     buckets.set(key, b);
     return b;
