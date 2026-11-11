@@ -237,12 +237,21 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
     };
   }, [stemEl, promptEl, openPop]);
 
-  // "Đến câu …" của việc AI soạn ghi chú: mở popup của đúng đoạn tô (khi đoạn đó thuộc câu này).
+  // "Đến câu …" của việc AI soạn ghi chú: mở popup của đúng đoạn tô (khi đoạn đó thuộc câu này và
+  // yêu cầu nhắm đúng trang/lượt này: cùng câu ở #/notes và trong lượt thi là hai chỗ khác nhau).
+  const targetRef = useRef(target);
+  useLayoutEffect(() => {
+    targetRef.current = target;
+  });
   useEffect(() => {
     if (!stemEl && !promptEl) return;
     const take = () => {
       const has = (id: string | undefined) => id !== undefined && !!store.get(latest.current.qid)?.highlights.some((h) => h.id === id);
-      const t = aiGate.takeOpen((x) => has(x.highlightId));
+      const mine = (x: AiJobTarget) => {
+        const tgt = targetRef.current;
+        return !!tgt && has(x.highlightId) && targetKey(x) === targetKey(tgt(x.highlightId!));
+      };
+      const t = aiGate.takeOpen(mine);
       if (!t?.highlightId) return;
       const m = [stemEl, promptEl].flatMap((el) => (el ? marksOf(el, t.highlightId!) : []))[0];
       m?.scrollIntoView?.({ block: 'center' });

@@ -4,6 +4,8 @@ import { useApp } from '../app/context';
 import { targetKey, type AiJob } from '../ai/gate';
 
 const HIDE_AFTER = 10_000;
+/** Sau khi điều hướng, nơi đích (layout effect + effect của trang mới) có chừng này để nhận yêu cầu mở. */
+export const OPEN_GRACE_MS = 100;
 
 function message(job: AiJob, ok: boolean): string {
   if (!ok) return `AI gặp lỗi ở ${job.label}`;
@@ -45,6 +47,8 @@ export function AiDoneToast() {
     setShown(null);
     if (t.page === 'notes') navigate('/notes');
     else navigate(store.get(t.attemptId)?.status === 'submitted' ? `/result/${t.attemptId}` : `/exam/${t.attemptId}`);
+    // Chưa ai nhận (vd. lượt đã nộp: trang kết quả không có popup ghi chú) thì bỏ, để không bật lên ở trang ghé sau.
+    setTimeout(() => aiGate.takeOpen((x) => x === t), OPEN_GRACE_MS);
   };
   return (
     <div className={`ai-toast${ok ? '' : ' ai-toast--error'}`} role="status" lang="vi">

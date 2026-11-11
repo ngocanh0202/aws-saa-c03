@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
+import { submitAttempt } from '../engine/actions';
 import { createAttempt } from '../engine/attempt';
 import { createStore } from '../storage/storage';
 import { createSyncController } from '../sync/controller';
@@ -150,5 +151,42 @@ describe('AI soạn ghi chú', () => {
     fireEvent.click(within(again).getByRole('button', { name: 'Thử lại AI soạn' }));
     await waitFor(() => expect(within(again).getByRole('textbox', { name: 'Ghi chú' })).toHaveValue('Được rồi'));
     expect(within(again).queryByRole('alert')).toBeNull();
+  });
+
+  it('"Đến câu" khi đang ở #/notes có cùng câu: về đúng câu trong lượt thi và mở popup', async () => {
+    const { ai, container } = setup();
+    ai.reply = ['Ghi chú của AI'];
+    ai.hold = true;
+    const pop = highlightAndOpen(container);
+    fireEvent.click(within(pop).getByRole('button', { name: AI_BTN }));
+    fireEvent.click(screen.getByRole('link', { name: 'Ghi chú' }));
+    expect(screen.getByRole('heading', { name: 'Ghi chú của tôi' })).toBeInTheDocument();
+    await tick();
+    await act(async () => ai.release());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('AI đã soạn ghi chú ở Câu 1'));
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Đến câu 1' }));
+    await waitFor(() => expect(screen.getByRole('dialog', { name: 'Ghi chú cho đoạn tô' })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: 'Ghi chú của tôi' })).toBeNull();
+    expect(screen.getByRole('textbox', { name: 'Ghi chú' })).toHaveValue('Ghi chú của AI');
+  });
+
+  it('yêu cầu mở không ai nhận (lượt đã nộp) thì hết hạn, không bật popup ở #/notes về sau', async () => {
+    const { deps, ai, container, canon } = setup();
+    ai.reply = ['Ghi chú của AI'];
+    ai.hold = true;
+    const pop = highlightAndOpen(container);
+    fireEvent.click(within(pop).getByRole('button', { name: AI_BTN }));
+    fireEvent.click(screen.getByRole('link', { name: 'Đề thi' }));
+    act(() => deps.store.save(submitAttempt(deps.store.get('e1')!, 600)));
+    await tick();
+    await act(async () => ai.release());
+    await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('AI đã soạn ghi chú ở Câu 1'));
+    fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Đến câu 1' }));
+    await waitFor(() => expect(screen.getByTestId('result-page')).toBeInTheDocument());
+    await waitFor(() => expect(deps.aiGate.peekOpen()).toBeNull());
+    fireEvent.click(screen.getByRole('link', { name: 'Ghi chú' }));
+    expect(container.querySelector(`#note-${canon(0)}`)).not.toBeNull();
+    await tick();
+    expect(screen.queryByRole('dialog', { name: 'Ghi chú cho đoạn tô' })).toBeNull();
   });
 });
