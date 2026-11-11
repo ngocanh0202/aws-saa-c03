@@ -44,6 +44,7 @@ export function Layout() {
               Đề thi
             </NavLink>
             <NavLink to="/history">Lịch sử</NavLink>
+            <NavLink to="/notes">Ghi chú</NavLink>
             <NavLink to="/services">Service</NavLink>
             <details ref={menu} className={`topbar__menu${pathname.startsWith('/external') ? ' is-active' : ''}`}>
               <summary>External ▾</summary>
