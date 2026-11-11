@@ -41,7 +41,7 @@ Thi thử là chế độ tự luyện, có thể mở hướng dẫn ngay tại
   - UI: `ExamPage` không truyền `onSelect` cho `QuestionCard` khi câu đã khóa (nút lựa chọn bị `disabled`).
 - Chỉ còn **một** cách mở hướng dẫn ở Thi thử: người học tự bấm nút "Xem hướng dẫn". AI không còn tự mở được (xem Phần 1b).
 - Đáp án đã chọn trước khi mở vẫn giữ nguyên và được chấm như thường. Chưa chọn gì mà mở hướng dẫn thì câu đó bỏ trống, tức là sai (luật chấm hiện có, không đổi).
-- Câu bị khóa hiện icon 🔒 (SVG) ngay trên danh sách lựa chọn. Có `title` và `aria-label` "Đã xem hướng dẫn, không đổi được đáp án câu này nữa".
+- Câu bị khóa không hiện icon; các lựa chọn chỉ bị vô hiệu hóa (theo yêu cầu người dùng).
 - Lượt Thi thử cũ đã có `guideOpened` thì cũng tự khóa theo luật mới. Không cần chuyển đổi dữ liệu.
 - Thi thật không đổi gì.
 

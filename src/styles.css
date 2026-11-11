@@ -488,7 +488,6 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .guide__tab[aria-selected="true"] { background: var(--guide-bar); color: #000; border-color: var(--guide-bar); }
 .guide pre { white-space: pre-wrap; overflow-x: auto; }
 
-.qcard__lock { display: inline-flex; align-items: center; margin: 0 0 8px; padding: 4px 8px; border-radius: 6px; background: var(--warn-bg); color: var(--warn); }
 
 /* Tô + ghi chú (Thi thử) */
 .hl { background: var(--hl-bg); color: var(--hl-text); border-radius: 3px; padding: 0 1px; cursor: pointer; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
