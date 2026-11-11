@@ -91,6 +91,16 @@ describe('ExamPage — Thi thử', () => {
     expect(deps.store.get('e1')!.guideOpened).toEqual([attempt.questions[0].qid]);
   });
 
+  it('xem hướng dẫn thì khóa đáp án và hiện 🔒', () => {
+    const { deps } = setup('practice');
+    const { container } = renderApp('/exam/e1', deps);
+    fireEvent.click(container.querySelectorAll('.opt')[0]);
+    fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
+    expect(screen.getAllByRole('radio').every((b) => (b as HTMLButtonElement).disabled)).toBe(true);
+    expect(screen.getByLabelText('Đã xem hướng dẫn, không đổi được đáp án câu này nữa')).toBeInTheDocument();
+    expect(container.querySelectorAll('.opt')[0]).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('đề bài và lựa chọn vẫn bằng tiếng Anh', () => {
     const { deps, attempt } = setup('practice');
     renderApp('/exam/e1', deps);

@@ -5,12 +5,15 @@ import { useStoreVersion } from '../app/use-store';
 import { EXAM_LABELS } from '../app/labels';
 import { DraggableFab } from '../components/DraggableFab';
 import { GeminiButton } from '../components/GeminiChat';
+import { IconLock } from '../components/icons';
 import { GuidePanel } from '../components/GuidePanel';
 import { NavGrid } from '../components/NavGrid';
 import { QuestionCard } from '../components/QuestionCard';
 import { Timer } from '../components/Timer';
 import { markGuideOpened, selectOption, submitAttempt, toggleFlag } from '../engine/actions';
 import { isCompatible, type Attempt } from '../engine/attempt';
+
+const LOCK_TEXT = 'Đã xem hướng dẫn, không đổi được đáp án câu này nữa';
 
 export function ExamPage() {
   const { id = '' } = useParams();
@@ -95,6 +98,11 @@ export function ExamPage() {
         </aside>
 
         <div className="exam__content">
+          {revealed && (
+            <p className="qcard__lock" role="note" aria-label={LOCK_TEXT} title={LOCK_TEXT}>
+              <IconLock />
+            </p>
+          )}
           <QuestionCard
             question={question}
             order={aq.optionOrder}
@@ -102,7 +110,7 @@ export function ExamPage() {
             reveal={revealed}
             showOrigLabels={revealed && !bank.vi.has(aq.qid) && !question.html}
             chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
-            onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
+            onSelect={revealed ? undefined : (key) => update(selectOption(attempt, aq.qid, key, question.choose))}
           />
 
           <div className="exam__pager">
