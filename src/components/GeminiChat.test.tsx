@@ -79,14 +79,14 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(screen.getByRole('button', { name: GEMINI })).toBeInTheDocument();
   });
 
-  it('gửi câu hỏi: prompt có đề + đáp án, câu trả lời stream hiện ra', async () => {
+  it('gửi câu hỏi: prompt có đề, chưa có đáp án, câu trả lời stream hiện ra', async () => {
     const s = setup();
     s.ai.reply = ['Vì ', 'S3'];
     const dialog = await openChat();
     expect(within(dialog).getByText(new RegExp(`Stem ${s.qid}`))).toBeInTheDocument();
     await ask(dialog);
     await waitFor(() => expect(within(dialog).getByText('Vì S3')).toBeInTheDocument());
-    expect(s.ai.calls[0].systemPrompt).toContain('Đáp án đúng:');
+    expect(s.ai.calls[0].systemPrompt).not.toContain('Đáp án đúng');
     expect(s.ai.calls[0].systemPrompt).toContain(`Stem ${s.qid}`);
     expect(s.ai.calls[0].sent).toEqual(['Tại sao?']);
   });
@@ -99,55 +99,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(within(dialog).getByText('Vì S3')).toBeInTheDocument());
     expect(guideOpened(s)).not.toContain(s.qid);
     expect(screen.queryByRole('complementary', { name: 'Hướng dẫn' })).toBeNull();
-    expect(s.ai.calls[0].systemPrompt).toContain('open_guide');
-  });
-
-  it('Gemini gọi open_guide (người học xin đáp án): gắn nhãn và mở hướng dẫn', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    await waitFor(() => expect(guideOpened(s)).toContain(s.qid));
-    expect(screen.getByRole('complementary', { name: 'Hướng dẫn' })).toBeInTheDocument();
-    expect(s.ai.calls[0].toolResults).toContainEqual({ opened: true });
-  });
-
-  it('open_guide: chờ Gemini trả lời xong mới mở hướng dẫn, không hiện dòng "đang tìm"', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    s.ai.hold = true;
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    await waitFor(() => expect(s.ai.calls[0].toolResults).toHaveLength(1));
-    expect(within(dialog).getByText('Gemini đang trả lời…')).toBeInTheDocument();
-    expect(within(dialog).queryByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeNull();
-    expect(guideOpened(s)).not.toContain(s.qid);
-    await act(async () => s.ai.release());
-    await waitFor(() => expect(guideOpened(s)).toContain(s.qid));
-  });
-
-  it('open_guide nhưng câu trả lời lỗi thì không mở hướng dẫn', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    s.ai.reply = new Error('blocked');
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    await waitFor(() => expect(within(dialog).getByText('Gemini chưa trả lời được, thử gửi lại nhé.')).toBeInTheDocument());
-    expect(guideOpened(s)).not.toContain(s.qid);
-  });
-
-  it('nộp bài khi Gemini đang trả lời: open_guide không sửa lượt đã nộp', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    s.ai.holdFirst = true;
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    act(() => {
-      s.store.save(submitAttempt(s.store.get('e1')!, 600));
-    });
-    await act(async () => s.ai.release());
-    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
-    expect(s.store.get('e1')!.guideOpened).toEqual([]);
+    expect(s.ai.calls[0].systemPrompt).not.toContain('open_guide');
   });
 
   it('người học tự bấm hướng dẫn giữa chừng: lần gửi sau mở phiên mới báo đã thấy đáp án', async () => {
@@ -156,12 +108,40 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await ask(dialog);
     await waitFor(() => expect(s.chats.saved).toHaveLength(1));
     expect(s.ai.calls[0].systemPrompt).not.toContain('đã thấy đáp án');
+    expect(s.ai.calls[0].systemPrompt).not.toContain('Đáp án đúng');
     fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
     await ask(dialog, 'Giải thích thêm');
     await waitFor(() => expect(s.ai.calls).toHaveLength(2));
     expect(s.ai.calls[1].systemPrompt).toContain('đã thấy đáp án');
+    expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
     expect(s.ai.calls[1].history.map((m) => m.text)).toEqual(['Tại sao?', 'ok']);
+  });
+
+  it('hỏi lại y câu sau khi bấm Xem hướng dẫn: không dùng câu trả lời cũ, gọi AI với prompt có đáp án', async () => {
+    const s = setup();
+    const dialog = await openChat();
+    await ask(dialog, 'Đáp án là gì?');
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
+    await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
+    await ask(dialog, 'Đáp án là gì?');
+    await waitFor(() => expect(s.ai.calls).toHaveLength(2));
+    expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
+  });
+
+  it('đóng chat, bấm Xem hướng dẫn, mở lại và hỏi y câu: gọi AI lần hai với prompt có đáp án', async () => {
+    const s = setup();
+    const dialog = await openChat();
+    await ask(dialog, 'Đáp án là gì?');
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(s.chats.saved[0].messages[1]).toMatchObject({ role: 'model', hidden: true });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
+    const reopened = await openChat();
+    await ask(reopened, 'Đáp án là gì?');
+    await waitFor(() => expect(s.ai.calls).toHaveLength(2));
+    expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
   });
 
   it('lưu lịch sử lỗi thì báo trong popup', async () => {
@@ -207,7 +187,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
       key: s.key,
       messages: [
         { role: 'user', text: 'Tại sao?' },
-        { role: 'model', text: 'Vì S3' },
+        { role: 'model', text: 'Vì S3', hidden: true },
       ],
     });
   });
@@ -232,7 +212,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
       history: [
         { role: 'user', text: 'Hỏi lần 1' },
         { role: 'user', text: 'Hỏi lần 2' },
-        { role: 'model', text: 'Trả lời' },
+        { role: 'model', text: 'Trả lời', hidden: true },
       ],
     });
     s.ai.strictHistory = true;
@@ -348,7 +328,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     await act(async () => s.ai.release());
     await waitFor(() =>
-      expect(s.chats.saved.at(-1)).toEqual({ key: s.key, messages: [{ role: 'user', text: 'Tại sao?' }, { role: 'model', text: 'Vì S3' }] }),
+      expect(s.chats.saved.at(-1)).toEqual({ key: s.key, messages: [{ role: 'user', text: 'Tại sao?' }, { role: 'model', text: 'Vì S3', hidden: true }] }),
     );
   });
 
@@ -508,7 +488,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(dialog).getAllByText('Dịch đề')).toHaveLength(1);
     expect(s.ai.calls.at(-1)!.sent).toEqual(['Dịch đề']);
     expect(s.ai.calls.at(-1)!.history).toEqual([]);
-    await waitFor(() => expect(s.chats.saved.at(-1)?.messages).toEqual([{ role: 'user', text: 'Dịch đề' }, { role: 'model', text: 'Bản dịch' }]));
+    await waitFor(() => expect(s.chats.saved.at(-1)?.messages).toEqual([{ role: 'user', text: 'Dịch đề' }, { role: 'model', text: 'Bản dịch', hidden: true }]));
     expect(within(dialog).queryByRole('button', { name: 'Gửi lại câu hỏi' })).toBeNull();
   });
 
@@ -516,10 +496,10 @@ describe('Hỏi Gemini ở Thi thử', () => {
     const s = setup();
     const dialog = await openChat();
     await ask(dialog);
-    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions', 'open_guide']);
+    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions']);
   });
 
-  it('Gemini gọi tool tìm câu: hiện dòng chờ, kết quả gửi lại cho mô hình, câu tìm được gắn nhãn', async () => {
+  it('Gemini gọi tool tìm câu: hiện dòng chờ, kết quả gửi lại cho mô hình, câu tìm được ẩn đáp án và lượt không đổi', async () => {
     const s = setup();
     const other = s.store.get('e1')!.questions[1].qid;
     s.store.save(selectOption(s.store.get('e1')!, other, 'A', 1));
@@ -530,9 +510,10 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(within(dialog).getByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeInTheDocument());
     await act(async () => s.ai.release());
     await waitFor(() => expect(within(dialog).queryByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeNull());
-    const result = s.ai.calls[0].toolResults[0] as { results: { qid: number }[] };
+    const result = s.ai.calls[0].toolResults[0] as { results: { qid: number; answerHidden: boolean }[] };
     expect(result.results.map((r) => r.qid)).toContain(other);
-    expect(guideOpened(s)).toContain(other);
+    expect(result.results.find((r) => r.qid === other)!.answerHidden).toBe(true);
+    expect(guideOpened(s)).not.toContain(other);
   });
 
   it('Esc đóng popup (kể cả khi đang mở rộng) và trả lại cuộn trang', async () => {
@@ -726,12 +707,12 @@ describe('Trò chuyện cũ', () => {
     const dialog = await openList();
     fireEvent.click(await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ }));
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
     await ask(dialog);
     await waitFor(() => expect(s.chats.saved.at(-1)?.key).toBe(`u1/e0/${s.oldQid}`));
     expect(s.ai.calls[0].history.map((m) => m.text)).toEqual(['Câu cũ hỏi gì?', 'Trả lời cũ']);
     expect(guideOpened(s)).not.toContain(s.qid);
-    expect(s.store.get('e0')!.guideOpened).toContain(s.oldQid);
+    expect(s.store.get('e0')!.guideOpened).toEqual([]);
+    expect(s.ai.calls[0].systemPrompt).not.toContain('Đáp án đúng');
   });
 
   it('lượt cũ đã nộp: hỏi tiếp không sửa lượt đó', async () => {
@@ -766,5 +747,102 @@ describe('Trò chuyện cũ', () => {
     await openList();
     act(() => s.auth.emit(null));
     expect(screen.queryByRole('dialog')).toBeNull();
+  });
+});
+
+describe('Mỗi lúc một yêu cầu AI', () => {
+  async function askAtQ1ThenOpenQ2() {
+    const s = setup();
+    s.ai.hold = true;
+    s.ai.reply = ['Xong câu 1'];
+    const first = await openChat();
+    await ask(first, 'Hỏi câu 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+    fireEvent.click(screen.getByRole('button', { name: GEMINI }));
+    const second = screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 2' });
+    return { s, second };
+  }
+
+  it('câu khác đang chờ AI: ô nhập và nút Gửi bị khóa, có dòng báo; xong thì mở khóa và hiện thông báo', async () => {
+    const { s, second } = await askAtQ1ThenOpenQ2();
+    await waitFor(() => expect(within(second).getByText('AI đang trả lời ở Câu 1')).toBeInTheDocument());
+    expect(within(second).getByRole('textbox')).toBeDisabled();
+    expect(within(second).getByRole('button', { name: 'Gửi' })).toBeDisabled();
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(within(second).getByRole('textbox')).toBeEnabled());
+    expect(within(second).getByRole('button', { name: 'Gửi' })).toBeEnabled();
+    expect(within(second).queryByText('AI đang trả lời ở Câu 1')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('AI đã trả lời ở Câu 1');
+  });
+
+  it('bấm Đến câu 1: về câu 1 và khung chat câu 1 tự mở', async () => {
+    const { s } = await askAtQ1ThenOpenQ2();
+    await act(async () => s.ai.release());
+    fireEvent.click(await screen.findByRole('button', { name: 'Đến câu 1' }));
+    expect(screen.getByText('Câu 1/65')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Hỏi Gemini · Câu 1' });
+    expect(await within(dialog).findByText('Xong câu 1')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('đang mở khung của chính câu đó lúc xong thì không thông báo', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  it('trang kết quả: yêu cầu mở từ thông báo thì khung chat của đúng câu tự mở', async () => {
+    const s = setup();
+    act(() => s.store.save(submitAttempt(s.store.get('e1')!, 600)));
+    await screen.findByTestId('result-page');
+    const scrolled: Element[] = [];
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this);
+    };
+    try {
+      act(() => s.base.aiGate.requestOpen({ page: 'attempt', attemptId: 'e1', qid: s.qid }));
+      expect(await screen.findByRole('dialog', { name: 'Hỏi Gemini · Câu 1' })).toBeInTheDocument();
+      expect(s.base.aiGate.peekOpen()).toBeNull();
+      expect(scrolled.map((el) => el.id)).toContain(`review-q-${s.qid}`);
+    } finally {
+      delete (Element.prototype as Partial<Element>).scrollIntoView;
+    }
+  });
+
+  it('AI im lặng 90 giây: nhả gate, báo lỗi; chữ đến sau bị bỏ', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const s = setup();
+      s.ai.hold = true;
+      s.ai.reply = ['Chữ đến muộn'];
+      const dialog = await openChat();
+      await ask(dialog);
+      expect(s.base.aiGate.current()).not.toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(89_000));
+      expect(s.base.aiGate.current()).not.toBeNull();
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      await waitFor(() => expect(within(dialog).getByText('AI không phản hồi, vui lòng thử lại.')).toBeInTheDocument());
+      expect(s.base.aiGate.current()).toBeNull();
+      await act(async () => s.ai.release());
+      await act(() => vi.advanceTimersByTimeAsync(0));
+      expect(within(dialog).queryByText('Chữ đến muộn')).toBeNull();
+      expect(s.chats.saved).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('đóng khung trước khi xong thì có thông báo', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    const dialog = await openChat();
+    await ask(dialog);
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
+    await act(async () => s.ai.release());
+    expect(await screen.findByRole('status')).toHaveTextContent('AI đã trả lời ở Câu 1');
   });
 });

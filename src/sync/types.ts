@@ -1,4 +1,5 @@
 import type { Attempt } from '../engine/attempt';
+import type { QuestionNotes } from '../notes/model';
 import type { RemoteSnapshot } from './merge';
 
 export interface SyncUser {
@@ -32,6 +33,12 @@ export interface RemoteAttempts {
   serverOffsetKnown(): boolean;
   /** Gọi mỗi khi offset của server được báo. */
   onServerOffset(cb: () => void): () => void;
+}
+
+export interface RemoteNotes {
+  /** Snapshot đầy đủ mỗi lần (onValue), khóa là canonical qid; bản hỏng bị bỏ. */
+  listen(uid: string, cb: (all: Map<number, QuestionNotes>) => void, onError: (err: Error) => void): () => void;
+  write(uid: string, notes: QuestionNotes): Promise<void>;
 }
 
 export type SyncState =

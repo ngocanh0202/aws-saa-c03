@@ -6,14 +6,14 @@ import type { ChatMessage } from './types';
 
 describe('buildSystemPrompt', () => {
   it('dùng nhãn theo thứ tự hiển thị', () => {
-    const p = buildSystemPrompt(makeQuestion(1, ['A', 'B', 'C', 'D'], ['B']), ['C', 'A', 'B', 'D']);
+    const p = buildSystemPrompt(makeQuestion(1, ['A', 'B', 'C', 'D'], ['B']), ['C', 'A', 'B', 'D'], { revealed: true });
     expect(p).toContain('A. Option C of 1');
     expect(p).toContain('C. Option B of 1');
     expect(p).toContain('Đáp án đúng: C');
   });
 
   it('câu nhiều đáp án liệt kê đủ nhãn', () => {
-    const p = buildSystemPrompt(makeQuestion(2, ['A', 'B', 'C', 'D'], ['A', 'D']), ['D', 'C', 'B', 'A']);
+    const p = buildSystemPrompt(makeQuestion(2, ['A', 'B', 'C', 'D'], ['A', 'D']), ['D', 'C', 'B', 'A'], { revealed: true });
     expect(p).toContain('Đáp án đúng: A, D');
   });
 
@@ -72,7 +72,7 @@ describe('buildSystemPrompt: đối chiếu và mở hướng dẫn', () => {
   const q = makeQuestion(1, ['A', 'B', 'C', 'D'], ['B']);
 
   it('có giải thích tiếng Việt theo nhãn hiển thị, ghi chú và cờ review', () => {
-    const p = buildSystemPrompt(q, ['C', 'A', 'B', 'D'], { vi: VI, note: 'Đáp án đáng ngờ' });
+    const p = buildSystemPrompt(q, ['C', 'A', 'B', 'D'], { vi: VI, note: 'Đáp án đáng ngờ', revealed: true });
     expect(p).toContain('Giải thích tiếng Việt');
     expect(p).toContain('C. Lý do B đúng');
     expect(p).toContain('A. Lý do C sai');
@@ -83,20 +83,33 @@ describe('buildSystemPrompt: đối chiếu và mở hướng dẫn', () => {
   });
 
   it('không có giải thích tiếng Việt thì bỏ mục đó', () => {
-    expect(buildSystemPrompt(q, ['A', 'B', 'C', 'D'])).not.toContain('Giải thích tiếng Việt');
+    expect(buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: true })).not.toContain('Giải thích tiếng Việt');
   });
 
-  it('chưa mở hướng dẫn: dặn không nói đáp án, xin thì gọi open_guide', () => {
-    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: false });
-    expect(p).toContain('open_guide');
-    expect(p).toContain('không nói ra đáp án');
-    expect(p).not.toContain('đã thấy đáp án');
-  });
-
-  it('đã mở hướng dẫn: cứ trả lời thẳng', () => {
-    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: true });
-    expect(p).toContain('đã thấy đáp án');
+  it('chưa xem hướng dẫn: prompt không có đáp án, giải thích, ghi chú review', () => {
+    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { vi: VI, note: 'NOTE-X', revealed: false });
+    expect(p).not.toContain('Đáp án đúng');
+    expect(p).not.toContain(VI.explanationVi);
+    expect(p).not.toContain(VI.keyHint!);
+    expect(p).not.toContain(VI.options[0].reason);
+    expect(p).not.toContain('NOTE-X');
     expect(p).not.toContain('open_guide');
+    expect(p).toContain('Xem hướng dẫn');
+  });
+
+  it('đã xem: vẫn có đáp án và giải thích như cũ', () => {
+    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { vi: VI, revealed: true });
+    expect(p).toContain('Đáp án đúng');
+    expect(p).toContain(VI.explanationVi);
+    expect(p).toContain('đã thấy đáp án');
+  });
+
+  it('dặn câu tìm được có answerHidden thì không nói đáp án, ngay trong dòng bảo nêu đáp án đúng', () => {
+    const p = buildSystemPrompt(q, ['A', 'B', 'C', 'D'], { revealed: true });
+    const line = p.split('\n').find((l) => l.startsWith('- Tìm thấy thì nêu đề'))!;
+    expect(line).toContain('đáp án đúng (chỉ khi câu đó không có answerHidden; có answerHidden thì không đoán, không nói đáp án)');
+    // Không còn dòng dặn riêng lặp lại.
+    expect(p.split('\n').filter((l) => l.includes('answerHidden'))).toEqual([line]);
   });
 });
 

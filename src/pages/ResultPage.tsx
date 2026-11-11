@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { AiJobTarget } from '../ai/gate';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
@@ -22,10 +23,31 @@ const FILTERS: { value: ReviewFilter; label: string }[] = [
 
 export function ResultPage() {
   const { id = '' } = useParams();
-  const { bank, store } = useApp();
+  const { bank, store, aiGate } = useApp();
   useStoreVersion();
   const [filter, setFilter] = useState<ReviewFilter>('all');
   const attempt = store.get(id);
+  // Bấm "Đến câu …" trên thông báo AI: bỏ lọc và cuộn tới câu đó (khung chat của câu tự nhận yêu cầu mở).
+  const [jumpTo, setJumpTo] = useState<number | null>(null);
+  const jumped = useRef<AiJobTarget | null>(null);
+  // Layout effect: đăng ký trước khung chat của câu (effect thường) để đọc yêu cầu trước khi khung nhận và xóa nó.
+  useLayoutEffect(() => {
+    const jump = () => {
+      const t = aiGate.peekOpen();
+      // Mỗi yêu cầu chỉ nhảy một lần (yêu cầu chưa ai nhận thì không kéo người học về mãi).
+      if (t === jumped.current || t?.page !== 'attempt' || t.attemptId !== id) return;
+      jumped.current = t;
+      setFilter('all');
+      setJumpTo(t.qid);
+    };
+    jump();
+    return aiGate.subscribe(jump);
+  }, [aiGate, id]);
+  useEffect(() => {
+    if (jumpTo === null) return;
+    document.getElementById(`review-q-${jumpTo}`)?.scrollIntoView?.({ block: 'start' });
+    setJumpTo(null);
+  }, [jumpTo]);
 
   if (!attempt || !isCompatible(attempt, bank.questions)) {
     return (
@@ -86,7 +108,7 @@ export function ResultPage() {
         const selected = attempt.answers[aq.qid] ?? [];
         const correct = isCorrect(selected, question.answer);
         return (
-          <article key={aq.qid} className="review-item">
+          <article key={aq.qid} id={`review-q-${aq.qid}`} className="review-item">
             <div className="review-item__tags">
               <span className={`tag ${correct ? 'tag--ok' : 'tag--bad'}`}>{correct ? 'Đúng' : 'Sai'}</span>
               {selected.length === 0 && <span className="tag">Chưa trả lời</span>}

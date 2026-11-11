@@ -1,6 +1,53 @@
 import type { Attempt } from '../engine/attempt';
 import type { RemoteRecord, RemoteSnapshot } from '../sync/merge';
-import type { AuthClient, RemoteAttempts, SignInMethod, SyncUser } from '../sync/types';
+import type { QuestionNotes } from '../notes/model';
+import type { AuthClient, RemoteAttempts, RemoteNotes, SignInMethod, SyncUser } from '../sync/types';
+
+export interface FakeRemoteNotes extends RemoteNotes {
+  /** Dữ liệu cloud theo uid; write() cũng ghi vào đây. */
+  data: Map<string, Map<number, QuestionNotes>>;
+  writes: { uid: string; notes: QuestionNotes }[];
+  /** Gửi snapshot cho người đang listen uid; bỏ trống thì gửi dữ liệu hiện có trong `data`. */
+  emit(uid: string, snapshot?: Map<number, QuestionNotes>): void;
+  emitError(uid: string, err: Error): void;
+  /** Đặt lỗi thì lần write kế tiếp bị từ chối với lỗi này. */
+  writeError: Error | null;
+  listening(uid: string): number;
+}
+
+export function fakeRemoteNotes(): FakeRemoteNotes {
+  const listeners = new Map<string, Set<{ cb: (s: Map<number, QuestionNotes>) => void; onError: (err: Error) => void }>>();
+  const remote: FakeRemoteNotes = {
+    data: new Map(),
+    writes: [],
+    writeError: null,
+    listen(uid, cb, onError) {
+      const set = listeners.get(uid) ?? new Set();
+      const entry = { cb, onError };
+      set.add(entry);
+      listeners.set(uid, set);
+      return () => void set.delete(entry);
+    },
+    async write(uid, notes) {
+      remote.writes.push({ uid, notes });
+      const err = remote.writeError;
+      remote.writeError = null;
+      if (err) throw err;
+      const records = remote.data.get(uid) ?? new Map();
+      records.set(notes.qid, notes);
+      remote.data.set(uid, records);
+    },
+    emit(uid, snapshot) {
+      const snap = snapshot ?? remote.data.get(uid) ?? new Map();
+      for (const l of [...(listeners.get(uid) ?? [])]) l.cb(new Map(snap));
+    },
+    emitError(uid, err) {
+      for (const l of [...(listeners.get(uid) ?? [])]) l.onError(err);
+    },
+    listening: (uid) => listeners.get(uid)?.size ?? 0,
+  };
+  return remote;
+}
 
 export interface FakeAuth extends AuthClient {
   emit(user: SyncUser | null): void;

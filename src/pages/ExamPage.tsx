@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { AiJobTarget } from '../ai/gate';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
@@ -14,7 +15,7 @@ import { isCompatible, type Attempt } from '../engine/attempt';
 
 export function ExamPage() {
   const { id = '' } = useParams();
-  const { bank, store, now } = useApp();
+  const { bank, store, now, aiGate } = useApp();
   const navigate = useNavigate();
   useStoreVersion();
   const attempt = store.get(id);
@@ -35,6 +36,24 @@ export function ExamPage() {
     },
     [store],
   );
+
+  // Bấm "Đến câu …" trên thông báo AI: nhảy tới câu đó (khung chat/popup của câu tự nhận yêu cầu mở).
+  const questions = attempt?.questions;
+  const jumped = useRef<AiJobTarget | null>(null);
+  // Layout effect: đăng ký trước khung chat của câu (effect thường) để đọc yêu cầu trước khi khung nhận và xóa nó.
+  useLayoutEffect(() => {
+    if (!questions) return;
+    const jump = () => {
+      const t = aiGate.peekOpen();
+      // Mỗi yêu cầu chỉ nhảy một lần (yêu cầu chưa ai nhận thì không kéo người học về mãi).
+      if (t === jumped.current || t?.page !== 'attempt' || t.attemptId !== id) return;
+      jumped.current = t;
+      const i = questions.findIndex((q) => q.qid === t.qid);
+      if (i >= 0) setIndex(i);
+    };
+    jump();
+    return aiGate.subscribe(jump);
+  }, [aiGate, id, questions]);
 
   useEffect(() => {
     if (attempt?.status === 'submitted') navigate(`/result/${attempt.id}`, { replace: true });
@@ -102,7 +121,16 @@ export function ExamPage() {
             reveal={revealed}
             showOrigLabels={revealed && !bank.vi.has(aq.qid) && !question.html}
             chooseLabel={question.choose > 1 ? t.choose(question.choose) : undefined}
-            onSelect={(key) => update(selectOption(attempt, aq.qid, key, question.choose))}
+            onSelect={revealed ? undefined : (key) => update(selectOption(attempt, aq.qid, key, question.choose))}
+            annotate={
+              attempt.mode === 'practice'
+                ? {
+                    qid: bank.canonical(aq.qid),
+                    label: `Câu ${index + 1}`,
+                    target: (hl) => ({ page: 'attempt', attemptId: attempt.id, qid: aq.qid, highlightId: hl }),
+                  }
+                : undefined
+            }
           />
 
           <div className="exam__pager">
@@ -129,12 +157,6 @@ export function ExamPage() {
                   question={question}
                   order={aq.optionOrder}
                   revealed={revealed}
-                  onOpenGuide={() => {
-                    // Gemini gọi tool khi câu trả lời đang stream: lấy lượt thi mới nhất trong store.
-                    const latest = store.get(attempt.id);
-                    // Có thể tới sau khi đã nộp bài (câu trả lời chạy nền): lượt đã nộp thì không sửa.
-                    if (latest?.status === 'in-progress' && !latest.guideOpened.includes(aq.qid)) update(markGuideOpened(latest, aq.qid));
-                  }}
                 />
               </div>
               {revealed && (

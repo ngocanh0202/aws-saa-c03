@@ -17,7 +17,7 @@ const MULTIPART: Question = {
   ],
 };
 
-function bank(extra: Question[] = []) {
+function bank(extra: Question[] = [], twins: [number, number][] = []) {
   const questions = new Map<number, Question>([
     [1, makeQuestion(1)],
     [5, MULTIPART],
@@ -26,10 +26,11 @@ function bank(extra: Question[] = []) {
   ]);
   const meta = new Map<number, QuestionMeta>([[1, { id: 1, domain: 1, difficulty: 1, services: ['s3'] }]]);
   const services = new Map([['s3', { id: 's3', name: 'Amazon S3', category: 'Storage' }]]);
-  return { questions, meta, services };
+  const canon = new Map(twins.map(([a, b]) => [Math.max(a, b), Math.min(a, b)]));
+  return { questions, meta, services, canonical: (qid: number) => canon.get(qid) ?? qid };
 }
 
-function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attempt['status']; at?: number; answers: Record<number, string[]> }): Attempt {
+function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attempt['status']; at?: number; guideOpened?: number[]; answers: Record<number, string[]> }): Attempt {
   const qids = Object.keys(opts.answers).map(Number);
   return {
     id,
@@ -41,7 +42,7 @@ function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attem
     questions: [{ qid: 99, domain: 1, optionOrder: ['A', 'B', 'C', 'D'] }, ...qids.map((qid) => ({ qid, domain: 1 as const, optionOrder: ['D', 'C', 'B', 'A'] }))],
     answers: opts.answers,
     flagged: [],
-    guideOpened: [],
+    guideOpened: opts.guideOpened ?? [],
     status: opts.status ?? 'submitted',
     ...(opts.status === 'in-progress' ? {} : { submittedAt: (opts.at ?? Date.UTC(2026, 10, 1, 3)) + 1000 }),
   };
@@ -138,17 +139,91 @@ describe('searchAnswered', () => {
   });
 });
 
+describe('searchAnswered: ẩn đáp án câu chưa thấy', () => {
+  const CUR = { ...CTX, attemptId: 'a1' };
+  const run = (list: Attempt[], ctx = CUR) => searchAnswered('multipart', ctx, list, bank());
+
+  it('câu trong lượt đang làm, chưa mở hướng dẫn: ẩn đáp án dù lượt cũ đã nộp có câu đó', () => {
+    const cur = attempt('a1', { mode: 'practice', status: 'in-progress', answers: { 5: ['A'] }, guideOpened: [] });
+    const old = attempt('a0', { status: 'submitted', answers: { 5: ['B'] } });
+    const [hit] = run([cur, old]);
+    expect(hit.answerHidden).toBe(true);
+    expect(hit.options.every((o) => o.correct === undefined)).toBe(true);
+    expect(hit.tries.every((t) => t.correct === undefined)).toBe(true);
+    expect(JSON.stringify(hit)).not.toContain('"correct"');
+  });
+
+  it('câu trong lượt đang làm đã mở hướng dẫn: có đáp án', () => {
+    const cur = attempt('a1', { mode: 'practice', status: 'in-progress', answers: { 5: ['A'] }, guideOpened: [5] });
+    const [hit] = run([cur]);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.options.some((o) => o.correct === true)).toBe(true);
+    expect(hit.tries[0].correct).toBe(false);
+  });
+
+  it('câu chỉ ở lượt khác đã nộp: có đáp án', () => {
+    const [hit] = run([attempt('a9', { answers: { 5: ['B'] } })]);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.tries[0].correct).toBe(true);
+  });
+
+  it('câu chỉ ở lượt Thi thử khác chưa nộp, chưa mở hướng dẫn: ẩn', () => {
+    const [hit] = run([attempt('a2', { status: 'in-progress', answers: { 5: ['B'] } })], { ...CTX, attemptId: 'a1' });
+    expect(hit.answerHidden).toBe(true);
+    expect(hit.options.every((o) => o.correct === undefined)).toBe(true);
+  });
+
+  it('câu chỉ ở lượt Thi thử khác chưa nộp, đã mở hướng dẫn: có đáp án', () => {
+    const [hit] = run([attempt('a2', { status: 'in-progress', answers: { 5: ['B'] }, guideOpened: [5] })]);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.options.some((o) => o.correct === true)).toBe(true);
+  });
+});
+
+describe('searchAnswered: câu trùng (twin)', () => {
+  // 246/253 trùng nguyên văn: canonical(253) = 246.
+  const twinBank = () => bank([{ ...MULTIPART, id: 246 }, { ...MULTIPART, id: 253 }], [[246, 253]]);
+  const CUR = { setId: 1, attemptId: 'b', qid: 246 };
+
+  it('câu trùng của câu đang làm (chưa mở hướng dẫn) nằm ở lượt khác đã nộp: ẩn đáp án', () => {
+    const a = attempt('a', { status: 'submitted', answers: { 253: ['B'] } });
+    const b = attempt('b', { status: 'in-progress', answers: { 246: ['A'] } });
+    const hits = searchAnswered('multipart', CUR, [a, b], twinBank());
+    expect(hits.map((h) => h.qid).sort()).toEqual([246, 253]);
+    for (const h of hits) {
+      expect(h.answerHidden).toBe(true);
+      expect(JSON.stringify(h)).not.toContain('"correct"');
+    }
+  });
+
+  it('câu trùng của câu đang làm đã mở hướng dẫn: có đáp án', () => {
+    const a = attempt('a', { status: 'submitted', answers: { 253: ['B'] } });
+    const b = attempt('b', { status: 'in-progress', answers: { 246: ['A'] }, guideOpened: [246] });
+    const hit = searchAnswered('multipart', CUR, [a, b], twinBank()).find((h) => h.qid === 253)!;
+    expect(hit.answerHidden).toBe(false);
+  });
+
+  it('lượt đang hỏi có mặt nhưng không chứa câu (cũng không chứa câu trùng): theo lượt khác đã nộp', () => {
+    const a = attempt('a', { status: 'submitted', answers: { 5: ['B'] } });
+    const b = attempt('b', { status: 'in-progress', answers: { 1: ['A'] } });
+    const [hit] = searchAnswered('multipart', CUR, [a, b], twinBank()).filter((h) => h.qid === 5);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.tries[0].correct).toBe(true);
+  });
+});
+
 describe('createSearchTool', () => {
-  it('tool đánh dấu đã xem hướng dẫn ở lượt Thi thử chưa nộp, không sửa lượt đã nộp', async () => {
+  it('tool không sửa lượt thi nào', async () => {
     const store = createStore(memoryStorage(), { now: () => 500 });
     store.save(attempt('open', { status: 'in-progress', answers: { 5: ['A'] } }));
-    store.save(attempt('done', { answers: { 5: ['B'] } }));
+    store.save(attempt('open2', { status: 'in-progress', answers: { 5: ['B'] } }));
+    const before = JSON.stringify(store.list());
     const tool = createSearchTool(store, bank(), CTX);
     expect(tool.name).toBe(SEARCH_TOOL);
-    const out = (await tool.run({ query: 'multipart' })) as { results: unknown[] };
+    const out = (await tool.run({ query: 'multipart' })) as { results: { answerHidden: boolean }[] };
     expect(out.results).toHaveLength(1);
-    expect(store.get('open')!.guideOpened).toEqual([5]);
-    expect(store.get('done')!.guideOpened).toEqual([]);
+    expect(out.results[0].answerHidden).toBe(true);
+    expect(JSON.stringify(store.list())).toBe(before);
   });
 
   it('args không phải chuỗi thì coi như rỗng', async () => {

@@ -35,3 +35,19 @@ describe('findCachedReply', () => {
     expect(findCachedReply(twice, 'Amazon MQ là gì?')).toBe('Lần sau');
   });
 });
+
+describe('findCachedReply: câu trả lời hidden', () => {
+  const msgs: ChatMessage[] = [
+    { role: 'user', text: 'Đáp án là gì?' },
+    { role: 'model', text: 'Bấm Xem hướng dẫn', hidden: true },
+  ];
+  it('chưa xem đáp án: dùng lại được', () => {
+    expect(findCachedReply(msgs, 'Đáp án là gì?', false)).toBe('Bấm Xem hướng dẫn');
+  });
+  it('đã xem đáp án: bỏ qua câu trả lời hidden', () => {
+    expect(findCachedReply(msgs, 'Đáp án là gì?', true)).toBeNull();
+  });
+  it('câu trả lời cũ không có nhãn vẫn dùng lại được', () => {
+    expect(findCachedReply([msgs[0], { role: 'model', text: 'Là B' }], 'Đáp án là gì?', true)).toBe('Là B');
+  });
+});

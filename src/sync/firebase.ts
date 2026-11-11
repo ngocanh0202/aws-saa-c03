@@ -19,12 +19,14 @@ import { lastText, type ErrorReport, type SupportMessage, type SupportThread } f
 import type { SupportStore } from '../support/types';
 import type { FirebaseConfig } from './config';
 import type { RemoteSnapshot } from './merge';
-import type { AuthClient, RemoteAttempts, SyncUser } from './types';
+import type { QuestionNotes } from '../notes/model';
+import type { AuthClient, RemoteAttempts, RemoteNotes, SyncUser } from './types';
 
 /** Duy nhất file này import Firebase SDK. */
 export function createFirebaseClients(config: FirebaseConfig): {
   auth: AuthClient;
   remote: RemoteAttempts;
+  notes: RemoteNotes;
   chats: ChatHistoryStore;
   localChats: ChatHistoryStore;
   localSettings: LocalSettingsStore;
@@ -124,6 +126,35 @@ export function createFirebaseClients(config: FirebaseConfig): {
     onServerOffset(cb) {
       offsetListeners.add(cb);
       return () => void offsetListeners.delete(cb);
+    },
+  };
+
+  /** Ghi chú ở users/{uid}/notes/{canonicalQid} dạng { json, updatedAt }. */
+  const notes: RemoteNotes = {
+    listen(uid, cb, onError) {
+      return onValue(
+        ref(db, `users/${uid}/notes`),
+        (snap) => {
+          const out = new Map<number, QuestionNotes>();
+          snap.forEach((c) => {
+            const val = c.val() as { json?: unknown } | null;
+            if (!val || typeof val.json !== 'string') return;
+            try {
+              const parsed = JSON.parse(val.json) as Partial<QuestionNotes> | null;
+              if (parsed && typeof parsed.qid === 'number' && typeof parsed.updatedAt === 'number' && Array.isArray(parsed.highlights)) {
+                out.set(parsed.qid, parsed as QuestionNotes);
+              }
+            } catch {
+              /* bản hỏng: bỏ qua */
+            }
+          });
+          cb(out);
+        },
+        (err) => onError(err),
+      );
+    },
+    write(uid, n) {
+      return set(ref(db, `users/${uid}/notes/${n.qid}`), { json: JSON.stringify(n), updatedAt: n.updatedAt });
     },
   };
 
@@ -252,7 +283,7 @@ export function createFirebaseClients(config: FirebaseConfig): {
     },
   };
 
-  return { auth, remote, chats, localChats, localSettings, support, app };
+  return { auth, remote, notes, chats, localChats, localSettings, support, app };
 }
 
 function parseError(v: unknown): ErrorReport | undefined {

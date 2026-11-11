@@ -1,3 +1,5 @@
+> Đã thay bởi spec 2026-11-11: bỏ open_guide
+
 # Gemini: tìm lại câu đã làm và mở lại cuộc trò chuyện cũ
 
 Bổ sung cho [2026-11-02-gemini-chat-design.md](2026-11-02-gemini-chat-design.md). Mọi quy tắc ở spec đó vẫn giữ nguyên (chỉ có ở Thi thử, phải đăng nhập Google, Gemini biết đáp án đúng, câu hỏi Gemini tính như đã mở hướng dẫn, lưu lịch sử chat lên Firebase), trừ chỗ spec này nói khác.

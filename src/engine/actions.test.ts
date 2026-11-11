@@ -34,6 +34,21 @@ describe('selectOption', () => {
     expect(selectOption(a, 7, 'A', 2).answers[7]).toEqual(['C']);
   });
 
+  it('Thi thử: câu đã mở hướng dẫn không đổi được đáp án', () => {
+    const a = attempt({ mode: 'practice', answers: { 7: ['A'] }, guideOpened: [7] });
+    expect(selectOption(a, 7, 'B', 1)).toBe(a);
+  });
+
+  it('Thi thử: câu khác vẫn chọn được', () => {
+    const a = attempt({ mode: 'practice', guideOpened: [5] });
+    expect(selectOption(a, 7, 'B', 1).answers[7]).toEqual(['B']);
+  });
+
+  it('Thi thật không bị ảnh hưởng bởi guideOpened', () => {
+    const a = attempt({ mode: 'real', guideOpened: [7] });
+    expect(selectOption(a, 7, 'B', 1).answers[7]).toEqual(['B']);
+  });
+
   it('không đổi được đáp án sau khi đã nộp', () => {
     const done = attempt({ status: 'submitted' });
     expect(selectOption(done, 7, 'A', 1)).toBe(done);

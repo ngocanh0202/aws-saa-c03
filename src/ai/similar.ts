@@ -36,12 +36,15 @@ export function similarity(a: string, b: string): number {
   return 1 - levenshtein(x, y) / longest;
 }
 
-/** Câu trả lời của lần hỏi gần nhất giống `text` ≥ SIMILAR_THRESHOLD; không có thì null. */
-export function findCachedReply(messages: ChatMessage[], text: string, threshold = SIMILAR_THRESHOLD): string | null {
+/**
+ * Câu trả lời của lần hỏi gần nhất giống `text` ≥ SIMILAR_THRESHOLD; không có thì null.
+ * `revealed`: người học đã thấy đáp án thì bỏ qua các câu trả lời `hidden` (tạo ra lúc chưa thấy).
+ */
+export function findCachedReply(messages: ChatMessage[], text: string, revealed = false, threshold = SIMILAR_THRESHOLD): string | null {
   for (let i = messages.length - 2; i >= 0; i--) {
     const q = messages[i];
     const a = messages[i + 1];
-    if (q.role === 'user' && a.role === 'model' && similarity(q.text, text) >= threshold) return a.text;
+    if (q.role === 'user' && a.role === 'model' && !(revealed && a.hidden) && similarity(q.text, text) >= threshold) return a.text;
   }
   return null;
 }

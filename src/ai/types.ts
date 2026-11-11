@@ -6,6 +6,8 @@ export interface ChatMessage {
   text: string;
   /** Câu trả lời dùng lại từ lần hỏi trước (câu hỏi giống ≥ 85%), không gửi cho AI. */
   cached?: boolean;
+  /** Câu trả lời tạo ra khi người học chưa xem đáp án; sau khi xem thì không dùng lại làm câu trả lời có sẵn. */
+  hidden?: true;
 }
 
 export interface AiChat {

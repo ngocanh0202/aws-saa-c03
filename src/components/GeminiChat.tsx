@@ -2,21 +2,21 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, 
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
-import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
+import { AiGateBusyError, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
-import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings } from '../ai/local-settings';
+import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
+import { createIdleWatchdog, type IdleWatchdog } from '../ai/watchdog';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
 import { chatSuggestions } from '../ai/suggestions';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
-import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
-import type { SyncController, SyncState, SyncUser } from '../sync/types';
+import type { SyncState, SyncUser } from '../sync/types';
 import { claimChatFocus, onChatFocus } from './chat-focus';
 import { ContactAdminButton } from './ContactAdminButton';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
@@ -28,12 +28,7 @@ interface Props {
   number: number;
   question: Question;
   order: string[];
-  /**
-   * Mở hướng dẫn như bấm nút (Gemini gọi tool open_guide khi người học xin đáp án). Không truyền
-   * (bài đã nộp…) thì Gemini không có tool này.
-   */
-  onOpenGuide?: () => void;
-  /** Người học đã thấy đáp án và hướng dẫn; mặc định true khi không có onOpenGuide. */
+  /** Người học đã thấy đáp án và hướng dẫn (đã mở, hoặc bài đã nộp); mặc định true. */
   revealed?: boolean;
   /** Nút nằm trong khối câu (trang xem lại có nhiều câu) thay vì nổi ở góc phải. */
   inline?: boolean;
@@ -75,7 +70,7 @@ function RobotIcon() {
 }
 
 /** Tên hiện trên nút và trong khung: Gemini, hoặc "AI" ở chế độ AI thử nghiệm (LM Studio). */
-type Brand = 'Gemini' | 'AI';
+export type Brand = 'Gemini' | 'AI';
 
 const noSubscribe = () => () => undefined;
 const geminiMode = () => 'gemini' as const;
@@ -85,25 +80,43 @@ export function useAiMode(aiMode: AiModeStore | undefined) {
   return useSyncExternalStore(aiMode?.subscribe ?? noSubscribe, aiMode?.get ?? geminiMode);
 }
 
+const noState = () => null;
+
+export interface ActiveAi {
+  client: AiClient;
+  brand: Brand;
+  uid: string;
+  /** Chỉ có ở AI thử nghiệm: tham số ⚙ lưu theo tài khoản. */
+  settingsStore?: LocalSettingsStore;
+  /** Nơi lưu lịch sử chat của chế độ đang chọn. */
+  chats: ChatHistoryStore;
+}
+
+/**
+ * AI đang dùng (theo chế độ trong menu tài khoản), chỉ khi có `sync`, đã đăng nhập Google và có đủ
+ * client + nơi lưu chat của chế độ đó; không thì null. Dùng chung cho nút chat và nút AI soạn ghi chú.
+ */
+export function useActiveAi(): ActiveAi | null {
+  const { sync, ai, chats, localAi, localChats, aiMode, localSettings } = useApp();
+  const mode = useAiMode(aiMode);
+  const state = useSyncExternalStore(sync?.subscribe ?? noSubscribe, sync?.getState ?? noState);
+  const local = mode === 'local' && localAi && localChats ? { ai: localAi, chats: localChats } : null;
+  const client = local?.ai ?? ai;
+  const store = local?.chats ?? chats;
+  const user = state ? signedInUser(state) : null;
+  if (!sync || !client || !store || !user) return null;
+  return { client, brand: local ? 'AI' : 'Gemini', uid: user.uid, chats: store, ...(local && localSettings ? { settingsStore: localSettings } : {}) };
+}
+
 /**
  * Nút "Hỏi Gemini" (hoặc "Hỏi AI" ở chế độ thử nghiệm); chỉ hiện khi có AI của chế độ đang chọn
  * và đã đăng nhập Google.
  */
 export function GeminiButton(props: Props) {
-  const { sync, ai, chats, localAi, localChats, aiMode } = useApp();
-  const mode = useAiMode(aiMode);
-  const local = mode === 'local' && localAi && localChats ? { ai: localAi, chats: localChats } : null;
-  const client = local?.ai ?? ai;
-  const store = local?.chats ?? chats;
-  if (!sync || !client || !store) return null;
-  return <SignedIn sync={sync} ai={client} chats={store} brand={local ? 'AI' : 'Gemini'} {...props} />;
-}
-
-function SignedIn({ sync, brand, ...rest }: Props & { sync: SyncController; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
-  const state = useSyncExternalStore(sync.subscribe, sync.getState);
-  const user = signedInUser(state);
+  const active = useActiveAi();
+  if (!active) return null;
   // key theo uid và chế độ: đăng xuất, đổi tài khoản hay đổi Gemini ↔ AI thử nghiệm thì khung chat đóng hẳn.
-  return user ? <Launcher key={`${user.uid}:${brand}`} uid={user.uid} brand={brand} {...rest} /> : null;
+  return <Launcher key={`${active.uid}:${active.brand}`} uid={active.uid} ai={active.client} chats={active.chats} brand={active.brand} {...props} />;
 }
 
 /** Câu này có câu trả lời đang chạy ngầm (đã đóng khung hay sang câu khác) hay không. */
@@ -121,8 +134,20 @@ let openAfterSwitch: string | null = null;
 
 function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
   const id = useId();
+  const { aiGate } = useApp();
   const launcherKey = keyOf(props.attemptId, props.question.id);
-  const [open, setOpen] = useState(() => openAfterSwitch === launcherKey);
+  const { attemptId } = props;
+  const qid = props.question.id;
+  /** Yêu cầu mở từ thông báo "Đến câu …" (khung chat của đúng câu này, không phải ghi chú). */
+  const isMine = useCallback(
+    (t: AiJobTarget) => t.page === 'attempt' && t.attemptId === attemptId && t.qid === qid && !t.highlightId,
+    [attemptId, qid],
+  );
+  const [open, setOpen] = useState(() => {
+    if (openAfterSwitch === launcherKey) return true;
+    const pending = aiGate.peekOpen();
+    return pending !== null && isMine(pending);
+  });
   useEffect(() => {
     if (openAfterSwitch === launcherKey) openAfterSwitch = null;
   }, [launcherKey]);
@@ -130,10 +155,18 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
   useEffect(() => {
     return onChatFocus((other) => other !== id && setOpen(false));
   }, [id]);
-  const show = () => {
+  const show = useCallback(() => {
     claimChatFocus(id);
     setOpen(true);
-  };
+  }, [id]);
+  // Nhận yêu cầu mở (lúc mount, hoặc khi đang ở sẵn câu này mà người học bấm "Đến câu …").
+  useEffect(() => {
+    const take = () => {
+      if (aiGate.takeOpen(isMine)) show();
+    };
+    take();
+    return aiGate.subscribe(take);
+  }, [aiGate, isMine, show]);
   const running = useRunning(inflightFor(props.chats), inflightKey(props.uid, props.attemptId, props.question.id));
   // Như chat Messenger: khung chat mở ra thay chỗ nút, đóng lại thì nút hiện lại.
   return open ? (
@@ -162,7 +195,6 @@ interface Target {
   question: Question;
   order: string[];
   setId: number;
-  onOpenGuide?: () => void;
   revealed: boolean;
 }
 
@@ -176,7 +208,6 @@ function ChatDialog({
   number,
   question,
   order,
-  onOpenGuide,
   revealed,
   brand,
   onClose,
@@ -235,7 +266,7 @@ function ChatDialog({
   }, [expanded]);
 
   const homeSetId = store.get(attemptId)?.setId ?? 0;
-  const home: Target = { attemptId, number, question, order, setId: homeSetId, onOpenGuide, revealed: revealed ?? !onOpenGuide };
+  const home: Target = { attemptId, number, question, order, setId: homeSetId, revealed: revealed ?? true };
   const homeLabel = `${setLabel(homeSetId)} · Câu ${number}`;
 
   /** Dựng cuộc trò chuyện ở lượt cũ; lượt hay câu không còn thì null. */
@@ -251,19 +282,7 @@ function ChatDialog({
       question: q,
       order: a.questions[index].optionOrder,
       setId: a.setId,
-      // Mở hướng dẫn chỉ có nghĩa với lượt Thi thử còn dở; lượt đã nộp thì không đổi gì.
-      ...(open
-        ? {
-            onOpenGuide: () => {
-              const latest = store.get(id);
-              // Câu trả lời chạy nền có thể tới sau khi lượt đã nộp: lượt đã nộp thì không sửa.
-              if (latest?.mode === 'practice' && latest.status === 'in-progress' && !latest.guideOpened.includes(qid)) {
-                store.save(markGuideOpened(latest, qid));
-              }
-            },
-            revealed: a.guideOpened.includes(qid),
-          }
-        : { revealed: true }),
+      revealed: open ? a.guideOpened.includes(qid) : true,
     };
   };
 
@@ -628,8 +647,20 @@ function Conversation({
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
   const key = inflightKey(uid, attemptId, qid);
-  const { store, bank, sync, aiCooldown } = useApp();
+  const { store, bank, sync, aiCooldown, aiGate } = useApp();
   const inflight = inflightFor(chats);
+  // Mỗi tab chỉ một yêu cầu AI: yêu cầu ở chỗ khác đang chạy thì khóa ô nhập của khung này.
+  const gateTarget: AiJobTarget = { page: 'attempt', attemptId, qid };
+  const myKey = targetKey(gateTarget);
+  const gateJob = useAiGate();
+  const locked = gateJob !== null && targetKey(gateJob.target) !== myKey ? gateJob : null;
+  // Khung đang mở câu này: trả lời xong thì không cần thông báo.
+  useEffect(() => {
+    aiGate.setViewing(myKey);
+    return () => {
+      if (aiGate.viewing() === myKey) aiGate.setViewing(null);
+    };
+  }, [aiGate, myKey]);
   // Khóa sau lỗi hết lượt chỉ dùng chung cho Gemini; AI thử nghiệm có bản riêng (thực tế không bị 429).
   const cooldown = brand === 'Gemini' ? (aiCooldown ?? memoryCooldownFor(ai)) : memoryCooldownFor(ai);
   const until = useCooldown(cooldown);
@@ -652,11 +683,9 @@ function Conversation({
   const [busy, setBusy] = useState(running !== undefined);
   const [input, setInput] = useState('');
   const chatRef = useRef<AiChat | null>(null);
+  const watchdogRef = useRef<IdleWatchdog | null>(null);
   // Đã nhận tin từ câu trả lời đang chạy thì lịch sử tải về (có thể cũ hơn) không được ghi đè.
   const fromInflight = useRef(running !== undefined);
-  // Luôn gọi bản onOpenGuide mới nhất, kể cả khi stream bắt đầu từ lần render trước.
-  const openGuide = useRef(target.onOpenGuide);
-  openGuide.current = target.onOpenGuide;
   // Trạng thái "đã thấy đáp án" mà phiên chat hiện tại được báo; đổi thì mở phiên mới để Gemini biết.
   const sessionRevealed = useRef(target.revealed);
   const sessionSettings = useRef(settings);
@@ -710,16 +739,16 @@ function Conversation({
   }, [messages]);
 
   /**
-   * Chạy ở nền, không phụ thuộc khung chat còn mở hay không: mọi cập nhật đi qua `inflight`, khung
-   * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
+   * Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập).
+   * base: lịch sử gửi kèm (gửi lại câu hỏi lỗi thì bỏ chính câu đó khỏi lịch sử để không lặp).
    */
-  /** Gửi chữ trong ô nhập, hoặc một câu hỏi gợi ý (gửi luôn, không đụng ô nhập). */
-  /** base: lịch sử gửi kèm (gửi lại câu hỏi lỗi thì bỏ chính câu đó khỏi lịch sử để không lặp). */
   const send = async (suggestion?: string, base: ChatMessage[] = messages) => {
     const text = (suggestion ?? input).trim();
-    if (!text || busy || !loaded || cooldown.until() !== null) return;
+    if (!text || busy || !loaded || cooldown.until() !== null || aiGate.current() !== null) return;
     const history = base;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
+    // Câu trả lời tạo lúc chưa xem đáp án được gắn `hidden` để không dùng lại sau khi xem.
+    const modelMsg = (t: string): ChatMessage => ({ role: 'model', text: t, ...(target.revealed ? {} : { hidden: true as const }) });
     const signedIn = () => !sync || signedInUser(sync.getState())?.uid === uid;
     if (suggestion === undefined) setInput('');
     setSendFailed(false);
@@ -727,23 +756,44 @@ function Conversation({
     setFailMessage(undefined);
     setSaveFailed(false);
     // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
-    const cached = findCachedReply(history, text);
+    const cached = findCachedReply(history, text, target.revealed);
     if (cached !== null) {
-      const done: ChatMessage[] = [...asked, { role: 'model', text: cached, cached: true }];
+      const done: ChatMessage[] = [...asked, { ...modelMsg(cached), cached: true }];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
       chats.save(uid, attemptId, qid, done).catch(() => inflight.emit(key, { kind: 'save-failed' }));
       return;
     }
+    const job = { kind: 'chat' as const, label: `Câu ${target.number}`, target: gateTarget };
+    // Chạy qua gate. Lỗi của AI đã báo trong khung; gate bận (đã chặn ở trên, chỉ xảy ra khi đua) thì trả lại chữ.
+    await aiGate.run(job, () => answer(text, history, asked, modelMsg, signedIn)).catch((e) => {
+      if (e instanceof AiGateBusyError && suggestion === undefined) setInput(text);
+    });
+  };
+
+  /**
+   * Chạy ở nền, không phụ thuộc khung chat còn mở hay không: mọi cập nhật đi qua `inflight`, khung
+   * nào đang mở câu này thì nhận. Chỉ dừng (không lưu) khi user đã đăng xuất hay đổi tài khoản.
+   * Ném lại lỗi để gate biết yêu cầu hỏng.
+   */
+  const answer = async (
+    text: string,
+    history: ChatMessage[],
+    asked: ChatMessage[],
+    modelMsg: (t: string) => ChatMessage,
+    signedIn: () => boolean,
+  ) => {
+    // AI im lặng quá lâu (kể cả trước chữ đầu tiên) thì báo lỗi và nhả gate; chữ đến sau bị bỏ.
+    // Phiên chat dùng lại qua nhiều lần gửi nên các callback của phiên đọc watchdog qua ref.
+    const watchdog = createIdleWatchdog();
+    watchdogRef.current = watchdog;
     let reply = '';
     let searchingNow = false;
     let retryNow: { attempt: number; max: number } | undefined;
     let thinkingNow = false;
-    // Gemini gọi open_guide thì chờ trả lời xong mới mở hướng dẫn (lỗi giữa chừng thì không mở).
-    let guideRequested = false;
     const progress = () =>
       inflight.emit(key, {
         kind: 'progress',
-        messages: reply ? [...asked, { role: 'model', text: reply }] : asked,
+        messages: reply ? [...asked, modelMsg(reply)] : asked,
         searching: searchingNow,
         retry: retryNow,
         thinking: thinkingNow,
@@ -763,23 +813,16 @@ function Conversation({
       });
       const chat = (chatRef.current ??= ai.startChat(prompt, history, {
         settings,
-        tools: [
-          createSearchTool(store, bank, { setId, attemptId, qid }),
-          ...(target.onOpenGuide
-            ? [
-                createGuideTool(() => {
-                  guideRequested = true;
-                }),
-              ]
-            : []),
-        ],
+        tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
         onToolCall: (name) => {
+          watchdogRef.current?.touch();
           // Dòng chờ "đang tìm" chỉ dành cho tool tìm câu.
           if (name !== SEARCH_TOOL) return;
           searchingNow = true;
           progress();
         },
         onThinking: () => {
+          watchdogRef.current?.touch();
           if (thinkingNow) return;
           thinkingNow = true;
           progress();
@@ -787,13 +830,14 @@ function Conversation({
         // Gemini hết lượt/quá tải: khóa mọi khung chat tới giờ thử lại và hiện đếm ngược.
         retry: {
           onWait: (w) => {
+            watchdogRef.current?.touch(w.until);
             cooldown.set(w.until);
             retryNow = { attempt: w.attempt, max: w.max };
             progress();
           },
         },
       }));
-      for await (const chunk of chat.send(text)) {
+      for await (const chunk of watchdog.wrap(chat.send(text))) {
         if (!signedIn()) throw new Error('signed out');
         if (!chunk) continue;
         searchingNow = false;
@@ -804,9 +848,8 @@ function Conversation({
       }
       if (!reply) throw new Error('empty reply');
       if (!signedIn()) throw new Error('signed out');
-      const done: ChatMessage[] = [...asked, { role: 'model', text: reply }];
+      const done: ChatMessage[] = [...asked, modelMsg(reply)];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
-      if (guideRequested) openGuide.current?.();
       chats.save(uid, attemptId, qid, done).catch(() => {
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
         inflight.emit(key, { kind: 'save-failed' });
@@ -817,7 +860,8 @@ function Conversation({
       const busyError = e instanceof AiBusyError;
       // Gemini báo phải chờ (quá lâu để tự chờ, hoặc đã thử lại hết lượt): khóa tới giờ đó.
       if (busyError && e.retryAfterMs) cooldown.set(Date.now() + e.retryAfterMs);
-      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
+      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, modelMsg(reply)] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
+      throw e;
     }
   };
 
@@ -857,7 +901,7 @@ function Conversation({
                   className="icon-btn gemini__retry"
                   aria-label="Gửi lại câu hỏi"
                   title="Gửi lại câu hỏi"
-                  disabled={!loaded || until !== null}
+                  disabled={!loaded || until !== null || locked !== null}
                   onClick={() => void send(m.text, messages.slice(0, -1))}
                 >
                   ↻
@@ -908,7 +952,7 @@ function Conversation({
             <div className="gemini__suggest" role="group" aria-label="Câu hỏi gợi ý">
               <p className="gemini__suggest-title">Gợi ý</p>
               {suggestions.map((text) => (
-                <button key={text} type="button" className="gemini__suggest-item" disabled={until !== null} onClick={() => void send(text)}>
+                <button key={text} type="button" className="gemini__suggest-item" disabled={until !== null || locked !== null} onClick={() => void send(text)}>
                   {text}
                 </button>
               ))}
@@ -923,15 +967,20 @@ function Conversation({
           aria-label={`Câu hỏi cho ${brand}`}
           rows={2}
           value={input}
-          disabled={busy || !loaded}
+          disabled={busy || !loaded || locked !== null}
           placeholder="Nhập câu hỏi…"
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
         />
-        <button type="submit" className="btn-primary" disabled={busy || !loaded || until !== null}>
+        <button type="submit" className="btn-primary" disabled={busy || !loaded || until !== null || locked !== null}>
           Gửi
         </button>
       </form>
+      {locked && (
+        <p className="gemini__locked" role="note">
+          {locked.kind === 'note' ? `AI đang soạn ghi chú ở ${locked.label}` : `AI đang trả lời ở ${locked.label}`}
+        </p>
+      )}
     </>
   );
 }

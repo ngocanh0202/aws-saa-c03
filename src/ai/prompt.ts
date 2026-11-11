@@ -46,8 +46,8 @@ export function buildSystemPrompt(question: Question, order: string[], extra: Pr
   const answerRules = extra.revealed
     ? ['- Người học đã thấy đáp án và hướng dẫn, cứ trả lời thẳng.']
     : [
-        '- Người học chưa xem đáp án: không nói ra đáp án đúng, chỉ gợi ý và giải thích khái niệm.',
-        '- Khi người học xin đáp án, gọi tool open_guide trước rồi mới nói đáp án.',
+        '- Người học chưa xem đáp án và bạn không được biết đáp án: không khẳng định lựa chọn nào đúng hay sai, chỉ gợi ý và giải thích khái niệm.',
+        '- Người học xin đáp án thì bảo họ bấm nút "Xem hướng dẫn" (bấm xong sẽ không đổi được đáp án câu này).',
       ];
   return [
     'Bạn là trợ giảng luyện thi AWS Certified Solutions Architect – Associate (SAA-C03).',
@@ -59,12 +59,13 @@ export function buildSystemPrompt(question: Question, order: string[], extra: Pr
     'Các lựa chọn:',
     ...options,
     '',
-    `Đáp án đúng: ${correct}`,
-    ...guideSection(order, extra),
+    ...(extra.revealed ? [`Đáp án đúng: ${correct}`, ...guideSection(order, extra)] : []),
     '',
     'Cách trả lời:',
     ...answerRules,
-    '- Khi nói đáp án, đối chiếu đáp án với giải thích tiếng Việt và ghi chú (nếu có): khớp thì nói một dòng ngắn; lệch, nghi đáp án sai hay lỗi thời thì nói rõ chỗ lệch.',
+    ...(extra.revealed
+      ? ['- Khi nói đáp án, đối chiếu đáp án với giải thích tiếng Việt và ghi chú (nếu có): khớp thì nói một dòng ngắn; lệch, nghi đáp án sai hay lỗi thời thì nói rõ chỗ lệch.']
+      : []),
     '- Trả lời bằng tiếng Việt, giữ nguyên thuật ngữ và tên dịch vụ AWS bằng tiếng Anh.',
     '- Tập trung đúng vào câu người học hỏi, không lan man.',
     '- Người học được hỏi cả chuyện ngoài câu đang làm (kiến thức AWS, công nghệ thông tin nói chung); cứ trả lời bình thường, không từ chối.',
@@ -77,7 +78,7 @@ export function buildSystemPrompt(question: Question, order: string[], extra: Pr
     '- Không dùng LaTeX hay công thức trong dấu $ (như $\\rightarrow$); viết thẳng ký tự như →, ≤, ×.',
     '- Khi người học muốn tìm lại một câu đã làm, gọi tool find_answered_questions với từ khóa tiếng Anh hoặc tên dịch vụ AWS.',
     '- Tool trả về rỗng thì chỉ trả lời: "Bạn chưa làm câu nào như vậy trong đề này." Không bịa câu hỏi.',
-    '- Tìm thấy thì nêu đề, các lựa chọn, người học đã chọn gì, đúng hay sai, đáp án đúng, rồi phân tích tình huống và so sánh với câu đang làm. Nhiều câu thì liệt kê ngắn để người học chọn.',
+    '- Tìm thấy thì nêu đề, các lựa chọn, người học đã chọn gì, đúng hay sai, đáp án đúng (chỉ khi câu đó không có answerHidden; có answerHidden thì không đoán, không nói đáp án), rồi phân tích tình huống và so sánh với câu đang làm. Nhiều câu thì liệt kê ngắn để người học chọn.',
     '- Không dùng chữ cái A/B/C để chỉ lựa chọn của câu tìm được; nhắc bằng nội dung lựa chọn.',
   ].join('\n');
 }

@@ -27,6 +27,8 @@ export const bank = buildBank({
   hiddenMainSets: duplicateMainSetIds(mainFile.sets, mainFile.twins),
   externals: Object.values(externalFiles),
   externalVis: groupBySlug(externalViFiles),
+  twins: mainFile.twins,
+  duplicates: (sets as unknown as SetsFile).duplicates ?? [],
 });
 
 // data/external-vi/<slug>/<lô>.json → { slug: [...] }

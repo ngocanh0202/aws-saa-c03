@@ -5,6 +5,7 @@ import { useStoreVersion } from '../app/use-store';
 import { useTheme } from '../app/theme';
 import { externalHref } from '../pages/ExternalListPage';
 import { AccountMenu } from './AccountMenu';
+import { AiDoneToast } from './AiDoneToast';
 import { ConflictDialog } from './ConflictDialog';
 import { SupportDock } from './SupportDock';
 import { SyncLoading } from './SyncLoading';
@@ -43,6 +44,7 @@ export function Layout() {
               Đề thi
             </NavLink>
             <NavLink to="/history">Lịch sử</NavLink>
+            <NavLink to="/notes">Ghi chú</NavLink>
             <NavLink to="/services">Service</NavLink>
             <details ref={menu} className={`topbar__menu${pathname.startsWith('/external') ? ' is-active' : ''}`}>
               <summary>External ▾</summary>
@@ -83,6 +85,7 @@ export function Layout() {
       <ConflictDialog />
       <SyncLoading />
       <SupportDock english={english} />
+      <AiDoneToast />
     </>
   );
 }

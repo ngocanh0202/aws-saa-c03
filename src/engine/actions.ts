@@ -2,6 +2,7 @@ import type { Attempt } from './attempt';
 
 export function selectOption(attempt: Attempt, qid: number, key: string, choose: number): Attempt {
   if (attempt.status !== 'in-progress') return attempt;
+  if (attempt.mode === 'practice' && attempt.guideOpened.includes(qid)) return attempt;
   const current = attempt.answers[qid] ?? [];
   let next: string[];
   if (choose <= 1) next = [key];
