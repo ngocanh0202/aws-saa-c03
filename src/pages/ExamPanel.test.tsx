@@ -12,6 +12,43 @@ function setup() {
 
 const panel = () => screen.getByRole('complementary', { name: 'Bảng điều khiển bài thi' });
 
+describe('Danh sách câu — câu đã xem hướng dẫn mà bỏ trống', () => {
+  function seed(mode: 'practice' | 'real', patch: { answers?: Record<number, string[]>; guideOpened?: number[] }) {
+    localStorage.clear();
+    const deps = makeDeps();
+    const a = createAttempt({ id: 'e1', setId: 1, mode, esl: false, seed: 7, now: deps.now(), sets: deps.bank.sets, questions: deps.bank.questions, metas: deps.bank.meta });
+    const q1 = a.questions[0].qid;
+    const q2 = a.questions[1].qid;
+    const answers = patch.answers ? { [q2]: patch.answers[2] } : {};
+    const guideOpened = (patch.guideOpened ?? []).map((n) => (n === 1 ? q1 : q2));
+    deps.store.save({ ...a, answers, guideOpened });
+    renderApp('/exam/e1', deps);
+    // Thi thật dùng nhãn tiếng Anh, nên lấy theo class thay vì theo tên.
+    return document.querySelector<HTMLElement>('nav.navgrid')!;
+  }
+
+  it('Thi thử: câu đã xem hướng dẫn mà chưa trả lời có màu riêng và tooltip', () => {
+    const nav = seed('practice', { guideOpened: [1] });
+    const cell = within(nav).getByRole('button', { name: '1' });
+    expect(cell).toHaveClass('is-skipped');
+    expect(cell).toHaveAttribute('title', 'Đã xem hướng dẫn, bỏ trống');
+    expect(within(nav).getByRole('button', { name: '2' })).not.toHaveClass('is-skipped');
+  });
+
+  it('Thi thử: câu đã trả lời rồi mới xem hướng dẫn giữ màu "đã trả lời"', () => {
+    const nav = seed('practice', { answers: { 2: ['A'] }, guideOpened: [2] });
+    const cell = within(nav).getByRole('button', { name: '2' });
+    expect(cell).toHaveClass('is-answered');
+    expect(cell).not.toHaveClass('is-skipped');
+    expect(cell).not.toHaveAttribute('title');
+  });
+
+  it('Thi thật: không có trạng thái này', () => {
+    const nav = seed('real', { guideOpened: [1] });
+    expect(within(nav).getByRole('button', { name: '1' })).not.toHaveClass('is-skipped');
+  });
+});
+
 describe('Trang thi — khung bên trái và nút nổi', () => {
   it('khung bên trái chứa nút đánh dấu, tiến độ và danh sách câu; Câu trước/Câu sau nằm dưới câu hỏi', () => {
     setup();

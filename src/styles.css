@@ -155,6 +155,7 @@ tr.is-clickable { cursor: pointer; }
 .navgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 6px; }
 .navgrid__cell { padding: 6px 0; }
 .navgrid__cell.is-answered { background: var(--ok-bg); }
+.navgrid__cell.is-skipped { background: var(--bad-bg); }
 .navgrid__cell.is-flagged { border-color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
 .navgrid__cell.is-current { outline: 2px solid var(--selected); }
 
