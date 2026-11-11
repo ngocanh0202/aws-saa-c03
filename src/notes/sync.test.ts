@@ -46,12 +46,25 @@ describe('startNotesSync', () => {
     const { notes, auth, remote } = setup();
     notes.save(n(4, 30));
     auth.emit(user('A'));
+    expect(remote.writes).toEqual([]);
+    remote.emit('A', new Map());
     await tick();
     expect(remote.writes.map((w) => w.notes.qid)).toEqual([4]);
     expect(notes.all('A').map((x) => x.qid)).toEqual([4]);
     auth.emit(null);
     expect(notes.owner()).toBeNull();
     expect(notes.list()).toEqual([]);
+  });
+
+  it('ghi chú khách cũ hơn bản cloud thì cloud thắng, không ghi đè', async () => {
+    const { notes, auth, remote } = setup();
+    notes.save(n(4, 30));
+    auth.emit(user('A'));
+    remote.emit('A', new Map([[4, n(4, 100, ['cloud'])]]));
+    await tick();
+    expect(remote.writes).toEqual([]);
+    expect(notes.get(4)).toEqual(n(4, 100, ['cloud']));
+    expect(notes.all('A')).toEqual([n(4, 100, ['cloud'])]);
   });
 
   it('đang đăng nhập, save() thì write với đúng uid', async () => {

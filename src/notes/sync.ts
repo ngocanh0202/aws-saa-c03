@@ -29,9 +29,10 @@ export function startNotesSync(deps: { notes: NotesStore; auth: AuthClient; remo
     }
     const u = user.uid;
     uid = u;
-    const adopted = notes.adoptGuest(u);
+    // Bản khách đã nằm trong ngăn uid; không đẩy ngay vì cloud có thể mới hơn.
+    // Snapshot đầu tiên của listen sẽ gộp và chỉ đẩy bản thật sự mới hơn.
+    notes.adoptGuest(u);
     notes.setOwner(u);
-    for (const n of adopted) push(u, n);
     unlisten = remote.listen(
       u,
       (all) => {
