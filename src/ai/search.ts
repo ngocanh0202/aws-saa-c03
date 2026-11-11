@@ -2,7 +2,6 @@ import { setLabel } from '../app/format';
 import type { Bank } from '../data/bank';
 import { htmlToText } from '../data/html-text';
 import type { Attempt, Mode } from '../engine/attempt';
-import { markGuideOpened } from '../engine/actions';
 import { isCorrect } from '../engine/scoring';
 import type { AttemptStore } from '../storage/storage';
 import type { AiTool } from './types';
@@ -18,7 +17,8 @@ export interface SearchTry {
   submitted: boolean;
   /** Chữ của các lựa chọn đã chọn (không dùng nhãn A/B/C vì thứ tự mỗi lượt mỗi khác). */
   chosen: string[];
-  correct: boolean;
+  /** Bỏ khi câu chưa được xem đáp án (answerHidden). */
+  correct?: boolean;
 }
 
 export interface SearchHit {
@@ -29,7 +29,9 @@ export interface SearchHit {
   current: boolean;
   question: string;
   /** Theo thứ tự gốc. */
-  options: { text: string; correct: boolean }[];
+  options: { text: string; correct?: boolean }[];
+  /** true: người học chưa thấy đáp án câu này nên `correct` đã bị bỏ khỏi lựa chọn và lần làm. */
+  answerHidden: boolean;
   services: string[];
   /** Mới nhất trước. */
   tries: SearchTry[];
@@ -68,6 +70,14 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
   // Tối đa 3 từ khóa thì phải khớp hết; nhiều hơn thì được thiếu 1.
   const need = tokens.length <= 3 ? tokens.length : tokens.length - 1;
 
+  const ctxAttempt = attempts.find((a) => a.id === ctx.attemptId);
+  const seenIn = (a: Attempt, qid: number) => a.status === 'submitted' || (a.mode === 'practice' && a.guideOpened.includes(qid));
+  // Câu thuộc lượt đang hỏi thì chỉ tính lượt đó (lượt cũ đã nộp không được lộ đáp án câu đang làm dở).
+  const visible = (qid: number) =>
+    ctxAttempt?.questions.some((q) => q.qid === qid)
+      ? seenIn(ctxAttempt, qid)
+      : attempts.some((a) => a.setId === ctx.setId && a.questions.some((q) => q.qid === qid) && seenIn(a, qid));
+
   const byQid = new Map<number, { tries: (SearchTry & { at: number })[] }>();
   for (const a of attempts) {
     if (a.setId !== ctx.setId || a.status === 'incompatible') continue;
@@ -101,7 +111,8 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
     const q = bank.questions.get(qid)!;
     const plain = (s: string) => (q.html ? htmlToText(s) : s);
     const question = [plain(q.stem), q.prompt ? plain(q.prompt) : ''].filter(Boolean).join('\n');
-    const options = q.options.map((o) => ({ text: plain(o.text), correct: q.answer.includes(o.key) }));
+    const answerHidden = !visible(qid);
+    const options = q.options.map((o) => (answerHidden ? { text: plain(o.text) } : { text: plain(o.text), correct: q.answer.includes(o.key) }));
     const serviceIds = bank.meta.get(qid)?.services ?? [];
     const services = serviceIds.map((id) => bank.services.get(id)?.name ?? id);
     const haystack = [question, ...options.map((o) => o.text), ...services, ...serviceIds].join('\n').toLowerCase().replace(/\s+/g, ' ');
@@ -121,8 +132,9 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
         current: tries.some((t) => t.attemptId === ctx.attemptId) && qid === ctx.qid,
         question,
         options,
+        answerHidden,
         services,
-        tries: tries.map(({ at: _at, ...t }) => t),
+        tries: tries.map(({ at: _at, correct, ...t }) => (answerHidden ? t : { ...t, correct })),
       },
     });
   }
@@ -134,27 +146,16 @@ export function searchAnswered(query: string, ctx: SearchContext, attempts: Atte
 
 export const SEARCH_TOOL = 'find_answered_questions';
 
-/**
- * Bọc searchAnswered thành tool cho Gemini. Câu tìm được thuộc lượt Thi thử chưa nộp thì gắn nhãn
- * "đã xem hướng dẫn" ở đúng lượt đó (tool lộ đáp án đúng, giống mở hướng dẫn).
- */
+/** Bọc searchAnswered thành tool cho Gemini. Không sửa lượt thi; câu chưa thấy đáp án thì ẩn đáp án (answerHidden). */
 export function createSearchTool(store: AttemptStore, bank: SearchBank, ctx: SearchContext): AiTool {
   return {
     name: SEARCH_TOOL,
     description:
-      'Tìm các câu người học đã trả lời trong cùng đề (lượt đang làm và các lượt cũ). Trả về đề, các lựa chọn, đáp án đúng và những lần người học đã làm câu đó.',
+      'Tìm các câu người học đã trả lời trong cùng đề (lượt đang làm và các lượt cũ). Trả về đề, các lựa chọn, những lần người học đã làm câu đó, và đáp án đúng nếu người học đã thấy đáp án (answerHidden = true thì không có đáp án).',
     params: { query: 'Từ khóa tiếng Anh hoặc tên dịch vụ AWS của câu cần tìm' },
     run(args) {
       const query = typeof args.query === 'string' ? args.query : '';
-      const results = searchAnswered(query, ctx, store.list(), bank);
-      for (const hit of results) {
-        for (const t of hit.tries) {
-          if (t.mode !== 'practice' || t.submitted) continue;
-          const latest = store.get(t.attemptId);
-          if (latest && latest.status === 'in-progress' && !latest.guideOpened.includes(hit.qid)) store.save(markGuideOpened(latest, hit.qid));
-        }
-      }
-      return { results };
+      return { results: searchAnswered(query, ctx, store.list(), bank) };
     },
   };
 }

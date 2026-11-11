@@ -2,7 +2,6 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, 
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
-import { createGuideTool } from '../ai/guide-tool';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
@@ -14,7 +13,6 @@ import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
 import { chatSuggestions } from '../ai/suggestions';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
-import { markGuideOpened } from '../engine/actions';
 import type { Question } from '../data/types';
 import type { SyncController, SyncState, SyncUser } from '../sync/types';
 import { claimChatFocus, onChatFocus } from './chat-focus';
@@ -28,12 +26,7 @@ interface Props {
   number: number;
   question: Question;
   order: string[];
-  /**
-   * Mở hướng dẫn như bấm nút (Gemini gọi tool open_guide khi người học xin đáp án). Không truyền
-   * (bài đã nộp…) thì Gemini không có tool này.
-   */
-  onOpenGuide?: () => void;
-  /** Người học đã thấy đáp án và hướng dẫn; mặc định true khi không có onOpenGuide. */
+  /** Người học đã thấy đáp án và hướng dẫn (đã mở, hoặc bài đã nộp); mặc định true. */
   revealed?: boolean;
   /** Nút nằm trong khối câu (trang xem lại có nhiều câu) thay vì nổi ở góc phải. */
   inline?: boolean;
@@ -162,7 +155,6 @@ interface Target {
   question: Question;
   order: string[];
   setId: number;
-  onOpenGuide?: () => void;
   revealed: boolean;
 }
 
@@ -176,7 +168,6 @@ function ChatDialog({
   number,
   question,
   order,
-  onOpenGuide,
   revealed,
   brand,
   onClose,
@@ -235,7 +226,7 @@ function ChatDialog({
   }, [expanded]);
 
   const homeSetId = store.get(attemptId)?.setId ?? 0;
-  const home: Target = { attemptId, number, question, order, setId: homeSetId, onOpenGuide, revealed: revealed ?? !onOpenGuide };
+  const home: Target = { attemptId, number, question, order, setId: homeSetId, revealed: revealed ?? true };
   const homeLabel = `${setLabel(homeSetId)} · Câu ${number}`;
 
   /** Dựng cuộc trò chuyện ở lượt cũ; lượt hay câu không còn thì null. */
@@ -251,19 +242,7 @@ function ChatDialog({
       question: q,
       order: a.questions[index].optionOrder,
       setId: a.setId,
-      // Mở hướng dẫn chỉ có nghĩa với lượt Thi thử còn dở; lượt đã nộp thì không đổi gì.
-      ...(open
-        ? {
-            onOpenGuide: () => {
-              const latest = store.get(id);
-              // Câu trả lời chạy nền có thể tới sau khi lượt đã nộp: lượt đã nộp thì không sửa.
-              if (latest?.mode === 'practice' && latest.status === 'in-progress' && !latest.guideOpened.includes(qid)) {
-                store.save(markGuideOpened(latest, qid));
-              }
-            },
-            revealed: a.guideOpened.includes(qid),
-          }
-        : { revealed: true }),
+      revealed: open ? a.guideOpened.includes(qid) : true,
     };
   };
 
@@ -654,9 +633,6 @@ function Conversation({
   const chatRef = useRef<AiChat | null>(null);
   // Đã nhận tin từ câu trả lời đang chạy thì lịch sử tải về (có thể cũ hơn) không được ghi đè.
   const fromInflight = useRef(running !== undefined);
-  // Luôn gọi bản onOpenGuide mới nhất, kể cả khi stream bắt đầu từ lần render trước.
-  const openGuide = useRef(target.onOpenGuide);
-  openGuide.current = target.onOpenGuide;
   // Trạng thái "đã thấy đáp án" mà phiên chat hiện tại được báo; đổi thì mở phiên mới để Gemini biết.
   const sessionRevealed = useRef(target.revealed);
   const sessionSettings = useRef(settings);
@@ -738,8 +714,6 @@ function Conversation({
     let searchingNow = false;
     let retryNow: { attempt: number; max: number } | undefined;
     let thinkingNow = false;
-    // Gemini gọi open_guide thì chờ trả lời xong mới mở hướng dẫn (lỗi giữa chừng thì không mở).
-    let guideRequested = false;
     const progress = () =>
       inflight.emit(key, {
         kind: 'progress',
@@ -763,16 +737,7 @@ function Conversation({
       });
       const chat = (chatRef.current ??= ai.startChat(prompt, history, {
         settings,
-        tools: [
-          createSearchTool(store, bank, { setId, attemptId, qid }),
-          ...(target.onOpenGuide
-            ? [
-                createGuideTool(() => {
-                  guideRequested = true;
-                }),
-              ]
-            : []),
-        ],
+        tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
         onToolCall: (name) => {
           // Dòng chờ "đang tìm" chỉ dành cho tool tìm câu.
           if (name !== SEARCH_TOOL) return;
@@ -806,7 +771,6 @@ function Conversation({
       if (!signedIn()) throw new Error('signed out');
       const done: ChatMessage[] = [...asked, { role: 'model', text: reply }];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
-      if (guideRequested) openGuide.current?.();
       chats.save(uid, attemptId, qid, done).catch(() => {
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
         inflight.emit(key, { kind: 'save-failed' });

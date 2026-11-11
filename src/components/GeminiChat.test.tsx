@@ -79,14 +79,14 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(screen.getByRole('button', { name: GEMINI })).toBeInTheDocument();
   });
 
-  it('gửi câu hỏi: prompt có đề + đáp án, câu trả lời stream hiện ra', async () => {
+  it('gửi câu hỏi: prompt có đề, chưa có đáp án, câu trả lời stream hiện ra', async () => {
     const s = setup();
     s.ai.reply = ['Vì ', 'S3'];
     const dialog = await openChat();
     expect(within(dialog).getByText(new RegExp(`Stem ${s.qid}`))).toBeInTheDocument();
     await ask(dialog);
     await waitFor(() => expect(within(dialog).getByText('Vì S3')).toBeInTheDocument());
-    expect(s.ai.calls[0].systemPrompt).toContain('Đáp án đúng:');
+    expect(s.ai.calls[0].systemPrompt).not.toContain('Đáp án đúng');
     expect(s.ai.calls[0].systemPrompt).toContain(`Stem ${s.qid}`);
     expect(s.ai.calls[0].sent).toEqual(['Tại sao?']);
   });
@@ -99,55 +99,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(within(dialog).getByText('Vì S3')).toBeInTheDocument());
     expect(guideOpened(s)).not.toContain(s.qid);
     expect(screen.queryByRole('complementary', { name: 'Hướng dẫn' })).toBeNull();
-    expect(s.ai.calls[0].systemPrompt).toContain('open_guide');
-  });
-
-  it('Gemini gọi open_guide (người học xin đáp án): gắn nhãn và mở hướng dẫn', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    await waitFor(() => expect(guideOpened(s)).toContain(s.qid));
-    expect(screen.getByRole('complementary', { name: 'Hướng dẫn' })).toBeInTheDocument();
-    expect(s.ai.calls[0].toolResults).toContainEqual({ opened: true });
-  });
-
-  it('open_guide: chờ Gemini trả lời xong mới mở hướng dẫn, không hiện dòng "đang tìm"', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    s.ai.hold = true;
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    await waitFor(() => expect(s.ai.calls[0].toolResults).toHaveLength(1));
-    expect(within(dialog).getByText('Gemini đang trả lời…')).toBeInTheDocument();
-    expect(within(dialog).queryByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeNull();
-    expect(guideOpened(s)).not.toContain(s.qid);
-    await act(async () => s.ai.release());
-    await waitFor(() => expect(guideOpened(s)).toContain(s.qid));
-  });
-
-  it('open_guide nhưng câu trả lời lỗi thì không mở hướng dẫn', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    s.ai.reply = new Error('blocked');
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    await waitFor(() => expect(within(dialog).getByText('Gemini chưa trả lời được, thử gửi lại nhé.')).toBeInTheDocument());
-    expect(guideOpened(s)).not.toContain(s.qid);
-  });
-
-  it('nộp bài khi Gemini đang trả lời: open_guide không sửa lượt đã nộp', async () => {
-    const s = setup();
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
-    s.ai.holdFirst = true;
-    const dialog = await openChat();
-    await ask(dialog, 'Cho tôi đáp án');
-    act(() => {
-      s.store.save(submitAttempt(s.store.get('e1')!, 600));
-    });
-    await act(async () => s.ai.release());
-    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
-    expect(s.store.get('e1')!.guideOpened).toEqual([]);
+    expect(s.ai.calls[0].systemPrompt).not.toContain('open_guide');
   });
 
   it('người học tự bấm hướng dẫn giữa chừng: lần gửi sau mở phiên mới báo đã thấy đáp án', async () => {
@@ -156,11 +108,13 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await ask(dialog);
     await waitFor(() => expect(s.chats.saved).toHaveLength(1));
     expect(s.ai.calls[0].systemPrompt).not.toContain('đã thấy đáp án');
+    expect(s.ai.calls[0].systemPrompt).not.toContain('Đáp án đúng');
     fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
     await ask(dialog, 'Giải thích thêm');
     await waitFor(() => expect(s.ai.calls).toHaveLength(2));
     expect(s.ai.calls[1].systemPrompt).toContain('đã thấy đáp án');
+    expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
     expect(s.ai.calls[1].history.map((m) => m.text)).toEqual(['Tại sao?', 'ok']);
   });
 
@@ -516,10 +470,10 @@ describe('Hỏi Gemini ở Thi thử', () => {
     const s = setup();
     const dialog = await openChat();
     await ask(dialog);
-    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions', 'open_guide']);
+    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions']);
   });
 
-  it('Gemini gọi tool tìm câu: hiện dòng chờ, kết quả gửi lại cho mô hình, câu tìm được gắn nhãn', async () => {
+  it('Gemini gọi tool tìm câu: hiện dòng chờ, kết quả gửi lại cho mô hình, câu tìm được ẩn đáp án và lượt không đổi', async () => {
     const s = setup();
     const other = s.store.get('e1')!.questions[1].qid;
     s.store.save(selectOption(s.store.get('e1')!, other, 'A', 1));
@@ -530,9 +484,10 @@ describe('Hỏi Gemini ở Thi thử', () => {
     await waitFor(() => expect(within(dialog).getByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeInTheDocument());
     await act(async () => s.ai.release());
     await waitFor(() => expect(within(dialog).queryByText('Gemini đang tìm trong các câu bạn đã làm…')).toBeNull());
-    const result = s.ai.calls[0].toolResults[0] as { results: { qid: number }[] };
+    const result = s.ai.calls[0].toolResults[0] as { results: { qid: number; answerHidden: boolean }[] };
     expect(result.results.map((r) => r.qid)).toContain(other);
-    expect(guideOpened(s)).toContain(other);
+    expect(result.results.find((r) => r.qid === other)!.answerHidden).toBe(true);
+    expect(guideOpened(s)).not.toContain(other);
   });
 
   it('Esc đóng popup (kể cả khi đang mở rộng) và trả lại cuộn trang', async () => {
@@ -726,12 +681,12 @@ describe('Trò chuyện cũ', () => {
     const dialog = await openList();
     fireEvent.click(await within(dialog).findByRole('button', { name: /Đề 1 · Câu 3/ }));
     await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Gửi' })).toBeEnabled());
-    s.ai.toolCalls = [{ name: 'open_guide', args: {} }];
     await ask(dialog);
     await waitFor(() => expect(s.chats.saved.at(-1)?.key).toBe(`u1/e0/${s.oldQid}`));
     expect(s.ai.calls[0].history.map((m) => m.text)).toEqual(['Câu cũ hỏi gì?', 'Trả lời cũ']);
     expect(guideOpened(s)).not.toContain(s.qid);
-    expect(s.store.get('e0')!.guideOpened).toContain(s.oldQid);
+    expect(s.store.get('e0')!.guideOpened).toEqual([]);
+    expect(s.ai.calls[0].systemPrompt).not.toContain('Đáp án đúng');
   });
 
   it('lượt cũ đã nộp: hỏi tiếp không sửa lượt đó', async () => {

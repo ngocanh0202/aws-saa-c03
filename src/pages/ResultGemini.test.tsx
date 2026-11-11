@@ -73,7 +73,7 @@ describe('Hỏi Gemini ở trang xem lại', () => {
     expect(button.compareDocumentPosition(guide) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it('lượt Thi thật đã nộp: hỏi được, lưu đúng khóa, không có open_guide, lượt không đổi', async () => {
+  it('lượt Thi thật đã nộp: hỏi được, lưu đúng khóa, chỉ có tool tìm câu, lượt không đổi', async () => {
     const s = setup();
     fireEvent.click(screen.getAllByRole('button', { name: GEMINI })[0]);
     const dialog = screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 1' });

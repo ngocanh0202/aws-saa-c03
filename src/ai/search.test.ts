@@ -29,7 +29,7 @@ function bank(extra: Question[] = []) {
   return { questions, meta, services };
 }
 
-function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attempt['status']; at?: number; answers: Record<number, string[]> }): Attempt {
+function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attempt['status']; at?: number; guideOpened?: number[]; answers: Record<number, string[]> }): Attempt {
   const qids = Object.keys(opts.answers).map(Number);
   return {
     id,
@@ -41,7 +41,7 @@ function attempt(id: string, opts: { setId?: number; mode?: Mode; status?: Attem
     questions: [{ qid: 99, domain: 1, optionOrder: ['A', 'B', 'C', 'D'] }, ...qids.map((qid) => ({ qid, domain: 1 as const, optionOrder: ['D', 'C', 'B', 'A'] }))],
     answers: opts.answers,
     flagged: [],
-    guideOpened: [],
+    guideOpened: opts.guideOpened ?? [],
     status: opts.status ?? 'submitted',
     ...(opts.status === 'in-progress' ? {} : { submittedAt: (opts.at ?? Date.UTC(2026, 10, 1, 3)) + 1000 }),
   };
@@ -138,17 +138,59 @@ describe('searchAnswered', () => {
   });
 });
 
+describe('searchAnswered: ẩn đáp án câu chưa thấy', () => {
+  const CUR = { ...CTX, attemptId: 'a1' };
+  const run = (list: Attempt[], ctx = CUR) => searchAnswered('multipart', ctx, list, bank());
+
+  it('câu trong lượt đang làm, chưa mở hướng dẫn: ẩn đáp án dù lượt cũ đã nộp có câu đó', () => {
+    const cur = attempt('a1', { mode: 'practice', status: 'in-progress', answers: { 5: ['A'] }, guideOpened: [] });
+    const old = attempt('a0', { status: 'submitted', answers: { 5: ['B'] } });
+    const [hit] = run([cur, old]);
+    expect(hit.answerHidden).toBe(true);
+    expect(hit.options.every((o) => o.correct === undefined)).toBe(true);
+    expect(hit.tries.every((t) => t.correct === undefined)).toBe(true);
+    expect(JSON.stringify(hit)).not.toContain('"correct"');
+  });
+
+  it('câu trong lượt đang làm đã mở hướng dẫn: có đáp án', () => {
+    const cur = attempt('a1', { mode: 'practice', status: 'in-progress', answers: { 5: ['A'] }, guideOpened: [5] });
+    const [hit] = run([cur]);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.options.some((o) => o.correct === true)).toBe(true);
+    expect(hit.tries[0].correct).toBe(false);
+  });
+
+  it('câu chỉ ở lượt khác đã nộp: có đáp án', () => {
+    const [hit] = run([attempt('a9', { answers: { 5: ['B'] } })]);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.tries[0].correct).toBe(true);
+  });
+
+  it('câu chỉ ở lượt Thi thử khác chưa nộp, chưa mở hướng dẫn: ẩn', () => {
+    const [hit] = run([attempt('a2', { status: 'in-progress', answers: { 5: ['B'] } })], { ...CTX, attemptId: 'a1' });
+    expect(hit.answerHidden).toBe(true);
+    expect(hit.options.every((o) => o.correct === undefined)).toBe(true);
+  });
+
+  it('câu chỉ ở lượt Thi thử khác chưa nộp, đã mở hướng dẫn: có đáp án', () => {
+    const [hit] = run([attempt('a2', { status: 'in-progress', answers: { 5: ['B'] }, guideOpened: [5] })]);
+    expect(hit.answerHidden).toBe(false);
+    expect(hit.options.some((o) => o.correct === true)).toBe(true);
+  });
+});
+
 describe('createSearchTool', () => {
-  it('tool đánh dấu đã xem hướng dẫn ở lượt Thi thử chưa nộp, không sửa lượt đã nộp', async () => {
+  it('tool không sửa lượt thi nào', async () => {
     const store = createStore(memoryStorage(), { now: () => 500 });
     store.save(attempt('open', { status: 'in-progress', answers: { 5: ['A'] } }));
-    store.save(attempt('done', { answers: { 5: ['B'] } }));
+    store.save(attempt('open2', { status: 'in-progress', answers: { 5: ['B'] } }));
+    const before = JSON.stringify(store.list());
     const tool = createSearchTool(store, bank(), CTX);
     expect(tool.name).toBe(SEARCH_TOOL);
-    const out = (await tool.run({ query: 'multipart' })) as { results: unknown[] };
+    const out = (await tool.run({ query: 'multipart' })) as { results: { answerHidden: boolean }[] };
     expect(out.results).toHaveLength(1);
-    expect(store.get('open')!.guideOpened).toEqual([5]);
-    expect(store.get('done')!.guideOpened).toEqual([]);
+    expect(out.results[0].answerHidden).toBe(true);
+    expect(JSON.stringify(store.list())).toBe(before);
   });
 
   it('args không phải chuỗi thì coi như rỗng', async () => {
