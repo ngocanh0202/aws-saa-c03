@@ -29,6 +29,24 @@ describe('buildNotePrompt', () => {
     }
   });
 
+  it('ghi chú trống: không có mục "Ghi chú hiện có", giữ yêu cầu giải thích đoạn tô', () => {
+    const p = buildNotePrompt(makeQuestion(1), 'Stem', '   ');
+    expect(p).not.toContain('Ghi chú hiện có');
+    expect(p).toContain('đoạn đã tô nghĩa là gì');
+  });
+
+  it('ghi chú đã có: đưa vào prompt kèm cách xử lý câu hỏi và nội dung đã viết', () => {
+    const p = buildNotePrompt(makeQuestion(1), 'Stem', 'Sao lại là managed service?');
+    expect(p).toContain('Ghi chú hiện có');
+    expect(p).toContain('"""Sao lại là managed service?"""');
+    // Có câu hỏi thì trả lời câu hỏi; chỉ là nội dung thì bổ sung, không lặp lại.
+    expect(p).toMatch(/câu hỏi.*trả lời/i);
+    expect(p).toMatch(/không lặp lại/i);
+    // Xin đáp án trong ghi chú: vẫn không nói, nhắc bấm "Xem hướng dẫn".
+    expect(p).toContain('Xem hướng dẫn');
+    expect(p).not.toMatch(/Đáp án đúng/i);
+  });
+
   it('câu main chuyển HTML sang chữ', () => {
     const q = makeMainQuestion(10101);
     const p = buildNotePrompt(q, 'Main');

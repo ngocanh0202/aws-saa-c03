@@ -47,6 +47,14 @@ describe('draftNote', () => {
     expect(noteOf(s)).toBe('x\n\nABC');
   });
 
+  it('ghi chú đã có: AI đọc được ghi chú đó trong prompt', async () => {
+    const s = setup('Sao lại là managed service?');
+    s.client.reply = ['Vì đề yêu cầu ít vận hành.'];
+    await draftNote(s.deps, s.job);
+    expect(s.client.calls[0].systemPrompt).toContain('Sao lại là managed service?');
+    expect(noteOf(s)).toBe('Sao lại là managed service?\n\nVì đề yêu cầu ít vận hành.');
+  });
+
   it('cắt ở NOTE_MAX', async () => {
     const s = setup('y'.repeat(NOTE_MAX - 3));
     s.client.reply = ['ABCDEFG'];
