@@ -108,6 +108,35 @@ describe('AI soạn ghi chú', () => {
     expect(container.querySelector('mark.hl')).not.toHaveClass('hl--drafting');
   });
 
+  it('"Đến câu" từ câu khác: popup đặt theo mark của câu đích (không rơi về góc trên bên trái)', async () => {
+    const scrolled: Element[] = [];
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = function (this: Element) {
+      scrolled.push(this);
+    };
+    try {
+      const { ai, container } = setup();
+      ai.reply = ['Chữ AI'];
+      ai.hold = true;
+      const pop = highlightAndOpen(container);
+      const id = container.querySelector<HTMLElement>('mark.hl')!.dataset.hl;
+      fireEvent.click(within(pop).getByRole('button', { name: AI_BTN }));
+      fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+      await tick();
+      await act(async () => ai.release());
+      await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('AI đã soạn ghi chú ở Câu 1'));
+
+      fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Đến câu 1' }));
+      await waitFor(() => expect(screen.getByRole('dialog', { name: 'Ghi chú cho đoạn tô' })).toBeInTheDocument());
+      // Lúc nhận yêu cầu mở, Highlighter phải thấy mark của đoạn đó trong đề câu 1 (đang gắn vào trang).
+      const target = scrolled.find((el) => el instanceof HTMLElement && el.dataset.hl === id);
+      expect(target).toBeDefined();
+      expect(target!.isConnected).toBe(true);
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it('popup của đúng đoạn đang mở lúc xong → không toast, ô ghi chú hiện chữ mới', async () => {
     const { ai, container } = setup();
     ai.reply = ['Chữ AI'];
