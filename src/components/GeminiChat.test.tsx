@@ -130,6 +130,20 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
   });
 
+  it('đóng chat, bấm Xem hướng dẫn, mở lại và hỏi y câu: gọi AI lần hai với prompt có đáp án', async () => {
+    const s = setup();
+    const dialog = await openChat();
+    await ask(dialog, 'Đáp án là gì?');
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(s.chats.saved[0].messages[1]).toMatchObject({ role: 'model', hidden: true });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
+    const reopened = await openChat();
+    await ask(reopened, 'Đáp án là gì?');
+    await waitFor(() => expect(s.ai.calls).toHaveLength(2));
+    expect(s.ai.calls[1].systemPrompt).toContain('Đáp án đúng');
+  });
+
   it('lưu lịch sử lỗi thì báo trong popup', async () => {
     const s = setup();
     s.chats.save = async () => {
@@ -173,7 +187,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
       key: s.key,
       messages: [
         { role: 'user', text: 'Tại sao?' },
-        { role: 'model', text: 'Vì S3' },
+        { role: 'model', text: 'Vì S3', hidden: true },
       ],
     });
   });
@@ -198,7 +212,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
       history: [
         { role: 'user', text: 'Hỏi lần 1' },
         { role: 'user', text: 'Hỏi lần 2' },
-        { role: 'model', text: 'Trả lời' },
+        { role: 'model', text: 'Trả lời', hidden: true },
       ],
     });
     s.ai.strictHistory = true;
@@ -314,7 +328,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(screen.queryByRole('dialog')).toBeNull();
     await act(async () => s.ai.release());
     await waitFor(() =>
-      expect(s.chats.saved.at(-1)).toEqual({ key: s.key, messages: [{ role: 'user', text: 'Tại sao?' }, { role: 'model', text: 'Vì S3' }] }),
+      expect(s.chats.saved.at(-1)).toEqual({ key: s.key, messages: [{ role: 'user', text: 'Tại sao?' }, { role: 'model', text: 'Vì S3', hidden: true }] }),
     );
   });
 
@@ -474,7 +488,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(dialog).getAllByText('Dịch đề')).toHaveLength(1);
     expect(s.ai.calls.at(-1)!.sent).toEqual(['Dịch đề']);
     expect(s.ai.calls.at(-1)!.history).toEqual([]);
-    await waitFor(() => expect(s.chats.saved.at(-1)?.messages).toEqual([{ role: 'user', text: 'Dịch đề' }, { role: 'model', text: 'Bản dịch' }]));
+    await waitFor(() => expect(s.chats.saved.at(-1)?.messages).toEqual([{ role: 'user', text: 'Dịch đề' }, { role: 'model', text: 'Bản dịch', hidden: true }]));
     expect(within(dialog).queryByRole('button', { name: 'Gửi lại câu hỏi' })).toBeNull();
   });
 

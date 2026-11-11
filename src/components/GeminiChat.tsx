@@ -696,6 +696,8 @@ function Conversation({
     if (!text || busy || !loaded || cooldown.until() !== null) return;
     const history = base;
     const asked: ChatMessage[] = [...history, { role: 'user', text }];
+    // Câu trả lời tạo lúc chưa xem đáp án được gắn `hidden` để không dùng lại sau khi xem.
+    const modelMsg = (t: string): ChatMessage => ({ role: 'model', text: t, ...(target.revealed ? {} : { hidden: true as const }) });
     const signedIn = () => !sync || signedInUser(sync.getState())?.uid === uid;
     if (suggestion === undefined) setInput('');
     setSendFailed(false);
@@ -703,10 +705,9 @@ function Conversation({
     setFailMessage(undefined);
     setSaveFailed(false);
     // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
-    // Vừa mở hướng dẫn thì trả lời cũ (từ lúc chưa thấy đáp án) không dùng lại được.
-    const cached = sessionRevealed.current !== target.revealed ? null : findCachedReply(history, text);
+    const cached = findCachedReply(history, text, target.revealed);
     if (cached !== null) {
-      const done: ChatMessage[] = [...asked, { role: 'model', text: cached, cached: true }];
+      const done: ChatMessage[] = [...asked, { ...modelMsg(cached), cached: true }];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
       chats.save(uid, attemptId, qid, done).catch(() => inflight.emit(key, { kind: 'save-failed' }));
       return;
@@ -718,7 +719,7 @@ function Conversation({
     const progress = () =>
       inflight.emit(key, {
         kind: 'progress',
-        messages: reply ? [...asked, { role: 'model', text: reply }] : asked,
+        messages: reply ? [...asked, modelMsg(reply)] : asked,
         searching: searchingNow,
         retry: retryNow,
         thinking: thinkingNow,
@@ -770,7 +771,7 @@ function Conversation({
       }
       if (!reply) throw new Error('empty reply');
       if (!signedIn()) throw new Error('signed out');
-      const done: ChatMessage[] = [...asked, { role: 'model', text: reply }];
+      const done: ChatMessage[] = [...asked, modelMsg(reply)];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
       chats.save(uid, attemptId, qid, done).catch(() => {
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
@@ -782,7 +783,7 @@ function Conversation({
       const busyError = e instanceof AiBusyError;
       // Gemini báo phải chờ (quá lâu để tự chờ, hoặc đã thử lại hết lượt): khóa tới giờ đó.
       if (busyError && e.retryAfterMs) cooldown.set(Date.now() + e.retryAfterMs);
-      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, { role: 'model', text: reply }] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
+      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, modelMsg(reply)] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
     }
   };
 
