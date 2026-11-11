@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { AiJobTarget } from '../ai/gate';
 import type { Question } from '../data/types';
 import { displayLabel } from '../engine/attempt';
@@ -19,8 +19,15 @@ interface QuestionCardProps {
 }
 
 export function QuestionCard({ question, order, selected, reveal, showOrigLabels, chooseLabel, heading, onSelect, annotate }: QuestionCardProps) {
-  const [stemEl, setStemEl] = useState<HTMLElement | null>(null);
-  const [promptEl, setPromptEl] = useState<HTMLElement | null>(null);
+  // Phần tử đề/dòng câu hỏi kèm id câu: ở lần commit đầu sau khi đổi câu, state vẫn giữ phần tử của câu cũ
+  // (đã gỡ khỏi trang) cho tới khi callback ref chạy. Chỉ đưa cho Highlighter phần tử của đúng câu đang hiện.
+  const [stem, setStem] = useState<{ qid: number; el: HTMLElement } | null>(null);
+  const [prompt, setPrompt] = useState<{ qid: number; el: HTMLElement } | null>(null);
+  const qid = question.id;
+  const setStemEl = useCallback((el: HTMLElement | null) => setStem(el ? { qid, el } : null), [qid]);
+  const setPromptEl = useCallback((el: HTMLElement | null) => setPrompt(el ? { qid, el } : null), [qid]);
+  const stemEl = stem?.qid === qid ? stem.el : null;
+  const promptEl = prompt?.qid === qid ? prompt.el : null;
   const byKey = new Map(question.options.map((o) => [o.key, o]));
   const multi = question.choose > 1;
   return (
