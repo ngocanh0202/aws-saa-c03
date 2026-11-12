@@ -11,6 +11,7 @@ import {
   signOut as fbSignOut,
 } from 'firebase/auth';
 import { child, get, getDatabase, onValue, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
+import { parseChatJson } from '../ai/chat-json';
 import { parseLocalSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { summarize, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import type { Attempt } from '../engine/attempt';
@@ -161,19 +162,7 @@ export function createFirebaseClients(config: FirebaseConfig): {
   /** Store lịch sử chat ở nhánh `users/{uid}/<branch>` (aiChats cho Gemini, localChats cho AI thử nghiệm). */
   const chatStore = (branch: 'aiChats' | 'localChats'): ChatHistoryStore => {
     const chatRef = (uid: string, attemptId: string, qid: number) => ref(db, `users/${uid}/${branch}/${attemptId}/${qid}`);
-    const parseChat = (val: { json?: unknown } | null): ChatMessage[] => {
-      if (!val || typeof val.json !== 'string') return [];
-      try {
-        const parsed: unknown = JSON.parse(val.json);
-        if (!Array.isArray(parsed)) return [];
-        const ok = parsed.every(
-          (m) => m && (m.role === 'user' || m.role === 'model') && typeof m.text === 'string',
-        );
-        return ok ? (parsed as ChatMessage[]) : [];
-      } catch {
-        return [];
-      }
-    };
+    const parseChat = (val: { json?: unknown } | null): ChatMessage[] => parseChatJson(val?.json);
     return {
       async load(uid, attemptId, qid) {
         return parseChat((await get(chatRef(uid, attemptId, qid))).val());

@@ -150,3 +150,25 @@ describe('normalizeHistory', () => {
     expect(normalizeHistory(msgs)).toEqual(msgs);
   });
 });
+
+describe('buildSystemPrompt: tô từ khóa và câu hỏi tiếp theo', () => {
+  const q = makeQuestion(1);
+  const order = ['A', 'B', 'C', 'D'];
+
+  it('luôn dặn viết câu hỏi tiếp theo sau dấu <<GOI_Y>> và liệt kê gợi ý cố định để tránh trùng', () => {
+    const p = buildSystemPrompt(q, order, { fixedSuggestions: ['Dịch đề và các lựa chọn sang tiếng Việt', 'Đề này đang hỏi gì?'] });
+    expect(p).toContain('<<GOI_Y>>');
+    expect(p).toContain('"Dịch đề và các lựa chọn sang tiếng Việt"');
+    expect(p).toContain('"Đề này đang hỏi gì?"');
+  });
+
+  it('chưa xem đáp án: dặn câu hỏi tiếp theo không ngầm chỉ đáp án; đã xem thì không cần', () => {
+    expect(buildSystemPrompt(q, order, { revealed: false })).toContain('không được ngầm chỉ ra lựa chọn đúng');
+    expect(buildSystemPrompt(q, order, { revealed: true })).not.toContain('không được ngầm chỉ ra lựa chọn đúng');
+  });
+
+  it('có tool tô thì có luật highlight_keywords, không có thì không', () => {
+    expect(buildSystemPrompt(q, order, { highlightTool: true })).toContain('highlight_keywords');
+    expect(buildSystemPrompt(q, order)).not.toContain('highlight_keywords');
+  });
+});

@@ -758,7 +758,8 @@ function Conversation({
     // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
     const cached = findCachedReply(history, text, target.revealed);
     if (cached !== null) {
-      const done: ChatMessage[] = [...asked, { ...modelMsg(cached), cached: true }];
+      const reused: ChatMessage = { ...modelMsg(cached.text), cached: true, ...(cached.suggestions?.length ? { suggestions: cached.suggestions } : {}) };
+      const done: ChatMessage[] = [...asked, reused];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
       chats.save(uid, attemptId, qid, done).catch(() => inflight.emit(key, { kind: 'save-failed' }));
       return;
