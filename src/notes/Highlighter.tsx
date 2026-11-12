@@ -5,7 +5,7 @@ import { targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { IconClose, IconDelete, IconHighlight, IconNote, IconResize, IconSave } from '../components/icons';
 import type { Question } from '../data/types';
 import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
-import { addHighlight, locate, NOTE_MAX, removeHighlight, setNote, type HighlightPart, type QuestionNotes } from './model';
+import { addHighlight, locate, newHighlightId, NOTE_MAX, removeHighlight, setNote, type HighlightPart, type QuestionNotes } from './model';
 import { NoteAiButton } from './NoteAiButton';
 import { usePopupResize } from './usePopupResize';
 
@@ -75,11 +75,6 @@ function markBox(mark: Element, clientY?: number): Box | null {
   if (rects.length === 0) return toBox(mark.getBoundingClientRect?.());
   const hit = clientY === undefined ? undefined : rects.find((r) => clientY >= r.top && clientY <= r.bottom);
   return toBox(hit ?? rects[rects.length - 1]);
-}
-
-function newHighlightId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 /** Các <mark> của một đoạn tô (đoạn dài có thể bị tách thành nhiều mark). */
