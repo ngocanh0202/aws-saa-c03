@@ -6,6 +6,7 @@ import { useStoreVersion } from '../app/use-store';
 import { EXAM_LABELS } from '../app/labels';
 import { DraggableFab } from '../components/DraggableFab';
 import { GeminiButton } from '../components/GeminiChat';
+import { NoteButton } from '../notes/NoteFormDialog';
 import { GuidePanel } from '../components/GuidePanel';
 import { NavGrid } from '../components/NavGrid';
 import { QuestionCard } from '../components/QuestionCard';
@@ -84,9 +85,13 @@ export function ExamPage() {
         {attempt.mode === 'real' && attempt.endsAt !== undefined && (
           <Timer endsAt={attempt.endsAt} now={now} label={t.timeRemaining} onExpire={submit} />
         )}
-        <button type="button" onClick={() => setConfirming(true)}>
-          {t.end}
-        </button>
+        <div className="exam__bar-actions">
+          {/* Tự ghi chú: chỉ Thi thử (Thi thật đang làm không ghi chú). */}
+          {attempt.mode === 'practice' && <NoteButton key={aq.qid} qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} />}
+          <button type="button" onClick={() => setConfirming(true)}>
+            {t.end}
+          </button>
+        </div>
       </header>
 
       <div className="exam__layout">
