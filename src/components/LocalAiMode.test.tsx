@@ -74,7 +74,8 @@ describe('Chế độ AI thử nghiệm (Local AI)', () => {
     await waitFor(() => expect(s.localChats.saved.at(-1)?.key).toBe(`u1/e1/${s.qid}`));
     expect(s.chats.saved).toEqual([]);
     expect(s.ai.calls).toEqual([]);
-    expect(s.localAi.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions']);
+    // Thi thử đang làm: AI thử nghiệm cũng có tool tô từ khóa.
+    expect(s.localAi.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions', 'highlight_keywords']);
   });
 
   it('build không có Gemini (thiếu reCAPTCHA) vẫn dùng được chế độ thử nghiệm', () => {

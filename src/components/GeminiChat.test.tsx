@@ -455,6 +455,54 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(again).getByRole('button', { name: 'Đề này đang hỏi gì?' })).toBeInTheDocument();
   });
 
+  it('Thi thử đang làm: có tool highlight_keywords và gợi ý "Tô từ khóa quan trọng trong đề"', async () => {
+    const s = setup();
+    const dialog = await openChat();
+    const group = within(dialog).getByRole('group', { name: 'Câu hỏi gợi ý' });
+    expect(within(group).getByRole('button', { name: 'Tô từ khóa quan trọng trong đề' })).toBeInTheDocument();
+    await ask(dialog);
+    await waitFor(() => expect(s.ai.calls).toHaveLength(1));
+    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions', 'highlight_keywords']);
+    expect(s.ai.calls[0].systemPrompt).toContain('highlight_keywords');
+    expect(s.ai.calls[0].systemPrompt).toContain('"Tô từ khóa quan trọng trong đề"');
+  });
+
+  it('AI gọi highlight_keywords: tô cụm trong đề (note rỗng), lúc chờ hiện "đang tô từ khóa"', async () => {
+    const s = setup();
+    s.ai.toolCalls = [{ name: 'highlight_keywords', args: { phrases: `stem ${s.qid}` } }];
+    s.ai.holdFirst = true;
+    const dialog = await openChat();
+    await ask(dialog, 'Tô từ khóa quan trọng trong đề');
+    await act(async () => s.ai.release());
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    const canonical = s.base.bank.canonical(s.qid);
+    expect(s.base.notes.get(canonical)?.highlights).toEqual([expect.objectContaining({ part: 'stem', text: `Stem ${s.qid}`, note: '' })]);
+    expect(s.ai.calls[0].toolResults[0]).toEqual({ highlighted: [`stem ${s.qid}`], skipped: [], notFound: [] });
+  });
+
+  it('câu hỏi tiếp theo: tách khỏi câu trả lời, đứng trước gợi ý cố định, bỏ câu trùng; chỉ của tin mới nhất', async () => {
+    const s = setup();
+    s.ai.reply = ['OK\n<<GO', 'I_Y>>\n- Hỏi tiếp A?\n- Dịch đề và các lựa chọn sang tiếng Việt'];
+    const dialog = await openChat();
+    await ask(dialog);
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(within(dialog).getByText('OK')).toBeInTheDocument();
+    expect(within(dialog).queryByText(/<<GOI_Y>>/)).toBeNull();
+    expect(s.chats.saved[0].messages[1]).toEqual({ role: 'model', text: 'OK', hidden: true, suggestions: ['Hỏi tiếp A?', 'Dịch đề và các lựa chọn sang tiếng Việt'] });
+    const group = within(dialog).getByRole('group', { name: 'Câu hỏi gợi ý' });
+    const names = within(group).getAllByRole('button').map((b) => b.textContent);
+    expect(names[0]).toBe('Hỏi tiếp A?');
+    expect(names.filter((n) => n === 'Dịch đề và các lựa chọn sang tiếng Việt')).toHaveLength(1);
+    s.ai.reply = ['Trả lời 2'];
+    await act(async () => {
+      fireEvent.click(within(group).getByRole('button', { name: 'Hỏi tiếp A?' }));
+    });
+    await waitFor(() => expect(s.chats.saved).toHaveLength(2));
+    expect(s.ai.calls.at(-1)!.sent.at(-1)).toBe('Hỏi tiếp A?');
+    const again = within(dialog).getByRole('group', { name: 'Câu hỏi gợi ý' });
+    expect(within(again).queryByRole('button', { name: 'Hỏi tiếp A?' })).toBeNull();
+  });
+
   it('câu hỏi giống ≥ 85% câu đã có trả lời: dùng lại câu trả lời cũ, không gửi cho AI', async () => {
     const s = setup({ history: [{ role: 'user', text: 'Amazon MQ là gì?' }, { role: 'model', text: 'MQ là message broker' }] });
     const dialog = await openChat();
@@ -496,7 +544,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     const s = setup();
     const dialog = await openChat();
     await ask(dialog);
-    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toEqual(['find_answered_questions']);
+    expect(s.ai.calls[0].options?.tools?.map((t) => t.name)).toContain('find_answered_questions');
   });
 
   it('Gemini gọi tool tìm câu: hiện dòng chờ, kết quả gửi lại cho mô hình, câu tìm được ẩn đáp án và lượt không đổi', async () => {
