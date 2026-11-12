@@ -80,7 +80,7 @@ export function createNotesStore(storage: Storage | null): NotesStore {
     owner: () => owner,
     get: (qid) => bucket(owner).get(qid),
     list: () =>
-      [...bucket(owner).values()].filter((n) => n.highlights.length > 0).sort((a, b) => b.updatedAt - a.updatedAt),
+      [...bucket(owner).values()].filter((n) => n.highlights.length > 0 || (n.items?.length ?? 0) > 0).sort((a, b) => b.updatedAt - a.updatedAt),
     save(notes) {
       bucket(owner).set(notes.qid, notes);
       persist(owner);

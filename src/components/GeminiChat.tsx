@@ -15,7 +15,8 @@ import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
 import { HIGHLIGHT_SUGGESTION, chatSuggestions } from '../ai/suggestions';
 import { pickFollowups, splitFollowups, visibleReply } from '../ai/followups';
 import { HIGHLIGHT_TOOL, createHighlightTool } from '../ai/highlight-tool';
-import { newHighlightId } from '../notes/model';
+import { TOO_LONG_MESSAGE, addItem, findItem, fitsLimit, newHighlightId, removeItem } from '../notes/model';
+import { IconBookmark } from './icons';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import type { Question } from '../data/types';
@@ -661,6 +662,8 @@ function Conversation({
     return a?.mode === 'practice' && a.status === 'in-progress';
   };
   const canHighlight = isPracticeOpen();
+  // Ghi chú (đánh dấu câu trả lời): Thi thử đang làm hoặc lượt đã nộp (cả Thi thật).
+  const canNote = canHighlight || store.get(attemptId)?.status === 'submitted';
   // Mỗi tab chỉ một yêu cầu AI: yêu cầu ở chỗ khác đang chạy thì khóa ô nhập của khung này.
   const gateTarget: AiJobTarget = { page: 'attempt', attemptId, qid };
   const myKey = targetKey(gateTarget);
@@ -693,6 +696,8 @@ function Conversation({
   /** Đang chờ để tự thử lại (lần mấy / tối đa). */
   const [retry, setRetry] = useState(running?.retry);
   const [saveFailed, setSaveFailed] = useState(false);
+  /** Đánh dấu câu trả lời bị từ chối vì ghi chú của câu đã quá dài. */
+  const [noteError, setNoteError] = useState(false);
   const [busy, setBusy] = useState(running !== undefined);
   const [input, setInput] = useState('');
   const chatRef = useRef<AiChat | null>(null);
@@ -959,6 +964,10 @@ function Conversation({
               <div key={i} className={`gemini__msg gemini__msg--${m.role}`}>
                 {m.role === 'model' ? <Markdown text={m.text} /> : m.text}
                 {m.cached && <p className="gemini__cached">Trả lời lại từ lần hỏi trước</p>}
+                {/* Đánh dấu câu trả lời đã xong vào ghi chú (tiêu đề = câu hỏi ngay trước). */}
+                {m.role === 'model' && canNote && !(busy && i === messages.length - 1) && (
+                  <BookmarkButton qid={bank.canonical(qid)} title={questionBefore(messages, i)} content={m.text} onTooLong={() => setNoteError(true)} />
+                )}
               </div>
             ),
           )}
@@ -990,6 +999,11 @@ function Conversation({
             <button type="button" className="gemini__switch" onClick={onSwitchToLocal}>
               🤖 Chuyển sang AI thử nghiệm
             </button>
+          )}
+          {noteError && (
+            <p className="gemini__notice" role="alert">
+              {TOO_LONG_MESSAGE}
+            </p>
           )}
           {saveFailed && (
             <p className="gemini__notice">
@@ -1031,5 +1045,30 @@ function Conversation({
         </p>
       )}
     </>
+  );
+}
+
+/** Câu người học hỏi gần nhất phía trước tin thứ i. */
+function questionBefore(messages: ChatMessage[], i: number): string {
+  for (let j = i - 1; j >= 0; j--) if (messages[j].role === 'user' && messages[j].text.trim()) return messages[j].text;
+  return 'Câu trả lời AI';
+}
+
+/** Nút lưu/bỏ một câu trả lời AI khỏi ghi chú của câu (canonical qid). */
+function BookmarkButton({ qid, title, content, onTooLong }: { qid: number; title: string; content: string; onTooLong: () => void }) {
+  const { notes, now } = useApp();
+  const saved = useSyncExternalStore(notes.subscribe, () => findItem(notes.get(qid), 'ai', title, content)?.id ?? null);
+  const toggle = () => {
+    const cur = notes.get(qid);
+    if (saved && cur) return notes.save(removeItem(cur, saved, now()));
+    const next = addItem(cur, qid, { kind: 'ai', title, content }, newHighlightId(), now());
+    if (fitsLimit(next)) notes.save(next);
+    else onTooLong();
+  };
+  const label = saved ? 'Bỏ khỏi ghi chú' : 'Lưu vào ghi chú';
+  return (
+    <button type="button" className={`icon-btn gemini__bookmark${saved ? ' is-saved' : ''}`} aria-label={label} title={label} aria-pressed={saved !== null} onClick={toggle}>
+      <IconBookmark filled={saved !== null} />
+    </button>
   );
 }

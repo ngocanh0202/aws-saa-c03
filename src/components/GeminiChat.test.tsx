@@ -520,6 +520,35 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(within(again).queryByRole('button', { name: 'Hỏi tiếp A?' })).toBeNull();
   });
 
+  it('đánh dấu câu trả lời AI: lưu ghi chú (tiêu đề = câu hỏi, nội dung = trả lời), bấm lại thì bỏ', async () => {
+    const s = setup();
+    s.ai.reply = ['Vì S3'];
+    const dialog = await openChat();
+    await ask(dialog, 'Tại sao?');
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    const canonical = s.base.bank.canonical(s.qid);
+    const save = within(dialog).getByRole('button', { name: 'Lưu vào ghi chú' });
+    expect(save).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.click(save);
+    expect(s.base.notes.get(canonical)!.items).toEqual([expect.objectContaining({ kind: 'ai', title: 'Tại sao?', content: 'Vì S3' })]);
+    const unsave = within(dialog).getByRole('button', { name: 'Bỏ khỏi ghi chú' });
+    expect(unsave).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(unsave);
+    expect(s.base.notes.get(canonical)!.items).toEqual([]);
+    expect(within(dialog).getByRole('button', { name: 'Lưu vào ghi chú' })).toBeInTheDocument();
+  });
+
+  it('câu trả lời đang chạy: chưa có nút đánh dấu', async () => {
+    const s = setup();
+    s.ai.hold = true;
+    s.ai.reply = ['Đang'];
+    const dialog = await openChat();
+    await ask(dialog);
+    expect(within(dialog).queryByRole('button', { name: 'Lưu vào ghi chú' })).toBeNull();
+    await act(async () => s.ai.release());
+    expect(await within(dialog).findByRole('button', { name: 'Lưu vào ghi chú' })).toBeInTheDocument();
+  });
+
   it('câu hỏi giống ≥ 85% câu đã có trả lời: dùng lại câu trả lời cũ, không gửi cho AI', async () => {
     const s = setup({ history: [{ role: 'user', text: 'Amazon MQ là gì?' }, { role: 'model', text: 'MQ là message broker' }] });
     const dialog = await openChat();

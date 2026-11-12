@@ -69,3 +69,8 @@ export const IconRetry = (p: IconProps) => (
     <path d="M20 4v7h-7" />
   </Svg>
 );
+export const IconBookmark = ({ filled = false, ...p }: IconProps & { filled?: boolean }) => (
+  <svg width={p.size ?? 18} height={p.size ?? 18} viewBox="0 0 24 24" fill={filled ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M6 3h12v18l-6-4-6 4z" />
+  </svg>
+);

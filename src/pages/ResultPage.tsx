@@ -6,6 +6,7 @@ import { useStoreVersion } from '../app/use-store';
 import { formatDate, modeName, setLabel } from '../app/format';
 import { DomainTable } from '../components/DomainTable';
 import { GeminiButton } from '../components/GeminiChat';
+import { NoteButton } from '../notes/NoteFormDialog';
 import { GuidePanel } from '../components/GuidePanel';
 import { QuestionCard } from '../components/QuestionCard';
 import { DOMAIN_SHORT } from '../data/constants';
@@ -116,9 +117,25 @@ export function ResultPage() {
               {attempt.guideOpened.includes(aq.qid) && <span className="tag">Đã xem hướng dẫn</span>}
               <span className="tag">{DOMAIN_SHORT[aq.domain]}</span>
             </div>
-            <QuestionCard heading={`Câu ${index + 1}`} question={question} order={aq.optionOrder} selected={selected} reveal showOrigLabels={!bank.vi.has(aq.qid) && !question.html} />
+            {/* Bài đã nộp (cả Thi thật): tô đề và ghi chú được, lưu theo câu gốc. */}
+            <QuestionCard
+              heading={`Câu ${index + 1}`}
+              question={question}
+              order={aq.optionOrder}
+              selected={selected}
+              reveal
+              showOrigLabels={!bank.vi.has(aq.qid) && !question.html}
+              annotate={{
+                qid: bank.canonical(aq.qid),
+                label: `Câu ${index + 1}`,
+                target: (hl) => ({ page: 'attempt', attemptId: attempt.id, qid: aq.qid, highlightId: hl }),
+              }}
+            />
             {/* Nút hỏi AI nằm giữa câu hỏi và hướng dẫn. Bài đã nộp: hỏi được cả Thi thật, không mở/gắn nhãn hướng dẫn (đã hiện sẵn). */}
-            <GeminiButton inline attemptId={attempt.id} number={index + 1} question={question} order={aq.optionOrder} />
+            <div className="review-item__actions">
+              <GeminiButton inline attemptId={attempt.id} number={index + 1} question={question} order={aq.optionOrder} />
+              <NoteButton qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} />
+            </div>
             <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
           </article>
         );

@@ -5,7 +5,7 @@ import { targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { IconClose, IconDelete, IconHighlight, IconNote, IconResize, IconSave } from '../components/icons';
 import type { Question } from '../data/types';
 import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
-import { addHighlight, locate, newHighlightId, NOTE_MAX, removeHighlight, setNote, type HighlightPart, type QuestionNotes } from './model';
+import { addHighlight, fitsLimit, locate, newHighlightId, NOTE_MAX, removeHighlight, setNote, TOO_LONG_MESSAGE, type HighlightPart, type QuestionNotes } from './model';
 import { NoteAiButton } from './NoteAiButton';
 import { usePopupResize } from './usePopupResize';
 
@@ -167,12 +167,19 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
     latest.current = { open, notes, qid };
   });
 
-  /** Lưu bản đang gõ nếu khác bản đã lưu. */
+  /** Ghi chú của câu đã chạm giới hạn dung lượng (không lưu thêm được). */
+  const [tooLong, setTooLong] = useState(false);
+
+  /** Lưu bản đang gõ nếu khác bản đã lưu. Vượt giới hạn dung lượng của câu thì không lưu, trả false. */
   const commit = useCallback(
-    (o: OpenPop) => {
+    (o: OpenPop): boolean => {
       const cur = store.get(latest.current.qid);
       const h = cur?.highlights.find((x) => x.id === o.id);
-      if (cur && h && h.note !== o.draft) store.save(setNote(cur, o.id, o.draft, now()));
+      if (!cur || !h || h.note === o.draft) return true;
+      const next = setNote(cur, o.id, o.draft, now());
+      if (!fitsLimit(next)) return false;
+      store.save(next);
+      return true;
     },
     [store, now],
   );
@@ -180,7 +187,9 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
   const close = useCallback(() => {
     const o = latest.current.open;
     if (!o) return;
-    commit(o);
+    // Quá dài: giữ popup mở kèm câu báo để người học rút gọn.
+    if (!commit(o)) return setTooLong(true);
+    setTooLong(false);
     setOpen(null);
   }, [commit]);
 
@@ -189,7 +198,7 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
       const cur = latest.current.open;
       if (cur) {
         if (cur.id === id) return;
-        commit(cur);
+        if (!commit(cur)) return setTooLong(true);
       }
       const note = store.get(latest.current.qid)?.highlights.find((h) => h.id === id)?.note ?? '';
       setOpen({ id, draft: note, base: note, box });
@@ -280,7 +289,11 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close();
+      if (e.key === 'Escape') {
+        // Khung chứa (vd khung xem câu ở trang Ghi chú) không đóng theo.
+        e.preventDefault();
+        close();
+      }
     };
     const onDown = (e: MouseEvent) => {
       const t = e.target;
@@ -319,9 +332,10 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
     if (!el) return;
     const cur = store.get(qid) ?? emptyNotes(qid);
     const { notes: next, id } = addHighlight(cur, pending, el.textContent ?? '', newHighlightId(), now());
-    store.save(next);
     document.getSelection()?.removeAllRanges();
     setPending(null);
+    if (!fitsLimit(next)) return setTooLong(true);
+    store.save(next);
     if (withNote) openPop(id, pending.box);
   };
 
@@ -368,6 +382,11 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
     const body = (
       <>
         {mobile && <blockquote className="hl-quote">{openNote.text}</blockquote>}
+        {tooLong && (
+          <p className="note-form__error" role="alert">
+            {TOO_LONG_MESSAGE}
+          </p>
+        )}
         <textarea
           aria-label="Ghi chú"
           maxLength={NOTE_MAX}
@@ -433,11 +452,19 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
     }
   }
 
-  if (!toolbar && !popup) return null;
+  // Không thêm được đoạn tô (quá dài) khi không có popup: báo ở góc dưới, bấm để đóng.
+  const notice =
+    tooLong && !popup ? (
+      <button type="button" className="hl-limit" role="alert" onClick={() => setTooLong(false)}>
+        {TOO_LONG_MESSAGE}
+      </button>
+    ) : null;
+  if (!toolbar && !popup && !notice) return null;
   return createPortal(
     <div className="hl-layer" lang="vi">
       {toolbar}
       {popup}
+      {notice}
     </div>,
     document.body,
   );

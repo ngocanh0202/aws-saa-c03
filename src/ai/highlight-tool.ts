@@ -1,5 +1,5 @@
 import type { Question } from '../data/types';
-import { addHighlight, type HighlightPart, type QuestionNotes } from '../notes/model';
+import { addHighlight, fitsLimit, type HighlightPart, type QuestionNotes } from '../notes/model';
 import { partText } from '../notes/part-text';
 import type { NotesStore } from '../notes/store';
 import type { AiTool } from './types';
@@ -100,7 +100,11 @@ export function createHighlightTool(deps: HighlightToolDeps): AiTool {
         deps.newId,
         deps.now(),
       );
-      if (highlighted.length > 0) deps.notes.save(notes);
+      if (highlighted.length > 0) {
+        // Ghi chú của câu đã quá dài: không lưu (rules Firebase từ chối), báo cho mô hình.
+        if (!fitsLimit(notes)) return { error: 'Ghi chú của câu này đã quá dài, không tô thêm được.' };
+        deps.notes.save(notes);
+      }
       return { highlighted, skipped, notFound: [...notFound, ...dropped] };
     },
   };

@@ -199,7 +199,7 @@ describe('AI soạn ghi chú', () => {
     expect(screen.getByRole('textbox', { name: 'Ghi chú' })).toHaveValue('Ghi chú của AI');
   });
 
-  it('yêu cầu mở không ai nhận (lượt đã nộp) thì hết hạn, không bật popup ở #/notes về sau', async () => {
+  it('lượt đã nộp: "Đến câu" mở popup ở trang xem lại; sang #/notes không bật lại popup', async () => {
     const { deps, ai, container, canon } = setup();
     ai.reply = ['Ghi chú của AI'];
     ai.hold = true;
@@ -212,10 +212,13 @@ describe('AI soạn ghi chú', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('AI đã soạn ghi chú ở Câu 1'));
     fireEvent.click(within(screen.getByRole('status')).getByRole('button', { name: 'Đến câu 1' }));
     await waitFor(() => expect(screen.getByTestId('result-page')).toBeInTheDocument());
-    await waitFor(() => expect(deps.aiGate.peekOpen()).toBeNull());
+    // Trang xem lại giờ tô đề được: popup của đoạn tô mở ngay tại đó, yêu cầu được nhận.
+    expect(await screen.findByRole('dialog', { name: 'Ghi chú cho đoạn tô' })).toBeInTheDocument();
+    expect(deps.aiGate.peekOpen()).toBeNull();
     fireEvent.click(screen.getByRole('link', { name: 'Ghi chú' }));
-    expect(container.querySelector(`#note-${canon(0)}`)).not.toBeNull();
+    expect(container.querySelector(`[id^="note-${canon(0)}:"]`)).not.toBeNull();
     await tick();
+    expect(screen.queryByRole('dialog', { name: /Câu hỏi/ })).toBeNull();
     expect(screen.queryByRole('dialog', { name: 'Ghi chú cho đoạn tô' })).toBeNull();
   });
 });
