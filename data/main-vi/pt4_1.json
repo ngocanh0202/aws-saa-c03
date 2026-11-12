@@ -1360,5 +1360,624 @@
     ],
     "explanationVi": "Ba khả năng đúng của CloudFront: định tuyến tới nhiều origin theo loại nội dung (cache behavior theo path pattern), origin group với origin chính/phụ để failover, và field-level encryption để bảo vệ các trường dữ liệu nhạy cảm. Bẫy: geo restriction là để chặn theo vị trí, price class là để giới hạn edge location theo chi phí, còn \"KMS encryption trong CloudFront\" không phải tính năng có thật.",
     "keyHint": "CloudFront: \"high-availability and failover\" → origin group; \"protect sensitive data\" → field-level encryption; nhiều origin → cache behavior theo loại nội dung."
+  },
+  {
+    "id": 10745,
+    "stemVi": "Một công ty thương mại điện tử đã sao chép 1 petabyte dữ liệu từ data center on-premises vào một Amazon S3 bucket ở Region us-west-1 qua đường AWS Direct Connect. Giờ công ty muốn sao chép một lần dữ liệu này sang một Amazon S3 bucket khác ở Region us-east-1. Data center on-premises không cho phép dùng AWS Snowball.",
+    "promptVi": "Là Solutions Architect, bạn có thể dùng những lựa chọn nào sau đây để đạt mục tiêu này? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng thiết bị AWS Snowball Edge để sao chép dữ liệu từ Region này sang Region khác",
+        "reason": "Snowball Edge dùng để chuyển dữ liệu giữa nơi đặt thiết bị và AWS, không phải công cụ sao chép giữa hai Region; đề cũng cấm dùng Snowball."
+      },
+      {
+        "key": "B",
+        "textVi": "Sao chép dữ liệu từ bucket nguồn sang bucket đích bằng lệnh aws s3 sync",
+        "reason": "aws s3 sync gọi CopyObject để chép thẳng giữa hai bucket (dữ liệu không đi qua máy chạy lệnh), chỉ chép object còn thiếu hoặc đã đổi, và chạy lại được nếu gián đoạn — hợp cho sao chép một lần."
+      },
+      {
+        "key": "C",
+        "textVi": "Sao chép dữ liệu từ Amazon S3 bucket nguồn sang bucket đích bằng S3 console",
+        "reason": "Thao tác copy/paste trên console chỉ hợp với lượng dữ liệu nhỏ, không khả thi với 1 PB."
+      },
+      {
+        "key": "D",
+        "textVi": "Thiết lập Amazon S3 Transfer Acceleration (Amazon S3TA) để sao chép object giữa các S3 bucket ở các Region khác nhau bằng S3 console",
+        "reason": "Transfer Acceleration tăng tốc truyền dữ liệu giữa client ở xa và một bucket qua edge location; nó không phải tính năng sao chép giữa hai bucket."
+      },
+      {
+        "key": "E",
+        "textVi": "Thiết lập Amazon S3 Batch Replication để sao chép object sang S3 bucket ở Region khác bằng S3 console, sau đó xóa cấu hình replication",
+        "reason": "Replication thường chỉ chép object mới; Batch Replication (chạy bằng S3 Batch Operations) chép được các object đã có sẵn. Xong thì xóa cấu hình replication để đây chỉ là bản sao một lần."
+      }
+    ],
+    "explanationVi": "Dữ liệu đã nằm trong S3, chỉ cần chép một lần sang bucket ở Region khác. Hai cách phù hợp: lệnh aws s3 sync (chép phía server giữa hai bucket, chạy lại được) và S3 Batch Replication cho các object đã có, rồi xóa cấu hình replication. Copy trên console không khả thi với 1 PB, Transfer Acceleration không phải công cụ chép giữa bucket, còn Snowball bị cấm và không dùng cho chép giữa Region.",
+    "keyHint": "\"one-time copy\" giữa hai S3 bucket khác Region → aws s3 sync hoặc S3 Batch Replication (cho object có sẵn)."
+  },
+  {
+    "id": 10746,
+    "stemVi": "Một công ty vừa lập phòng ban mới để xử lý workload dịch vụ. Nhóm IT được yêu cầu tạo một custom VPC để cô lập tài nguyên của phòng ban này. Họ đã dựng public subnet và internet gateway (IGW). Tuy nhiên, họ không ping được các Amazon EC2 instance có Elastic IP address (EIP) chạy trong VPC mới tạo.\n\nLà Solutions Architect, nhóm nhờ bạn giúp.",
+    "promptVi": "Bạn sẽ khắc phục sự cố này thế nào? (Chọn hai.)",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Liên hệ AWS Support để ánh xạ VPC với subnet",
+        "reason": "Subnet tự thuộc về VPC khi tạo; không có thao tác \"ánh xạ\" nào cần AWS Support làm."
+      },
+      {
+        "key": "B",
+        "textVi": "Tắt Source/Destination check trên Amazon EC2 instance",
+        "reason": "Tắt kiểm tra này chỉ cần khi instance làm NAT, router hay firewall chuyển tiếp lưu lượng không gửi cho chính nó; không liên quan đến việc ping instance."
+      },
+      {
+        "key": "C",
+        "textVi": "Kiểm tra security group có cho phép ping từ nguồn hay không",
+        "reason": "Ping dùng ICMP; security group mặc định không cho ICMP đi vào, nên phải có inbound rule cho ICMP từ nguồn ping."
+      },
+      {
+        "key": "D",
+        "textVi": "Tạo internet gateway thứ hai gắn vào public subnet, chuyển internet gateway hiện tại sang private và sửa route table",
+        "reason": "Mỗi VPC chỉ gắn được một internet gateway và IGW gắn với VPC chứ không gắn với subnet; phương án này không có thật."
+      },
+      {
+        "key": "E",
+        "textVi": "Kiểm tra route table có route tới internet gateway hay không",
+        "reason": "Gắn IGW vào VPC chưa đủ: route table của subnet phải có route 0.0.0.0/0 trỏ tới IGW thì instance mới nhận và trả lưu lượng internet."
+      }
+    ],
+    "explanationVi": "Để instance trong public subnet liên lạc với internet cần: IGW gắn vào VPC, route table của subnet có route 0.0.0.0/0 tới IGW, instance có public IP/EIP, và security group cùng network ACL cho phép lưu lượng. Đã có IGW và EIP, nên hai chỗ cần kiểm tra là route table và security group (cho phép ICMP). Source/destination check, IGW thứ hai hay AWS Support đều không liên quan.",
+    "keyHint": "Có IGW và EIP nhưng \"not able to ping\" → kiểm tra route tới IGW trong route table và rule ICMP trong security group."
+  },
+  {
+    "id": 10747,
+    "stemVi": "Một công ty truyền thông số cần xử lý các lượt tải lên, mỗi lượt khoảng 1 terabyte, từ một ứng dụng do công ty đối tác sử dụng.",
+    "promptVi": "Là Solutions Architect, bạn xử lý việc tải các file này lên Amazon S3 như thế nào?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng tính năng multipart upload của Amazon S3",
+        "reason": "Một lần PUT chỉ tải được object tối đa 5 GB; multipart upload chia file 1 TB thành nhiều phần tải song song, phần nào lỗi chỉ cần tải lại phần đó."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon S3 Versioning",
+        "reason": "Versioning giữ nhiều phiên bản của object để khôi phục khi ghi đè/xóa nhầm; không giúp tải file lớn."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Snowball",
+        "reason": "Snowball dùng để chuyển một lần khối dữ liệu lớn từ trung tâm dữ liệu, không hợp với các lượt tải lên thường xuyên từ ứng dụng của đối tác (và nay đã đóng với khách hàng mới)."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng AWS Direct Connect để có thêm băng thông",
+        "reason": "Direct Connect là đường truyền riêng từ cơ sở của công ty tới AWS, mất nhiều tuần để lắp đặt và không giải quyết giới hạn 5 GB mỗi lần PUT của ứng dụng đối tác."
+      }
+    ],
+    "explanationVi": "Object trên 5 GB bắt buộc phải tải bằng multipart upload (AWS khuyên dùng từ khoảng 100 MB). Với file 1 TB, multipart upload cho phép tải song song nhiều phần để tận dụng băng thông và chỉ tải lại phần bị lỗi. Versioning, Snowball và Direct Connect không giải quyết bài toán tải object lớn từ ứng dụng.",
+    "keyHint": "\"uploads of around 1 terabyte each\" → S3 multipart upload (bắt buộc với object > 5 GB)."
+  },
+  {
+    "id": 10748,
+    "stemVi": "Một công ty phân tích Big Data ghi dữ liệu và file log vào các Amazon S3 bucket. Giờ công ty muốn stream cả các file dữ liệu đã có lẫn mọi cập nhật file tiếp theo từ Amazon S3 sang Amazon Kinesis Data Streams.",
+    "promptVi": "Là Solutions Architect, bạn gợi ý cách nào sau đây là nhanh nhất để xây dựng giải pháp cho yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon S3 event notification kích hoạt một hàm AWS Lambda cho sự kiện tạo file. Hàm AWS Lambda sau đó gửi dữ liệu cần thiết sang Amazon Kinesis Data Streams",
+        "reason": "Phải tự viết code đọc file và đẩy bản ghi vào Kinesis; event notification cũng chỉ bắt file mới, không xử lý các file đã có sẵn."
+      },
+      {
+        "key": "B",
+        "textVi": "Có thể cấu hình trực tiếp các hành động trên Amazon S3 bucket để ghi dữ liệu vào Amazon Simple Notification Service (Amazon SNS). Sau đó dùng Amazon SNS gửi các cập nhật sang Amazon Kinesis Data Streams",
+        "reason": "S3 chỉ gửi thông báo sự kiện tới SNS chứ không ghi nội dung file; SNS cũng không gửi trực tiếp tới Kinesis Data Streams."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Database Migration Service (AWS DMS) làm cầu nối giữa Amazon S3 và Amazon Kinesis Data Streams",
+        "reason": "DMS hỗ trợ S3 làm nguồn và Kinesis Data Streams làm đích, chạy full load cho dữ liệu có sẵn và CDC cho thay đổi tiếp theo mà không phải viết code — cách dựng nhanh nhất."
+      },
+      {
+        "key": "D",
+        "textVi": "Cấu hình sự kiện Amazon EventBridge cho các hành động trên bucket Amazon S3. Một hàm AWS Lambda được kích hoạt từ sự kiện EventBridge sẽ gửi dữ liệu cần thiết sang Amazon Kinesis Data Streams",
+        "reason": "S3 gửi sự kiện tới EventBridge được, nhưng vẫn phải tự viết Lambda đọc file và ghi vào Kinesis, và không xử lý các file đã có sẵn."
+      }
+    ],
+    "explanationVi": "Đề cần đưa cả dữ liệu có sẵn lẫn thay đổi tiếp theo từ S3 sang Kinesis Data Streams nhanh nhất. AWS DMS có sẵn S3 làm nguồn, Kinesis làm đích, với chế độ full load + change data capture (CDC), nên chỉ cần cấu hình chứ không viết code. Các phương án dùng Lambda đều phải tự viết code và chỉ bắt file mới; SNS không ghi được vào Kinesis.",
+    "keyHint": "\"existing data files as well as any ongoing file updates\" từ S3 sang Kinesis Data Streams + \"fastest\" → AWS DMS (full load + CDC)."
+  },
+  {
+    "id": 10749,
+    "stemVi": "Một công ty thương mại điện tử theo dõi lượt click của người dùng trên website chủ lực và phân tích để đưa ra gợi ý sản phẩm gần thời gian thực. Một Amazon EC2 instance nhận dữ liệu từ website và gửi vào một Amazon Aurora DB instance. Một Amazon EC2 instance khác liên tục kiểm tra thay đổi trong cơ sở dữ liệu và chạy truy vấn SQL để đưa ra gợi ý. Giờ công ty muốn thiết kế lại để tách rời (decouple) và mở rộng hạ tầng. Giải pháp phải bảo đảm dữ liệu được phân tích theo thời gian thực mà không mất dữ liệu, kể cả khi lưu lượng tăng vọt.",
+    "promptVi": "Là AWS Certified Solutions Architect – Associate, bạn đề xuất gì?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Amazon Kinesis Data Streams thu dữ liệu từ website và đưa vào Amazon Kinesis Data Analytics để truy vấn dữ liệu theo thời gian thực. Cuối cùng, kết quả phân tích được xuất ra Amazon Kinesis Data Firehose để lưu bền vững vào Amazon S3",
+        "reason": "Kinesis Data Streams đệm lưu lượng click và giữ dữ liệu khi có đột biến; Kinesis Data Analytics (nay là Managed Service for Apache Flink) phân tích luồng theo thời gian thực; Firehose ghi kết quả vào S3 — tách rời, scale được và không mất dữ liệu."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Amazon Kinesis Data Streams thu dữ liệu từ website và đưa vào Amazon Kinesis Data Firehose để lưu vào Amazon S3. Cuối cùng, dùng Amazon Athena phân tích dữ liệu theo thời gian thực",
+        "reason": "Firehose gom dữ liệu theo lô trước khi ghi S3, và Athena truy vấn dữ liệu đã lưu theo yêu cầu, không phải phân tích luồng theo thời gian thực."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon SQS thu dữ liệu từ website. Cấu hình một nhóm Amazon EC2 instance trong Auto Scaling group xử lý tin nhắn từ hàng đợi Amazon SQS, kích hoạt scaling policy theo số tin nhắn đang chờ. Phân tích thời gian thực bằng thư viện bên thứ ba trên các Amazon EC2 instance",
+        "reason": "Tách rời được nhưng phải tự vận hành fleet EC2 và tự xây phần phân tích luồng bằng thư viện bên thứ ba; SQS cũng không cho nhiều consumer đọc lại cùng luồng dữ liệu như Kinesis."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Amazon Kinesis Data Streams thu dữ liệu từ website và đưa vào Amazon QuickSight để truy vấn dữ liệu theo thời gian thực. Cuối cùng, kết quả phân tích được xuất ra Kinesis Data Firehose để lưu vào Amazon S3",
+        "reason": "QuickSight là công cụ dashboard BI, không nhận Kinesis Data Streams làm nguồn và không xuất luồng kết quả sang Firehose."
+      }
+    ],
+    "explanationVi": "Luồng click cần thu nhận chịu được đột biến, phân tích theo thời gian thực và lưu lại không mất dữ liệu. Bộ Kinesis đáp ứng trọn: Data Streams thu và đệm, Data Analytics (nay là Amazon Managed Service for Apache Flink) phân tích luồng, Firehose ghi kết quả vào S3. Athena chỉ truy vấn dữ liệu đã lưu, QuickSight là công cụ trực quan hóa, còn SQS + EC2 tốn công tự xây phần phân tích.",
+    "keyHint": "\"analyzed in real-time without any data loss\" + \"huge traffic spikes\" → Kinesis Data Streams → Kinesis Data Analytics (Flink) → Firehose → S3."
+  },
+  {
+    "id": 10750,
+    "stemVi": "Một developer mới đã tải về một Amazon S3 bucket policy mẫu để sửa theo các chính sách truy cập mới của công ty. Anh ấy nhờ bạn giúp hiểu bucket policy này.\n\n{\n \"Version\": \"2012-10-17\",\n \"Id\": \"S3PolicyId1\",\n \"Statement\": [\n   {\n     \"Sid\": \"IPAllow\",\n     \"Effect\": \"Allow\",\n     \"Principal\": \"*\",\n     \"Action\": \"s3:*\",\n     \"Resource\": \"arn:aws:s3:::examplebucket/*\",\n     \"Condition\": {\n        \"IpAddress\": {\"aws:SourceIp\": \"54.240.143.0/24\"},\n        \"NotIpAddress\": {\"aws:SourceIp\": \"54.240.143.188/32\"}\n     }\n   }\n ]\n}",
+    "promptVi": "Là Solutions Architect, bạn xác định mô tả nào sau đây là đúng cho policy trên?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Nó cấp quyền cho một địa chỉ IP và một dải Classless Inter-Domain Routing (CIDR) truy cập S3 bucket",
+        "reason": "Sai: địa chỉ 54.240.143.188 nằm trong điều kiện NotIpAddress, tức bị loại trừ chứ không được cấp quyền thêm."
+      },
+      {
+        "key": "B",
+        "textVi": "Nó cấp quyền cho toàn bộ một dải Classless Inter-Domain Routing (CIDR) trừ một địa chỉ IP truy cập Amazon S3 bucket",
+        "reason": "Đúng: hai điều kiện được AND với nhau — IP nguồn phải thuộc 54.240.143.0/24 và không phải 54.240.143.188, nên cả dải trừ một IP được dùng mọi action s3:* trên các object của bucket."
+      },
+      {
+        "key": "C",
+        "textVi": "Nó bảo đảm các Amazon EC2 instance thừa hưởng một security group truy cập được bucket",
+        "reason": "Sai: bucket policy không tham chiếu security group; điều kiện chỉ xét IP nguồn (aws:SourceIp)."
+      },
+      {
+        "key": "D",
+        "textVi": "Nó bảo đảm Amazon S3 bucket công khai một IP bên ngoài trong dải Classless Inter-Domain Routing (CIDR) đã chỉ định, trừ một IP",
+        "reason": "Sai: policy không làm bucket \"công khai IP\" nào; nó chỉ quyết định request từ IP nguồn nào được phép."
+      }
+    ],
+    "explanationVi": "Đọc từng phần: Effect Allow, Principal \"*\" (mọi principal), Action \"s3:*\", Resource là các object trong examplebucket. Khối Condition có hai điều kiện được AND: IpAddress yêu cầu IP nguồn thuộc 54.240.143.0/24, NotIpAddress loại 54.240.143.188/32. Kết quả: cả dải /24 trừ đúng một IP được phép truy cập.",
+    "keyHint": "\"IpAddress\" + \"NotIpAddress\" trong Condition → cho phép cả dải CIDR trừ một IP."
+  },
+  {
+    "id": 10751,
+    "stemVi": "Một công ty phân tích thương mại điện tử chuẩn bị lưu trữ lâu dài nhiều năm hồ sơ giao dịch và báo cáo phân tích khách hàng trong Amazon S3. Để tuân thủ quy định, dữ liệu lưu trữ phải được mã hóa khi lưu (at rest). Ngoài ra, giải pháp phải tiết kiệm chi phí và bảo đảm khóa được xoay vòng (rotate) tự động mỗi 12 tháng theo chính sách quản trị dữ liệu nội bộ.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (least operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS CloudHSM để sinh khóa mã hóa. Cấu hình S3 dùng các khóa tự quản này qua mã hóa phía client, và xoay vòng khóa hằng năm bằng quy trình quản lý khóa on-premises",
+        "reason": "CloudHSM buộc phải tự quản lý cluster HSM, sinh, backup và xoay vòng khóa thủ công, cộng thêm mã hóa phía client — tốn công và tốn chi phí nhất."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Key Management Service (KMS) tạo một customer managed key có bật tự động xoay vòng. Cấu hình default encryption của S3 bucket dùng customer managed key này. Chuyển dữ liệu vào S3 bucket",
+        "reason": "KMS tự xoay vòng customer managed key mỗi năm (mặc định 365 ngày) và ghi nhận được để kiểm toán; default encryption SSE-KMS mã hóa mọi object mới mà không cần thao tác thêm."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng mã hóa phía server với khóa do S3 quản lý (SSE-S3). Tải dữ liệu lên với default encryption đã bật. Dựa vào cơ chế quản lý và xoay vòng khóa sẵn có của SSE-S3",
+        "reason": "SSE-S3 mã hóa được, nhưng khóa do AWS quản lý hoàn toàn: khách hàng không cấu hình hay chứng minh được chu kỳ xoay vòng 12 tháng."
+      },
+      {
+        "key": "D",
+        "textVi": "Mã hóa dữ liệu tại chỗ bằng thư viện mã hóa phía client rồi tải file đã mã hóa lên S3. Tạo một KMS key với key material nhập từ bên ngoài (imported) và cấu hình xoay vòng khóa",
+        "reason": "Khóa có key material nhập từ ngoài không hỗ trợ xoay vòng tự động, phải tự xoay vòng thủ công; mã hóa phía client cũng thêm việc."
+      }
+    ],
+    "explanationVi": "Ba yêu cầu: mã hóa at rest, tự động xoay vòng khóa mỗi 12 tháng và ít công vận hành. Customer managed key trong KMS bật automatic rotation thỏa yêu cầu xoay vòng, còn default encryption SSE-KMS của bucket lo việc mã hóa mọi object. SSE-S3 không cho kiểm soát chu kỳ xoay vòng; key material nhập ngoài không tự xoay vòng; CloudHSM và mã hóa phía client tốn công nhất.",
+    "keyHint": "\"key rotation occurs automatically every 12 months\" + \"least operational overhead\" → KMS customer managed key bật automatic rotation + SSE-KMS default encryption."
+  },
+  {
+    "id": 10752,
+    "stemVi": "Một công ty dược phẩm đang tìm giải pháp đơn giản để kết nối các VPC và mạng on-premises thông qua một hub trung tâm.",
+    "promptVi": "Là Solutions Architect, bạn gợi ý giải pháp nào sau đây cần ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng VPC peering dạng mesh một phần để kết nối các Amazon VPC với mạng on-premises",
+        "reason": "VPC peering chỉ nối VPC với VPC, không bắc cầu và không nối được mạng on-premises; cũng không có hub trung tâm."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng AWS Transit Gateway để kết nối các Amazon VPC với mạng on-premises",
+        "reason": "Transit Gateway là hub được quản lý: mỗi VPC, VPN hay Direct Connect chỉ cần một attachment tới hub, định tuyến tập trung — đúng mô hình hub-and-spoke với ít công vận hành nhất."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng giải pháp Transit VPC để kết nối các Amazon VPC với mạng on-premises",
+        "reason": "Transit VPC cũng là hub, nhưng dựa trên các appliance VPN chạy trên EC2 mà bạn phải tự vận hành, scale và lo sẵn sàng cao."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng VPC peering dạng mesh đầy đủ để kết nối các Amazon VPC với mạng on-premises",
+        "reason": "Mesh đầy đủ cần số kết nối tăng theo bình phương số VPC, vẫn không nối được on-premises và không có hub trung tâm."
+      }
+    ],
+    "explanationVi": "Đề muốn hub trung tâm nối cả VPC lẫn mạng on-premises với ít công vận hành. AWS Transit Gateway là dịch vụ hub được quản lý, hỗ trợ attachment VPC, VPN và Direct Connect. Transit VPC phải tự vận hành appliance trên EC2; VPC peering không bắc cầu, không nối on-premises và khó quản lý khi số VPC tăng.",
+    "keyHint": "\"connect its VPCs and on-premises networks through a central hub\" + \"LEAST operational overhead\" → AWS Transit Gateway."
+  },
+  {
+    "id": 10753,
+    "stemVi": "Một công ty nghiên cứu gen đang xử lý các đợt workload nặng dữ liệu xuất hiện thất thường trên các Amazon EC2 instance. Storage dùng chung phải chịu được các đợt tăng đột biến khó đoán về thao tác file, nhưng nhu cầu thông lượng trung bình hằng ngày khá thấp. Nhóm đã chọn Amazon Elastic File System (EFS) vì khả năng mở rộng và muốn bảo đảm chi phí và hiệu năng tối ưu trong các đợt đột biến mà không phải cấp phát thông lượng thủ công.",
+    "promptVi": "Nhóm nên làm cách nào để đáp ứng tốt nhất các yêu cầu này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật storage class EFS Infrequent Access (IA) để giảm chi phí lưu trữ trong khi vẫn hưởng lợi từ burst throughput mode",
+        "reason": "Storage class chỉ ảnh hưởng chi phí lưu trữ, không liên quan chế độ thông lượng; file ở IA còn có phí truy cập theo GB và độ trễ cao hơn khi đọc trong đợt đột biến."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển storage class sang EFS One Zone để giảm chi phí, việc này sẽ tự bật burst throughput mode",
+        "reason": "One Zone chỉ lưu dữ liệu trong một AZ để giảm giá; nó không tự đổi chế độ thông lượng và làm giảm khả năng chịu lỗi."
+      },
+      {
+        "key": "C",
+        "textVi": "Đổi throughput mode sang provisioned và cấu hình mức thông lượng mong muốn để hỗ trợ workload đột biến",
+        "reason": "Provisioned buộc phải đặt và trả tiền cho một mức thông lượng cố định, trái yêu cầu không cấp phát thủ công và lãng phí khi tải trung bình thấp."
+      },
+      {
+        "key": "D",
+        "textVi": "Bật burst throughput mode cho file system, dùng performance mode General Purpose và storage class EFS Standard",
+        "reason": "Bursting tích lũy credit khi tải thấp rồi dùng để bùng nổ thông lượng khi có đợt cao điểm, không cần cấu hình thủ công; General Purpose cho độ trễ thấp và EFS Standard lưu trên nhiều AZ."
+      }
+    ],
+    "explanationVi": "Workload có tải trung bình thấp nhưng thỉnh thoảng bùng nổ, và không muốn cấp phát thông lượng thủ công. Theo đáp án gốc, Bursting throughput mode phù hợp: tích lũy credit lúc rảnh để dùng khi đột biến; kèm General Purpose và EFS Standard cho độ trễ thấp và sẵn sàng cao. Provisioned phải cấp phát cố định; IA và One Zone là chuyện storage class, không ảnh hưởng thông lượng.",
+    "keyHint": "\"sporadic bursts\" + \"average daily throughput ... low\" + \"without provisioning throughput manually\" → EFS throughput tự co giãn (Bursting trong đáp án; nay thường là Elastic)."
+  },
+  {
+    "id": 10754,
+    "stemVi": "Một công ty nhận thấy Amazon EBS Elastic Volume (io1) chiếm 90% chi phí, 10% còn lại thuộc về Amazon EC2 instance. Các metric Amazon CloudWatch cho thấy cả EC2 instance lẫn EBS volume đều đang dùng dưới mức. Metric CloudWatch cũng cho thấy EBS volume thỉnh thoảng có các đợt I/O tăng vọt. Toàn bộ hạ tầng được quản lý bằng AWS CloudFormation.",
+    "promptVi": "Là Solutions Architect, bạn đề xuất gì để giảm chi phí?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chuyển EBS volume của Amazon EC2 instance sang gp2",
+        "reason": "gp2 rẻ hơn io1 nhiều (không tính phí IOPS cấp phát) và có cơ chế burst tới 3.000 IOPS, đủ cho các đợt I/O thỉnh thoảng của volume đang dùng dưới mức."
+      },
+      {
+        "key": "B",
+        "textVi": "Đổi Amazon EC2 instance sang loại nhỏ hơn nhiều",
+        "reason": "Instance chỉ chiếm 10% chi phí; thu nhỏ nó không đụng tới 90% chi phí nằm ở volume io1."
+      },
+      {
+        "key": "C",
+        "textVi": "Không dùng AWS CloudFormation template để tạo cơ sở dữ liệu vì dịch vụ AWS CloudFormation tốn phí dịch vụ cao hơn",
+        "reason": "CloudFormation miễn phí với tài nguyên AWS; chỉ tài nguyên được tạo mới tính tiền."
+      },
+      {
+        "key": "D",
+        "textVi": "Giữ EBS volume là io1 và giảm IOPS",
+        "reason": "io1 vẫn đắt hơn gp2 cho cùng dung lượng, và giảm IOPS cấp phát thì không còn khả năng đáp ứng các đợt I/O tăng vọt."
+      }
+    ],
+    "explanationVi": "Chi phí tập trung ở volume io1 trong khi volume dùng dưới mức và chỉ thỉnh thoảng có đợt I/O cao. Chuyển sang gp2 (General Purpose SSD) cắt khoản phí IOPS cấp phát mà vẫn burst được khi cần. Thu nhỏ instance chỉ tác động 10% chi phí, giảm IOPS của io1 thì mất khả năng chịu đột biến, còn CloudFormation không tính phí.",
+    "keyHint": "io1 chiếm \"90% of the cost\" + \"under-utilized\" + \"occasional I/O bursts\" → chuyển sang General Purpose SSD (gp2; nay gp3 còn rẻ hơn)."
+  },
+  {
+    "id": 10755,
+    "stemVi": "Một công ty truyền thông vận hành pipeline render video trên Amazon EKS, các job dạng container được lập lịch bằng Kubernetes deployment. Ứng dụng có lưu lượng bùng nổ, đặc biệt vào giờ cao điểm streaming. Nền tảng dùng Kubernetes Horizontal Pod Autoscaler (HPA) để scale pod theo CPU utilization. Một solutions architect nhận thấy tổng số EC2 worker node vẫn giữ nguyên trong các đợt tăng lưu lượng, kể cả khi mọi node đã dùng hết tài nguyên. Công ty cần giải pháp cho phép tự động scale hạ tầng tính toán bên dưới khi nhu cầu pod vượt năng lực của cluster.",
+    "promptVi": "Architect nên triển khai giải pháp nào để giải quyết vấn đề này với ít công vận hành nhất (least operational overhead)?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Viết một hàm AWS Lambda chạy mỗi 10 phút kiểm tra trạng thái lập lịch pod của EKS. Khi phát hiện pod không lập lịch được thì kích hoạt scale node thủ công bằng eksctl CLI hoặc AWS SDK",
+        "reason": "Tự xây cơ chế polling, phản ứng chậm (10 phút) và phải bảo trì script — tốn công hơn hẳn công cụ có sẵn."
+      },
+      {
+        "key": "B",
+        "textVi": "Bật Amazon EC2 Auto Scaling với CloudWatch alarm tùy chỉnh dựa trên CPU và memory toàn cluster để điều chỉnh số node trong EKS worker node group",
+        "reason": "Metric CPU/memory của node không phản ánh pod đang chờ lập lịch (pending); quyết định scale tách khỏi Kubernetes nên dễ thừa hoặc thiếu node."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng AWS Fargate thay các EKS worker node bằng compute profile serverless, để Fargate tự scale pod mà không phải quản lý hạ tầng EC2",
+        "reason": "Fargate không hỗ trợ DaemonSet, GPU và một số cấu hình mạng; chuyển workload render video sang Fargate cần thiết kế lại."
+      },
+      {
+        "key": "D",
+        "textVi": "Triển khai Kubernetes Cluster Autoscaler vào EKS cluster. Cấu hình tích hợp với EC2 Auto Scaling group hiện có để tự động thêm hoặc bớt node theo nhu cầu của các pod đang chờ",
+        "reason": "Cluster Autoscaler theo dõi pod không lập lịch được vì thiếu tài nguyên, tăng desired capacity của Auto Scaling group để thêm node, và bớt node khi dư — đúng cơ chế scale node gắn với nhu cầu pod."
+      }
+    ],
+    "explanationVi": "HPA chỉ tăng số pod; khi node đã đầy, pod mới nằm ở trạng thái pending và cần một thành phần scale node. Kubernetes Cluster Autoscaler làm đúng việc này: thấy pod pending thì tăng Auto Scaling group, thấy node dư thì rút bớt. Alarm CPU/memory không thấy pod pending, Lambda polling tốn công tự viết, còn Fargate không hợp với workload render cần GPU/DaemonSet.",
+    "keyHint": "HPA scale pod nhưng \"number of EC2 worker nodes remains constant\" → Kubernetes Cluster Autoscaler (hoặc Karpenter) cho node."
+  },
+  {
+    "id": 10756,
+    "stemVi": "Một công ty xử lý Big Data đã xây dựng framework xử lý dữ liệu phân tán, chạy tốt nhất khi hiệu năng mạng giữa các máy xử lý cao. Ứng dụng phải triển khai trên AWS, và công ty chỉ coi hiệu năng là tiêu chí chính.",
+    "promptVi": "Là Solutions Architect, bạn đề xuất cách triển khai nào?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Spot Instances",
+        "reason": "Spot là hình thức mua để giảm chi phí, có thể bị thu hồi; nó không cải thiện hiệu năng mạng giữa các máy."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Cluster placement group",
+        "reason": "Cluster placement group đặt các instance sát nhau trong một AZ, trên cùng phân đoạn mạng băng thông cao, cho độ trễ thấp nhất và thông lượng cao nhất giữa các node."
+      },
+      {
+        "key": "C",
+        "textVi": "Tối ưu kernel của Amazon EC2 bằng EC2 User Data",
+        "reason": "Hiệu năng mạng chủ yếu do loại instance và vị trí đặt instance quyết định; tinh chỉnh kernel qua user data không thay thế được việc đặt instance gần nhau."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Spread placement group",
+        "reason": "Spread đặt từng instance trên phần cứng riêng biệt để giảm lỗi đồng thời — ưu tiên chịu lỗi, không phải hiệu năng mạng (và giới hạn 7 instance mỗi AZ)."
+      }
+    ],
+    "explanationVi": "Khi chỉ quan tâm hiệu năng mạng giữa các node, chọn cluster placement group: các instance được đặt gần nhau trong một AZ, độ trễ thấp và thông lượng cao. Spread placement group ưu tiên chịu lỗi, Spot là để giảm chi phí, còn tinh chỉnh kernel không thay đổi vị trí vật lý của instance.",
+    "keyHint": "\"network performance between the processing machines\" + \"only ... performance\" → Cluster placement group."
+  },
+  {
+    "id": 10757,
+    "stemVi": "Bạn đã phát triển một REST API mới dùng Amazon API Gateway, AWS Lambda và cơ sở dữ liệu Amazon Aurora. Phần lớn workload của website là đọc. Dữ liệu hiếm khi thay đổi và chấp nhận phục vụ người dùng dữ liệu cũ trong khoảng 24 giờ. Gần đây website chịu tải cao và chi phí cho cơ sở dữ liệu Aurora rất lớn.",
+    "promptVi": "Làm sao giảm chi phí dễ dàng trong khi cải thiện hiệu năng, với ít thay đổi nhất?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Bật Amazon API Gateway Caching",
+        "reason": "Cache ở stage của API Gateway trả lời các request lặp lại mà không gọi Lambda và Aurora, giảm chi phí cơ sở dữ liệu và độ trễ; chỉ cần bật cấu hình, dữ liệu cũ chấp nhận được nên TTL dài không thành vấn đề."
+      },
+      {
+        "key": "B",
+        "textVi": "Chuyển sang dùng Application Load Balancer",
+        "reason": "ALB chỉ phân phối request, không có cache; mọi request vẫn tới Lambda và Aurora."
+      },
+      {
+        "key": "C",
+        "textVi": "Bật AWS Lambda In Memory Caching",
+        "reason": "Lambda không có tính năng cache dựng sẵn như vậy; cache trong biến toàn cục chỉ sống theo từng môi trường thực thi và phải tự viết code."
+      },
+      {
+        "key": "D",
+        "textVi": "Thêm Amazon Aurora Read Replica",
+        "reason": "Replica tăng năng lực đọc nhưng mỗi replica là thêm một instance tính tiền, làm chi phí cao hơn thay vì giảm."
+      }
+    ],
+    "explanationVi": "Workload chủ yếu đọc, dữ liệu ít đổi và chấp nhận dữ liệu cũ: đây là tình huống cho cache. Bật API Gateway Caching (TTL mặc định 300 giây, tối đa 3.600 giây) giúp phần lớn request được trả từ cache, không chạm Lambda hay Aurora, vừa rẻ hơn vừa nhanh hơn mà không đổi code. Read replica làm tăng chi phí, ALB không cache, \"Lambda In Memory Caching\" không phải tính năng.",
+    "keyHint": "\"read-heavy\" + \"acceptable to serve ... outdated data\" + \"minimal changes\" → Amazon API Gateway Caching."
+  },
+  {
+    "id": 10758,
+    "stemVi": "Một công ty truyền thông dùng Amazon ElastiCache Redis để tăng hiệu năng cho tầng cơ sở dữ liệu Amazon RDS. Công ty muốn một chiến lược khôi phục sau thảm họa chắc chắn cho tầng cache, bảo đảm thời gian gián đoạn tối thiểu và mất dữ liệu tối thiểu, đồng thời giữ hiệu năng ứng dụng tốt.",
+    "promptVi": "Bạn đề xuất giải pháp nào sau đây cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Lên lịch backup thủ công bằng append-only file (AOF) của Redis",
+        "reason": "AOF/backup thủ công không bảo vệ khỏi lỗi phần cứng của node và khôi phục mất thời gian; ElastiCache cũng không hỗ trợ AOF ở các phiên bản Redis mới."
+      },
+      {
+        "key": "B",
+        "textVi": "Thêm read replica ở nhiều availability zone (AZ) để giảm rủi ro mất dữ liệu khi có sự cố",
+        "reason": "Replica ở nhiều AZ là cần nhưng chưa đủ: không bật automatic failover thì khi primary hỏng vẫn phải can thiệp thủ công, gây gián đoạn."
+      },
+      {
+        "key": "C",
+        "textVi": "Lên lịch backup tự động hằng ngày vào thời điểm dự kiến cluster ít tải",
+        "reason": "Backup hằng ngày có thể mất tới gần một ngày dữ liệu và khôi phục lâu, không đạt yêu cầu mất dữ liệu và gián đoạn tối thiểu."
+      },
+      {
+        "key": "D",
+        "textVi": "Chọn cấu hình Multi-AZ với automatic failover để giảm thiểu tác động khi có sự cố",
+        "reason": "Multi-AZ với automatic failover nhân bản sang replica ở AZ khác và tự promote replica khi primary hỏng, nên gián đoạn ngắn, mất dữ liệu rất ít và không ảnh hưởng hiệu năng."
+      }
+    ],
+    "explanationVi": "Yêu cầu là gián đoạn tối thiểu, mất dữ liệu tối thiểu và giữ hiệu năng. Multi-AZ với automatic failover của ElastiCache Redis giữ replica ở AZ khác và tự chuyển sang khi primary lỗi, không cần thao tác thủ công. Backup (hằng ngày hay thủ công) mất nhiều dữ liệu và khôi phục chậm; replica không bật failover thì vẫn phải can thiệp tay.",
+    "keyHint": "ElastiCache Redis + \"minimal downtime\" + \"minimal data loss\" → Multi-AZ với automatic failover."
+  },
+  {
+    "id": 10759,
+    "stemVi": "Một công ty dùng Application Load Balancer ở nhiều AWS Region. Các Application Load Balancer nhận lưu lượng không đều, thay đổi trong năm. Nhóm kỹ thuật cần đưa địa chỉ IP của các Application Load Balancer vào firewall on-premises để cho phép kết nối.",
+    "promptVi": "Đâu là giải pháp có khả năng mở rộng NHẤT (MOST scalable) với ít thay đổi cấu hình nhất?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Viết một script AWS Lambda lấy địa chỉ IP của các Application Load Balancer ở các Region. Cấu hình rule của firewall on-premises cho phép các IP này",
+        "reason": "IP của ALB thay đổi khi ALB scale, nên firewall phải được cập nhật liên tục; tự viết script cũng thêm việc vận hành."
+      },
+      {
+        "key": "B",
+        "textVi": "Dựng một Network Load Balancer ở một Region. Đăng ký private IP của các Application Load Balancer ở các Region khác vào Network Load Balancer. Cấu hình rule firewall on-premises cho phép Elastic IP gắn với Network Load Balancer",
+        "reason": "NLB là tài nguyên theo Region; đăng ký IP của ALB ở Region khác làm target rất phức tạp, IP của ALB lại thay đổi, và dồn mọi lưu lượng qua một Region."
+      },
+      {
+        "key": "C",
+        "textVi": "Dựng AWS Global Accelerator. Đăng ký các Application Load Balancer ở các Region vào AWS Global Accelerator. Cấu hình rule firewall on-premises cho phép các static IP của AWS Global Accelerator",
+        "reason": "Global Accelerator cấp hai static anycast IP cố định làm điểm vào cho các ALB ở mọi Region; firewall chỉ cần mở hai IP này một lần, dù ALB phía sau scale hay thêm Region."
+      },
+      {
+        "key": "D",
+        "textVi": "Chuyển mọi Application Load Balancer ở các Region sang Network Load Balancer. Cấu hình rule firewall on-premises cho phép Elastic IP của mọi Network Load Balancer",
+        "reason": "Phải thay toàn bộ load balancer (mất tính năng tầng 7 của ALB) và firewall phải mở nhiều IP, mỗi NLB mới lại thêm IP."
+      }
+    ],
+    "explanationVi": "Firewall cần một tập IP cố định, ít thay đổi, trong khi ALB ở nhiều Region có IP biến động. AWS Global Accelerator cung cấp hai static IP toàn cục đứng trước các ALB, nên firewall chỉ cấu hình một lần và hệ thống vẫn mở rộng thoải mái. Script Lambda phải cập nhật liên tục; một NLB không trải nhiều Region; đổi hết sang NLB thì tốn công và vẫn nhiều IP.",
+    "keyHint": "ALB ở \"multiple AWS Regions\" + firewall cần IP cố định + \"MOST scalable\" → AWS Global Accelerator (static IP)."
+  },
+  {
+    "id": 10760,
+    "stemVi": "Một công ty cho thuê nhỏ có 5 nhân viên, đều làm việc trong cùng một tài khoản AWS. Các nhân viên đã triển khai ứng dụng cho nhiều chức năng khác nhau như thanh toán, vận hành, tài chính… Mỗi nhân viên làm việc trong VPC riêng của mình. Giờ cần kết nối các VPC này để các ứng dụng giao tiếp với nhau.",
+    "promptVi": "Giải pháp nào sau đây tiết kiệm chi phí nhất (MOST cost-effective) cho tình huống này?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng Internet Gateway",
+        "reason": "Internet gateway nối VPC với internet, không phải kết nối riêng giữa các VPC."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Network Address Translation gateway (NAT gateway)",
+        "reason": "NAT gateway cho instance trong private subnet đi ra internet; không kết nối các VPC với nhau và còn tính phí theo giờ và theo GB."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng kết nối AWS Direct Connect",
+        "reason": "Direct Connect nối mạng on-premises với AWS, đắt và mất thời gian lắp đặt; không phải cách nối các VPC trong cùng tài khoản."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng kết nối VPC peering",
+        "reason": "VPC peering nối hai VPC qua IP private, không tính phí theo giờ (chỉ tính phí truyền dữ liệu nếu khác AZ/Region); với vài VPC trong cùng tài khoản thì rẻ và đơn giản nhất."
+      }
+    ],
+    "explanationVi": "Cần cho các VPC trong cùng tài khoản giao tiếp với nhau với chi phí thấp nhất. VPC peering kết nối trực tiếp từng cặp VPC qua mạng AWS, không có phí theo giờ. Internet gateway và NAT gateway phục vụ truy cập internet; Direct Connect dành cho kết nối on-premises và đắt.",
+    "keyHint": "\"connect these VPCs\" (ít VPC, cùng tài khoản) + \"MOST cost-effective\" → VPC peering."
+  },
+  {
+    "id": 10761,
+    "stemVi": "Một công ty IT chạy workload điện toán hiệu năng cao (HPC) trên AWS. Workload cần thông lượng mạng cao và độ trễ mạng thấp, cùng giao tiếp chặt chẽ giữa các node (tightly coupled). Các Amazon EC2 instance đã được chọn đúng cỡ về năng lực tính toán và lưu trữ, và được khởi chạy với tùy chọn mặc định.",
+    "promptVi": "Giải pháp nào sau đây có thể dùng để cải thiện hiệu năng workload?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Chọn capacity reservation phù hợp khi khởi chạy Amazon EC2 instance",
+        "reason": "Capacity Reservation chỉ bảo đảm có sẵn năng lực trong một AZ, không thay đổi hiệu năng mạng của instance."
+      },
+      {
+        "key": "B",
+        "textVi": "Chọn cluster placement group khi khởi chạy Amazon EC2 instance",
+        "reason": "Cluster placement group đặt các instance sát nhau trong một AZ, cho độ trễ thấp và thông lượng cao cần cho giao tiếp node–node chặt chẽ của HPC."
+      },
+      {
+        "key": "C",
+        "textVi": "Chọn tenancy dedicated instance khi khởi chạy Amazon EC2 instance",
+        "reason": "Dedicated Instance cô lập phần cứng với khách hàng khác vì lý do tuân thủ, không cải thiện hiệu năng mạng."
+      },
+      {
+        "key": "D",
+        "textVi": "Chọn Elastic Inference accelerator khi khởi chạy Amazon EC2 instance",
+        "reason": "Elastic Inference tăng tốc suy luận deep learning (và nay đã ngừng cung cấp), không liên quan đến mạng giữa các node HPC."
+      }
+    ],
+    "explanationVi": "HPC tightly coupled cần độ trễ mạng thấp và thông lượng cao giữa các node, mà mặc định EC2 lại rải instance trên phần cứng khác nhau. Cluster placement group đặt các instance gần nhau trong một AZ để đạt hiệu năng mạng tốt nhất. Capacity Reservation, dedicated tenancy và Elastic Inference không ảnh hưởng hiệu năng mạng.",
+    "keyHint": "\"HPC\" + \"tightly coupled node-to-node communications\" → Cluster placement group."
+  },
+  {
+    "id": 10762,
+    "stemVi": "Nhóm kỹ thuật của một công ty thương mại điện tử hàng đầu dự báo lưu lượng tăng vọt do đợt flash sale vào cuối tuần. Bạn ước tính lưu lượng web tăng gấp 10 lần. Nội dung website rất động và thay đổi liên tục.",
+    "promptVi": "Là Solutions Architect, bạn đề xuất lựa chọn nào sau đây để bảo đảm hạ tầng scale được trong ngày đó?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Triển khai website trên Amazon S3",
+        "reason": "S3 chỉ host website tĩnh; không chạy được ứng dụng có nội dung động phía server."
+      },
+      {
+        "key": "B",
+        "textVi": "Dùng Auto Scaling Group",
+        "reason": "Auto Scaling Group tự thêm EC2 instance khi tải tăng (và bớt khi giảm), đáp ứng lưu lượng gấp 10 lần cho website động."
+      },
+      {
+        "key": "C",
+        "textVi": "Dùng Amazon Route 53 Multi Value record",
+        "reason": "Multivalue answer chỉ trả về nhiều IP khỏe mạnh cho truy vấn DNS; không tạo thêm năng lực xử lý."
+      },
+      {
+        "key": "D",
+        "textVi": "Đặt Amazon CloudFront distribution trước website",
+        "reason": "CloudFront giúp nhiều với nội dung cache được; nội dung rất động, thay đổi liên tục thì ít cache được, nên tải vẫn dồn về server."
+      }
+    ],
+    "explanationVi": "Lưu lượng tăng gấp 10 lần cho một website có nội dung động thay đổi liên tục: cần thêm năng lực xử lý phía server, tức Auto Scaling Group. CloudFront hiệu quả với nội dung cache được, S3 chỉ host website tĩnh, còn Route 53 multivalue không tăng năng lực xử lý.",
+    "keyHint": "\"10x\" traffic + \"highly dynamic\" content → Auto Scaling Group (không phải cache)."
+  },
+  {
+    "id": 10763,
+    "stemVi": "Một công ty bán lẻ dùng các kết nối AWS Site-to-Site VPN để kết nối an toàn từ data center on-premises tới tài nguyên AWS. Do lưu lượng qua các kết nối VPN tăng vọt, người dùng gặp tình trạng kết nối VPN chậm.",
+    "promptVi": "Lựa chọn nào sau đây sẽ tăng tối đa thông lượng VPN?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Dùng AWS Global Accelerator cho kết nối VPN để tăng tối đa thông lượng",
+        "reason": "Accelerated VPN dùng Global Accelerator để tối ưu đường đi qua mạng AWS (giảm jitter, mất gói), nhưng không nâng giới hạn khoảng 1,25 Gbps mỗi tunnel."
+      },
+      {
+        "key": "B",
+        "textVi": "Tạo virtual private gateway với equal cost multipath routing và nhiều kênh",
+        "reason": "Virtual private gateway không hỗ trợ ECMP giữa các tunnel VPN, nên không cộng gộp được thông lượng."
+      },
+      {
+        "key": "C",
+        "textVi": "Tạo AWS Transit Gateway với equal cost multipath routing và thêm các VPN tunnel",
+        "reason": "Transit Gateway hỗ trợ ECMP qua nhiều VPN tunnel (dùng BGP), cộng gộp thông lượng vượt giới hạn 1,25 Gbps của một tunnel."
+      },
+      {
+        "key": "D",
+        "textVi": "Dùng Transfer Acceleration cho kết nối VPN để tăng tối đa thông lượng",
+        "reason": "Transfer Acceleration là tính năng của S3 bucket, không áp dụng cho kết nối VPN."
+      }
+    ],
+    "explanationVi": "Mỗi tunnel Site-to-Site VPN tối đa khoảng 1,25 Gbps. Muốn vượt giới hạn này, kết thúc VPN trên AWS Transit Gateway, bật ECMP với dynamic routing (BGP) và thêm nhiều tunnel để chia tải song song. Virtual private gateway không hỗ trợ ECMP, Global Accelerator chỉ cải thiện đường đi, còn Transfer Acceleration là tính năng của S3.",
+    "keyHint": "\"maximize the VPN throughput\" → Transit Gateway + ECMP qua nhiều VPN tunnel."
+  },
+  {
+    "id": 10764,
+    "stemVi": "Amazon Route 53 được cấu hình định tuyến lưu lượng tới hai node của Network Load Balancer thuộc hai Availability Zone (AZ): AZ-A và AZ-B. Cross-zone load balancing bị tắt. AZ-A có bốn target và AZ-B có sáu target.",
+    "promptVi": "Phát biểu nào dưới đây là đúng về cách lưu lượng từ Amazon Route 53 được phân phối tới các target instance?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Mỗi target trong bốn target ở AZ-A nhận 8% lưu lượng",
+        "reason": "Sai: 8% xấp xỉ mức của mỗi target ở AZ-B (50% / 6 ≈ 8,3%), không phải AZ-A."
+      },
+      {
+        "key": "B",
+        "textVi": "Mỗi target trong sáu target ở AZ-B nhận 10% lưu lượng",
+        "reason": "Sai: 10% là mức khi cross-zone bật (100% / 10 target); khi tắt, mỗi target ở AZ-B chỉ nhận 50% / 6 ≈ 8,3%."
+      },
+      {
+        "key": "C",
+        "textVi": "Mỗi target trong bốn target ở AZ-A nhận 10% lưu lượng",
+        "reason": "Sai: 10% chỉ đúng khi bật cross-zone load balancing để chia đều cho cả 10 target."
+      },
+      {
+        "key": "D",
+        "textVi": "Mỗi target trong bốn target ở AZ-A nhận 12,5% lưu lượng",
+        "reason": "Đúng: Route 53 chia 50% cho mỗi node; node ở AZ-A chỉ chia 50% đó cho 4 target trong AZ của nó, mỗi target 12,5%."
+      }
+    ],
+    "explanationVi": "Route 53 chia đều lưu lượng cho hai node của NLB, mỗi node 50%. Khi tắt cross-zone load balancing, mỗi node chỉ gửi tới target trong AZ của mình: AZ-A có 4 target nên mỗi target nhận 50% / 4 = 12,5%; AZ-B có 6 target nên mỗi target nhận khoảng 8,3%. Con số 10% là kết quả khi bật cross-zone.",
+    "keyHint": "\"Cross-zone load balancing is disabled\" → mỗi AZ nhận 50%, chia đều cho số target trong AZ đó."
+  },
+  {
+    "id": 10765,
+    "stemVi": "Logic nghiệp vụ của một công ty xây trên nhiều microservice chạy trong data center on-premises. Chúng hiện giao tiếp qua một message broker hỗ trợ giao thức MQTT. Công ty muốn chuyển các ứng dụng này và message broker lên AWS Cloud mà không thay đổi logic ứng dụng.",
+    "promptVi": "Công nghệ nào cho bạn một message broker được quản lý có hỗ trợ giao thức MQTT?",
+    "options": [
+      {
+        "key": "A",
+        "textVi": "Amazon Simple Notification Service (Amazon SNS)",
+        "reason": "SNS là dịch vụ pub/sub riêng của AWS với API riêng, không hỗ trợ MQTT; ứng dụng phải viết lại."
+      },
+      {
+        "key": "B",
+        "textVi": "Amazon Kinesis Data Streams",
+        "reason": "Kinesis Data Streams là dịch vụ streaming dữ liệu với API riêng, không phải message broker MQTT."
+      },
+      {
+        "key": "C",
+        "textVi": "Amazon MQ",
+        "reason": "Amazon MQ là message broker được quản lý; engine Apache ActiveMQ hỗ trợ các giao thức chuẩn như JMS, AMQP, STOMP, MQTT, WebSocket — ứng dụng chỉ cần trỏ sang broker mới."
+      },
+      {
+        "key": "D",
+        "textVi": "Amazon Simple Queue Service (Amazon SQS)",
+        "reason": "SQS là hàng đợi với API riêng của AWS, không hỗ trợ MQTT; phải sửa ứng dụng."
+      }
+    ],
+    "explanationVi": "Muốn chuyển message broker MQTT sang AWS mà không đổi logic ứng dụng thì cần broker được quản lý hỗ trợ giao thức chuẩn: Amazon MQ (bản ActiveMQ hỗ trợ MQTT). SNS, SQS và Kinesis đều dùng API riêng của AWS nên phải viết lại phần giao tiếp.",
+    "keyHint": "\"message broker\" + \"MQTT protocol\" + \"without changing the application logic\" → Amazon MQ."
   }
 ]

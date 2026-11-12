@@ -478,7 +478,8 @@
    "lambda",
    "sns",
    "eventbridge"
-  ]
+  ],
+  "note": "Giải thích gốc tiếng Anh ghi phải bật CloudTrail trail mới dùng được sự kiện object-level của S3 trong EventBridge — đã lỗi thời: từ 11/2021 Amazon S3 gửi sự kiện thẳng tới EventBridge khi bật tùy chọn này trên bucket. Phương án EventBridge vẫn cần tự viết Lambda nên đáp án không đổi."
  },
  {
   "id": 10749,
@@ -528,7 +529,8 @@
   "services": [
    "efs",
    "ec2"
-  ]
+  ],
+  "note": "Từ 11/2022 Amazon EFS có chế độ Elastic Throughput, tự co giãn thông lượng theo tải và chỉ tính tiền theo lượng dữ liệu đọc ghi; AWS khuyên dùng chế độ này cho tải đột biến khó đoán và đây là chế độ mặc định khi tạo file system trên console. Trong các lựa chọn của đề, Bursting vẫn là đáp án đúng. Giải thích gốc nói Bursting \"mặc định cho file system dưới 1 TiB\" là không chính xác: Bursting không phụ thuộc kích thước, chỉ thông lượng nền tăng theo dung lượng lưu trữ."
  },
  {
   "id": 10754,
@@ -538,7 +540,8 @@
    "ebs",
    "ec2",
    "cloudformation"
-  ]
+  ],
+  "note": "Hiện nay AWS khuyên dùng gp3 thay cho gp2: gp3 rẻ hơn khoảng 20% mỗi GB, có sẵn 3.000 IOPS và 125 MiB/s không phụ thuộc dung lượng, và chỉnh IOPS độc lập. Hướng chuyển từ io1 sang General Purpose SSD của đáp án vẫn đúng."
  },
  {
   "id": 10755,
