@@ -713,10 +713,7 @@
       }
     ],
     "explanationVi": "Ba điểm cần nhớ khi chuyển sang FIFO: không đổi được loại của queue có sẵn nên phải tạo lại; tên FIFO queue bắt buộc kết thúc bằng .fifo; và thông lượng FIFO mặc định là 300 tin nhắn/giây, hoặc 3.000 tin nhắn/giây khi dùng batching. Đề nhắc \"with batching\" nên con số đúng là 3.000 chứ không phải 300.",
-    "keyHint": "\"FIFO queues with batching\" → tạo lại queue, tên có hậu tố \".fifo\", giới hạn 3.000 tin nhắn/giây.",
-    "review": {
-      "reason": "Chưa chắc chắn: giới hạn 3.000 tin nhắn/giây chỉ đúng với FIFO queue thường dùng batching. Từ 2021 SQS có chế độ high throughput cho FIFO queue với hạn mức cao hơn nhiều (hàng chục nghìn giao dịch mỗi giây, tùy Region), nên bước \"bảo đảm không vượt 3.000 tin nhắn/giây\" không còn là ràng buộc bắt buộc khi chuyển đổi. Khi đi thi, nếu đề không nhắc high throughput thì vẫn chọn theo giới hạn 3.000."
-    }
+    "keyHint": "\"FIFO queues with batching\" → tạo lại queue, tên có hậu tố \".fifo\", giới hạn 3.000 tin nhắn/giây."
   },
   {
     "id": 10525,
@@ -866,10 +863,7 @@
       }
     ],
     "explanationVi": "Đề nhấn mạnh hỗ trợ Python, tự mở rộng và ít công quản lý hạ tầng. Theo đáp án gốc, Lambda kết hợp API Gateway là cách serverless nhất: không có máy chủ hay container phải duy trì, mở rộng theo từng request, và provisioned concurrency xử lý cold start khi cao điểm. Fargate và EC2 Spot đều thêm phần hạ tầng phải lo.",
-    "keyHint": "\"supports Python\" + \"scales automatically\" + \"minimal infrastructure management\" → Lambda + API Gateway.",
-    "review": {
-      "reason": "Chưa chắc chắn: phương án AWS App Runner cũng đáp ứng gần như mọi yêu cầu — có runtime Python được quản lý, tự build và triển khai từ GitHub (đúng ý \"build, test, and deploy\"), tự mở rộng theo lưu lượng và không phải quản lý hạ tầng. Lý do loại App Runner chủ yếu là sở thích kiến trúc chứ không phải vi phạm yêu cầu cụ thể nào trong đề."
-    }
+    "keyHint": "\"supports Python\" + \"scales automatically\" + \"minimal infrastructure management\" → Lambda + API Gateway."
   },
   {
     "id": 10530,

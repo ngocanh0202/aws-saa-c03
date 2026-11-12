@@ -14,6 +14,11 @@ describe('serviceStatusFor', () => {
     expect(serviceStatusFor(q).map((s) => s.id)).toEqual(['opensearch', 'data-firehose', 'snowball']);
   });
 
+  it('nhận AWS App Runner là dịch vụ đóng với khách hàng mới', () => {
+    const q = { ...makeQuestion(1), options: [{ key: 'A', text: 'Use AWS App Runner to deploy from GitHub.' }] };
+    expect(serviceStatusFor(q).map((s) => [s.id, s.kind])).toEqual([['app-runner', 'retired']]);
+  });
+
   it('không nhận nhầm Backup vault lock là Glacier vault', () => {
     const q = { ...makeQuestion(1), stem: 'Use AWS Backup to create a backup vault that has a vault lock.' };
     expect(serviceStatusFor(q)).toEqual([]);

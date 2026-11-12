@@ -38,7 +38,8 @@ function useGuideLang(): [GuideLang, (lang: GuideLang) => void] {
 /** Đoạn bắt đầu bằng { hoặc [ là JSON/IAM policy: giữ nguyên xuống dòng. */
 function isCodeParagraph(para: string): boolean {
   const t = para.trim();
-  return t.startsWith('{') || t.startsWith('[');
+  // Có đề chỉ chép phần thân policy, bắt đầu bằng "Version": ... mà không có dấu { mở đầu.
+  return t.startsWith('{') || t.startsWith('[') || t.startsWith('"Version"');
 }
 
 export function GuidePanel({ question, order, vi, meta, services }: GuidePanelProps) {

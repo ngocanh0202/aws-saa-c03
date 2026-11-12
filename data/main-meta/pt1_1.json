@@ -85,8 +85,7 @@
    "athena",
    "quicksight",
    "redshift"
-  ],
-  "note": "Kinesis Data Analytics đã đổi tên thành Amazon Managed Service for Apache Flink (08/2023)."
+  ]
  },
  {
   "id": 10110,
@@ -418,7 +417,7 @@
    "iam",
    "s3"
   ],
-  "note": "Lựa chọn \"s3:*Object\" thực tế là wildcard IAM hợp lệ (khớp DeleteObject, GetObject, PutObject...) nên cũng khắc phục được lỗi, trái với giải thích gốc nói action không hợp lệ. Policy gốc còn ghi Version \"2021-10-17\" (đúng phải là \"2012-10-17\"). Các lựa chọn không trùng nhau (cảnh báo trùng lựa chọn là dương tính giả do đề chứa JSON)."
+  "note": "Lựa chọn \"s3:*Object\" thực tế là wildcard IAM hợp lệ (khớp DeleteObject, GetObject, PutObject...) nên cũng khắc phục được lỗi, trái với giải thích gốc nói action không hợp lệ. Policy gốc còn ghi Version \"2021-10-17\" (đúng phải là \"2012-10-17\")."
  },
  {
   "id": 10143,

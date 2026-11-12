@@ -78,6 +78,11 @@ describe('GuidePanel', () => {
       expect(container.querySelector('pre')?.textContent).toContain('"Effect": "Allow"');
     });
 
+    it('đoạn JSON không có dấu { mở đầu (bắt đầu bằng "Version") vẫn hiển thị trong pre', () => {
+      const { container } = renderMain(mainVi({ stemVi: 'Policy:\n\n    "Version": "2012-10-17",\n    "Statement": []' }));
+      expect(container.querySelector('pre')?.textContent).toContain('"Version": "2012-10-17"');
+    });
+
     it('lý do theo thứ tự hiển thị', () => {
       renderMain(mainVi(), ['C', 'A', 'B', 'D']);
       expect(screen.getByText('C. Lựa chọn B — Đúng')).toBeInTheDocument();

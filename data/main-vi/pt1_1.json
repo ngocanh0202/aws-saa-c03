@@ -270,7 +270,7 @@
     "explanationVi": "Đề nhấn mạnh dữ liệu vị trí liên tục, cần dùng theo thời gian thực qua REST API. Đáp án gốc ghép API Gateway (lớp REST API) với Kinesis Data Analytics (lớp xử lý luồng thời gian thực). Các cặp chỉ có truy vấn batch hoặc công cụ báo cáo đều thiếu phần REST API và thời gian thực.",
     "keyHint": "\"track the location ... in real-time\" + \"via a REST API\" → API Gateway + xử lý luồng (Kinesis Data Analytics).",
     "review": {
-      "reason": "Chưa chắc chắn: đề yêu cầu \"store and retrieve\" dữ liệu vị trí, nhưng Kinesis Data Analytics chỉ xử lý luồng chứ không lưu trữ hay phục vụ truy xuất, và API Gateway không tích hợp trực tiếp với nó (thường phải qua Kinesis Data Streams). Phương án API Gateway với Lambda (ghi vào một kho dữ liệu) cũng bảo vệ được, còn lý do loại nó trong giải thích gốc khá yếu."
+      "reason": "Chưa chắc chắn: đề yêu cầu \"store and retrieve\" dữ liệu vị trí, nhưng Kinesis Data Analytics chỉ xử lý luồng chứ không lưu trữ hay phục vụ truy xuất, và API Gateway không tích hợp trực tiếp với nó (thường phải qua Kinesis Data Streams). Phương án API Gateway với Lambda (ghi vào một kho dữ liệu) cũng bảo vệ được, còn lý do loại nó trong giải thích gốc khá yếu. Ngoài ra, Kinesis Data Analytics for SQL applications (dịch vụ mà đề nhắc tới) đã ngừng hẳn từ 27/01/2026; bản Apache Flink nay là Amazon Managed Service for Apache Flink."
     }
   },
   {
@@ -1634,7 +1634,7 @@
       {
         "key": "C",
         "textVi": "Dùng Amazon Aurora Global Database cho bảng games và dùng Amazon Aurora cho bảng users và games_played.",
-        "reason": "Giữ nguyên Aurora nên ứng dụng hầu như không phải sửa; Aurora Global Database nhân bản bảng games sang các region với độ trễ thấp, còn các bảng regional nằm trong Aurora cluster của từng region."
+        "reason": "Giữ nguyên Aurora nên ứng dụng hầu như không phải sửa; bảng games đặt trong một Aurora global cluster riêng, được Aurora Global Database nhân bản sang các region với độ trễ thấp, còn các bảng regional nằm trong Aurora cluster của từng region."
       },
       {
         "key": "D",
@@ -1642,7 +1642,7 @@
         "reason": "Chuyển toàn bộ sang DynamoDB là thay đổi lớn nhất, ngược với yêu cầu ít refactor."
       }
     ],
-    "explanationVi": "Ứng dụng đang dùng Aurora (SQL), nên cách ít refactor nhất là ở lại Aurora. Aurora Global Database nhân bản sang các region phụ cho dữ liệu cần dùng toàn cầu (bảng games), còn dữ liệu regional đặt trong Aurora cluster riêng của từng region. Mọi phương án có DynamoDB đều buộc viết lại tầng truy cập dữ liệu.",
+    "explanationVi": "Ứng dụng đang dùng Aurora (SQL), nên cách ít refactor nhất là ở lại Aurora. Bảng games (cần dùng toàn cầu) đặt trong một Aurora global cluster riêng, được Aurora Global Database nhân bản sang các region phụ, còn dữ liệu regional đặt trong Aurora cluster riêng của từng region. Mọi phương án có DynamoDB đều buộc viết lại tầng truy cập dữ liệu.",
     "keyHint": "\"Amazon Aurora\" sẵn có + \"accessible globally\" + \"minimal application refactoring\" → Aurora Global Database cho bảng toàn cầu, Aurora regional cho phần còn lại."
   },
   {

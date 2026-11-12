@@ -959,10 +959,10 @@
       {
         "key": "D",
         "textVi": "Dùng AWS Config managed rule kiểm tra các chứng chỉ SSL/TLS của bên thứ ba được import vào ACM có sắp hết hạn trong 30 ngày không. Cấu hình rule gửi thông báo Amazon SNS cho nhóm bảo mật nếu có chứng chỉ hết hạn trong 30 ngày.",
-        "reason": "ACM không tự gia hạn chứng chỉ import; managed rule acm-certificate-expiration-check có sẵn, chỉ cần đặt ngưỡng 30 ngày và gửi qua SNS — đúng đối tượng, gần như không phải viết script."
+        "reason": "ACM không tự gia hạn chứng chỉ import; managed rule acm-certificate-expiration-check có sẵn, chỉ cần đặt ngưỡng 30 ngày rồi đẩy kết quả không tuân thủ tới SNS (thường qua một EventBridge rule, hoặc SNS topic chung nhận mọi thông báo của AWS Config) — đúng đối tượng, gần như không phải viết script."
       }
     ],
-    "explanationVi": "Hai ý cần nắm: ACM tự gia hạn chứng chỉ do ACM cấp nhưng không gia hạn chứng chỉ bên thứ ba được import, nên chỉ chứng chỉ import mới cần theo dõi. Để ít script nhất, dùng AWS Config managed rule acm-certificate-expiration-check (đặt số ngày là 30) và gửi thông báo qua SNS. CloudWatch alarm trên metric DaysToExpiry cũng làm được nhưng cần cấu hình nhiều hơn.",
+    "explanationVi": "Hai ý cần nắm: ACM tự gia hạn chứng chỉ do ACM cấp nhưng không gia hạn chứng chỉ bên thứ ba được import, nên chỉ chứng chỉ import mới cần theo dõi. Để ít script nhất, dùng AWS Config managed rule acm-certificate-expiration-check (đặt số ngày là 30) rồi gửi thông báo tới SNS, thường qua một EventBridge rule bắt sự kiện thay đổi compliance của rule (hoặc qua SNS topic chung nhận mọi thông báo của AWS Config). CloudWatch alarm trên metric DaysToExpiry cũng làm được nhưng cần cấu hình nhiều hơn.",
     "keyHint": "\"third-party ... certificates\" (import vào ACM) + \"least amount of scripting\" → AWS Config managed rule kiểm tra hết hạn + SNS."
   },
   {
@@ -1639,7 +1639,7 @@
         "reason": "Sau bước chọn AZ, chính sách mặc định ưu tiên terminate instance dùng launch configuration, và trong số đó chọn cái dùng launch configuration cũ nhất — chính là Instance B."
       }
     ],
-    "explanationVi": "Thứ tự của default termination policy: chọn AZ có nhiều instance nhất, xét allocation strategy On-Demand/Spot, rồi ưu tiên instance dùng launch configuration (trước instance dùng launch template), trong đó chọn cấu hình cũ nhất; sau đó mới tới instance gần giờ tính phí tiếp theo, cuối cùng là ngẫu nhiên. Vì vậy Instance B bị terminate. Lưu ý thực tế: launch configuration đã bị AWS ngừng phát triển và khuyên chuyển hẳn sang launch template.",
+    "explanationVi": "Thứ tự của default termination policy: chọn AZ có nhiều instance nhất, xét allocation strategy On-Demand/Spot, rồi ưu tiên instance dùng launch configuration (trước instance dùng launch template), trong đó chọn cấu hình cũ nhất; sau đó mới tới instance gần giờ tính phí tiếp theo, cuối cùng là ngẫu nhiên. Vì vậy Instance B bị terminate.",
     "keyHint": "\"default termination policy\" → launch configuration trước launch template, cũ nhất trước; \"next billing hour\" xét sau cùng."
   },
   {
