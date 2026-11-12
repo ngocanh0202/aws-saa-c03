@@ -31,7 +31,10 @@ một dạng chung: **tiêu đề + nội dung**, gắn với một câu hỏi.
 - Mặc định **mới nhất trước**.
 - **Tìm kiếm** (không dấu, như hiện tại) trên tiêu đề, nội dung và nhãn câu.
 - **Sắp xếp**: mới nhất, cũ nhất, theo đề & số câu.
-- **Gộp**: không gộp, theo câu hỏi, theo nguồn, theo đề, theo đề → câu hỏi (gộp hai tầng).
+- **Gộp tự do** (người học quyết định): ba tiêu chí **đề**, **câu hỏi**, **nguồn**; bật/tắt từng tiêu chí độc lập, không bắt
+  buộc thứ tự (gộp theo câu hỏi không cần gộp theo đề trước). Tầng gộp theo **thứ tự người học bật** (bật "nguồn" rồi "đề" →
+  nhóm nguồn chứa nhóm đề); tắt hết = không gộp. Có thể bật 1, 2 hay cả 3 tiêu chí. Nhóm hiện tiêu đề + số ghi chú và thu gọn/mở được.
+  *(Cách thể hiện thứ tự: các nút bật/tắt hiện số thứ tự tầng — quyết định của người viết.)*
 
 ## Không làm
 
