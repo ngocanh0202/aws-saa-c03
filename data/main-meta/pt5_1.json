@@ -559,7 +559,7 @@
    "iam",
    "ec2"
   ],
-  "note": "Đáp án tranh cãi. Giải thích gốc thừa nhận tag policy chỉ gắn cờ không tuân thủ chứ không chặn tạo tài nguyên, và tag policy không thể bắt buộc phải có khóa tag. SCP chặn ec2:DeleteTags vô điều kiện thì cấm xóa mọi tag, không riêng tag phân loại."
+  "note": "Tag policy chỉ kiểm tra tag đã được gắn (khi bật enforcement thì chặn gắn giá trị sai) chứ không bắt buộc tài nguyên phải có tag; việc bắt buộc có tag khi tạo instance do SCP đảm nhận. Thực tế nên giới hạn SCP chặn ec2:DeleteTags theo đúng khóa dataClassification (điều kiện aws:TagKeys) để không cấm xóa mọi tag."
  },
  {
   "id": 10954,
@@ -647,7 +647,7 @@
    "athena",
    "redshift"
   ],
-  "note": "Giải thích gốc loại hai lựa chọn CRR vì 'bỏ qua bước tạo bucket đích', nhưng lựa chọn đúng cũng không nhắc tới bucket đích, nên lý do loại không nhất quán."
+  "note": "Giải thích gốc tiếng Anh loại hai phương án bật CRR trên bucket hiện có vì \"bỏ qua bước tạo bucket đích\", lý do này không thuyết phục. Điểm khác thực sự: CRR chỉ sao chép object ghi sau khi bật (object có sẵn cần S3 Batch Replication), và hai phương án đó lại chạy Athena trên bản sao ở Region khác. Đáp án không đổi."
  },
  {
   "id": 10961,
@@ -668,7 +668,8 @@
    "s3-glacier",
    "ebs",
    "storage-gateway"
-  ]
+  ],
+  "note": "Storage class \"Amazon S3 Glacier\" trong đề nay có tên S3 Glacier Flexible Retrieval (đổi tên 11/2021); với archive ít khi truy xuất, S3 Glacier Deep Archive còn rẻ hơn. Đáp án không đổi."
  },
  {
   "id": 10963,
