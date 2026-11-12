@@ -17,7 +17,7 @@
    "ec2-auto-scaling",
    "ec2"
   ],
-  "note": "Đáp án (tối thiểu 4 instance, 2 mỗi AZ) có thể tranh cãi: cấu hình tối thiểu 2 instance, mỗi AZ 1 instance cũng đã chịu được mất một AZ. Giải thích gốc chỉ dựa vào việc ASG chia đều instance giữa các AZ."
+  "note": "Giải thích gốc tiếng Anh nói minimum phải là 4 vì Auto Scaling group chia đều instance giữa các AZ — lý do chính xác hơn là: tải cần 2 instance, nên mỗi AZ phải tự gánh đủ 2 instance để khi mất một AZ ứng dụng vẫn đủ năng lực ngay. Đáp án không đổi."
  },
  {
   "id": 10903,
@@ -142,7 +142,8 @@
   "services": [
    "s3",
    "s3-glacier"
-  ]
+  ],
+  "note": "Từ 11/2021 có thêm storage class S3 Glacier Instant Retrieval (truy xuất trong mili giây, lưu tối thiểu 90 ngày), thường rẻ hơn Standard-IA cho dữ liệu hiếm khi truy cập. Lớp này không có trong các lựa chọn nên đáp án không đổi."
  },
  {
   "id": 10915,
@@ -193,7 +194,8 @@
    "elb",
    "direct-connect",
    "ec2"
-  ]
+  ],
+  "note": "Giải thích gốc tiếng Anh nói AWS PrivateLink chỉ hỗ trợ TCP — đã lỗi thời: từ 31/10/2024 PrivateLink hỗ trợ cả UDP. PrivateLink vẫn không phải cách đưa ứng dụng tới khách hàng toàn cầu nên đáp án không đổi."
  },
  {
   "id": 10920,
@@ -253,8 +255,7 @@
    "dynamodb",
    "aurora",
    "rds"
-  ],
-  "note": "Đề yêu cầu 'global consistency' nhưng DynamoDB global tables mặc định sao chép bất đồng bộ (eventual consistency giữa các Region, multi-active). Đáp án đúng theo giải thích gốc chỉ thỏa yêu cầu 'dưới 1 giây'."
+  ]
  },
  {
   "id": 10926,
@@ -461,7 +462,8 @@
    "elb",
    "lambda",
    "ec2"
-  ]
+  ],
+  "note": "CloudWatch Logs agent cũ trong đề đã bị AWS đánh dấu deprecated; hiện nay dùng CloudWatch agent hợp nhất (unified CloudWatch agent) để gửi log và metric (bắt buộc nếu instance dùng IMDSv2). Ý đẩy log lên CloudWatch Logs của đáp án không đổi."
  },
  {
   "id": 10945,
@@ -557,7 +559,7 @@
    "iam",
    "ec2"
   ],
-  "note": "Đáp án tranh cãi. Giải thích gốc thừa nhận tag policy chỉ gắn cờ không tuân thủ chứ không chặn tạo tài nguyên, và tag policy không thể bắt buộc phải có khóa tag. SCP chặn ec2:DeleteTags vô điều kiện thì cấm xóa mọi tag, không riêng tag phân loại."
+  "note": "Tag policy kiểm tra giá trị tag (khi bật enforcement thì chặn gắn giá trị sai); từ 11/2025 tag policy khai báo được khóa bắt buộc (report_required_tag_for) nhưng chỉ báo cáo và chặn trong triển khai IaC (CloudFormation hook, Terraform, Pulumi), không chặn lệnh RunInstances gọi trực tiếp — việc bắt buộc có tag khi tạo instance vẫn do SCP đảm nhận. Thực tế nên giới hạn SCP chặn ec2:DeleteTags theo đúng khóa dataClassification (điều kiện aws:TagKeys) để không cấm xóa mọi tag."
  },
  {
   "id": 10954,
@@ -645,7 +647,7 @@
    "athena",
    "redshift"
   ],
-  "note": "Giải thích gốc loại hai lựa chọn CRR vì 'bỏ qua bước tạo bucket đích', nhưng lựa chọn đúng cũng không nhắc tới bucket đích, nên lý do loại không nhất quán."
+  "note": "Giải thích gốc tiếng Anh loại hai phương án bật CRR trên bucket hiện có vì \"bỏ qua bước tạo bucket đích\", lý do này không thuyết phục. Điểm khác thực sự: CRR chỉ sao chép object ghi sau khi bật (object có sẵn cần S3 Batch Replication), và hai phương án đó lại chạy Athena trên bản sao ở Region khác. Đáp án không đổi."
  },
  {
   "id": 10961,
@@ -666,7 +668,8 @@
    "s3-glacier",
    "ebs",
    "storage-gateway"
-  ]
+  ],
+  "note": "Storage class \"Amazon S3 Glacier\" trong đề nay có tên S3 Glacier Flexible Retrieval (đổi tên 11/2021); với archive ít khi truy xuất, S3 Glacier Deep Archive còn rẻ hơn. Đáp án không đổi."
  },
  {
   "id": 10963,
