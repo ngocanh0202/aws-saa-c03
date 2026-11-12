@@ -572,3 +572,6 @@ textarea.note-form__input { resize: vertical; min-height: 120px; }
   .note-form { place-items: end stretch; padding: 0; }
   .note-form__box { max-width: none; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
 }
+.gemini__msg--model { position: relative; }
+.gemini__bookmark { display: inline-flex; margin-top: 4px; color: var(--muted); }
+.gemini__bookmark.is-saved { color: var(--hl-line); }

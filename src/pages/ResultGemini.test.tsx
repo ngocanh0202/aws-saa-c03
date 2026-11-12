@@ -39,7 +39,7 @@ function setup({ mode = 'real', signedIn = true }: { mode?: Attempt['mode']; sig
   renderApp('/result/r1', deps);
   act(() => auth.emit(signedIn ? { uid: 'u1', name: 'An' } : null));
   if (signedIn) act(() => remote.emit('u1', new Map([[attempt.id, { attempt, updatedAt: 1 }]])));
-  return { store, ai, chats, ids };
+  return { store, ai, chats, ids, notes: deps.notes };
 }
 
 async function ask(dialog: HTMLElement, text = 'Tại sao?') {
@@ -91,5 +91,14 @@ describe('Hỏi Gemini ở trang xem lại', () => {
     fireEvent.click(screen.getAllByRole('button', { name: GEMINI })[0]);
     expect(screen.getAllByRole('dialog')).toHaveLength(1);
     expect(screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 2' })).toBeInTheDocument();
+  });
+
+  it('Thi thật đã nộp: đánh dấu được câu trả lời AI vào ghi chú', async () => {
+    const s = setup();
+    fireEvent.click(screen.getAllByRole('button', { name: GEMINI })[0]);
+    const dialog = screen.getByRole('dialog', { name: 'Hỏi Gemini · Câu 1' });
+    await ask(dialog, 'Giải thích');
+    fireEvent.click(await within(dialog).findByRole('button', { name: 'Lưu vào ghi chú' }));
+    expect(s.notes.get(s.ids[0])!.items).toEqual([expect.objectContaining({ kind: 'ai', title: 'Giải thích', content: 'ok' })]);
   });
 });
