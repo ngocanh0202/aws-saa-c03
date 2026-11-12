@@ -17,7 +17,7 @@
    "ec2-auto-scaling",
    "ec2"
   ],
-  "note": "Đáp án (tối thiểu 4 instance, 2 mỗi AZ) có thể tranh cãi: cấu hình tối thiểu 2 instance, mỗi AZ 1 instance cũng đã chịu được mất một AZ. Giải thích gốc chỉ dựa vào việc ASG chia đều instance giữa các AZ."
+  "note": "Giải thích gốc tiếng Anh nói minimum phải là 4 vì Auto Scaling group chia đều instance giữa các AZ — lý do chính xác hơn là: tải cần 2 instance, nên mỗi AZ phải tự gánh đủ 2 instance để khi mất một AZ ứng dụng vẫn đủ năng lực ngay. Đáp án không đổi."
  },
  {
   "id": 10903,
@@ -142,7 +142,8 @@
   "services": [
    "s3",
    "s3-glacier"
-  ]
+  ],
+  "note": "Từ 11/2021 có thêm storage class S3 Glacier Instant Retrieval (truy xuất trong mili giây, lưu tối thiểu 90 ngày), thường rẻ hơn Standard-IA cho dữ liệu hiếm khi truy cập. Lớp này không có trong các lựa chọn nên đáp án không đổi."
  },
  {
   "id": 10915,
@@ -193,7 +194,8 @@
    "elb",
    "direct-connect",
    "ec2"
-  ]
+  ],
+  "note": "Giải thích gốc tiếng Anh nói AWS PrivateLink chỉ hỗ trợ TCP — đã lỗi thời: từ 31/10/2024 PrivateLink hỗ trợ cả UDP. PrivateLink vẫn không phải cách đưa ứng dụng tới khách hàng toàn cầu nên đáp án không đổi."
  },
  {
   "id": 10920,
