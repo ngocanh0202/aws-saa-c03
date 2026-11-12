@@ -107,7 +107,9 @@ describe('createHighlightTool', () => {
     const { tool } = setup();
     const lines = ['x'.repeat(121), '', ...Array.from({ length: 10 }, (_, i) => `missing${i}`)];
     const res = (await tool.run({ phrases: lines.join('\n') })) as { notFound: string[]; highlighted: string[] };
-    expect(res.notFound).toEqual(Array.from({ length: 8 }, (_, i) => `missing${i}`));
+    // Chỉ tìm 8 cụm đầu; cụm quá dài hay vượt số tối đa cũng báo là không tô.
+    expect(res.notFound).toEqual([...Array.from({ length: 8 }, (_, i) => `missing${i}`), 'x'.repeat(121), 'missing8', 'missing9']);
+    expect(res.highlighted).toEqual([]);
   });
 
   it('không tô được cụm nào → không lưu', async () => {

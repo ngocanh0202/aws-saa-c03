@@ -12,7 +12,7 @@ import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { createIdleWatchdog, type IdleWatchdog } from '../ai/watchdog';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
-import { chatSuggestions } from '../ai/suggestions';
+import { HIGHLIGHT_SUGGESTION, chatSuggestions } from '../ai/suggestions';
 import { pickFollowups, splitFollowups, visibleReply } from '../ai/followups';
 import { HIGHLIGHT_TOOL, createHighlightTool } from '../ai/highlight-tool';
 import { newHighlightId } from '../notes/model';
@@ -24,6 +24,9 @@ import { claimChatFocus, onChatFocus } from './chat-focus';
 import { ContactAdminButton } from './ContactAdminButton';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
 import { Markdown } from './Markdown';
+
+/** Câu trả lời thay thế khi AI đã tô từ khóa nhưng không viết lời nào. */
+const HIGHLIGHT_DONE = 'Đã tô các từ khóa quan trọng trong đề.';
 
 interface Props {
   attemptId: string;
@@ -773,7 +776,9 @@ function Conversation({
     setFailMessage(undefined);
     setSaveFailed(false);
     // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
-    const cached = findCachedReply(history, text, target.revealed);
+    // Nhờ tô từ khóa thì luôn hỏi AI (đoạn tô có thể đã bị xóa), không dùng lại câu trả lời cũ.
+    const wantsHighlight = similarity(text, HIGHLIGHT_SUGGESTION) >= SIMILAR_THRESHOLD;
+    const cached = wantsHighlight ? null : findCachedReply(history, text, target.revealed);
     if (cached !== null) {
       const reused: ChatMessage = { ...modelMsg(cached.text), cached: true, ...(cached.suggestions?.length ? { suggestions: cached.suggestions } : {}) };
       const done: ChatMessage[] = [...asked, reused];
@@ -807,6 +812,7 @@ function Conversation({
     let reply = '';
     let searchingNow = false;
     let highlightingNow = false;
+    let highlightedAny = false;
     let retryNow: { attempt: number; max: number } | undefined;
     let thinkingNow = false;
     const progress = () =>
@@ -851,7 +857,7 @@ function Conversation({
           watchdogRef.current?.touch();
           // Dòng chờ riêng cho tool tìm câu và tool tô từ khóa.
           if (name === SEARCH_TOOL) searchingNow = true;
-          else if (name === HIGHLIGHT_TOOL) highlightingNow = true;
+          else if (name === HIGHLIGHT_TOOL) highlightingNow = highlightedAny = true;
           else return;
           progress();
         },
@@ -883,6 +889,8 @@ function Conversation({
       }
       // Tách câu hỏi gợi ý ở cuối (sau dấu <<GOI_Y>>) khỏi câu trả lời.
       const split = splitFollowups(reply);
+      // AI đã tô rồi chỉ gửi gợi ý (không có lời): vẫn coi là xong.
+      if (!split.text.trim() && highlightedAny && split.suggestions.length > 0) split.text = HIGHLIGHT_DONE;
       if (!split.text.trim()) throw new Error('empty reply');
       if (!signedIn()) throw new Error('signed out');
       const final: ChatMessage = { ...modelMsg(split.text), ...(split.suggestions.length ? { suggestions: split.suggestions } : {}) };

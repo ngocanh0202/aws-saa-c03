@@ -480,6 +480,23 @@ describe('Hỏi Gemini ở Thi thử', () => {
     expect(s.ai.calls[0].toolResults[0]).toEqual({ highlighted: [`stem ${s.qid}`], skipped: [], notFound: [] });
   });
 
+  it('nhờ tô từ khóa lần nữa: không dùng lại câu trả lời cũ, gọi AI để tô lại', async () => {
+    const s = setup({ history: [{ role: 'user', text: 'Tô từ khóa quan trọng trong đề' }, { role: 'model', text: 'Đã tô', hidden: true }] });
+    const dialog = await openChat();
+    await ask(dialog, 'Tô từ khóa quan trọng trong đề');
+    await waitFor(() => expect(s.ai.calls).toHaveLength(1));
+  });
+
+  it('AI tô xong chỉ gửi gợi ý, không có lời: vẫn lưu với câu báo đã tô', async () => {
+    const s = setup();
+    s.ai.toolCalls = [{ name: 'highlight_keywords', args: { phrases: `stem ${s.qid}` } }];
+    s.ai.reply = ['<<GOI_Y>>\n- Tiếp?'];
+    const dialog = await openChat();
+    await ask(dialog, 'Tô từ khóa quan trọng trong đề');
+    await waitFor(() => expect(s.chats.saved).toHaveLength(1));
+    expect(s.chats.saved[0].messages[1]).toMatchObject({ role: 'model', text: 'Đã tô các từ khóa quan trọng trong đề.', suggestions: ['Tiếp?'] });
+  });
+
   it('câu hỏi tiếp theo: tách khỏi câu trả lời, đứng trước gợi ý cố định, bỏ câu trùng; chỉ của tin mới nhất', async () => {
     const s = setup();
     s.ai.reply = ['OK\n<<GO', 'I_Y>>\n- Hỏi tiếp A?\n- Dịch đề và các lựa chọn sang tiếng Việt'];

@@ -85,11 +85,13 @@ export function createHighlightTool(deps: HighlightToolDeps): AiTool {
     run(args) {
       if (!deps.isOpen()) return { error: 'Chỉ tô được khi đang làm Thi thử.' };
       const raw = typeof args.phrases === 'string' ? args.phrases : '';
-      const phrases = raw
+      const all = raw
         .split('\n')
         .map((s) => s.trim())
-        .filter((s) => s !== '' && s.length <= HIGHLIGHT_MAX_LENGTH)
-        .slice(0, HIGHLIGHT_MAX_PHRASES);
+        .filter((s) => s !== '');
+      const phrases = all.filter((s) => s.length <= HIGHLIGHT_MAX_LENGTH).slice(0, HIGHLIGHT_MAX_PHRASES);
+      // Cụm quá dài hay vượt số cụm tối đa: báo là không tô, để AI không nói đã tô.
+      const dropped = all.filter((s) => !phrases.includes(s));
       const { notes, highlighted, skipped, notFound } = highlightPhrases(
         deps.notes.get(deps.canonicalQid),
         deps.question,
@@ -99,7 +101,7 @@ export function createHighlightTool(deps: HighlightToolDeps): AiTool {
         deps.now(),
       );
       if (highlighted.length > 0) deps.notes.save(notes);
-      return { highlighted, skipped, notFound };
+      return { highlighted, skipped, notFound: [...notFound, ...dropped] };
     },
   };
 }
