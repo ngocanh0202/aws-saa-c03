@@ -7,7 +7,7 @@ import type { ChatMessage } from './types';
  */
 export type InflightEvent =
   /** Đang trả lời: tin nhắn hiện có (gồm câu hỏi và phần trả lời đã nhận). */
-  | { kind: 'progress'; messages: ChatMessage[]; searching: boolean; retry?: { attempt: number; max: number }; thinking?: boolean }
+  | { kind: 'progress'; messages: ChatMessage[]; searching: boolean; highlighting?: boolean; retry?: { attempt: number; max: number }; thinking?: boolean }
   /** Xong; failed = không có câu trả lời (lỗi mạng, hết quota…); busy = lỗi vì Gemini hết lượt/quá tải. */
   | { kind: 'done'; messages: ChatMessage[]; failed: boolean; busy?: boolean; message?: string }
   | { kind: 'save-failed' };

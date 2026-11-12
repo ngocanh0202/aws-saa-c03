@@ -4,21 +4,8 @@ import { setLabel } from '../app/format';
 import { normalizeSearch } from '../components/GeminiChat';
 import { QuestionCard } from '../components/QuestionCard';
 import type { Question } from '../data/types';
-import { locate, type HighlightPart, type QuestionNotes } from '../notes/model';
-
-/** Văn bản thuần của từng vùng, giống textContent mà QuestionCard dựng ra (Highlighter đo offset trên đó). */
-function partText(q: Question, part: HighlightPart): string {
-  if (part === 'prompt') return q.prompt;
-  if (q.html) {
-    const d = document.createElement('div');
-    d.innerHTML = q.stem;
-    return d.textContent ?? '';
-  }
-  return q.stem
-    .split('\n\n')
-    .filter(Boolean)
-    .join('');
-}
+import { locate, type QuestionNotes } from '../notes/model';
+import { partText } from '../notes/part-text';
 
 function itemLabel(qid: number): string {
   return qid >= 10000 ? `${setLabel(Math.floor(qid / 100))} · Câu ${qid % 100}` : `Câu ${qid}`;

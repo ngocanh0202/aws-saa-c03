@@ -19,6 +19,11 @@ export interface QuestionNotes {
 
 export const NOTE_MAX = 2000;
 
+export function newHighlightId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 const clip = (s: string) => s.slice(0, NOTE_MAX);
 
 export function addHighlight(

@@ -8,6 +8,8 @@ export interface ChatMessage {
   cached?: boolean;
   /** Câu trả lời tạo ra khi người học chưa xem đáp án; sau khi xem thì không dùng lại làm câu trả lời có sẵn. */
   hidden?: true;
+  /** Câu hỏi tiếp theo AI gợi ý ở cuối câu trả lời (đã tách khỏi text). */
+  suggestions?: string[];
 }
 
 export interface AiChat {

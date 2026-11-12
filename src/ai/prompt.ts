@@ -1,6 +1,8 @@
 import { displayLabel } from '../engine/attempt';
 import { htmlToText } from '../data/html-text';
 import type { Question, QuestionVi } from '../data/types';
+import { FOLLOWUP_LEN, FOLLOWUP_MARK, FOLLOWUP_MAX } from './followups';
+import { HIGHLIGHT_TOOL } from './highlight-tool';
 import type { ChatMessage } from './types';
 
 export const HISTORY_LIMIT = 40;
@@ -14,6 +16,10 @@ export interface PromptExtra {
   revealed?: boolean;
   /** false: người học tắt "Tìm trên web" (AI thử nghiệm). Mặc định bật. */
   webSearch?: boolean;
+  /** Có tool highlight_keywords (lượt Thi thử đang làm). */
+  highlightTool?: boolean;
+  /** Gợi ý cố định của khung chat; AI không gợi ý lại các câu này. */
+  fixedSuggestions?: string[];
 }
 
 /** Phần hướng dẫn tiếng Việt và ghi chú, lý do từng lựa chọn đổi sang nhãn đang hiển thị. */
@@ -80,6 +86,16 @@ export function buildSystemPrompt(question: Question, order: string[], extra: Pr
     '- Tool trả về rỗng thì chỉ trả lời: "Bạn chưa làm câu nào như vậy trong đề này." Không bịa câu hỏi.',
     '- Tìm thấy thì nêu đề, các lựa chọn, người học đã chọn gì, đúng hay sai, đáp án đúng (chỉ khi câu đó không có answerHidden; có answerHidden thì không đoán, không nói đáp án), rồi phân tích tình huống và so sánh với câu đang làm. Nhiều câu thì liệt kê ngắn để người học chọn.',
     '- Không dùng chữ cái A/B/C để chỉ lựa chọn của câu tìm được; nhắc bằng nội dung lựa chọn.',
+    ...(extra.highlightTool
+      ? [
+          `- Khi người học nhờ tô từ khóa hoặc xin gợi ý để tự làm, gọi tool ${HIGHLIGHT_TOOL} với các cụm then chốt quyết định yêu cầu của đề (ràng buộc chi phí, vận hành, thời gian, quy mô, bảo mật…), chép nguyên văn từ đề bài hoặc dòng câu hỏi, không tô các lựa chọn; sau đó giải thích ngắn vì sao các cụm đó quan trọng.`,
+        ]
+      : []),
+    `- Cuối mỗi câu trả lời, viết một dòng chỉ gồm ${FOLLOWUP_MARK}, rồi ${FOLLOWUP_MAX - 1}–${FOLLOWUP_MAX} câu hỏi tiếp theo người học có thể hỏi, mỗi câu một dòng bắt đầu bằng "- ", ngắn (dưới ${FOLLOWUP_LEN} ký tự), viết như lời người học hỏi, giúp người học từng bước tự tìm ra đáp án.`,
+    ...(extra.revealed ? [] : ['- Các câu hỏi tiếp theo không được ngầm chỉ ra lựa chọn đúng (không hỏi kiểu "Có phải đáp án là …?").']),
+    ...(extra.fixedSuggestions?.length
+      ? [`- Không gợi ý lại các câu đã có sẵn nút: ${extra.fixedSuggestions.map((s) => `"${s}"`).join('; ')}.`]
+      : []),
   ].join('\n');
 }
 

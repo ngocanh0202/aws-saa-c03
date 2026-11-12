@@ -12,7 +12,10 @@ import { AiBusyError } from '../ai/retry';
 import { SEARCH_TOOL, createSearchTool } from '../ai/search';
 import { createIdleWatchdog, type IdleWatchdog } from '../ai/watchdog';
 import { SIMILAR_THRESHOLD, findCachedReply, similarity } from '../ai/similar';
-import { chatSuggestions } from '../ai/suggestions';
+import { HIGHLIGHT_SUGGESTION, chatSuggestions } from '../ai/suggestions';
+import { pickFollowups, splitFollowups, visibleReply } from '../ai/followups';
+import { HIGHLIGHT_TOOL, createHighlightTool } from '../ai/highlight-tool';
+import { newHighlightId } from '../notes/model';
 import { AiUserError, TITLE_MAX, type AiChat, type AiClient, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
 import { htmlToText } from '../data/html-text';
 import type { Question } from '../data/types';
@@ -21,6 +24,9 @@ import { claimChatFocus, onChatFocus } from './chat-focus';
 import { ContactAdminButton } from './ContactAdminButton';
 import { LocalSettingsDialog } from './LocalSettingsDialog';
 import { Markdown } from './Markdown';
+
+/** Câu trả lời thay thế khi AI đã tô từ khóa nhưng không viết lời nào. */
+const HIGHLIGHT_DONE = 'Đã tô các từ khóa quan trọng trong đề.';
 
 interface Props {
   attemptId: string;
@@ -647,8 +653,14 @@ function Conversation({
   const { attemptId, question, order, setId } = target;
   const qid = question.id;
   const key = inflightKey(uid, attemptId, qid);
-  const { store, bank, sync, aiCooldown, aiGate } = useApp();
+  const { store, bank, sync, aiCooldown, aiGate, notes } = useApp();
   const inflight = inflightFor(chats);
+  // AI tô từ khóa chỉ ở lượt Thi thử đang làm (highlight chỉ hiện ở đó).
+  const isPracticeOpen = () => {
+    const a = store.get(attemptId);
+    return a?.mode === 'practice' && a.status === 'in-progress';
+  };
+  const canHighlight = isPracticeOpen();
   // Mỗi tab chỉ một yêu cầu AI: yêu cầu ở chỗ khác đang chạy thì khóa ô nhập của khung này.
   const gateTarget: AiJobTarget = { page: 'attempt', attemptId, qid };
   const myKey = targetKey(gateTarget);
@@ -667,6 +679,7 @@ function Conversation({
   // Câu trả lời còn chạy từ lần mở khung trước (đã sang câu khác rồi quay lại): theo dõi tiếp.
   const [running] = useState(() => inflight.get(key));
   const [searching, setSearching] = useState(running?.searching ?? false);
+  const [highlighting, setHighlighting] = useState(running?.highlighting ?? false);
   const [messages, setMessages] = useState<ChatMessage[]>(running?.messages ?? []);
   const [loaded, setLoaded] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
@@ -689,12 +702,18 @@ function Conversation({
   // Trạng thái "đã thấy đáp án" mà phiên chat hiện tại được báo; đổi thì mở phiên mới để Gemini biết.
   const sessionRevealed = useRef(target.revealed);
   const sessionSettings = useRef(settings);
+  const sessionHighlight = useRef(canHighlight);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   // Gợi ý đã hỏi (câu người học giống ≥ 85%) thì không hiện lại.
-  const suggestions = chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services).filter(
-    (t) => !messages.some((m) => m.role === 'user' && similarity(m.text, t) >= SIMILAR_THRESHOLD),
-  );
+  const fixedSuggestions = chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services, { highlight: canHighlight });
+  const askedTexts = messages.filter((m) => m.role === 'user').map((m) => m.text);
+  // Câu hỏi tiếp theo AI gợi ý (chỉ của câu trả lời mới nhất) đứng trước gợi ý cố định.
+  const lastModel = messages[messages.length - 1]?.role === 'model' ? messages[messages.length - 1] : undefined;
+  const suggestions = [
+    ...pickFollowups(lastModel?.suggestions ?? [], fixedSuggestions, askedTexts),
+    ...fixedSuggestions.filter((t) => !askedTexts.some((a) => similarity(a, t) >= SIMILAR_THRESHOLD)),
+  ];
   // Lần gửi trước lỗi và câu hỏi cuối chưa có trả lời: cho gửi lại.
   const canRetry = sendFailed && !busy && messages[messages.length - 1]?.role === 'user';
 
@@ -708,6 +727,7 @@ function Conversation({
         setMessages(e.messages);
         setBusy(e.kind === 'progress');
         setSearching(e.kind === 'progress' && e.searching);
+        setHighlighting(e.kind === 'progress' && !!e.highlighting);
         setRetry(e.kind === 'progress' ? e.retry : undefined);
         setThinking(e.kind === 'progress' && !!e.thinking);
         if (e.kind === 'done') {
@@ -756,9 +776,12 @@ function Conversation({
     setFailMessage(undefined);
     setSaveFailed(false);
     // Câu hỏi giống câu đã có trả lời: dùng lại câu trả lời đó, không gửi cho AI (đỡ tốn lượt, tránh 429).
-    const cached = findCachedReply(history, text, target.revealed);
+    // Nhờ tô từ khóa thì luôn hỏi AI (đoạn tô có thể đã bị xóa), không dùng lại câu trả lời cũ.
+    const wantsHighlight = similarity(text, HIGHLIGHT_SUGGESTION) >= SIMILAR_THRESHOLD;
+    const cached = wantsHighlight ? null : findCachedReply(history, text, target.revealed);
     if (cached !== null) {
-      const done: ChatMessage[] = [...asked, { ...modelMsg(cached), cached: true }];
+      const reused: ChatMessage = { ...modelMsg(cached.text), cached: true, ...(cached.suggestions?.length ? { suggestions: cached.suggestions } : {}) };
+      const done: ChatMessage[] = [...asked, reused];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
       chats.save(uid, attemptId, qid, done).catch(() => inflight.emit(key, { kind: 'save-failed' }));
       return;
@@ -788,13 +811,16 @@ function Conversation({
     watchdogRef.current = watchdog;
     let reply = '';
     let searchingNow = false;
+    let highlightingNow = false;
+    let highlightedAny = false;
     let retryNow: { attempt: number; max: number } | undefined;
     let thinkingNow = false;
     const progress = () =>
       inflight.emit(key, {
         kind: 'progress',
-        messages: reply ? [...asked, modelMsg(reply)] : asked,
+        messages: visibleReply(reply) ? [...asked, modelMsg(visibleReply(reply))] : asked,
         searching: searchingNow,
+        highlighting: highlightingNow,
         retry: retryNow,
         thinking: thinkingNow,
       });
@@ -802,23 +828,37 @@ function Conversation({
     try {
       // Một phiên chat cho mỗi lần mở khung; adapter tự cắt và chuẩn hóa history.
       // startChat có thể ném lỗi ngay (history không hợp lệ) nên nằm trong try.
-      if (chatRef.current && (sessionRevealed.current !== target.revealed || sessionSettings.current !== settings)) chatRef.current = null;
+      const highlightNow = isPracticeOpen();
+      if (
+        chatRef.current &&
+        (sessionRevealed.current !== target.revealed || sessionSettings.current !== settings || sessionHighlight.current !== highlightNow)
+      )
+        chatRef.current = null;
       sessionRevealed.current = target.revealed;
       sessionSettings.current = settings;
+      sessionHighlight.current = highlightNow;
       const prompt = buildSystemPrompt(question, order, {
         vi: bank.vi.get(qid),
         note: bank.meta.get(qid)?.note,
         revealed: target.revealed,
         webSearch: settings?.webSearch,
+        highlightTool: highlightNow,
+        fixedSuggestions: chatSuggestions(bank.meta.get(qid)?.services ?? [], bank.services, { highlight: highlightNow }),
       });
+      const tools = [createSearchTool(store, bank, { setId, attemptId, qid })];
+      if (highlightNow)
+        tools.push(
+          createHighlightTool({ notes, isOpen: isPracticeOpen, question, canonicalQid: bank.canonical(qid), newId: newHighlightId, now: () => Date.now() }),
+        );
       const chat = (chatRef.current ??= ai.startChat(prompt, history, {
         settings,
-        tools: [createSearchTool(store, bank, { setId, attemptId, qid })],
+        tools,
         onToolCall: (name) => {
           watchdogRef.current?.touch();
-          // Dòng chờ "đang tìm" chỉ dành cho tool tìm câu.
-          if (name !== SEARCH_TOOL) return;
-          searchingNow = true;
+          // Dòng chờ riêng cho tool tìm câu và tool tô từ khóa.
+          if (name === SEARCH_TOOL) searchingNow = true;
+          else if (name === HIGHLIGHT_TOOL) highlightingNow = highlightedAny = true;
+          else return;
           progress();
         },
         onThinking: () => {
@@ -841,14 +881,20 @@ function Conversation({
         if (!signedIn()) throw new Error('signed out');
         if (!chunk) continue;
         searchingNow = false;
+        highlightingNow = false;
         retryNow = undefined;
         thinkingNow = false;
         reply += chunk;
         progress();
       }
-      if (!reply) throw new Error('empty reply');
+      // Tách câu hỏi gợi ý ở cuối (sau dấu <<GOI_Y>>) khỏi câu trả lời.
+      const split = splitFollowups(reply);
+      // AI đã tô rồi chỉ gửi gợi ý (không có lời): vẫn coi là xong.
+      if (!split.text.trim() && highlightedAny && split.suggestions.length > 0) split.text = HIGHLIGHT_DONE;
+      if (!split.text.trim()) throw new Error('empty reply');
       if (!signedIn()) throw new Error('signed out');
-      const done: ChatMessage[] = [...asked, modelMsg(reply)];
+      const final: ChatMessage = { ...modelMsg(split.text), ...(split.suggestions.length ? { suggestions: split.suggestions } : {}) };
+      const done: ChatMessage[] = [...asked, final];
       inflight.emit(key, { kind: 'done', messages: done, failed: false });
       chats.save(uid, attemptId, qid, done).catch(() => {
         // Lần trả lời sau sẽ lưu lại toàn bộ; trong lúc đó báo để người dùng biết (vd: vượt giới hạn dung lượng).
@@ -860,7 +906,8 @@ function Conversation({
       const busyError = e instanceof AiBusyError;
       // Gemini báo phải chờ (quá lâu để tự chờ, hoặc đã thử lại hết lượt): khóa tới giờ đó.
       if (busyError && e.retryAfterMs) cooldown.set(Date.now() + e.retryAfterMs);
-      inflight.emit(key, { kind: 'done', messages: reply ? [...asked, modelMsg(reply)] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
+      const partial = splitFollowups(reply).text;
+      inflight.emit(key, { kind: 'done', messages: partial ? [...asked, modelMsg(partial)] : asked, failed: true, busy: busyError, message: e instanceof AiUserError ? e.userMessage : undefined });
       throw e;
     }
   };
@@ -921,6 +968,8 @@ function Conversation({
                 ? `${brand} đang hết lượt, tự thử lại sau ${secondsLeft(until)} giây… (lần ${retry.attempt}/${retry.max})`
                 : searching
                   ? `${brand} đang tìm trong các câu bạn đã làm…`
+                  : highlighting
+                    ? `${brand} đang tô từ khóa…`
                   : thinking
                     ? `${brand} đang suy nghĩ…`
                     : `${brand} đang trả lời…`}
