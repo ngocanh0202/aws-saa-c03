@@ -36,8 +36,6 @@ một dạng chung: **tiêu đề + nội dung**, gắn với một câu hỏi.
 ## Không làm
 
 - Không ghi chú trong lúc đang làm Thi thật.
-- Không sửa nội dung ghi chú ngay trên trang Ghi chú (trang chỉ để xem; người học nói "chỉ cần hiển thị title với content").
-  Có nút xóa. Ghi chú tô đề vẫn sửa được trong popup tô (cả trong khung xem câu hỏi).
 - Không đổi luật AI soạn ghi chú cho đoạn tô, không đổi tool `highlight_keywords`.
 
 ## Điều không được xảy ra
@@ -72,7 +70,7 @@ một dạng chung: **tiêu đề + nội dung**, gắn với một câu hỏi.
 
 - Nút "Ghi chú" (icon + chữ) bên trái nút "Nộp bài" ở Thi thử; ở trang xem lại là nút ở mỗi câu.
 - Mở form dạng popup (điện thoại: bottom sheet như popup ghi chú hiện tại): ô tiêu đề, ô nội dung, Lưu, Hủy. Gắn với câu đang xem.
-- Lưu xong đóng form; không mở lại để sửa (sửa không nằm trong phạm vi).
+- Lưu xong đóng form. Sửa về sau làm ở trang Ghi chú.
 
 ### Tô đề ở trang xem lại
 
@@ -82,7 +80,10 @@ một dạng chung: **tiêu đề + nội dung**, gắn với một câu hỏi.
 
 - Danh sách phẳng các ghi chú (đoạn tô + item) của mọi câu trong ngăn tài khoản hiện tại.
 - Mỗi ghi chú: tiêu đề, nội dung (giữ xuống dòng; câu trả lời AI hiện bằng `Markdown` như trong chat), nhãn nguồn bằng icon,
-  nhãn câu ("Main 3 · Câu 12" / "Câu 245"), thời gian, nút "Mở câu hỏi", nút xóa (xóa đoạn tô thì xóa luôn highlight).
+  nhãn câu ("Main 3 · Câu 12" / "Câu 245"), thời gian, nút "Mở câu hỏi", nút sửa, nút xóa (xóa đoạn tô thì xóa luôn highlight).
+- **Sửa ngay trên trang Ghi chú** (người học quyết định): bấm sửa thì mục đó thành form tại chỗ. Ghi chú AI và tự ghi chú sửa
+  được cả tiêu đề lẫn nội dung (cùng giới hạn, tiêu đề không được rỗng); đoạn tô chỉ sửa nội dung (tiêu đề là chữ trong đề).
+  Lưu thì cập nhật `updatedAt` (nên lên đầu khi sắp xếp mới nhất); Hủy thì bỏ thay đổi.
 - Khung xem câu hỏi: dialog trên trang, **hiện cả đáp án và hướng dẫn** (người học quyết định): `QuestionCard` với `reveal` (thứ tự lựa chọn gốc, không có lựa chọn của người học), `GuidePanel` như trang xem lại, `annotate` bật (vẫn tô/sửa ghi chú đoạn tô được).
 - Thông báo AI xong (toast "Đến câu") với đích `page: 'notes'` mở khung xem câu hỏi đó và popup đoạn tô (thay cho việc cuộn tới mục cũ).
 - Chọn sắp xếp/gộp nhớ ở localStorage (tiện, không đồng bộ). *(quyết định của người viết)*
