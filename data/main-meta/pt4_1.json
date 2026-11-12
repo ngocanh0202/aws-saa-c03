@@ -89,7 +89,8 @@
    "ec2-auto-scaling",
    "elb",
    "ec2"
-  ]
+  ],
+  "note": "Launch configuration đã lỗi thời: AWS khuyên dùng launch template, và tài khoản tạo từ 01/10/2024 không tạo được launch configuration mới. Thứ tự của default termination policy trong đáp án vẫn đúng."
  },
  {
   "id": 10710,
@@ -98,7 +99,8 @@
   "services": [
    "s3",
    "s3-glacier"
-  ]
+  ],
+  "note": "Storage class \"Amazon S3 Glacier\" trong đề nay có tên S3 Glacier Flexible Retrieval (đổi tên 11/2021); đáp án không đổi."
  },
  {
   "id": 10711,
@@ -160,7 +162,8 @@
   "services": [
    "aurora",
    "elasticache"
-  ]
+  ],
+  "note": "Giải thích gốc tiếng Anh ghi Aurora Serverless v2 không hỗ trợ read replica — không đúng: cluster Serverless v2 có thể có nhiều reader (Aurora Replica) và dùng reader endpoint. Đáp án (cache bằng ElastiCache) không đổi."
  },
  {
   "id": 10717,
