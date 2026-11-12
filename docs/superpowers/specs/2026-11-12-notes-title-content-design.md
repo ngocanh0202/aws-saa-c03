@@ -43,7 +43,6 @@ một dạng chung: **tiêu đề + nội dung**, gắn với một câu hỏi.
 ## Điều không được xảy ra
 
 - Mất ghi chú cũ (đoạn tô đã lưu ở localStorage/Firebase phải hiện đủ trên trang mới).
-- Lộ đáp án trong khung xem câu hỏi ở trang Ghi chú (giữ như hiện tại: lựa chọn bị khóa, không tô đúng/sai).
 - Ghi chú hiện ra ở Thi thật đang làm.
 
 ## Thiết kế
@@ -84,7 +83,7 @@ một dạng chung: **tiêu đề + nội dung**, gắn với một câu hỏi.
 - Danh sách phẳng các ghi chú (đoạn tô + item) của mọi câu trong ngăn tài khoản hiện tại.
 - Mỗi ghi chú: tiêu đề, nội dung (giữ xuống dòng; câu trả lời AI hiện bằng `Markdown` như trong chat), nhãn nguồn bằng icon,
   nhãn câu ("Main 3 · Câu 12" / "Câu 245"), thời gian, nút "Mở câu hỏi", nút xóa (xóa đoạn tô thì xóa luôn highlight).
-- Khung xem câu hỏi: dialog trên trang, `QuestionCard` với lựa chọn bị khóa, không đáp án, `annotate` bật (vẫn tô/sửa ghi chú đoạn tô được).
+- Khung xem câu hỏi: dialog trên trang, **hiện cả đáp án và hướng dẫn** (người học quyết định): `QuestionCard` với `reveal` (thứ tự lựa chọn gốc, không có lựa chọn của người học), `GuidePanel` như trang xem lại, `annotate` bật (vẫn tô/sửa ghi chú đoạn tô được).
 - Thông báo AI xong (toast "Đến câu") với đích `page: 'notes'` mở khung xem câu hỏi đó và popup đoạn tô (thay cho việc cuộn tới mục cũ).
 - Chọn sắp xếp/gộp nhớ ở localStorage (tiện, không đồng bộ). *(quyết định của người viết)*
 - Giao diện tiếng Việt, icon, theme sáng/tối, điện thoại (một cột).
