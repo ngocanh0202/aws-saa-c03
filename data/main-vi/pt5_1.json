@@ -544,7 +544,7 @@
       {
         "key": "B",
         "textVi": "Tạo một Network Load Balancer (NLB) ở mỗi Region để xử lý lưu lượng TCP tới EC2. Với tải UDP on-premises, cấu hình các NLB ở mỗi Region định tuyến tới endpoint on-premises qua target group kiểu IP",
-        "reason": "NLB hỗ trợ cả TCP và UDP; target group kiểu IP cho phép trỏ tới địa chỉ IP on-premises (qua Direct Connect hoặc VPN), và NLB làm endpoint cho Global Accelerator."
+        "reason": "NLB hỗ trợ cả TCP và UDP và làm endpoint cho Global Accelerator; target group kiểu IP trỏ được tới IP on-premises qua Direct Connect/VPN với TCP. Riêng UDP, AWS không hỗ trợ target IP nằm ngoài VPC của NLB, nên thực tế cần proxy trong VPC (xem mục review)."
       },
       {
         "key": "C",
@@ -562,8 +562,11 @@
         "reason": "Dồn mọi lưu lượng qua một Region tạo điểm lỗi đơn và tăng độ trễ cho khách hàng ở xa; Direct Connect cũng không phục vụ người dùng internet toàn cầu."
       }
     ],
-    "explanationVi": "Khách hàng toàn cầu cần độ trễ thấp và sẵn sàng cao cho cả phần TCP (EC2 nhiều Region) lẫn phần UDP (on-premises). Global Accelerator đưa lưu lượng vào mạng AWS tại edge gần nhất và chuyển tới endpoint khỏe; NLB ở mỗi Region nhận cả TCP và UDP, dùng target group kiểu IP để trỏ tới máy chủ on-premises. Bẫy: ALB không hỗ trợ UDP; PrivateLink và Direct Connect không phải cơ chế phân phối lưu lượng toàn cầu.",
-    "keyHint": "\"TCP-based\" + \"UDP-based on-premises\" + \"customers around the world\" → Global Accelerator + NLB (target group kiểu IP)."
+    "explanationVi": "Khách hàng toàn cầu cần độ trễ thấp và sẵn sàng cao cho cả phần TCP (EC2 nhiều Region) lẫn phần UDP (on-premises). Global Accelerator đưa lưu lượng vào mạng AWS tại edge gần nhất và chuyển tới endpoint khỏe; NLB ở mỗi Region nhận cả TCP và UDP, theo đáp án gốc dùng target group kiểu IP để trỏ tới máy chủ on-premises (với UDP thực tế cần proxy trong VPC, xem mục review). Bẫy: ALB không hỗ trợ UDP; PrivateLink và Direct Connect không phải cơ chế phân phối lưu lượng toàn cầu.",
+    "keyHint": "\"TCP-based\" + \"UDP-based on-premises\" + \"customers around the world\" → Global Accelerator + NLB (target group kiểu IP).",
+    "review": {
+      "reason": "Chưa chắc chắn: phương án NLB dùng target group kiểu IP trỏ về máy chủ on-premises cho phần UDP không chạy trực tiếp được — tài liệu Network Load Balancer ghi rõ target group UDP/TCP_UDP không nên đăng ký IP nằm ngoài VPC của load balancer (target nhận được gói nhưng không trả lời được, vì client IP preservation luôn bật với UDP). Muốn đưa UDP về on-premises phải đặt proxy (EC2) trong VPC làm target rồi chuyển tiếp qua Direct Connect/VPN. Vẫn là cặp tốt nhất trong các lựa chọn vì ALB không nhận UDP."
+    }
   },
   {
     "id": 10920,
@@ -1613,7 +1616,7 @@
       {
         "key": "A",
         "textVi": "Gửi message theo lô (batch)",
-        "reason": "Gom nhiều bản ghi vào một lời gọi PutRecords (hoặc dùng KPL để aggregate) giảm số request mỗi giây trên mỗi shard, tránh vượt giới hạn mà không tốn thêm shard."
+        "reason": "Gom nhiều message nhỏ thành một bản ghi (aggregation của Kinesis Producer Library) và gửi theo lô bằng PutRecords giảm số bản ghi mỗi giây trên mỗi shard và tận dụng dung lượng shard, tránh vượt giới hạn mà không tốn thêm shard."
       },
       {
         "key": "B",
@@ -1631,7 +1634,7 @@
         "reason": "Thêm shard tăng thông lượng nhưng tốn thêm chi phí; nguyên nhân ở đây là gửi từng message lẻ, có thể khắc phục mà không tăng chi phí."
       }
     ],
-    "explanationVi": "Mỗi shard nhận tối đa 1.000 bản ghi hoặc 1 MB mỗi giây khi ghi. Gửi từng message lẻ với tần suất cao làm số request vọt lên dù tổng dung lượng chưa lớn. Gom lô bằng PutRecords hoặc aggregate qua Kinesis Producer Library giảm số request và dùng shard hiệu quả hơn, không tốn thêm tiền. Bẫy: tăng shard thì hết lỗi nhưng tốn chi phí; backoff chỉ là cách xử lý khi đã lỗi.",
+    "explanationVi": "Mỗi shard nhận tối đa 1.000 bản ghi hoặc 1 MB mỗi giây khi ghi. Gửi từng message nhỏ lẻ với tần suất cao dễ chạm giới hạn 1.000 bản ghi/giây dù tổng dung lượng chưa tới 1 MB. Gom nhiều message nhỏ thành một bản ghi (aggregation của Kinesis Producer Library) và gửi theo lô bằng PutRecords giúp tận dụng dung lượng shard, không tốn thêm tiền. Bẫy: tăng shard thì hết lỗi nhưng tốn chi phí; backoff chỉ là cách xử lý khi đã lỗi.",
     "keyHint": "\"ProvisionedThroughputExceededException\" + \"messages are being sent one by one\" + \"costs at a minimum\" → gom lô (PutRecords/KPL)."
   },
   {

@@ -559,7 +559,7 @@
    "iam",
    "ec2"
   ],
-  "note": "Tag policy chỉ kiểm tra tag đã được gắn (khi bật enforcement thì chặn gắn giá trị sai) chứ không bắt buộc tài nguyên phải có tag; việc bắt buộc có tag khi tạo instance do SCP đảm nhận. Thực tế nên giới hạn SCP chặn ec2:DeleteTags theo đúng khóa dataClassification (điều kiện aws:TagKeys) để không cấm xóa mọi tag."
+  "note": "Tag policy kiểm tra giá trị tag (khi bật enforcement thì chặn gắn giá trị sai); từ 11/2025 tag policy khai báo được khóa bắt buộc (report_required_tag_for) nhưng chỉ báo cáo và chặn trong triển khai IaC (CloudFormation hook, Terraform, Pulumi), không chặn lệnh RunInstances gọi trực tiếp — việc bắt buộc có tag khi tạo instance vẫn do SCP đảm nhận. Thực tế nên giới hạn SCP chặn ec2:DeleteTags theo đúng khóa dataClassification (điều kiện aws:TagKeys) để không cấm xóa mọi tag."
  },
  {
   "id": 10954,
