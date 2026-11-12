@@ -37,6 +37,7 @@ export const SERVICE_STATUS: ServiceStatus[] = [
   { id: 'aurora-serverless-v1', kind: 'retired', match: /Aurora Serverless/i, note: 'Aurora Serverless v1 hết vòng đời ngày 31/03/2025; "Aurora Serverless" hiện nay là v2.' },
   { id: 'rds-custom-oracle', kind: 'retired', match: /RDS Custom for Oracle/i, note: 'Amazon RDS Custom for Oracle hết hỗ trợ ngày 31/03/2027; AWS khuyên chuyển sang Oracle tự quản lý trên EC2 (RDS for Oracle và RDS Custom for SQL Server không bị ảnh hưởng).' },
   { id: 'inspector-classic', kind: 'retired', match: /Inspector agent/i, note: 'Amazon Inspector Classic (cần cài Inspector agent) hết hỗ trợ ngày 20/05/2026; Amazon Inspector hiện nay quét EC2 qua SSM Agent, không cần agent riêng.' },
+  { id: 'app-runner', kind: 'retired', match: /App Runner/i, note: 'AWS App Runner không nhận khách hàng mới từ 30/04/2026; khách hàng hiện hữu vẫn dùng bình thường nhưng sẽ không có tính năng mới. AWS khuyên chuyển sang Amazon ECS Express Mode.' },
   { id: 'app-mesh', kind: 'retired', match: /App Mesh/i, note: 'AWS App Mesh hết hỗ trợ ngày 30/09/2026; AWS khuyên dùng Amazon ECS Service Connect hoặc Amazon VPC Lattice.' },
   { id: 'lookout-vision', kind: 'retired', match: /Lookout for Vision/i, note: 'Amazon Lookout for Vision đã ngừng hẳn từ 31/10/2025.' },
   { id: 'workload-discovery', kind: 'retired', match: /Workload Discovery/i, note: 'Workload Discovery on AWS đã ngừng phát triển (kho mã nguồn được lưu trữ từ 14/08/2026).' },

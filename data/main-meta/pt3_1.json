@@ -249,7 +249,7 @@
     "services": [
       "sqs"
     ],
-    "note": "Giới hạn 300 tin nhắn/giây (3.000 khi dùng batching) là của FIFO queue thường; từ 2021 SQS có chế độ high throughput cho FIFO queue với hạn mức cao hơn nhiều, tùy Region."
+    "note": "Giới hạn 300 tin nhắn/giây (3.000 khi dùng batching) là của FIFO queue thường; từ 2021 SQS có chế độ high throughput cho FIFO queue với hạn mức cao hơn nhiều, tùy Region. Đáp án vẫn đúng theo giới hạn mặc định: đề không nhắc high throughput thì chọn theo con số 3.000."
   },
   {
     "id": 10525,
