@@ -255,8 +255,7 @@
    "dynamodb",
    "aurora",
    "rds"
-  ],
-  "note": "Đề yêu cầu 'global consistency' nhưng DynamoDB global tables mặc định sao chép bất đồng bộ (eventual consistency giữa các Region, multi-active). Đáp án đúng theo giải thích gốc chỉ thỏa yêu cầu 'dưới 1 giây'."
+  ]
  },
  {
   "id": 10926,
@@ -463,7 +462,8 @@
    "elb",
    "lambda",
    "ec2"
-  ]
+  ],
+  "note": "CloudWatch Logs agent cũ trong đề đã bị AWS đánh dấu deprecated; hiện nay dùng CloudWatch agent hợp nhất (unified CloudWatch agent) để gửi log và metric (bắt buộc nếu instance dùng IMDSv2). Ý đẩy log lên CloudWatch Logs của đáp án không đổi."
  },
  {
   "id": 10945,
