@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NOTE_MAX, addHighlight, locate, mergeNotes, removeHighlight, setNote, type Highlight, type QuestionNotes } from './model';
+import { ITEM_CONTENT_MAX, NOTE_MAX, TITLE_MAX, addHighlight, addItem, findItem, fitsLimit, locate, mergeNotes, removeHighlight, removeItem, setNote, updateItem, type Highlight, type QuestionNotes } from './model';
 
 const empty = (): QuestionNotes => ({ qid: 5, highlights: [], updatedAt: 0 });
 const hl = (over: Partial<Highlight> = {}): Highlight => ({
@@ -81,5 +81,38 @@ describe('mergeNotes', () => {
   it('bằng nhau: khác nội dung thì remote, giống thì same', () => {
     expect(mergeNotes(a, { ...a, highlights: [hl()] })).toBe('remote');
     expect(mergeNotes(a, { ...a })).toBe('same');
+  });
+});
+
+describe('NoteItem', () => {
+  const base: QuestionNotes = { qid: 5, highlights: [], updatedAt: 1 };
+
+  it('addItem: tạo bản ghi nếu chưa có, cắt tiêu đề 200 / nội dung 10 000, trim tiêu đề, giữ highlights', () => {
+    const n = addItem(undefined, 5, { kind: 'manual', title: `  ${'t'.repeat(250)}`, content: 'c'.repeat(10_050) }, 'm1', 9);
+    expect(n.qid).toBe(5);
+    expect(n.items![0]).toMatchObject({ id: 'm1', kind: 'manual', createdAt: 9, updatedAt: 9 });
+    expect(n.items![0].title).toHaveLength(TITLE_MAX);
+    expect(n.items![0].content).toHaveLength(ITEM_CONTENT_MAX);
+    const withHl = { ...base, highlights: [{ id: 'h', part: 'stem' as const, start: 0, end: 1, text: 'S', note: '', updatedAt: 1 }] };
+    expect(addItem(withHl, 5, { kind: 'ai', title: 'Q', content: 'A' }, 'a1', 2).highlights).toHaveLength(1);
+  });
+
+  it('updateItem / removeItem đổi updatedAt; findItem theo nguồn + tiêu đề + nội dung', () => {
+    const n = addItem(base, 5, { kind: 'ai', title: 'Q', content: 'A' }, 'a1', 2);
+    expect(findItem(n, 'ai', 'Q', 'A')?.id).toBe('a1');
+    expect(findItem(n, 'manual', 'Q', 'A')).toBeUndefined();
+    const u = updateItem(n, 'a1', { content: 'B' }, 3);
+    expect(u.items![0]).toMatchObject({ title: 'Q', content: 'B', updatedAt: 3, createdAt: 2 });
+    expect(u.updatedAt).toBe(3);
+    const r = removeItem(u, 'a1', 4);
+    expect(r.items).toEqual([]);
+    expect(r.updatedAt).toBe(4);
+  });
+
+  it('fitsLimit: quá 90 000 ký tự JSON thì false', () => {
+    let n = base;
+    expect(fitsLimit(n)).toBe(true);
+    for (let i = 0; i < 10; i++) n = addItem(n, 5, { kind: 'manual', title: 'T', content: 'x'.repeat(ITEM_CONTENT_MAX) }, `m${i}`, 1);
+    expect(fitsLimit(n)).toBe(false);
   });
 });
