@@ -1,7 +1,11 @@
 import { fireEvent, screen, within } from '@testing-library/react';
+import { vi } from 'vitest';
 import { submitAttempt } from '../engine/actions';
 import type { Attempt } from '../engine/attempt';
 import { makeDeps, renderApp } from '../test/fixtures';
+
+// Trang xem lại dựng 65 câu, mỗi câu một bộ tô đề: khi cả bộ test chạy song song có thể quá 5 giây mặc định.
+vi.setConfig({ testTimeout: 20_000 });
 
 function submitted(deps: ReturnType<typeof makeDeps>, mode: Attempt['mode'], answers: Record<number, string[]>, guideOpened: number[] = []): Attempt {
   const ids = deps.bank.sets.sets[0].questionIds;

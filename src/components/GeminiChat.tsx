@@ -1050,8 +1050,8 @@ function Conversation({
 
 /** Câu người học hỏi gần nhất phía trước tin thứ i. */
 function questionBefore(messages: ChatMessage[], i: number): string {
-  for (let j = i - 1; j >= 0; j--) if (messages[j].role === 'user') return messages[j].text;
-  return '';
+  for (let j = i - 1; j >= 0; j--) if (messages[j].role === 'user' && messages[j].text.trim()) return messages[j].text;
+  return 'Câu trả lời AI';
 }
 
 /** Nút lưu/bỏ một câu trả lời AI khỏi ghi chú của câu (canonical qid). */

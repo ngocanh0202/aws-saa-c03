@@ -6,7 +6,7 @@ import { AiUserError, type AiClient } from '../ai/types';
 import { createIdleWatchdog } from '../ai/watchdog';
 import type { Question } from '../data/types';
 import { NOTE_AI_REQUEST, buildNotePrompt } from './ai-prompt';
-import { setNote } from './model';
+import { TOO_LONG_MESSAGE, fitsLimit, setNote } from './model';
 import type { NotesStore } from './store';
 
 export interface DraftNoteDeps {
@@ -88,7 +88,10 @@ export async function draftNote(deps: DraftNoteDeps, job: DraftNoteJob): Promise
         const cur = notes.get(job.qid);
         const h = cur?.highlights.find((x) => x.id === job.highlightId);
         if (!cur || !h) return;
-        notes.save(setNote(cur, h.id, h.note ? `${h.note}\n\n${reply}` : reply, now()));
+        const next = setNote(cur, h.id, h.note ? `${h.note}\n\n${reply}` : reply, now());
+        // Ghi chú của câu đã quá dài (rules Firebase từ chối): không lưu, báo ở popup.
+        if (!fitsLimit(next)) throw new AiUserError(TOO_LONG_MESSAGE);
+        notes.save(next);
       } catch (e) {
         if (e instanceof AiBusyError && e.retryAfterMs) cooldown.set(now() + e.retryAfterMs);
         errors.set(job.highlightId, errorMessage(e));

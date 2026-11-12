@@ -276,7 +276,11 @@ function QuestionDialog({ qid, onClose }: { qid: number; onClose: () => void }) 
   const question = bank.questions.get(qid);
   const label = noteLabel(qid, bank.sets);
   useEffect(() => {
-    const onKey = (ev: KeyboardEvent) => ev.key === 'Escape' && onClose();
+    // Esc đang đóng popup ghi chú đoạn tô thì để popup xử lý, không đóng khung.
+    const onKey = (ev: KeyboardEvent) => {
+      if (ev.key !== 'Escape' || ev.defaultPrevented || document.querySelector('.hl-pop, .hl-sheet')) return;
+      onClose();
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);

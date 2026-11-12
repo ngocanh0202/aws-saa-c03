@@ -92,3 +92,25 @@ describe('Tự ghi chú — Thi thật', () => {
     expect(deps.notes.get(canon)!.highlights).toHaveLength(1);
   });
 });
+
+describe('Giới hạn dung lượng khi tô đề', () => {
+  it('câu đã đầy: bôi chọn → Tô thì không lưu, báo quá dài', () => {
+    const { deps, canon } = setup('practice');
+    const items = Array.from({ length: 9 }, (_, i) => ({ id: `m${i}`, kind: 'manual' as const, title: 'T', content: 'x'.repeat(ITEM_CONTENT_MAX - 10), createdAt: 1, updatedAt: 1 }));
+    deps.notes.save({ qid: canon, highlights: [], items, updatedAt: 1 });
+    const { container } = renderApp('/exam/e1', deps);
+    const stem = container.querySelector('.qcard [data-part="stem"]')!;
+    const text = document.createTreeWalker(stem, NodeFilter.SHOW_TEXT).nextNode()!;
+    const r = document.createRange();
+    r.setStart(text, 0);
+    r.setEnd(text, 4);
+    document.getSelection()!.removeAllRanges();
+    document.getSelection()!.addRange(r);
+    fireEvent(document, new Event('selectionchange'));
+    // Thêm một ghi chú nữa cho đầy hẳn rồi mới tô.
+    deps.notes.save({ ...deps.notes.get(canon)!, items: [...items, { ...items[0], id: 'm9', content: 'y'.repeat(ITEM_CONTENT_MAX - 2000) }] });
+    fireEvent.click(screen.getByRole('button', { name: 'Tô' }));
+    expect(deps.notes.get(canon)!.highlights).toEqual([]);
+    expect(screen.getByRole('alert')).toHaveTextContent('Ghi chú của câu này đã quá dài, hãy xóa bớt.');
+  });
+});

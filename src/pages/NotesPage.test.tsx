@@ -195,3 +195,18 @@ describe('NotesPage — khung xem câu hỏi', () => {
     expect(screen.getByRole('link', { name: 'Ghi chú' })).toHaveAttribute('href', '/notes');
   });
 });
+
+describe('NotesPage — Esc trong khung xem câu', () => {
+  it('Esc khi popup đoạn tô đang mở chỉ đóng popup, khung vẫn mở', () => {
+    const deps = makeDeps();
+    deps.notes.save(hlNotes(1, 100, 'nội dung'));
+    deps.aiGate.requestOpen({ page: 'notes', qid: 1, highlightId: 'h1' });
+    renderApp('/notes', deps);
+    expect(screen.getByRole('textbox', { name: 'Ghi chú' })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('textbox', { name: 'Ghi chú' })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Câu hỏi · Đề 1 · Câu 1' })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: /Câu hỏi/ })).toBeNull();
+  });
+});

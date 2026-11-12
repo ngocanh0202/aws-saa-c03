@@ -599,3 +599,4 @@ textarea.note-form__input { resize: vertical; min-height: 120px; }
   .notes-question { padding: 0; place-items: stretch; }
   .notes-question__box { max-width: none; max-height: 100vh; border-radius: 0; }
 }
+.hl-limit { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 90; max-width: calc(100vw - 32px); padding: 10px 14px; border: 1px solid var(--bad); border-radius: 10px; background: var(--surface); color: var(--bad); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); font: inherit; cursor: pointer; }
