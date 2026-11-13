@@ -24,27 +24,28 @@ function fill(title: string, content: string) {
 afterEach(() => document.getSelection()?.removeAllRanges());
 
 describe('Tự ghi chú — Thi thử', () => {
-  it('nút "Ghi chú" đứng ngay trước nút Nộp bài; lưu thành ghi chú tự ghi của câu', () => {
+  it('nút "Ghi chú" mở khung của câu; lưu thành ghi chú tự ghi, khung vẫn mở', () => {
     const { deps, canon } = setup('practice');
     renderApp('/exam/e1', deps);
-    const note = screen.getByRole('button', { name: 'Ghi chú' });
-    expect(note.nextElementSibling).toBe(screen.getByRole('button', { name: 'Nộp bài' }));
-    fireEvent.click(note);
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
     const dialog = fill('Nhớ Multi-AZ', 'Failover tự động');
+    expect(dialog).toHaveAccessibleName('Ghi chú · Câu 1');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu' }));
-    expect(screen.queryByRole('dialog', { name: /Ghi chú/ })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).toBeInTheDocument();
+    expect(within(dialog).getByRole('heading', { name: 'Nhớ Multi-AZ' })).toBeInTheDocument();
     expect(deps.notes.get(canon)!.items).toEqual([
       expect.objectContaining({ kind: 'manual', title: 'Nhớ Multi-AZ', content: 'Failover tự động' }),
     ]);
   });
 
-  it('tiêu đề rỗng thì không lưu được; Hủy thì không lưu', () => {
+  it('tiêu đề rỗng thì không lưu được; Đóng thì không lưu', () => {
     const { deps, canon } = setup('practice');
     renderApp('/exam/e1', deps);
     fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
     const dialog = fill('   ', 'x');
     expect(within(dialog).getByRole('button', { name: 'Lưu' })).toBeDisabled();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
+    expect(screen.queryByRole('dialog', { name: /Ghi chú/ })).toBeNull();
     expect(deps.notes.get(canon)).toBeUndefined();
   });
 

@@ -553,18 +553,12 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .btn-note svg { width: 18px; height: 18px; }
 .review-item__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .review-item__actions .btn-note { margin-top: 12px; padding: 8px 16px; }
-.note-form { z-index: 80; }
-.note-form__box { display: flex; flex-direction: column; gap: 10px; max-width: 520px; }
 .note-form__title { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 1.1em; }
 .note-form__title svg { width: 20px; height: 20px; flex: none; }
 .note-form__label { color: var(--muted); font-weight: normal; }
 .note-form__input { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
 textarea.note-form__input { resize: vertical; min-height: 120px; }
 .note-form__error { margin: 0; color: var(--bad); }
-@media (max-width: 639px) {
-  .note-form { place-items: end stretch; padding: 0; }
-  .note-form__box { max-width: none; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
-}
 /* Khung ghi chú (NoteSheet): popup giữa màn hình; điện thoại: bottom sheet có thanh kéo. */
 .note-sheet { z-index: 80; }
 .note-sheet__box { display: flex; flex-direction: column; gap: 12px; max-width: 560px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
