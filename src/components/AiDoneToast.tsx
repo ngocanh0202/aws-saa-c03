@@ -29,7 +29,8 @@ export function AiDoneToast() {
   useEffect(
     () =>
       aiGate.onFinished((job, ok) => {
-        if (aiGate.viewing() === targetKey(job.target)) return;
+        // AI soạn trong form ghi chú: form tự hiện kết quả, đóng form thì bỏ.
+        if (job.kind === 'form' || aiGate.viewing() === targetKey(job.target)) return;
         setShown({ job, ok });
       }),
     [aiGate],

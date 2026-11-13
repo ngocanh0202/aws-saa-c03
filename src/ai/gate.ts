@@ -7,7 +7,8 @@ export type AiJobTarget =
 
 /** label: "Câu 12" hoặc "Main 1 · Câu 5". */
 export interface AiJob {
-  kind: 'chat' | 'note';
+  /** form: AI hỗ trợ viết trong form ghi chú (không báo toast). */
+  kind: 'chat' | 'note' | 'form';
   label: string;
   target: AiJobTarget;
 }
