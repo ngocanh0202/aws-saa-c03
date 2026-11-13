@@ -136,8 +136,21 @@ tr.is-clickable { cursor: pointer; }
 /* Trang xem lại: nút nằm trong khối câu, không nổi */
 .btn-gemini.btn-gemini--inline { position: static; margin-top: 12px; padding: 8px 16px; font-size: 1em; box-shadow: none; height: auto; }
 /* Chừa chỗ cuối trang để nút nổi không che nội dung */
-.exam__content:has(.btn-gemini) { padding-bottom: 88px; }
+.exam__content:has(.btn-gemini), .exam__content:has(.exam-dock) { padding-bottom: 88px; }
 @media (max-width: 900px) { .btn-gemini { right: 16px; bottom: 24px; height: 56px; padding: 0 18px; font-size: 1em; } }
+/* Thi thử: nút Ghi chú đứng bên trái nút Hỏi AI, cùng nổi ở góc dưới bên phải. */
+.exam-dock { position: fixed; right: 20px; bottom: 24px; z-index: 12; display: flex; align-items: center; gap: 10px; }
+.exam-dock .btn-gemini { position: static; }
+.btn-note.btn-note--fab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 22px; border-radius: 999px; font-size: 1.1em; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+}
+.btn-note.btn-note--fab svg { width: 22px; height: 22px; }
+@media (max-width: 900px) {
+  .exam-dock { right: 16px; }
+  .btn-note.btn-note--fab { width: 56px; height: 56px; padding: 0; border-radius: 50%; }
+}
 .guide { margin-top: 12px; padding: 16px 20px; border-radius: 4px var(--radius) var(--radius) 4px; background: var(--guide-bg); border: 1px solid var(--border); border-left: 5px solid var(--guide-bar); }
 .guide h4 { margin: 0 0 8px; }
 .guide h5 { margin: 14px 0 4px; }
@@ -560,7 +573,7 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 textarea.note-form__input { resize: vertical; min-height: 120px; }
 .note-form__error { margin: 0; color: var(--bad); }
 /* Khung ghi chú (NoteSheet): popup giữa màn hình; điện thoại: bottom sheet có thanh kéo. */
-.note-sheet { z-index: 80; }
+.dialog.note-sheet { z-index: 80; }
 .note-sheet__box { display: flex; flex-direction: column; gap: 12px; max-width: 560px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
 .note-sheet__head { display: flex; align-items: center; gap: 8px; }
 .note-sheet__head .note-form__title { flex: 1; min-width: 0; }

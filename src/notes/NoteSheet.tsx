@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { IconClose } from '../components/icons';
 import { useMobile } from './use-mobile';
 import { usePopupResize } from './usePopupResize';
@@ -12,7 +13,7 @@ export interface NoteSheetProps {
 
 /**
  * Khung ghi chú: popup giữa màn hình trên máy tính; điện thoại là bottom sheet có thanh kéo đổi cỡ
- * (kéo xuống quá cỡ nhỏ nhất thì đóng). Esc đóng, trừ khi bên trong đã xử lý (preventDefault).
+ * (kéo xuống quá cỡ nhỏ nhất thì đóng). Esc đóng, trừ khi bên trong đã xử lý (preventDefault). Gắn vào body.
  */
 export function NoteSheet({ title, ariaLabel, onClose, children }: NoteSheetProps) {
   const mobile = useMobile();
@@ -31,7 +32,8 @@ export function NoteSheet({ title, ariaLabel, onClose, children }: NoteSheetProp
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  return (
+  // Gắn vào body: nút mở có thể nằm trong khối nổi (.exam-dock) có stacking context riêng.
+  return createPortal(
     <div className="dialog note-sheet" role="presentation" onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div ref={ref} className="dialog__box note-sheet__box" style={mobile ? resize.style : undefined} role="dialog" aria-modal="true" aria-label={ariaLabel}>
         {mobile && (
@@ -53,6 +55,7 @@ export function NoteSheet({ title, ariaLabel, onClose, children }: NoteSheetProp
         </div>
         <div className="note-sheet__body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

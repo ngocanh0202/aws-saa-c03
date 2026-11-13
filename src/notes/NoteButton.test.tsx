@@ -1,8 +1,12 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { submitAttempt } from '../engine/actions';
 import { createAttempt, type Mode } from '../engine/attempt';
-import { makeDeps, renderApp } from '../test/fixtures';
+import { createStore } from '../storage/storage';
+import { createSyncController } from '../sync/controller';
+import { fakeAi, fakeChats } from '../test/fake-ai';
+import { fakeAuth, fakeRemote } from '../test/fake-sync';
+import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
 import { ITEM_CONTENT_MAX } from './model';
 
 function setup(mode: Mode, submitted = false) {
@@ -64,6 +68,35 @@ describe('Tự ghi chú — Thi thử', () => {
   });
 });
 
+describe('Nút Ghi chú nổi ở Thi thử', () => {
+  it('không còn trong thanh trên; nằm trong dock trước nút Hỏi Gemini', () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    const auth = fakeAuth();
+    const remote = fakeRemote();
+    const sync = createSyncController({ store, auth, remote });
+    const deps = { ...makeDeps({ store, sync }), ai: fakeAi(), chats: fakeChats() };
+    const attempt = createAttempt({ id: 'e1', setId: 1, mode: 'practice', esl: false, seed: 7, now: deps.now(), sets: deps.bank.sets, questions: deps.bank.questions, metas: deps.bank.meta });
+    store.save(attempt);
+    const { container } = renderApp('/exam/e1', deps);
+    act(() => auth.emit({ uid: 'u1', name: 'An' }));
+    act(() => remote.emit('u1', new Map([[attempt.id, { attempt, updatedAt: 1 }]])));
+    expect(within(container.querySelector('header.exam__bar') as HTMLElement).queryByRole('button', { name: 'Ghi chú' })).toBeNull();
+    const dock = container.querySelector('.exam-dock') as HTMLElement;
+    const names = within(dock).getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent?.trim());
+    expect(names).toEqual(['Ghi chú', 'Hỏi Gemini']);
+  });
+
+  it('không có AI: dock chỉ có nút Ghi chú; bấm thì mở khung của câu', () => {
+    const { deps } = setup('practice');
+    const { container } = renderApp('/exam/e1', deps);
+    const dock = container.querySelector('.exam-dock') as HTMLElement;
+    expect(within(dock).getAllByRole('button')).toHaveLength(1);
+    fireEvent.click(within(dock).getByRole('button', { name: 'Ghi chú' }));
+    // Khung không nằm trong dock (stacking context riêng sẽ đè nó dưới nút danh sách câu).
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' }).closest('.exam-dock')).toBeNull();
+  });
+});
+
 describe('Tự ghi chú — Thi thật', () => {
   it('đang làm: không có nút Ghi chú', () => {
     const { deps } = setup('real');
@@ -78,6 +111,7 @@ describe('Tự ghi chú — Thi thật', () => {
     expect(buttons).toHaveLength(65);
     fireEvent.click(buttons[0]);
     const dialog = fill('Sau khi nộp', 'ôn lại');
+    expect(dialog).toHaveAccessibleName('Ghi chú · Câu 1');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu' }));
     expect(deps.notes.get(canon)!.items![0]).toMatchObject({ kind: 'manual', title: 'Sau khi nộp' });
     // Tô đề ở trang xem lại.
