@@ -574,27 +574,49 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .note-form__input { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
 textarea.note-form__input { resize: vertical; min-height: 120px; }
 .note-form__error { margin: 0; color: var(--bad); }
-/* Khung ghi chú (NoteSheet): giữa màn hình (center), nổi ở góc như khung chat (dock), toàn màn hình (full);
-   điện thoại: bottom sheet có thanh kéo (sheet). Lớp nền chỉ có ở các kiểu modal. */
+/* Khung ghi chú (NoteSheet): giữa màn hình (center), nổi ở góc như khung chat (dock), cột bên phải khi phóng to
+   (split, độ rộng theo --note-split, kéo được); điện thoại: bottom sheet có thanh kéo (sheet). Lớp nền chỉ có ở
+   các kiểu modal (z-index đặt inline theo thứ tự mở). */
 .note-sheet {
   position: fixed; z-index: 80; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow-y: auto;
   padding: 16px 20px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius);
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.3);
 }
-.note-sheet__backdrop { position: fixed; inset: 0; z-index: 79; background: rgb(0 0 0 / 0.45); }
+.note-sheet__backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); }
 .note-sheet--center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: 85vh; }
 .note-sheet--dock { right: 20px; bottom: 20px; z-index: 35; width: min(420px, calc(100vw - 32px)); height: min(600px, calc(100vh - 100px)); border-radius: 14px; padding: 12px 14px; animation: service-modal-in 0.18s ease-out; }
-.note-sheet--split { top: 0; right: 0; bottom: 0; z-index: 35; width: 30vw; min-width: 300px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -6px 0 18px rgb(0 0 0 / 0.12); overflow: hidden; }
-/* Phóng to: trang (câu hỏi) chiếm 70% bên trái. */
-body:has(.note-sheet--split) { padding-right: max(30vw, 300px); }
-body:has(.note-sheet--split) .exam-dock { right: calc(max(30vw, 300px) + 20px); }
-/* Khung ở góc và cột phóng to: chỉ danh sách cuộn, ô tìm và form thêm luôn thấy. */
+.note-sheet--split { top: 0; right: 0; bottom: 0; z-index: 35; width: max(var(--note-split, 30vw), 300px); border-radius: 0; border-width: 0 0 0 1px; box-shadow: -6px 0 18px rgb(0 0 0 / 0.12); overflow: hidden; padding-left: 24px; }
+/* Phóng to: trang (câu hỏi) chiếm phần còn lại bên trái. */
+body:has(.note-sheet--split) { padding-right: max(var(--note-split, 30vw), 300px); }
+body:has(.note-sheet--split) .exam-dock { right: calc(max(var(--note-split, 30vw), 300px) + 20px); }
+/* Thanh kéo ở mép trái cột: kéo sang trái để nới rộng ghi chú. */
+.note-sheet__split-grip { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; cursor: col-resize; touch-action: none; }
+.note-sheet__split-grip::before { content: ''; position: absolute; left: 4px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: var(--border); }
+.note-sheet__split-grip:hover::before, .note-sheet__split-grip:focus-visible::before { background: var(--muted); }
+.note-sheet__split-grip:focus-visible { outline: 2px solid var(--muted); outline-offset: -2px; }
+body:has(.note-sheet__split-grip:active) { cursor: col-resize; user-select: none; }
+/* Khung danh sách (ở góc, cột phóng to, bottom sheet): chỉ danh sách cuộn; ô tìm và nút Ghi chú mới luôn thấy. */
 .note-sheet--dock { overflow: hidden; }
-:is(.note-sheet--dock, .note-sheet--split) .note-sheet__body { flex: 1 1 auto; min-height: 0; }
-:is(.note-sheet--dock, .note-sheet--split) .note-panel__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-:is(.note-sheet--dock, .note-sheet--split) .note-panel__empty { flex: 1 1 auto; }
-.note-sheet--dock textarea.note-form__input { min-height: 64px; height: 88px; }
-.note-sheet--sheet { left: 0; right: 0; bottom: 0; max-height: 90vh; border-radius: 14px 14px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); animation: hl-sheet-in 0.18s ease-out; }
+.note-sheet:has(.note-panel__scope) .note-sheet__body { flex: 1 1 auto; min-height: 0; }
+.note-sheet:has(.note-panel__scope) .note-panel__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; align-content: start; margin: 0; }
+.note-sheet:has(.note-panel__scope) .note-panel__empty { flex: 1 1 auto; }
+.note-panel__foot { flex: none; display: flex; justify-content: flex-end; }
+.note-panel__new { display: inline-flex; align-items: center; gap: 6px; }
+.note-panel__new svg { width: 18px; height: 18px; }
+.note-sheet--sheet { left: 0; right: 0; bottom: 0; max-height: 90vh; border-radius: 14px 14px 0 0; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); animation: hl-sheet-in 0.18s ease-out; }
+/* Điện thoại: khung danh sách cao sẵn 75% màn hình (kéo thanh để đổi), bố cục gọn. */
+.note-sheet--sheet:has(.note-panel__scope) { height: 75vh; overflow: hidden; gap: 8px; }
+.note-sheet--sheet .note-sheet__head .note-form__title { font-size: 1em; }
+.note-sheet--sheet .note-sheet__body { gap: 8px; }
+.note-sheet--sheet .note-panel__scope { flex-wrap: nowrap; }
+.note-sheet--sheet .note-panel__scope .chips { flex: none; flex-wrap: nowrap; }
+.note-sheet--sheet .notes-list { gap: 8px; }
+.note-sheet--sheet .notes-entry { padding: 10px 12px; }
+.note-sheet--sheet .notes-entry__meta { font-size: 0.75em; }
+.note-sheet--sheet .notes-entry__title { font-size: 1em; margin: 2px 0; }
+.note-sheet--sheet .notes-entry__actions { gap: 6px; }
+.note-sheet--sheet .notes-entry__actions button { padding: 4px 10px; min-height: 32px; }
+.note-sheet--sheet .note-panel__foot .note-panel__new { flex: 1; justify-content: center; min-height: 44px; }
 .note-sheet__grab { flex: none; }
 .note-panel__scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .note-panel__scope .notes-page__search { flex: 1 1 160px; min-width: 0; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }

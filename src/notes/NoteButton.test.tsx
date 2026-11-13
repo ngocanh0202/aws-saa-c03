@@ -18,8 +18,11 @@ function setup(mode: Mode, submitted = false) {
   return { deps, attempt, qid, canon: deps.bank.canonical(qid) };
 }
 
+/** Mở popup "Ghi chú mới" trong khung đang mở rồi điền. */
 function fill(title: string, content: string) {
-  const dialog = screen.getByRole('dialog', { name: /Ghi chú/ });
+  const panel = screen.getByRole('dialog', { name: /^Ghi chú · / });
+  fireEvent.click(within(panel).getByRole('button', { name: 'Ghi chú mới' }));
+  const dialog = screen.getByRole('dialog', { name: /^Ghi chú mới · / });
   fireEvent.change(within(dialog).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: title } });
   fireEvent.change(within(dialog).getByRole('textbox', { name: 'Nội dung' }), { target: { value: content } });
   return dialog;
@@ -33,10 +36,10 @@ describe('Tự ghi chú — Thi thử', () => {
     renderApp('/exam/e1', deps);
     fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
     const dialog = fill('Nhớ Multi-AZ', 'Failover tự động');
-    expect(dialog).toHaveAccessibleName('Ghi chú · Câu 1');
+    expect(dialog).toHaveAccessibleName('Ghi chú mới · Câu 1');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu' }));
-    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('heading', { name: 'Nhớ Multi-AZ' })).toBeInTheDocument();
+    const panel = screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' });
+    expect(within(panel).getByRole('heading', { name: 'Nhớ Multi-AZ' })).toBeInTheDocument();
     expect(deps.notes.get(canon)!.items).toEqual([
       expect.objectContaining({ kind: 'manual', title: 'Nhớ Multi-AZ', content: 'Failover tự động' }),
     ]);
@@ -48,8 +51,8 @@ describe('Tự ghi chú — Thi thử', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
     const dialog = fill('   ', 'x');
     expect(within(dialog).getByRole('button', { name: 'Lưu' })).toBeDisabled();
-    fireEvent.click(within(dialog).getByRole('button', { name: 'Đóng' }));
-    expect(screen.queryByRole('dialog', { name: /Ghi chú/ })).toBeNull();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
+    expect(screen.queryByRole('dialog', { name: /^Ghi chú mới/ })).toBeNull();
     expect(deps.notes.get(canon)).toBeUndefined();
   });
 
@@ -142,7 +145,7 @@ describe('Tự ghi chú — Thi thật', () => {
     expect(buttons).toHaveLength(65);
     fireEvent.click(buttons[0]);
     const dialog = fill('Sau khi nộp', 'ôn lại');
-    expect(dialog).toHaveAccessibleName('Ghi chú · Câu 1');
+    expect(dialog).toHaveAccessibleName('Ghi chú mới · Câu 1');
     fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu' }));
     expect(deps.notes.get(canon)!.items![0]).toMatchObject({ kind: 'manual', title: 'Sau khi nộp' });
     // Tô đề ở trang xem lại.

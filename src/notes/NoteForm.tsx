@@ -23,16 +23,18 @@ export interface NoteFormProps {
   onCancel?: () => void;
   /** Xóa trống sau khi lưu được (form thêm mới nằm dưới danh sách). */
   resetOnSave?: boolean;
+  /** Đưa con trỏ vào ô đầu khi mở (mặc định: khi đang sửa, tức có onCancel). */
+  autoFocus?: boolean;
 }
 
 /** Form tiêu đề + nội dung, có nút AI hỗ trợ viết (kết quả nối vào nội dung, không tự lưu). */
-export function NoteForm({ question, qid, label, initial, contentOnly = false, contentMax = ITEM_CONTENT_MAX, onSave, onCancel, resetOnSave = false }: NoteFormProps) {
+export function NoteForm({ question, qid, label, initial, contentOnly = false, contentMax = ITEM_CONTENT_MAX, onSave, onCancel, resetOnSave = false, autoFocus }: NoteFormProps) {
   const [title, setTitle] = useState(initial?.title ?? '');
   const [content, setContent] = useState(initial?.content ?? '');
   const [tooLong, setTooLong] = useState(false);
   const canSave = contentOnly || title.trim() !== '';
-  // Đang sửa (có Hủy): đưa focus vào form để Esc hủy bước sửa, không đóng khung bao ngoài.
-  const editing = onCancel !== undefined;
+  // Mặc định đưa focus vào form khi có Hủy (đang sửa, popup thêm mới) để Esc hủy bước đó, không đóng khung bao ngoài.
+  const focusFirst = autoFocus ?? onCancel !== undefined;
 
   const save = (e: FormEvent) => {
     e.preventDefault();
@@ -61,7 +63,7 @@ export function NoteForm({ question, qid, label, initial, contentOnly = false, c
           placeholder="Tiêu đề"
           maxLength={TITLE_MAX}
           value={title}
-          autoFocus={editing}
+          autoFocus={focusFirst}
           onChange={(e) => setTitle(e.target.value)}
         />
       )}
@@ -72,7 +74,7 @@ export function NoteForm({ question, qid, label, initial, contentOnly = false, c
         rows={5}
         maxLength={contentMax}
         value={content}
-        autoFocus={editing && contentOnly}
+        autoFocus={focusFirst && contentOnly}
         onChange={(e) => setContent(e.target.value)}
       />
       {tooLong && (

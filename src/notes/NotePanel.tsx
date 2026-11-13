@@ -22,13 +22,16 @@ type Scope = 'question' | 'all';
 
 /**
  * Khung ghi chú nổi ở góc như khung chat. "Câu này": ghi chú của câu (mới nhất trước), form thêm gắn vào câu.
- * "Tất cả": mọi ghi chú (kể cả ghi chú chung) để tra lại kiến thức, form thêm tạo ghi chú chung. Tìm không dấu
+ * "Tất cả": mọi ghi chú (kể cả ghi chú chung) để tra lại kiến thức. Nút "Ghi chú mới" mở popup form: ở "Câu này"
+ * gắn vào câu, ở "Tất cả" tạo ghi chú chung. Tìm không dấu
  * trong tiêu đề, nội dung và nhãn câu. Không có "Mở câu hỏi" để không rời bài đang làm.
  */
 export function NotePanel({ qid, label, question, onClose }: NotePanelProps) {
   const { notes, bank, now } = useApp();
   const [scope, setScope] = useState<Scope>('question');
   const [query, setQuery] = useState('');
+  /** Popup "Ghi chú mới" đang mở: ghi chú của câu (question) hay ghi chú chung (all), theo phạm vi lúc bấm. */
+  const [adding, setAdding] = useState<Scope | null>(null);
   // list() trả mảng mới mỗi lần: theo dõi bằng chuỗi JSON để useSyncExternalStore có giá trị ổn định.
   const json = useSyncExternalStore(notes.subscribe, () =>
     JSON.stringify(scope === 'question' ? [notes.get(qid)].filter(Boolean) : notes.list()),
@@ -44,11 +47,14 @@ export function NotePanel({ qid, label, question, onClose }: NotePanelProps) {
   const all = scope === 'all';
 
   const add = (v: { title: string; content: string }) => {
-    const next = all ? createFreeNote(newFreeQid(now()), v, newHighlightId(), now()) : addItem(notes.get(qid), qid, { kind: 'manual', ...v }, newHighlightId(), now());
+    const free = adding === 'all';
+    const next = free ? createFreeNote(newFreeQid(now()), v, newHighlightId(), now()) : addItem(notes.get(qid), qid, { kind: 'manual', ...v }, newHighlightId(), now());
     if (!fitsLimit(next)) return false;
     notes.save(next);
+    setAdding(null);
     return true;
   };
+  const addLabel = adding === 'all' ? FREE_LABEL : label;
 
   return (
     <NoteSheet
@@ -98,10 +104,31 @@ export function NotePanel({ qid, label, question, onClose }: NotePanelProps) {
           })}
         </div>
       )}
-      <section className="note-panel__add" aria-label={all ? 'Thêm ghi chú chung' : 'Thêm ghi chú'}>
-        {/* key: đổi câu hay phạm vi thì form trống lại, không mang chữ đang gõ sang chỗ khác. */}
-        <NoteForm key={`${scope}:${qid}`} question={all ? undefined : question} qid={all ? 0 : qid} label={all ? FREE_LABEL : label} onSave={add} resetOnSave />
-      </section>
+      <div className="note-panel__foot">
+        <button type="button" className="btn-primary note-panel__new" title={all ? 'Tạo ghi chú chung' : `Thêm ghi chú cho ${label}`} onClick={() => setAdding(scope)}>
+          <IconNote /> Ghi chú mới
+        </button>
+      </div>
+      {adding && (
+        <NoteSheet
+          title={
+            <>
+              <IconNote /> Ghi chú mới <span className="note-form__label">· {addLabel}</span>
+            </>
+          }
+          ariaLabel={`Ghi chú mới · ${addLabel}`}
+          onClose={() => setAdding(null)}
+        >
+          <NoteForm
+            question={adding === 'all' ? undefined : question}
+            qid={adding === 'all' ? 0 : qid}
+            label={addLabel}
+            onSave={add}
+            onCancel={() => setAdding(null)}
+            autoFocus
+          />
+        </NoteSheet>
+      )}
     </NoteSheet>
   );
 }

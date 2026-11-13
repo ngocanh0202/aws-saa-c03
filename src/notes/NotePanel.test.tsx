@@ -5,6 +5,7 @@ import { AppProvider } from '../app/context';
 import { makeDeps, makeQuestion } from '../test/fixtures';
 import { createFreeNote, type QuestionNotes } from './model';
 import { NotePanel } from './NotePanel';
+import { SPLIT_KEY, loadSplit } from './split-size';
 
 const QID = 5;
 const question = makeQuestion(QID);
@@ -48,13 +49,16 @@ describe('NotePanel', () => {
     expect(within(panel).getByText('Chưa có ghi chú nào cho câu này.')).toBeInTheDocument();
   });
 
-  it('thêm ghi chú: hiện trong danh sách, form trống lại, khung vẫn mở', () => {
+  it('Ghi chú mới mở popup form; lưu thì popup đóng, mục hiện trong danh sách, khung vẫn mở', () => {
     const { panel, deps, onClose } = mount();
-    const form = panel.querySelector('.note-panel__add') as HTMLElement;
-    fireEvent.change(within(form).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'Mới' } });
-    fireEvent.click(within(form).getByRole('button', { name: 'Lưu' }));
+    expect(within(panel).queryByRole('textbox', { name: 'Tiêu đề' })).toBeNull();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Ghi chú mới' }));
+    const pop = screen.getByRole('dialog', { name: 'Ghi chú mới · Câu 1' });
+    expect(pop).toHaveAttribute('aria-modal', 'true');
+    fireEvent.change(within(pop).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'Mới' } });
+    fireEvent.click(within(pop).getByRole('button', { name: 'Lưu' }));
+    expect(screen.queryByRole('dialog', { name: 'Ghi chú mới · Câu 1' })).toBeNull();
     expect(titles(panel)).toEqual(['Mới']);
-    expect(within(form).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('');
     expect(onClose).not.toHaveBeenCalled();
     expect(deps.notes.get(QID)!.items![0]).toMatchObject({ kind: 'manual', title: 'Mới' });
   });
@@ -108,14 +112,49 @@ describe('NotePanel — khung nổi như chat', () => {
 });
 
 describe('NotePanel — đổi cỡ giữ chữ đang gõ', () => {
-  it('Mở rộng rồi Thu nhỏ không mất chữ trong form thêm', () => {
-    const { panel } = mount();
-    const form = () => document.querySelector('.note-panel__add') as HTMLElement;
-    fireEvent.change(within(form()).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'đang gõ' } });
+  it('Mở rộng rồi Thu nhỏ không mất chữ đang sửa', () => {
+    const { panel } = mount(seed);
+    const card = () => document.querySelector('.notes-entry--manual') as HTMLElement;
+    fireEvent.click(within(card()).getByRole('button', { name: 'Sửa' }));
+    fireEvent.change(within(card()).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'đang gõ' } });
     fireEvent.click(within(panel).getByRole('button', { name: 'Mở rộng' }));
-    expect(within(form()).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('đang gõ');
+    expect(within(card()).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('đang gõ');
     fireEvent.click(screen.getByRole('button', { name: 'Thu nhỏ' }));
-    expect(within(form()).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('đang gõ');
+    expect(within(card()).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('đang gõ');
+  });
+});
+
+describe('NotePanel — popup chồng lên khung', () => {
+  it('Esc trong popup Ghi chú mới chỉ đóng popup, khung vẫn mở', () => {
+    const { panel, onClose } = mount();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Ghi chú mới' }));
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Ghi chú mới · Câu 1' })).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('NotePanel — nới rộng cột khi phóng to', () => {
+  it('thanh kéo đổi tỉ lệ (phím mũi tên), kẹp trong 20%–60%, nhớ cho lần sau', () => {
+    localStorage.removeItem(SPLIT_KEY);
+    const { panel } = mount(seed);
+    expect(within(panel).queryByRole('separator', { name: 'Kéo để đổi độ rộng cột ghi chú' })).toBeNull();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mở rộng' }));
+    const grip = screen.getByRole('separator', { name: 'Kéo để đổi độ rộng cột ghi chú' });
+    expect(grip).toHaveAttribute('aria-valuenow', '30');
+    expect(document.documentElement.style.getPropertyValue('--note-split')).toBe('30vw');
+    fireEvent.keyDown(grip, { key: 'ArrowLeft' });
+    expect(grip).toHaveAttribute('aria-valuenow', '32');
+    expect(document.documentElement.style.getPropertyValue('--note-split')).toBe('32vw');
+    for (let i = 0; i < 40; i++) fireEvent.keyDown(grip, { key: 'ArrowLeft' });
+    expect(grip).toHaveAttribute('aria-valuenow', '60');
+    for (let i = 0; i < 40; i++) fireEvent.keyDown(grip, { key: 'ArrowRight' });
+    expect(grip).toHaveAttribute('aria-valuenow', '20');
+    expect(loadSplit(localStorage)).toBe(0.2);
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).getByRole('button', { name: 'Thu nhỏ' }));
+    expect(document.documentElement.style.getPropertyValue('--note-split')).toBe('');
   });
 });
 
@@ -149,10 +188,11 @@ describe('NotePanel — tra mọi ghi chú', () => {
     expect(within(panel).getByText('Không có ghi chú nào khớp.')).toBeInTheDocument();
   });
 
-  it('ở Tất cả, form thêm tạo ghi chú chung', () => {
+  it('ở Tất cả, Ghi chú mới tạo ghi chú chung', () => {
     const { panel, deps } = mount(seed);
     fireEvent.click(within(panel).getByRole('button', { name: 'Tất cả' }));
-    const form = panel.querySelector('.note-panel__add') as HTMLElement;
+    fireEvent.click(within(panel).getByRole('button', { name: 'Ghi chú mới' }));
+    const form = screen.getByRole('dialog', { name: 'Ghi chú mới · Ghi chú chung' });
     fireEvent.change(within(form).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'Chung' } });
     fireEvent.click(within(form).getByRole('button', { name: 'Lưu' }));
     const saved = deps.notes.list().find((n) => n.qid < 0)!;
