@@ -108,7 +108,7 @@ function groupOf(e: NoteEntry, key: GroupKey, sets: SetsFile): { key: string; la
 
 /**
  * Gộp nhiều tầng theo `keys` (thứ tự tự do, tầng đầu ở ngoài). Giữ thứ tự mục đã sắp; nhóm xếp theo lần xuất
- * hiện đầu tiên. `keys` rỗng → [].
+ * hiện đầu tiên, riêng nhóm ghi chú tự do luôn cuối. `keys` rỗng → [].
  */
 export function groupEntries(entries: NoteEntry[], keys: GroupKey[], sets: SetsFile): EntryGroup[] {
   if (keys.length === 0) return [];
@@ -120,7 +120,9 @@ export function groupEntries(entries: NoteEntry[], keys: GroupKey[], sets: SetsF
     if (!bucket) groups.set(g.key, (bucket = { label: g.label, entries: [] }));
     bucket.entries.push(e);
   }
-  return [...groups].map(([key, g]) => ({
+  // Nhóm ghi chú tự do luôn đứng cuối (không thuộc đề nào).
+  const ordered = [...groups].sort(([a], [b]) => Number(a === 'free') - Number(b === 'free'));
+  return ordered.map(([key, g]) => ({
     key,
     label: g.label,
     count: g.entries.length,

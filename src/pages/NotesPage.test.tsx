@@ -1,7 +1,11 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { QuestionNotes } from '../notes/model';
-import { makeBank, makeDeps, renderApp } from '../test/fixtures';
+import { createStore } from '../storage/storage';
+import { createSyncController } from '../sync/controller';
+import { fakeAi, fakeChats } from '../test/fake-ai';
+import { fakeAuth, fakeRemote } from '../test/fake-sync';
+import { makeBank, makeDeps, memoryStorage, renderApp } from '../test/fixtures';
 
 const hlNotes = (qid: number, updatedAt: number, note = '', text = 'Stem'): QuestionNotes => ({
   qid,
@@ -208,5 +212,78 @@ describe('NotesPage — Esc trong khung xem câu', () => {
     expect(screen.getByRole('dialog', { name: 'Câu hỏi · Đề 1 · Câu 1' })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('dialog', { name: /Câu hỏi/ })).toBeNull();
+  });
+});
+
+describe('NotesPage — ghi chú tự do', () => {
+  function create(title: string, content: string) {
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi chú mới' }));
+    const dialog = screen.getByRole('dialog', { name: 'Ghi chú mới' });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: title } });
+    fireEvent.change(within(dialog).getByRole('textbox', { name: 'Nội dung' }), { target: { value: content } });
+    return dialog;
+  }
+  const card = (c: HTMLElement, title: string) =>
+    [...c.querySelectorAll<HTMLElement>('.notes-entry')].find((e) => e.querySelector('.notes-entry__title')?.textContent === title);
+
+  it('trang trống vẫn có nút Ghi chú mới; lưu thì hiện mục Ghi chú chung, không có Mở câu hỏi', () => {
+    const deps = makeDeps();
+    const { container } = renderApp('/notes', deps);
+    const dialog = create('Ôn VPC', 'subnet, route table');
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Lưu' }));
+    expect(screen.queryByRole('dialog', { name: 'Ghi chú mới' })).toBeNull();
+    const e = card(container, 'Ôn VPC')!;
+    expect(e).toHaveTextContent('Ghi chú chung');
+    expect(e).toHaveTextContent('Tự ghi chú');
+    expect(within(e).queryByRole('button', { name: 'Mở câu hỏi' })).toBeNull();
+    const saved = deps.notes.list().find((n) => n.qid < 0)!;
+    expect(saved.items![0]).toMatchObject({ kind: 'manual', title: 'Ôn VPC', content: 'subnet, route table' });
+  });
+
+  it('gộp theo Đề: nhóm Ghi chú chung đứng cuối; tìm không dấu ra mục', () => {
+    const deps = seeded();
+    const { container } = renderApp('/notes', deps);
+    fireEvent.click(within(create('Ôn VPC', '')).getByRole('button', { name: 'Lưu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Đề' }));
+    const groups = [...container.querySelectorAll('.notes-group > summary')].map((s) => s.textContent);
+    expect(groups[groups.length - 1]).toMatch(/^Ghi chú chung/);
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm ghi chú' }), { target: { value: 'on vpc' } });
+    expect(titles(container)).toEqual(['Ôn VPC']);
+  });
+
+  it('sửa tiêu đề được; xóa thì mục và nhóm Ghi chú chung biến mất', () => {
+    const deps = makeDeps();
+    const { container } = renderApp('/notes', deps);
+    fireEvent.click(within(create('Ôn VPC', '')).getByRole('button', { name: 'Lưu' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Đề' }));
+    const editing = card(container, 'Ôn VPC')!;
+    fireEvent.click(within(editing).getByRole('button', { name: 'Sửa' }));
+    fireEvent.change(within(editing).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'Ôn VPC 2' } });
+    fireEvent.click(within(editing).getByRole('button', { name: 'Lưu' }));
+    const e = card(container, 'Ôn VPC 2')!;
+    fireEvent.click(within(e).getByRole('button', { name: 'Xóa ghi chú' }));
+    fireEvent.click(within(e).getByRole('button', { name: 'Xóa' }));
+    expect(container.querySelector('.notes-entry')).toBeNull();
+    expect(screen.queryByText(/^Ghi chú chung/)).toBeNull();
+    expect(deps.notes.list()).toEqual([]);
+  });
+
+  it('AI hỗ trợ trong form ghi chú tự do không gửi đề', async () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    const auth = fakeAuth();
+    const sync = createSyncController({ store, auth, remote: fakeRemote() });
+    const ai = fakeAi();
+    const deps = { ...makeDeps({ store, sync }), ai, chats: fakeChats() };
+    renderApp('/notes', deps);
+    act(() => auth.emit({ uid: 'u1', name: 'An' }));
+    const dialog = create('Ôn VPC', '');
+    await act(async () => {
+      fireEvent.click(within(dialog).getByRole('button', { name: 'AI hỗ trợ viết ghi chú' }));
+      await new Promise((r) => setTimeout(r, 0));
+    });
+    expect(ai.calls).toHaveLength(1);
+    expect(ai.calls[0].systemPrompt).toContain('Ôn VPC');
+    expect(ai.calls[0].systemPrompt).not.toContain('Đề bài');
+    expect(ai.calls[0].systemPrompt).not.toMatch(/Stem \d/);
   });
 });

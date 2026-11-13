@@ -2,10 +2,11 @@ import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useApp } from '../app/context';
 import { normalizeSearch } from '../components/GeminiChat';
 import { GuidePanel } from '../components/GuidePanel';
-import { IconClose } from '../components/icons';
+import { IconClose, IconNote } from '../components/icons';
 import { QuestionCard } from '../components/QuestionCard';
 import type { SetsFile } from '../data/types';
 import {
+  FREE_LABEL,
   GROUP_LABEL,
   groupEntries,
   matchesEntry,
@@ -17,7 +18,9 @@ import {
   type NoteEntry,
   type SortKey,
 } from '../notes/entries';
-import type { QuestionNotes } from '../notes/model';
+import { createFreeNote, fitsLimit, isFreeNote, newFreeQid, newHighlightId, type QuestionNotes } from '../notes/model';
+import { NoteForm } from '../notes/NoteForm';
+import { NoteSheet } from '../notes/NoteSheet';
 import { NoteEntryCard } from '../notes/NoteEntryCard';
 
 /** Cách xem (sắp xếp, gộp) nhớ theo máy; không đọc/ghi được storage thì dùng mặc định. */
@@ -54,13 +57,14 @@ function saveView(v: View): void {
 }
 
 export function NotesPage() {
-  const { notes: store, bank, aiGate } = useApp();
+  const { notes: store, bank, aiGate, now } = useApp();
   // list() trả mảng mới mỗi lần: lấy theo phiên bản (chuỗi JSON) để useSyncExternalStore không lặp vô hạn.
   const json = useSyncExternalStore(store.subscribe, () => JSON.stringify(store.list()));
   const list = JSON.parse(json) as QuestionNotes[];
   const [query, setQuery] = useState('');
   const [view, setView] = useState(loadView);
   const [openQid, setOpenQid] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
   const sets = bank.sets;
 
   // Mở từ thông báo AI (AI soạn xong ghi chú đoạn tô): mở khung câu đó; popup do Highlighter trong khung tự mở (takeOpen).
@@ -68,6 +72,15 @@ export function NotesPage() {
   useEffect(() => {
     if (pending?.page === 'notes') setOpenQid(pending.qid);
   }, [pending]);
+
+  // Ghi chú tự do: bản ghi riêng với qid âm, không gắn câu nào.
+  const createFree = (v: { title: string; content: string }) => {
+    const next = createFreeNote(newFreeQid(now()), v, newHighlightId(), now());
+    if (!fitsLimit(next)) return false;
+    store.save(next);
+    setCreating(false);
+    return true;
+  };
 
   const changeView = (v: View) => {
     setView(v);
@@ -78,7 +91,7 @@ export function NotesPage() {
 
   const needle = normalizeSearch(query.trim());
   const entries = sortEntries(
-    toEntries(list).filter((e) => bank.questions.has(e.qid) && matchesEntry(e, needle, sets)),
+    toEntries(list).filter((e) => (isFreeNote(e.qid) || bank.questions.has(e.qid)) && matchesEntry(e, needle, sets)),
     view.sort,
     sets,
   );
@@ -88,11 +101,12 @@ export function NotesPage() {
   return (
     <main className="page notes-page">
       <h1>Ghi chú của tôi</h1>
-      {total === 0 ? (
-        <p>Chưa có ghi chú. Tô đề rồi ghi chú, đánh dấu câu trả lời của AI, hoặc bấm "Ghi chú" khi làm bài.</p>
-      ) : (
-        <>
-          <div className="notes-tools">
+      <div className="notes-tools">
+        <button type="button" className="btn-primary notes-tools__new" onClick={() => setCreating(true)}>
+          <IconNote /> Ghi chú mới
+        </button>
+        {total > 0 && (
+          <>
             <input
               type="search"
               className="notes-page__search"
@@ -123,7 +137,13 @@ export function NotesPage() {
                 );
               })}
             </div>
-          </div>
+          </>
+        )}
+      </div>
+      {total === 0 ? (
+        <p>Chưa có ghi chú. Tô đề rồi ghi chú, đánh dấu câu trả lời của AI, bấm "Ghi chú" khi làm bài, hoặc tạo "Ghi chú mới".</p>
+      ) : (
+        <>
           {entries.length === 0 && <p>Không có ghi chú nào khớp.</p>}
           {view.group.length === 0 ? (
             <EntryList entries={entries} sets={sets} onOpen={setOpenQid} />
@@ -133,6 +153,11 @@ export function NotesPage() {
         </>
       )}
       {openQid !== null && <QuestionDialog qid={openQid} onClose={() => setOpenQid(null)} />}
+      {creating && (
+        <NoteSheet title={<><IconNote /> Ghi chú mới</>} ariaLabel="Ghi chú mới" onClose={() => setCreating(false)}>
+          <NoteForm qid={0} label={FREE_LABEL} onSave={createFree} />
+        </NoteSheet>
+      )}
     </main>
   );
 }

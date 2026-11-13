@@ -123,6 +123,14 @@ describe('ghi chú tự do (qid âm)', () => {
     expect(labels.indexOf('Kho dự phòng')).toBeLessThan(labels.length - 1);
     expect(labels).not.toContain(undefined);
   });
+  it('nhóm Ghi chú chung luôn cuối, kể cả khi sắp mới nhất trước', () => {
+    const newest = sortEntries(all, 'newest', sets);
+    expect(newest[0].qid).toBeLessThan(0);
+    for (const key of ['set', 'question'] as const) {
+      const labels = groupEntries(newest, [key], sets).map((g) => g.label);
+      expect(labels[labels.length - 1]).toBe('Ghi chú chung');
+    }
+  });
   it('gộp theo câu: mọi ghi chú tự do vào một nhóm', () => {
     const groups = groupEntries(all, ['question'], sets).filter((g) => g.label === 'Ghi chú chung');
     expect(groups).toHaveLength(1);
