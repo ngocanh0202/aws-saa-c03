@@ -83,7 +83,8 @@
     "services": [
       "efs",
       "s3"
-    ]
+    ],
+    "note": "Từ 26/11/2023 Amazon EFS có thêm lớp EFS Archive, giá lưu trữ thấp hơn khoảng 50% so với Infrequent Access, dành cho dữ liệu chỉ truy cập vài lần mỗi năm hoặc ít hơn (cần Elastic Throughput) — hợp hơn với dữ liệu dùng khoảng một tuần mỗi năm. Lớp này không có trong các lựa chọn nên đáp án không đổi. Giá EFS IA cũng đã giảm 36% cùng đợt (còn khoảng 0,016 USD/GB-tháng ở us-east-1), con số 0,025 USD trong giải thích gốc đã cũ."
   },
   {
     "id": 11110,
