@@ -83,7 +83,8 @@
     "services": [
       "efs",
       "s3"
-    ]
+    ],
+    "note": "Từ 26/11/2023 Amazon EFS có thêm lớp EFS Archive, giá lưu trữ thấp hơn khoảng 50% so với Infrequent Access, dành cho dữ liệu chỉ truy cập vài lần mỗi năm hoặc ít hơn (cần Elastic Throughput) — hợp hơn với dữ liệu dùng khoảng một tuần mỗi năm. Lớp này không có trong các lựa chọn nên đáp án không đổi. Giá EFS IA cũng đã giảm 36% cùng đợt (còn khoảng 0,016 USD/GB-tháng ở us-east-1), con số 0,025 USD trong giải thích gốc đã cũ."
   },
   {
     "id": 11110,
@@ -261,7 +262,8 @@
     "services": [
       "s3",
       "rds"
-    ]
+    ],
+    "note": "Giải thích gốc tiếng Anh nói không thể nhập dữ liệu từ Amazon S3 vào Amazon RDS — đã lỗi thời: từ 04/2019 RDS for PostgreSQL nhập được file từ S3 bằng extension aws_s3 (hàm aws_s3.table_import_from_s3). Cách đó vẫn phải nạp toàn bộ 50 TB chỉ để lấy 250 byte đầu mỗi file, nên đáp án Byte Range Fetch không đổi."
   },
   {
     "id": 11127,
@@ -374,7 +376,8 @@
       "guardduty",
       "inspector",
       "organizations"
-    ]
+    ],
+    "note": "Giải thích gốc tiếng Anh nói Firewall Manager không hỗ trợ network ACL — đã lỗi thời: từ 04/2024 Firewall Manager có policy network ACL để tạo và quản lý rule NACL tập trung cho subnet trên các tài khoản. Network ACL không có trong các lựa chọn nên đáp án không đổi."
   },
   {
     "id": 11138,
@@ -609,8 +612,7 @@
     "services": [
       "s3",
       "s3-glacier"
-    ],
-    "note": "Giải thích gốc nói S3 Glacier Instant Retrieval đắt hơn mỗi GB so với Standard-IA, nhưng thực tế GIR có giá lưu trữ thấp hơn (khoảng 0,004 so với 0,0125 USD/GB-tháng), chỉ phí truy xuất cao hơn. Với dữ liệu hiếm truy cập thì GIR có thể rẻ hơn, nên đáp án Standard-IA là tranh cãi."
+    ]
   },
   {
     "id": 11161,
@@ -647,8 +649,7 @@
     "services": [
       "vpc",
       "ec2"
-    ],
-    "note": "Đề bài giống hệt câu 10528 (Main 5, file pt3_1, vị trí 28); chỉ khác thứ tự lựa chọn. Đáp án đúng (Security Group stateful, network ACL stateless) và giải thích hai bên nhất quán, không bên nào sai."
+    ]
   },
   {
     "id": 11165,
