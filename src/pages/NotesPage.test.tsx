@@ -158,7 +158,7 @@ describe('NotesPage — sửa, xóa', () => {
     const e = entry(container, 'Stem');
     fireEvent.click(within(e).getByRole('button', { name: 'Xóa ghi chú' }));
     fireEvent.click(within(e).getByRole('button', { name: 'Xóa' }));
-    expect(deps.notes.get(3)!.highlights).toEqual([]);
+    expect(deps.notes.get(3)).toBeUndefined();
     expect(titles(container)).toEqual(['Tại sao?', 'Nhớ Multi-AZ']);
   });
 
@@ -168,7 +168,7 @@ describe('NotesPage — sửa, xóa', () => {
     const e = entry(container, 'Tại sao?');
     fireEvent.click(within(e).getByRole('button', { name: 'Xóa ghi chú' }));
     fireEvent.click(within(e).getByRole('button', { name: 'Xóa' }));
-    expect(deps.notes.get(5)!.items).toEqual([]);
+    expect(deps.notes.get(5)).toBeUndefined();
   });
 });
 

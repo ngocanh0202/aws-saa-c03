@@ -145,7 +145,7 @@ describe('Highlighter — Thi thử', () => {
     fireEvent.click(container.querySelector('mark.hl')!);
     fireEvent.click(screen.getByRole('button', { name: 'Xóa đoạn tô' }));
     expect(container.querySelector('mark.hl')).toBeNull();
-    expect(deps.notes.get(canon)!.highlights).toEqual([]);
+    expect(deps.notes.get(canon)).toBeUndefined();
   });
 
   it('không có AI (chưa đăng nhập) thì popup không có nút AI', () => {

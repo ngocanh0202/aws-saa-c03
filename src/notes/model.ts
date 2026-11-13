@@ -150,6 +150,9 @@ export function fitsLimit(notes: QuestionNotes): boolean {
 
 export const TOO_LONG_MESSAGE = 'Ghi chú của câu này đã quá dài, hãy xóa bớt.';
 
+/** Không còn đoạn tô hay mục nào: bản ghi bị xóa hẳn (ở máy và trên cloud) thay vì giữ bản rỗng. */
+export const isEmptyNotes = (n: QuestionNotes): boolean => n.highlights.length === 0 && (n.items?.length ?? 0) === 0;
+
 /** Ghi chú tự do (không gắn câu) dùng qid âm để không đụng câu thật. */
 export const isFreeNote = (qid: number): boolean => qid < 0;
 

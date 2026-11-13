@@ -534,7 +534,7 @@ describe('Hỏi Gemini ở Thi thử', () => {
     const unsave = within(dialog).getByRole('button', { name: 'Bỏ khỏi ghi chú' });
     expect(unsave).toHaveAttribute('aria-pressed', 'true');
     fireEvent.click(unsave);
-    expect(s.base.notes.get(canonical)!.items).toEqual([]);
+    expect(s.base.notes.get(canonical)).toBeUndefined();
     expect(within(dialog).getByRole('button', { name: 'Lưu vào ghi chú' })).toBeInTheDocument();
   });
 

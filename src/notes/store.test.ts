@@ -37,7 +37,7 @@ describe('NotesStore', () => {
   it('list bỏ câu không còn đoạn tô, sắp giảm dần; all thì giữ', () => {
     const s = createNotesStore(memoryStorage());
     s.setOwner('A');
-    s.save(notes(1, 'a', 10)); s.save(notes(2, 'b', 30)); s.save(notes(3, '', 20, false));
+    s.save(notes(1, 'a', 10)); s.save(notes(2, 'b', 30)); s.applyRemote('A', notes(3, '', 20, false));
     expect(s.list().map((n) => n.qid)).toEqual([2, 1]);
     expect(s.all('A').map((n) => n.qid).sort()).toEqual([1, 2, 3]);
   });
@@ -102,5 +102,23 @@ describe('NotesStore với ghi chú tự do', () => {
     expect(s2.list().map((n) => n.qid)).toContain(-7);
     s2.save(removeItem(s2.get(-7)!, 'i1', 10));
     expect(s2.list().map((n) => n.qid)).not.toContain(-7);
+  });
+});
+
+describe('NotesStore — bản ghi rỗng', () => {
+  it('save bản rỗng thì xóa hẳn khỏi máy (kể cả sau khi tải lại) và vẫn báo onLocalChange', () => {
+    const storage = memoryStorage();
+    const s = createNotesStore(storage);
+    s.setOwner('A');
+    const seen: QuestionNotes[] = [];
+    s.onLocalChange((_, x) => seen.push(x));
+    const free = createFreeNote(-7, { title: 'T', content: '' }, 'i1', 9);
+    s.save(free);
+    s.save(removeItem(free, 'i1', 10));
+    expect(s.get(-7)).toBeUndefined();
+    expect(s.all('A')).toEqual([]);
+    expect(seen.map((x) => (x.items ?? []).length)).toEqual([1, 0]);
+    const again = createNotesStore(storage);
+    expect(again.all('A')).toEqual([]);
   });
 });

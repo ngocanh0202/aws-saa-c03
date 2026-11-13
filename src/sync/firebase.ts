@@ -10,7 +10,7 @@ import {
   signInWithPopup,
   signOut as fbSignOut,
 } from 'firebase/auth';
-import { child, get, getDatabase, onValue, orderByChild, push, query, ref, serverTimestamp, set, update } from 'firebase/database';
+import { child, get, getDatabase, onValue, orderByChild, push, query, ref, remove, serverTimestamp, set, update } from 'firebase/database';
 import { parseChatJson } from '../ai/chat-json';
 import { parseLocalSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { summarize, type ChatHistoryStore, type ChatMessage, type ChatSummary } from '../ai/types';
@@ -156,6 +156,9 @@ export function createFirebaseClients(config: FirebaseConfig): {
     },
     write(uid, n) {
       return set(ref(db, `users/${uid}/notes/${n.qid}`), { json: JSON.stringify(n), updatedAt: n.updatedAt });
+    },
+    remove(uid, qid) {
+      return remove(ref(db, `users/${uid}/notes/${qid}`));
     },
   };
 
