@@ -717,3 +717,27 @@ body:has(.note-sheet__split-grip:active) { cursor: col-resize; user-select: none
 .flashcard__body { margin-block: auto; }
 @media (max-width: 639px) { .flashcard__title { font-size: 1.25em; } .flashcard__face { padding: 18px; } }
 @media (prefers-reduced-motion: reduce) { .flashcard__inner { transition: none; } .flashcards { animation: none; } }
+
+/* Mọi ô nhập (chữ, tìm, số…, textarea, select) có cùng kiểu focus với ô chat AI: viền màu chọn + vòng sáng mềm,
+   hover thì viền nhạt dần sang màu chọn. Không áp cho checkbox/radio/range/nút. Đặt cuối file để thắng kiểu riêng. */
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='color']),
+textarea,
+select {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+}
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='color']):hover:not(:disabled, :focus),
+textarea:hover:not(:disabled, :focus),
+select:hover:not(:disabled, :focus) {
+  border-color: color-mix(in srgb, var(--selected) 45%, var(--border));
+}
+input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='color']):focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--selected);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--selected) 22%, transparent);
+  background-color: var(--surface);
+}
+@media (prefers-reduced-motion: reduce) {
+  input, textarea, select { transition: none; }
+}
