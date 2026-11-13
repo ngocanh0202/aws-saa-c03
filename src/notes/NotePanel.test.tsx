@@ -93,14 +93,17 @@ describe('NotePanel', () => {
 });
 
 describe('NotePanel — khung nổi như chat', () => {
-  it('không che trang (không modal); Mở rộng thì phủ toàn màn hình, Thu nhỏ thì về góc', () => {
+  it('không modal; Mở rộng thì thành cột 30% bên phải (vẫn không modal), Thu nhỏ thì về góc', () => {
     const { panel } = mount(seed);
     expect(panel).not.toHaveAttribute('aria-modal');
+    expect(panel).toHaveClass('note-sheet--dock');
     fireEvent.click(within(panel).getByRole('button', { name: 'Mở rộng' }));
     const big = screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' });
-    expect(big).toHaveAttribute('aria-modal', 'true');
+    expect(big).toHaveClass('note-sheet--split');
+    expect(big).not.toHaveAttribute('aria-modal');
+    expect(document.querySelector('.note-sheet__backdrop')).toBeNull();
     fireEvent.click(within(big).getByRole('button', { name: 'Thu nhỏ' }));
-    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).not.toHaveAttribute('aria-modal');
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).toHaveClass('note-sheet--dock');
   });
 });
 

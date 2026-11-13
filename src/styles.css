@@ -584,20 +584,16 @@ textarea.note-form__input { resize: vertical; min-height: 120px; }
 .note-sheet__backdrop { position: fixed; inset: 0; z-index: 79; background: rgb(0 0 0 / 0.45); }
 .note-sheet--center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: 85vh; }
 .note-sheet--dock { right: 20px; bottom: 20px; z-index: 35; width: min(420px, calc(100vw - 32px)); height: min(600px, calc(100vh - 100px)); border-radius: 14px; padding: 12px 14px; animation: service-modal-in 0.18s ease-out; }
-.note-sheet--full { inset: 0; border: 0; border-radius: 0; }
-/* Khung ở góc: chỉ danh sách cuộn, ô tìm và form thêm luôn thấy. */
+.note-sheet--split { top: 0; right: 0; bottom: 0; z-index: 35; width: 30vw; min-width: 300px; border-radius: 0; border-width: 0 0 0 1px; box-shadow: -6px 0 18px rgb(0 0 0 / 0.12); overflow: hidden; }
+/* Phóng to: trang (câu hỏi) chiếm 70% bên trái. */
+body:has(.note-sheet--split) { padding-right: max(30vw, 300px); }
+body:has(.note-sheet--split) .exam-dock { right: calc(max(30vw, 300px) + 20px); }
+/* Khung ở góc và cột phóng to: chỉ danh sách cuộn, ô tìm và form thêm luôn thấy. */
 .note-sheet--dock { overflow: hidden; }
-.note-sheet--dock .note-sheet__body { flex: 1 1 auto; min-height: 0; }
-.note-sheet--dock .note-panel__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
-.note-sheet--dock .note-panel__empty { flex: 1 1 auto; }
+:is(.note-sheet--dock, .note-sheet--split) .note-sheet__body { flex: 1 1 auto; min-height: 0; }
+:is(.note-sheet--dock, .note-sheet--split) .note-panel__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+:is(.note-sheet--dock, .note-sheet--split) .note-panel__empty { flex: 1 1 auto; }
 .note-sheet--dock textarea.note-form__input { min-height: 64px; height: 88px; }
-/* Khung ở góc đang mở thì ẩn các nút nổi phía dưới (như khung chat che nút Hỏi AI). */
-body:has(.note-sheet--dock) .exam-dock { visibility: hidden; }
-/* Màn hình rộng: khung ghi chú ở góc thì trang dịch sang trái chừa chỗ, đề và nút Câu sau không bị che. */
-@media (min-width: 1100px) {
-  body:has(.note-sheet--dock) main.page { margin-right: 456px; margin-left: 16px; max-width: none; }
-}
-.note-sheet--full > * { width: 100%; max-width: 860px; margin-inline: auto; box-sizing: border-box; }
 .note-sheet--sheet { left: 0; right: 0; bottom: 0; max-height: 90vh; border-radius: 14px 14px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); animation: hl-sheet-in 0.18s ease-out; }
 .note-sheet__grab { flex: none; }
 .note-panel__scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }

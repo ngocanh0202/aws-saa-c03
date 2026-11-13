@@ -15,8 +15,8 @@ export interface NoteSheetProps {
 
 /**
  * Khung ghi chú. Mặc định là popup giữa màn hình (máy tính); `docked` thì nổi ở góc dưới bên phải như khung
- * chat (không lớp nền, không modal), Mở rộng thì phủ toàn màn hình. Điện thoại: bottom sheet có thanh kéo
- * đổi cỡ (kéo xuống quá cỡ nhỏ nhất thì đóng). Esc đóng, trừ khi bên trong đã xử lý (preventDefault).
+ * chat (không lớp nền, không modal, không đổi bố cục trang), Mở rộng thì thành cột 30% bên phải và trang
+ * thu còn 70% (CSS chừa lề phải cho body). Điện thoại: bottom sheet có thanh kéo đổi cỡ (kéo xuống quá cỡ nhỏ nhất thì đóng). Esc đóng, trừ khi bên trong đã xử lý (preventDefault).
  * Gắn vào body. Đổi kiểu hiển thị chỉ đổi class, nên chữ đang gõ trong khung không mất.
  */
 export function NoteSheet({ title, ariaLabel, onClose, docked = false, children }: NoteSheetProps) {
@@ -37,8 +37,9 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  const variant = mobile ? 'sheet' : expanded ? 'full' : docked ? 'dock' : 'center';
-  const modal = variant !== 'dock';
+  // Phóng to: cột 30% bên phải, trang (câu hỏi) chiếm 70% còn lại; vẫn không modal như khung ở góc.
+  const variant = mobile ? 'sheet' : docked ? (expanded ? 'split' : 'dock') : 'center';
+  const modal = variant === 'sheet' || variant === 'center';
 
   return createPortal(
     <>
@@ -68,7 +69,7 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
               type="button"
               className="icon-btn"
               aria-label={expanded ? 'Thu nhỏ' : 'Mở rộng'}
-              title={expanded ? 'Thu nhỏ' : 'Mở rộng toàn màn hình'}
+              title={expanded ? 'Thu nhỏ' : 'Mở rộng (chia đôi màn hình với câu hỏi)'}
               onClick={() => setExpanded((x) => !x)}
             >
               {expanded ? '⤡' : '⤢'}
