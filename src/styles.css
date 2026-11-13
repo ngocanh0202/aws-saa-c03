@@ -53,6 +53,15 @@
 
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 'Segoe UI', Tahoma, Geneva, Verdana, system-ui, sans-serif; }
+/* Điện thoại: cỡ chữ chỉnh được (menu profile hoặc ☰ → Cỡ chữ), nhân theo --font-scale. */
+@media (max-width: 639px) {
+  html { font-size: calc(100% * var(--font-scale, 1)); }
+  body { font-size: 1rem; }
+}
+.font-size { display: flex; align-items: center; gap: 6px; }
+.font-size__label { flex: 1; color: var(--muted); }
+.font-size__value { min-width: 3.2em; text-align: center; font-variant-numeric: tabular-nums; }
+.font-size .icon-btn { min-width: 40px; min-height: 36px; }
 a { color: var(--link); }
 button { font: inherit; color: inherit; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
 button:disabled { opacity: 0.55; cursor: default; }
@@ -677,3 +686,34 @@ body:has(.note-sheet__split-grip:active) { cursor: col-resize; user-select: none
   .notes-question__box { max-width: none; max-height: 100vh; border-radius: 0; }
 }
 .hl-limit { position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 90; max-width: calc(100vw - 32px); padding: 10px 14px; border: 1px solid var(--bad); border-radius: 10px; background: var(--surface); color: var(--bad); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2); font: inherit; cursor: pointer; }
+
+/* Ôn flashcard ở trang Ghi chú: phủ toàn màn hình, thẻ lật 3D (mặt trước tiêu đề, mặt sau nội dung). */
+.notes-tools__review { display: inline-flex; align-items: center; gap: 6px; }
+.flashcards {
+  position: fixed; inset: 0; z-index: 85; display: flex; flex-direction: column; align-items: center; gap: 16px;
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); background: var(--bg); color: var(--text);
+  justify-content: center; animation: service-modal-in 0.18s ease-out;
+}
+.flashcards__bar { display: flex; align-items: center; gap: 10px; width: min(720px, 100%); }
+.flashcards__count { flex: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.flashcards__nav { display: flex; gap: 12px; width: min(720px, 100%); }
+.flashcards__nav button { flex: 1; min-height: 48px; }
+.flashcard { flex: 1 1 auto; width: min(720px, 100%); min-height: 0; max-height: 520px; perspective: 1400px; cursor: pointer; touch-action: pan-y; user-select: none; outline: none; }
+.flashcard:focus-visible .flashcard__face { outline: 3px solid var(--accent); outline-offset: 2px; }
+.flashcard__inner { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform 0.45s ease; }
+.flashcard.is-flipped .flashcard__inner { transform: rotateY(180deg); }
+.flashcard__face {
+  position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 12px; overflow-y: auto;
+  padding: 24px; box-sizing: border-box; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.15);
+}
+.flashcard__face--front { align-items: center; text-align: center; }
+.flashcard__face--back { transform: rotateY(180deg); user-select: text; }
+.flashcard__title { margin: 0; font-size: 1.5em; font-weight: 600; overflow-wrap: anywhere; }
+.flashcard__hint { margin: 0; color: var(--muted); font-size: 0.85em; }
+.flashcard__content { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 1.1em; }
+/* Mặt sau: nội dung ngắn nằm giữa thẻ, dài thì cuộn từ đầu. */
+.flashcard__face--back { justify-content: flex-start; }
+.flashcard__body { margin-block: auto; }
+@media (max-width: 639px) { .flashcard__title { font-size: 1.25em; } .flashcard__face { padding: 18px; } }
+@media (prefers-reduced-motion: reduce) { .flashcard__inner { transition: none; } .flashcards { animation: none; } }

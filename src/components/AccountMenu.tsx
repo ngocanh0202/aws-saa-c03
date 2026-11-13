@@ -4,6 +4,7 @@ import { onRequestSignIn, openSupport } from '../support/open';
 import type { AiModeStore } from '../ai/ai-mode';
 import { useApp } from '../app/context';
 import { ContactAdminButton } from './ContactAdminButton';
+import { FontSizeControl } from './FontSizeControl';
 import { useAiMode } from './GeminiChat';
 import { SignInDialog, SignInIcon } from './SignInDialog';
 import type { SyncController, SyncUser } from '../sync/types';
@@ -72,6 +73,7 @@ function SignedInMenu({ sync, user, online, pending, english }: { sync: SyncCont
       <div className="topbar__menu-list account__panel">
         <p className="account__status">{statusText(online, pending)}</p>
         <AiModeToggle english={english} />
+        <FontSizeControl english={english} />
         <SupportEntry user={user} unread={unread} english={english} />
         <button type="button" className="icon-btn" onClick={() => void sync.signOut()}>
           {english ? 'Sign out' : 'Đăng xuất'}

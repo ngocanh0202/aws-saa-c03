@@ -19,6 +19,7 @@ import {
   type SortKey,
 } from '../notes/entries';
 import { createFreeNote, fitsLimit, isFreeNote, newFreeQid, newHighlightId, type QuestionNotes } from '../notes/model';
+import { FlashcardsDialog } from '../notes/FlashcardsDialog';
 import { NoteForm } from '../notes/NoteForm';
 import { NoteSheet } from '../notes/NoteSheet';
 import { NoteEntryCard } from '../notes/NoteEntryCard';
@@ -65,6 +66,8 @@ export function NotesPage() {
   const [view, setView] = useState(loadView);
   const [openQid, setOpenQid] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
+  /** Bộ ghi chú đem ôn (chụp lúc bấm, theo ô tìm); null khi đóng. */
+  const [reviewing, setReviewing] = useState<NoteEntry[] | null>(null);
   const sets = bank.sets;
 
   // Mở từ thông báo AI (AI soạn xong ghi chú đoạn tô): mở khung câu đó; popup do Highlighter trong khung tự mở (takeOpen).
@@ -105,6 +108,17 @@ export function NotesPage() {
         <button type="button" className="btn-primary notes-tools__new" onClick={() => setCreating(true)}>
           <IconNote /> Ghi chú mới
         </button>
+        {total > 0 && (
+          <button
+            type="button"
+            className="notes-tools__review"
+            disabled={!entries.some((e) => e.content.trim() !== '')}
+            title={query.trim() ? 'Ôn các ghi chú khớp ô tìm, thứ tự ngẫu nhiên' : 'Ôn tất cả ghi chú, thứ tự ngẫu nhiên'}
+            onClick={() => setReviewing(entries)}
+          >
+            <span aria-hidden="true">🃏</span> Ôn flashcard
+          </button>
+        )}
         {total > 0 && (
           <>
             <input
@@ -153,6 +167,7 @@ export function NotesPage() {
         </>
       )}
       {openQid !== null && <QuestionDialog qid={openQid} onClose={() => setOpenQid(null)} />}
+      {reviewing && <FlashcardsDialog entries={reviewing} onClose={() => setReviewing(null)} />}
       {creating && (
         <NoteSheet title={<><IconNote /> Ghi chú mới</>} ariaLabel="Ghi chú mới" onClose={() => setCreating(false)}>
           <NoteForm qid={0} label={FREE_LABEL} onSave={createFree} />

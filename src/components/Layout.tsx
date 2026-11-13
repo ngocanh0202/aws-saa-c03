@@ -1,18 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useApp } from '../app/context';
 import { useStoreVersion } from '../app/use-store';
+import { useFontScale } from '../app/font-scale';
 import { useTheme } from '../app/theme';
 import { externalHref } from '../pages/ExternalListPage';
 import { AccountMenu } from './AccountMenu';
 import { AiDoneToast } from './AiDoneToast';
 import { ConflictDialog } from './ConflictDialog';
+import { FontSizeControl } from './FontSizeControl';
+import { signedInUser } from './GeminiChat';
 import { SupportDock } from './SupportDock';
 import { SyncLoading } from './SyncLoading';
 
+const noSubscribe = () => () => {};
+const noState = () => null;
+
 export function Layout() {
-  const { store, bank } = useApp();
+  const { store, bank, sync } = useApp();
   const [theme, toggleTheme] = useTheme();
+  // Áp dụng cỡ chữ đã lưu ngay khi mở trang (CSS chỉ dùng nó trên điện thoại).
+  useFontScale();
+  const syncState = useSyncExternalStore(sync?.subscribe ?? noSubscribe, sync?.getState ?? noState);
+  const signedIn = syncState !== null && signedInUser(syncState) !== null;
   const { pathname } = useLocation();
   useStoreVersion();
   const examId = /^\/exam\/([^/]+)$/.exec(pathname)?.[1];
@@ -73,6 +83,8 @@ export function Layout() {
           >
             {theme === 'dark' ? '☀ Sáng' : '☾ Tối'}
           </button>
+          {/* Đã đăng nhập thì mục Cỡ chữ nằm trong menu profile. */}
+          {!signedIn && <FontSizeControl english={english} />}
         </div>
         <AccountMenu english={english} />
       </header>
