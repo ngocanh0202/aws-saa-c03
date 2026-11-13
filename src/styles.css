@@ -565,6 +565,25 @@ textarea.note-form__input { resize: vertical; min-height: 120px; }
   .note-form { place-items: end stretch; padding: 0; }
   .note-form__box { max-width: none; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
 }
+/* Khung ghi chú (NoteSheet): popup giữa màn hình; điện thoại: bottom sheet có thanh kéo. */
+.note-sheet { z-index: 80; }
+.note-sheet__box { display: flex; flex-direction: column; gap: 12px; max-width: 560px; max-height: 85vh; overflow-y: auto; box-sizing: border-box; }
+.note-sheet__head { display: flex; align-items: center; gap: 8px; }
+.note-sheet__head .note-form__title { flex: 1; min-width: 0; }
+.note-sheet__body { display: flex; flex-direction: column; gap: 12px; }
+.note-form__form { display: flex; flex-direction: column; gap: 10px; }
+.note-form__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.note-form__spacer { flex: 1; }
+.note-ai { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.note-ai__status { color: var(--muted); font-size: 0.9em; }
+.note-ai__error { color: var(--bad); font-size: 0.9em; }
+.note-ai__retry { display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 639px) {
+  .note-sheet { place-items: end stretch; padding: 0; }
+  .note-sheet__box { max-width: none; max-height: 90vh; border-radius: 14px 14px 0 0; padding: 8px 16px calc(16px + env(safe-area-inset-bottom)); animation: hl-sheet-in 0.18s ease-out; }
+  .note-sheet__grab { flex: none; }
+}
+@media (prefers-reduced-motion: reduce) { .note-sheet__box { animation: none; } }
 .gemini__msg--model { position: relative; }
 .gemini__bookmark { display: inline-flex; margin-top: 4px; color: var(--muted); }
 .gemini__bookmark.is-saved { color: var(--hl-line); }
