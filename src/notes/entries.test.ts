@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeBank, memoryStorage } from '../test/fixtures';
-import { groupEntries, matchesEntry, noteLabel, noteSetId, sortEntries, toEntries, type NoteEntry } from './entries';
-import type { QuestionNotes } from './model';
+import { FREE_LABEL, groupEntries, matchesEntry, noteLabel, noteSetId, sortEntries, toEntries, type NoteEntry } from './entries';
+import { createFreeNote, type QuestionNotes } from './model';
 import { createNotesStore } from './store';
 
 const { sets } = makeBank();
@@ -104,5 +104,32 @@ describe('store.list với items', () => {
     store.save({ qid: 9, highlights: [], items: [{ id: 'x', kind: 'manual', title: 'T', content: '', createdAt: 1, updatedAt: 1 }], updatedAt: 1 });
     store.save({ qid: 8, highlights: [], updatedAt: 2 });
     expect(store.list().map((n) => n.qid)).toEqual([9]);
+  });
+});
+
+describe('ghi chú tự do (qid âm)', () => {
+  const free = createFreeNote(-7, { title: 'Ôn VPC', content: 'subnet' }, 'f1', 60);
+  const free2 = createFreeNote(-8, { title: 'Ôn S3', content: '' }, 'f2', 61);
+  const all = toEntries([free, free2, ...notes]);
+
+  it('nhãn là Ghi chú chung', () => {
+    expect(noteLabel(-7, sets)).toBe(FREE_LABEL);
+    expect(FREE_LABEL).toBe('Ghi chú chung');
+  });
+  it('gộp theo đề: nhóm Ghi chú chung đứng cuối, sau kho dự phòng', () => {
+    const groups = groupEntries(sortEntries(all, 'question', sets), ['set'], sets);
+    const labels = groups.map((g) => g.label);
+    expect(labels[labels.length - 1]).toBe('Ghi chú chung');
+    expect(labels.indexOf('Kho dự phòng')).toBeLessThan(labels.length - 1);
+    expect(labels).not.toContain(undefined);
+  });
+  it('gộp theo câu: mọi ghi chú tự do vào một nhóm', () => {
+    const groups = groupEntries(all, ['question'], sets).filter((g) => g.label === 'Ghi chú chung');
+    expect(groups).toHaveLength(1);
+    expect(groups[0].count).toBe(2);
+  });
+  it('tìm không dấu theo nhãn', () => {
+    const e = all.find((x) => x.qid === -7)!;
+    expect(matchesEntry(e, 'ghi chu chung', sets)).toBe(true);
   });
 });

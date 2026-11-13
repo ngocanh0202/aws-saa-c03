@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { memoryStorage } from '../test/fixtures';
-import type { QuestionNotes } from './model';
+import { createFreeNote, removeItem, type QuestionNotes } from './model';
 import { NOTES_KEY_PREFIX, createNotesStore } from './store';
 
 function notes(qid: number, note: string, updatedAt = 100, withHighlight = true): QuestionNotes {
@@ -86,5 +86,21 @@ describe('NotesStore', () => {
     s.applyRemote('B', notes(2, 'x')); expect(l).toHaveBeenCalledTimes(3);
     s.adoptGuest('A'); expect(l).toHaveBeenCalledTimes(4);
     off(); s.save(notes(9, 'x')); expect(l).toHaveBeenCalledTimes(4);
+  });
+});
+
+describe('NotesStore với ghi chú tự do', () => {
+  it('lưu, đọc lại và bỏ khỏi list khi xóa item cuối', () => {
+    const storage = memoryStorage();
+    const s = createNotesStore(storage);
+    s.setOwner('A');
+    const free = createFreeNote(-7, { title: 'T', content: 'c' }, 'i1', 9);
+    s.save(free);
+    expect(s.get(-7)).toEqual(free);
+    const s2 = createNotesStore(storage);
+    s2.setOwner('A');
+    expect(s2.list().map((n) => n.qid)).toContain(-7);
+    s2.save(removeItem(s2.get(-7)!, 'i1', 10));
+    expect(s2.list().map((n) => n.qid)).not.toContain(-7);
   });
 });
