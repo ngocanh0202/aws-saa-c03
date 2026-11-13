@@ -35,6 +35,7 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
   const mobile = useMobile();
   const [expanded, setExpanded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const pressedBackdrop = useRef(false);
   const close = useRef(onClose);
   useLayoutEffect(() => {
     close.current = onClose;
@@ -126,6 +127,7 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
         role="dialog"
         aria-modal={modal || undefined}
         aria-label={ariaLabel}
+        onPointerDownCapture={() => (pressedBackdrop.current = false)}
       >
         {split && (
           <div
@@ -172,7 +174,18 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
         <div className="note-sheet__body">{children}</div>
       </div>
       {/* Đứng sau khung để khung giữ nguyên vị trí trong cây (không mount lại) khi lớp nền bật/tắt. */}
-      {modal && <div className="note-sheet__backdrop" style={{ zIndex: z! - 1 }} onClick={onClose} />}
+      {modal && (
+        <div
+          className="note-sheet__backdrop"
+          style={{ zIndex: z! - 1 }}
+          // Chỉ đóng khi bấm hẳn vào nền: bôi chọn chữ trong ô rồi thả chuột ra ngoài không làm mất chữ đang gõ.
+          onPointerDown={(e) => (pressedBackdrop.current = e.target === e.currentTarget)}
+          onClick={(e) => {
+            if (pressedBackdrop.current && e.target === e.currentTarget) onClose();
+            pressedBackdrop.current = false;
+          }}
+        />
+      )}
     </>,
     document.body,
   );

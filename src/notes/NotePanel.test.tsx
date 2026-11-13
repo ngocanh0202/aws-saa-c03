@@ -125,6 +125,25 @@ describe('NotePanel — đổi cỡ giữ chữ đang gõ', () => {
 });
 
 describe('NotePanel — popup chồng lên khung', () => {
+  it('bôi chọn trong ô rồi thả chuột ngoài popup: không đóng, không mất chữ; bấm hẳn ra nền thì đóng', () => {
+    const { panel } = mount();
+    fireEvent.click(within(panel).getByRole('button', { name: 'Ghi chú mới' }));
+    const pop = screen.getByRole('dialog', { name: 'Ghi chú mới · Câu 1' });
+    const content = within(pop).getByRole('textbox', { name: 'Nội dung' });
+    fireEvent.change(content, { target: { value: 'đang gõ dở' } });
+    const backdrop = document.querySelectorAll('.note-sheet__backdrop');
+    const back = backdrop[backdrop.length - 1] as HTMLElement;
+    fireEvent.pointerDown(content);
+    fireEvent.pointerUp(back);
+    fireEvent.click(back);
+    expect(screen.getByRole('dialog', { name: 'Ghi chú mới · Câu 1' })).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog', { name: 'Ghi chú mới · Câu 1' })).getByRole('textbox', { name: 'Nội dung' })).toHaveValue('đang gõ dở');
+    fireEvent.pointerDown(back);
+    fireEvent.pointerUp(back);
+    fireEvent.click(back);
+    expect(screen.queryByRole('dialog', { name: 'Ghi chú mới · Câu 1' })).toBeNull();
+  });
+
   it('Esc trong popup Ghi chú mới chỉ đóng popup, khung vẫn mở', () => {
     const { panel, onClose } = mount();
     fireEvent.click(within(panel).getByRole('button', { name: 'Ghi chú mới' }));
