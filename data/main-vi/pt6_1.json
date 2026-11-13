@@ -585,5 +585,283 @@
     ],
     "explanationVi": "Hai yêu cầu: traffic tới S3 không đi qua internet, và rẻ nhất. Gateway endpoint cho S3 đáp ứng cả hai: traffic đi trong mạng AWS, chỉ cần thêm route, không tính phí, và còn bớt được phí xử lý dữ liệu của NAT gateway. Bẫy: interface endpoint cũng riêng tư nhưng có phí; giới hạn bucket theo IP của NAT vẫn để traffic ra internet.",
     "keyHint": "\"prohibits any data traffic from traversing the internet\" + S3 + \"most cost-effective\" → S3 gateway VPC endpoint."
+  },
+  {
+    "id": 11145,
+    "stemVi": "Ứng dụng của bạn chạy trên các Amazon EC2 instance đứng sau một Application Load Balancer. Gần đây hạ tầng bị tấn công. Kẻ tấn công gửi hơn 100 request mỗi giây, trong khi người dùng bình thường chỉ gửi khoảng 5 request mỗi giây.",
+    "promptVi": "Làm sao ngăn kẻ tấn công làm quá tải ứng dụng một cách hiệu quả?",
+    "options": [
+      { "key": "A", "textVi": "Định nghĩa một network access control list (network ACL) trên Application Load Balancer.", "reason": "Network ACL gắn với subnet chứ không gắn với load balancer, và chỉ lọc theo IP/port tĩnh, không đếm được tốc độ request của từng nguồn." },
+      { "key": "B", "textVi": "Dùng AWS Shield Advanced và thiết lập một rate-based rule.", "reason": "Rate-based rule là loại rule của AWS WAF chứ không phải của Shield Advanced; Shield Advanced là gói chống DDoS trả phí cao, bản thân nó cũng dựa vào WAF để chặn tấn công tầng ứng dụng, nên không phải cách hiệu quả cho nhu cầu này." },
+      { "key": "C", "textVi": "Cấu hình Sticky Sessions trên Application Load Balancer.", "reason": "Sticky session chỉ gắn request của một client vào cùng một target; nó không chặn hay giới hạn request của kẻ tấn công." },
+      { "key": "D", "textVi": "Dùng AWS Web Application Firewall (AWS WAF) và thiết lập một rate-based rule.", "reason": "WAF gắn trực tiếp vào ALB; rate-based rule đếm request theo từng IP (hoặc khóa khác) trong một khoảng thời gian và chặn nguồn vượt ngưỡng — chặn được kẻ gửi 100 request/giây mà không ảnh hưởng người dùng bình thường." }
+    ],
+    "explanationVi": "Đặc điểm của cuộc tấn công là tốc độ request từ mỗi nguồn cao bất thường (100 so với 5 request/giây). Rate-based rule của AWS WAF gắn trên ALB làm đúng việc này: đếm request theo từng IP và tự chặn khi vượt ngưỡng. Bẫy: rate-based rule là tính năng của WAF, không phải Shield Advanced; network ACL không gắn vào ALB; sticky session không liên quan tới bảo mật.",
+    "keyHint": "\"Attackers perform over 100 requests per second\" trên ALB → AWS WAF rate-based rule."
+  },
+  {
+    "id": 11146,
+    "stemVi": "Nhóm kỹ sư của một công ty IT đang triển khai ứng dụng xử lý giao dịch trực tuyến (Online Transactional Processing - OLTP) cần hỗ trợ truy vấn quan hệ. Ứng dụng sẽ có những đợt tăng tải khó đoán mà nhóm không biết trước.",
+    "promptVi": "Bạn đề xuất dùng cơ sở dữ liệu nào?",
+    "options": [
+      { "key": "A", "textVi": "Amazon DynamoDB với On-Demand Capacity", "reason": "On-Demand xử lý tốt tải khó đoán, nhưng DynamoDB là NoSQL key-value/document, không hỗ trợ truy vấn quan hệ (join) như đề yêu cầu." },
+      { "key": "B", "textVi": "Amazon ElastiCache", "reason": "ElastiCache là cache trong bộ nhớ, không phải cơ sở dữ liệu quan hệ cho ứng dụng OLTP." },
+      { "key": "C", "textVi": "Amazon DynamoDB với Provisioned Capacity và Auto Scaling", "reason": "Vẫn là NoSQL nên không đáp ứng truy vấn quan hệ; Auto Scaling của chế độ provisioned cũng phản ứng chậm hơn với đột biến bất ngờ." },
+      { "key": "D", "textVi": "Amazon Aurora Serverless", "reason": "Aurora Serverless là cơ sở dữ liệu quan hệ (MySQL/PostgreSQL) tự co giãn năng lực theo tải, hợp với OLTP có đợt tăng tải khó đoán mà không phải quản lý instance." }
+    ],
+    "explanationVi": "Hai điều kiện lọc: cần truy vấn quan hệ (loại DynamoDB và ElastiCache) và tải tăng đột biến không biết trước (cần tự co giãn). Aurora Serverless đáp ứng cả hai. Lưu ý: Aurora Serverless v1 đã hết vòng đời (31/03/2025); Aurora Serverless v2 hiện nay co giãn mịn theo ACU và từ 11/2024 có thể tự dừng về 0 ACU khi không có kết nối. Bẫy: DynamoDB On-Demand co giãn tốt nhưng không phải cơ sở dữ liệu quan hệ.",
+    "keyHint": "\"OLTP\" + \"relational queries\" + \"unpredictable spikes\" → Amazon Aurora Serverless."
+  },
+  {
+    "id": 11147,
+    "stemVi": "Một công ty đang gặp vấn đề ổn định với cluster RabbitMQ message broker tự quản lý và muốn tìm giải pháp thay thế trên AWS.",
+    "promptVi": "Là solutions architect, bạn đề xuất dịch vụ AWS nào sau đây hỗ trợ di chuyển nhanh và dễ dàng từ RabbitMQ?",
+    "options": [
+      { "key": "A", "textVi": "Amazon MQ", "reason": "Amazon MQ là message broker được quản lý, hỗ trợ cả Apache ActiveMQ và RabbitMQ; ứng dụng giữ nguyên giao thức (AMQP) và code client, chỉ đổi endpoint — di chuyển nhanh nhất." },
+      { "key": "B", "textVi": "Amazon SQS FIFO (First-In-First-Out)", "reason": "SQS dùng API riêng của AWS, không tương thích giao thức RabbitMQ, nên phải viết lại phần messaging của ứng dụng." },
+      { "key": "C", "textVi": "Amazon Simple Notification Service (Amazon SNS)", "reason": "SNS là dịch vụ pub/sub với API riêng, không tương thích RabbitMQ nên không di chuyển nhanh được." },
+      { "key": "D", "textVi": "Amazon Simple Queue Service (Amazon SQS) Standard", "reason": "Giống SQS FIFO: phải sửa code để chuyển sang API của SQS, không phải cách di chuyển nhanh, dễ dàng." }
+    ],
+    "explanationVi": "Khi ứng dụng đã dùng message broker chuẩn (RabbitMQ, ActiveMQ) và muốn chuyển lên cloud nhanh, AWS khuyến nghị Amazon MQ vì nó chạy chính các engine đó dưới dạng dịch vụ được quản lý (Amazon MQ hỗ trợ RabbitMQ từ 11/2020). Bẫy: SQS và SNS là dịch vụ cloud-native rất tốt cho ứng dụng mới, nhưng đòi viết lại code nên không phải di chuyển nhanh.",
+    "keyHint": "\"self-managed RabbitMQ\" + \"quick and easy migration\" → Amazon MQ."
+  },
+  {
+    "id": 11148,
+    "stemVi": "Một startup công nghệ đã ổn định hạ tầng cloud sau khi ra mắt sản phẩm thành công. Các dịch vụ backend nay chạy ở mức ổn định, dễ dự đoán, rất ít khi phải scale. Kiến trúc ứng dụng gồm workload trên Amazon EC2, các AWS Lambda function xử lý bất đồng bộ, workload container trên AWS Fargate và các mô hình suy luận (inference) machine learning triển khai bằng Amazon SageMaker. Công ty đang tập trung giảm chi phí vận hành dài hạn mà không thiết kế lại kiến trúc. Công ty muốn áp dụng chiết khấu giá dài hạn với ít công quản trị nhất, phạm vi dịch vụ được giảm giá rộng nhất, dùng ít Savings Plan nhất.",
+    "promptVi": "Tổ hợp Savings Plan nào đáp ứng các yêu cầu này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Mua một Reserved Instance cho mỗi EC2 instance và đăng ký AWS Support để theo dõi mức sử dụng Reserved Instance hằng tháng.", "reason": "RI chỉ giảm giá cho EC2, không áp cho Lambda, Fargate hay SageMaker; quản lý từng RI và theo dõi hằng tháng tốn công quản trị." },
+      { "key": "B", "textVi": "Mua một SageMaker Savings Plan áp giá chiết khấu cho SageMaker training, inference và notebook instance.", "reason": "Compute Savings Plans không áp cho SageMaker; SageMaker Savings Plan (nay gọi là SageMaker AI Savings Plans) là loại riêng giảm giá cho training, inference và notebook của SageMaker." },
+      { "key": "C", "textVi": "Đăng ký một gói chiết khấu triển khai hybrid gồm giảm giá cho cả workload Kubernetes trên AWS và on-premises.", "reason": "AWS không có gói chiết khấu nào như vậy; Savings Plans chỉ áp cho mức dùng dịch vụ AWS." },
+      { "key": "D", "textVi": "Mua một EC2 Instance Savings Plan áp cho EC2 và các task container trên Amazon ECS chạy launch type Fargate.", "reason": "EC2 Instance Savings Plan chỉ áp cho một instance family trong một Region của EC2, không áp cho Fargate hay Lambda." },
+      { "key": "E", "textVi": "Mua một Compute Savings Plan giảm chi phí cho mức dùng trên EC2, Fargate và Lambda.", "reason": "Compute Savings Plan là loại linh hoạt nhất, tự áp cho EC2 (mọi family, Region), Fargate và Lambda — một plan phủ ba dịch vụ mà không phải sửa kiến trúc." }
+    ],
+    "explanationVi": "Có bốn loại workload: EC2, Lambda, Fargate và SageMaker. Compute Savings Plan phủ ba loại đầu, còn SageMaker cần SageMaker Savings Plan riêng — hai plan là ít nhất để phủ hết. Bẫy: EC2 Instance Savings Plan không áp cho Fargate; Reserved Instance chỉ cho EC2; gói chiết khấu hybrid Kubernetes không tồn tại.",
+    "keyHint": "\"EC2, Lambda, Fargate, SageMaker\" + \"fewest number of savings plans\" → Compute Savings Plan + SageMaker Savings Plan."
+  },
+  {
+    "id": 11149,
+    "stemVi": "Một công ty truyền thông đang hiện đại hóa ứng dụng xử lý ảnh cũ (legacy) bằng cách chuyển từ môi trường on-premises lên AWS. Ứng dụng xử lý khối lượng lớn job biến đổi ảnh và tạo ra các file đầu ra lớn. Để phục vụ tăng trưởng nhanh, công ty muốn một giải pháp cloud-native tự động scale, giảm thiểu can thiệp thủ công và không phải quản lý máy chủ hay hạ tầng. Nhóm cũng muốn tự động hóa workflow tốt hơn để xử lý thứ tự các tác vụ và chuyển trạng thái của job.",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các yêu cầu này với ít công vận hành nhất (least operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Kết hợp các AWS Lambda function với EC2 Spot Instance để xử lý. Lưu ảnh đã xử lý trong Amazon FSx.", "reason": "Trộn Lambda (giới hạn 15 phút) với Spot Instance phải tự quản lý, không có lớp điều phối thứ tự và trạng thái job; FSx là file system phải cấu hình, kém phù hợp hơn S3 để lưu output lớn." },
+      { "key": "B", "textVi": "Dùng Amazon EC2 Auto Scaling group với một nhóm instance cố định để xử lý ảnh. Kích hoạt từng job qua Step Functions và lưu kết quả trên các EBS volume gắn kèm.", "reason": "Nhóm instance cố định không tự scale theo khối lượng job và vẫn phải quản lý máy chủ; EBS gắn với từng instance nên khó dùng chung output." },
+      { "key": "C", "textVi": "Triển khai Amazon Elastic Kubernetes Service (Amazon EKS) với worker node EC2 tự quản lý để xử lý ảnh. Dùng Amazon SQS xếp hàng job và lưu output trong Amazon EBS volume.", "reason": "Node EKS tự quản lý đòi vá lỗi, lập kế hoạch năng lực, quản lý vòng đời node — trái yêu cầu không quản lý hạ tầng; SQS chỉ xếp hàng chứ không điều phối thứ tự, trạng thái job." },
+      { "key": "D", "textVi": "Dùng AWS Batch để xử lý các job ảnh. Điều phối workflow bằng AWS Step Functions và lưu file đầu ra trong Amazon S3.", "reason": "AWS Batch tự cấp phát và scale tài nguyên chạy job; Step Functions điều phối thứ tự tác vụ, trạng thái và retry; S3 lưu file output lớn bền vững — toàn dịch vụ được quản lý." }
+    ],
+    "explanationVi": "Đề cần ba thứ: chạy khối lượng lớn job tự scale mà không quản lý máy chủ, điều phối thứ tự và trạng thái job, và chỗ lưu file output lớn. AWS Batch (có thể chạy trên Fargate hoặc compute environment được quản lý) + Step Functions + S3 đáp ứng đủ. Bẫy: EKS với node tự quản lý hay Auto Scaling group cố định đều phải quản lý hạ tầng; EBS và FSx không phải nơi lưu output lớn tiện nhất.",
+    "keyHint": "\"high volume of image transformation jobs\" + \"task sequencing and job state transitions\" + \"avoids managing servers\" → AWS Batch + Step Functions + S3."
+  },
+  {
+    "id": 11150,
+    "stemVi": "Một công ty IT dùng các hàng đợi Amazon Simple Queue Service (Amazon SQS) để tách rời (decouple) các thành phần trong kiến trúc ứng dụng. Do các thành phần tiêu thụ cần thêm thời gian để xử lý message, công ty muốn hoãn việc giao message mới trong hàng đợi vài giây.",
+    "promptVi": "Là solutions architect, bạn đề xuất giải pháp nào sau đây cho công ty?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Amazon SQS FIFO queue để hoãn việc giao message mới trong hàng đợi vài giây.", "reason": "FIFO queue bảo đảm thứ tự và xử lý đúng một lần; bản thân loại hàng đợi này không phải cơ chế hoãn giao message." },
+      { "key": "B", "textVi": "Dùng visibility timeout để hoãn việc giao message mới trong hàng đợi vài giây.", "reason": "Visibility timeout ẩn message sau khi đã có consumer nhận nó, để tránh consumer khác xử lý trùng; nó không hoãn message mới ngay khi được gửi vào." },
+      { "key": "C", "textVi": "Dùng dead-letter queue để hoãn việc giao message mới trong hàng đợi vài giây.", "reason": "Dead-letter queue chứa các message xử lý thất bại nhiều lần để phân tích, không dùng để hoãn giao message." },
+      { "key": "D", "textVi": "Dùng delay queue để hoãn việc giao message mới trong hàng đợi vài giây.", "reason": "Delay queue giữ mọi message mới vô hình với consumer trong khoảng delay cấu hình (0 giây tới 15 phút) — đúng nhu cầu hoãn giao message mới vài giây." }
+    ],
+    "explanationVi": "Hoãn message mới ngay từ lúc gửi vào hàng đợi là chức năng của delay queue (mặc định 0, tối đa 15 phút). Bẫy chính là visibility timeout: nó cũng làm message tạm vô hình, nhưng chỉ sau khi message đã được một consumer nhận, nhằm tránh xử lý trùng.",
+    "keyHint": "\"postpone the delivery of new messages ... for a few seconds\" → SQS delay queue."
+  },
+  {
+    "id": 11151,
+    "stemVi": "Một công ty giúp khách hàng ký hợp lệ các hợp đồng tuyệt mật. Để đáp ứng yêu cầu ngành khắt khe, công ty phải bảo đảm hợp đồng đã ký được mã hóa bằng thuật toán độc quyền của công ty. Công ty đang chuyển lên AWS Cloud, dùng Amazon Simple Storage Service (Amazon S3), và muốn bạn, solutions architect, tư vấn cơ chế mã hóa nên dùng.",
+    "promptVi": "Bạn đề xuất gì?",
+    "options": [
+      { "key": "A", "textVi": "Client Side Encryption (mã hóa phía client)", "reason": "Dữ liệu được mã hóa ngay tại phía công ty trước khi gửi lên S3, nên công ty tự chọn được thuật toán độc quyền; S3 chỉ lưu dữ liệu đã mã hóa." },
+      { "key": "B", "textVi": "Server-side encryption với khóa do Amazon S3 quản lý (SSE-S3)", "reason": "S3 tự mã hóa bằng AES-256 với khóa của S3; công ty không chọn được thuật toán." },
+      { "key": "C", "textVi": "Server-side encryption với khóa do khách hàng cung cấp (SSE-C)", "reason": "Công ty cung cấp khóa nhưng S3 vẫn mã hóa bằng AES-256; thuật toán không đổi được." },
+      { "key": "D", "textVi": "Server-side encryption với khóa AWS KMS (SSE-KMS)", "reason": "Khóa nằm trong KMS và việc mã hóa do AWS thực hiện bằng thuật toán chuẩn của AWS, không dùng được thuật toán độc quyền." }
+    ],
+    "explanationVi": "Mọi kiểu server-side encryption của S3 (SSE-S3, SSE-KMS, SSE-C) đều do S3 mã hóa bằng thuật toán chuẩn (AES-256); chúng chỉ khác nhau ở chỗ ai quản lý khóa. Muốn dùng thuật toán độc quyền thì phải mã hóa ở phía client trước khi tải lên. Bẫy: SSE-C cho tự cung cấp khóa nhưng không cho tự chọn thuật toán.",
+    "keyHint": "\"encrypted using the company's proprietary algorithm\" → Client Side Encryption."
+  },
+  {
+    "id": 11152,
+    "stemVi": "Nhóm data engineering của một công ty muốn phân tích mẫu truy cập storage trên Amazon S3 để quyết định khi nào chuyển đúng dữ liệu sang đúng storage class.",
+    "promptVi": "Phát biểu nào sau đây đúng về khả năng của Amazon S3 Analytics storage class analysis?",
+    "options": [
+      { "key": "A", "textVi": "Storage class analysis chỉ đưa khuyến nghị chuyển từ Standard sang Standard One-Zone IA.", "reason": "Sai: storage class analysis không đưa khuyến nghị cho One Zone-IA." },
+      { "key": "B", "textVi": "Storage class analysis chỉ đưa khuyến nghị chuyển từ Standard sang Standard IA.", "reason": "Đúng: tính năng này quan sát mẫu truy cập để gợi ý thời điểm chuyển dữ liệu từ STANDARD sang STANDARD_IA, dùng làm căn cứ viết lifecycle rule." },
+      { "key": "C", "textVi": "Storage class analysis chỉ đưa khuyến nghị chuyển từ Standard sang Glacier Deep Archive.", "reason": "Sai: storage class analysis không đưa khuyến nghị cho các lớp Glacier." },
+      { "key": "D", "textVi": "Storage class analysis chỉ đưa khuyến nghị chuyển từ Standard sang Glacier Flexible Retrieval.", "reason": "Sai: storage class analysis không đưa khuyến nghị cho các lớp Glacier." }
+    ],
+    "explanationVi": "S3 storage class analysis theo dõi mẫu truy cập của một nhóm object (cả bucket, hoặc lọc theo prefix, tag) và chỉ đưa khuyến nghị cho một hướng chuyển: từ Standard sang Standard-IA. Các lớp khác như One Zone-IA hay Glacier không nằm trong phạm vi khuyến nghị.",
+    "keyHint": "\"S3 Analytics storage class analysis\" → chỉ khuyến nghị Standard → Standard-IA."
+  },
+  {
+    "id": 11153,
+    "stemVi": "Một nhóm phát triển tìm giải pháp tiết kiệm thời gian phát triển và chi phí triển khai cho một ứng dụng dùng mẫu message request-response với thông lượng cao.",
+    "promptVi": "Loại hàng đợi Amazon SQS nào sau đây phù hợp nhất với yêu cầu này?",
+    "options": [
+      { "key": "A", "textVi": "Amazon Simple Queue Service (Amazon SQS) delay queue", "reason": "Delay queue hoãn giao message mới, không hỗ trợ gì riêng cho mẫu request-response." },
+      { "key": "B", "textVi": "Amazon Simple Queue Service (Amazon SQS) temporary queue", "reason": "Temporary queue (qua Temporary Queue Client) tạo các hàng đợi ảo nhẹ cho từng tiến trình trên một hàng đợi SQS thật, phục vụ mẫu request-response với thông lượng cao, ít lời gọi API, tự dọn khi không dùng — tiết kiệm công phát triển và chi phí." },
+      { "key": "C", "textVi": "Amazon Simple Queue Service (Amazon SQS) FIFO queue", "reason": "FIFO queue bảo đảm thứ tự và không trùng lặp nhưng thông lượng bị giới hạn hơn standard và không giải quyết việc tạo kênh phản hồi cho request-response." },
+      { "key": "D", "textVi": "Amazon Simple Queue Service (Amazon SQS) dead-letter queue", "reason": "Dead-letter queue chứa message xử lý thất bại, không liên quan tới mẫu request-response." }
+    ],
+    "explanationVi": "Mẫu request-response cần một kênh trả lời riêng cho mỗi bên gửi; tạo và xóa hàng đợi SQS thật cho từng kênh thì tốn API call và chi phí. Temporary queue giải quyết đúng việc này: Temporary Queue Client gộp nhiều hàng đợi ảo lên một hàng đợi SQS, tương thích API cũ và tự dọn dẹp. Các loại delay, FIFO, dead-letter phục vụ mục đích khác.",
+    "keyHint": "\"request-response message pattern\" + \"saves development time and deployment costs\" → SQS temporary queues."
+  },
+  {
+    "id": 11154,
+    "stemVi": "Một startup y tế đang triển khai nền tảng phân tích trên AWS xử lý hồ sơ bệnh nhân nhạy cảm. Backend dùng Amazon RDS cho dữ liệu có cấu trúc và Amazon S3 để lưu file y tế. S3 Event Notifications kích hoạt AWS Lambda để phân loại dữ liệu và cảnh báo theo thời gian thực. Startup dùng AWS IAM Identity Center để quản lý truy cập liên kết (federated) từ thư mục doanh nghiệp. Các nhóm development, operations và compliance cần quyền truy cập chi tiết, an toàn vào tài nguyên RDS và S3, dựa đúng theo vai trò công việc. Công ty phải tuân theo nguyên tắc đặc quyền tối thiểu (least privilege) đồng thời giảm thiểu công quản trị thủ công.",
+    "promptVi": "Công ty nên triển khai giải pháp nào để đáp ứng các yêu cầu này với ít công vận hành nhất (least operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo IAM user riêng cho từng thành viên. Gắn IAM policy theo vai trò cấp quyền RDS và S3 theo nhóm. Dùng AWS IAM Access Analyzer theo dõi quyền không dùng và xoay vòng access key định kỳ.", "reason": "IAM user và access key dài hạn cho từng người là tốn công quản trị và kém an toàn, lại bỏ qua IAM Identity Center và thư mục doanh nghiệp đã có." },
+      { "key": "B", "textVi": "Dùng AWS IAM Identity Center tích hợp với thư mục của tổ chức. Định nghĩa permission set với policy least privilege cho Amazon RDS và Amazon S3. Đưa người dùng vào các group theo vai trò nhóm và gán các group đó với permission set phù hợp.", "reason": "Tận dụng Identity Center đã có: permission set theo vai trò cấp quyền tối thiểu, gán theo group của thư mục doanh nghiệp nên người dùng vào/ra nhóm là quyền tự đổi — ít công quản trị, không có credential dài hạn." },
+      { "key": "C", "textVi": "Tạo một IAM identity provider tích hợp với IdP của công ty (ví dụ Azure AD hay Okta). Dùng SAML federation cấp quyền vào các IAM role được gán thủ công cho từng người. Tạo và duy trì inline IAM policy cho từng role để truy cập RDS và S3.", "reason": "Gán role thủ công cho từng người và tự duy trì inline policy cho từng role là nhiều việc quản trị hơn hẳn permission set của Identity Center." },
+      { "key": "D", "textVi": "Dùng AWS Organizations gom các tài khoản của nhóm vào một organizational unit (OU). Gắn Service Control Policy (SCP) vào OU để định ranh giới truy cập Amazon RDS và Amazon S3 theo trách nhiệm từng nhóm. Gán người dùng vào tài khoản và để SCP áp quyền.", "reason": "SCP chỉ đặt giới hạn quyền tối đa cho tài khoản, không cấp quyền cho người dùng nào; nó không phân quyền theo vai trò từng người được." }
+    ],
+    "explanationVi": "Công ty đã dùng IAM Identity Center với thư mục doanh nghiệp, nên cách ít công nhất là định nghĩa permission set least privilege và gán theo group. Thay đổi thành viên trong thư mục là quyền trên AWS tự đổi theo. Bẫy: IAM user từng người hay role gán thủ công đều tốn công; SCP chỉ là ranh giới, không cấp quyền.",
+    "keyHint": "\"AWS IAM Identity Center\" + \"based strictly on their job roles\" + \"least operational overhead\" → permission set gán theo group."
+  },
+  {
+    "id": 11155,
+    "stemVi": "Một công ty bán lẻ cần kết nối an toàn giữa data center on-premises và AWS Cloud. Kết nối không cần băng thông cao và chỉ xử lý lượng traffic nhỏ. Công ty muốn thiết lập kết nối nhanh.",
+    "promptVi": "Cách nào tiết kiệm chi phí nhất (MOST cost-effective) để thiết lập kết nối như vậy?",
+    "options": [
+      { "key": "A", "textVi": "Thiết lập AWS Direct Connect", "reason": "Direct Connect là đường truyền riêng băng thông cao, mất nhiều tuần để kéo và đắt — thừa cho lượng traffic nhỏ và không thiết lập nhanh được." },
+      { "key": "B", "textVi": "Thiết lập một Internet Gateway giữa data center on-premises và AWS cloud", "reason": "Internet gateway chỉ cho VPC ra internet, không tạo kết nối mã hóa tới data center on-premises." },
+      { "key": "C", "textVi": "Thiết lập một bastion host trên Amazon EC2", "reason": "Bastion host dùng để quản trị SSH/RDP vào instance, không phải kết nối mạng site-to-site giữa data center và AWS." },
+      { "key": "D", "textVi": "Thiết lập một kết nối AWS Site-to-Site VPN", "reason": "Site-to-Site VPN tạo tunnel IPsec mã hóa qua internet, dựng trong vài giờ, tính phí theo giờ kết nối — rẻ và nhanh, đủ cho lượng traffic nhỏ." }
+    ],
+    "explanationVi": "Yêu cầu: an toàn, traffic nhỏ, dựng nhanh, rẻ nhất. Site-to-Site VPN đáp ứng đủ: mã hóa IPsec qua internet, cấu hình nhanh, chi phí thấp. Bẫy: Direct Connect hợp với băng thông lớn và ổn định nhưng đắt và lâu triển khai; internet gateway và bastion host không phải kết nối site-to-site.",
+    "keyHint": "\"does not need high bandwidth\" + \"quick turnaround\" + \"MOST cost-effective\" → AWS Site-to-Site VPN."
+  },
+  {
+    "id": 11156,
+    "stemVi": "Một nhóm có khoảng 200 người, mỗi người có một IAM user trong AWS. Hiện tất cả đều có quyền đọc một Amazon S3 bucket. Nhóm muốn 50 người trong số đó có quyền ghi và đọc các bucket.",
+    "promptVi": "Làm sao cấp quyền cho những người dùng này trong thời gian ngắn nhất, với ít thay đổi nhất?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một group, gắn policy vào group và đưa các user vào group.", "reason": "Gắn policy ghi một lần vào group rồi thêm 50 user vào group; về sau thêm, bớt người chỉ cần đổi thành viên group — nhanh và dễ quản lý nhất." },
+      { "key": "B", "textVi": "Cập nhật Amazon S3 bucket policy.", "reason": "Liệt kê 50 user ARN trong bucket policy chạy được nhưng khó bảo trì, mỗi lần đổi người phải sửa policy, và bucket policy giới hạn 20 KB." },
+      { "key": "C", "textVi": "Tạo một policy và gán thủ công cho 50 user.", "reason": "Gán từng user một tốn thời gian và về sau khó quản lý hơn dùng group." },
+      { "key": "D", "textVi": "Tạo một AWS Multi-Factor Authentication (AWS MFA) user có quyền đọc/ghi và liên kết 50 IAM user với AWS MFA.", "reason": "Không có khái niệm \"MFA user\"; MFA là yếu tố xác thực bổ sung cho một danh tính, không phải cách cấp quyền." }
+    ],
+    "explanationVi": "Cấp cùng một quyền cho một nhóm IAM user là đúng việc của IAM group: gắn policy một lần, thêm user vào group. Bẫy: bucket policy liệt kê user khó bảo trì; gán policy cho từng user tốn công; MFA không cấp quyền.",
+    "keyHint": "\"50 among them\" cần thêm quyền + \"minimal changes\" → IAM group gắn policy."
+  },
+  {
+    "id": 11157,
+    "stemVi": "Một doanh nghiệp toàn cầu duy trì môi trường hybrid cloud và muốn chuyển khối lượng lớn dữ liệu giữa data center on-premises và Amazon S3 cho việc sao lưu và phân tích. Công ty đã có kết nối Direct Connect (DX) tới AWS và muốn bảo đảm kết nối riêng tư băng thông cao, độ trễ thấp, an toàn, không đi qua internet công cộng. Kiến trúc phải truy cập Amazon S3 trực tiếp từ các hệ thống on-premises qua kết nối DX này.",
+    "promptVi": "Nhóm kỹ sư mạng nên triển khai cấu hình nào để truy cập trực tiếp Amazon S3 từ data center on-premises bằng Direct Connect?",
+    "options": [
+      { "key": "A", "textVi": "Cấp phát một Public Virtual Interface (Public VIF) trên kết nối Direct Connect để truy cập các địa chỉ IP public của Amazon S3 từ data center on-premises.", "reason": "Public VIF quảng bá các dải IP public của dịch vụ AWS (gồm S3) tới router on-premises, nên traffic tới S3 đi trên đường DX riêng thay vì internet — truy cập S3 trực tiếp, không cần đi qua VPC." },
+      { "key": "B", "textVi": "Dùng một Private Virtual Interface (Private VIF) trên kết nối Direct Connect và tạo một VPC endpoint để định tuyến traffic tới S3 qua mạng riêng.", "reason": "Theo đáp án gốc, Private VIF chỉ nối tới tài nguyên trong VPC. Lưu ý: nếu VPC endpoint là gateway endpoint thì on-premises không dùng được, nhưng với S3 interface endpoint (AWS PrivateLink) thì cách này chạy được qua Private VIF, có thêm phí endpoint." },
+      { "key": "C", "textVi": "Cấu hình kết nối VPN qua internet công cộng tới AWS và định tuyến traffic S3 qua tunnel thay vì dùng Direct Connect.", "reason": "Traffic đi qua internet công cộng, trái yêu cầu không đi qua internet, và bỏ phí kết nối DX băng thông cao đã có." },
+      { "key": "D", "textVi": "Dùng Transit Gateway với Direct Connect Gateway để định tuyến traffic on-premises qua một VPC rồi tới Amazon S3 bằng địa chỉ IP private.", "reason": "Đi vòng qua VPC thêm Transit Gateway và (để có IP private tới S3) cần interface endpoint, phức tạp và tốn phí hơn; không phải truy cập S3 trực tiếp qua DX." }
+    ],
+    "explanationVi": "Theo tài liệu Direct Connect, public virtual interface dùng để truy cập các dịch vụ AWS có endpoint public như S3 qua đường DX, không đi qua internet, cũng không cần đi vòng qua VPC — đó là ý của đáp án. Bẫy: private VIF chỉ tới VPC, và gateway endpoint của S3 không dùng được từ on-premises; VPN qua internet vi phạm yêu cầu. Từ 02/2021 còn có cách dùng S3 interface endpoint (PrivateLink) qua private VIF nếu muốn dùng IP private.",
+    "keyHint": "\"access Amazon S3 directly from on-premises\" qua \"Direct Connect\" → Public Virtual Interface.",
+    "review": {"reason": "Chưa chắc chắn: từ 02/02/2021 Amazon S3 hỗ trợ AWS PrivateLink (thông báo \"Amazon S3 now supports AWS PrivateLink\"): tạo S3 interface endpoint trong VPC thì hệ thống on-premises truy cập S3 bằng IP private qua Direct Connect private VIF hoặc VPN. Phương án Private VIF kèm VPC endpoint vì thế cũng bảo vệ được nếu hiểu là interface endpoint, và còn khớp ý \"secure private connectivity\" hơn (không dùng IP public); đề không nói rõ loại endpoint. Public VIF vẫn là đáp án kinh điển, đơn giản và không tốn phí endpoint."}
+  },
+  {
+    "id": 11158,
+    "stemVi": "Một ứng dụng mạng xã hội cho người dùng tải ảnh lên và chỉnh sửa ảnh. Ứng dụng có hai hạng dịch vụ: pro và lite. Nhóm sản phẩm muốn ảnh của người dùng pro được xử lý trước ảnh của người dùng lite. Ảnh được tải lên Amazon S3 và thông tin job được gửi vào Amazon SQS.",
+    "promptVi": "Là solutions architect, bạn đề xuất giải pháp nào sau đây?",
+    "options": [
+      { "key": "A", "textVi": "Tạo hai Amazon SQS standard queue: một cho pro, một cho lite. Đặt hàng đợi lite dùng short polling và hàng đợi pro dùng long polling.", "reason": "Short polling hay long polling chỉ ảnh hưởng cách lấy message (trả về ngay hay chờ có message), không quyết định hàng đợi nào được xử lý trước." },
+      { "key": "B", "textVi": "Tạo một Amazon SQS standard queue. Đặt visibility timeout của ảnh pro bằng 0. Cấu hình các Amazon EC2 instance ưu tiên theo thiết lập visibility để xử lý ảnh pro trước.", "reason": "Visibility timeout chỉ ẩn message sau khi đã nhận để tránh xử lý trùng; nó không tạo thứ tự ưu tiên trong một hàng đợi." },
+      { "key": "C", "textVi": "Tạo hai Amazon SQS standard queue: một cho pro, một cho lite. Cấu hình các Amazon EC2 instance ưu tiên poll hàng đợi pro trước hàng đợi lite.", "reason": "AWS khuyến nghị dùng hàng đợi riêng để ưu tiên công việc: worker luôn lấy message từ hàng đợi pro trước, chỉ khi hàng đợi pro trống mới lấy từ lite." },
+      { "key": "D", "textVi": "Tạo hai Amazon SQS FIFO queue: một cho pro, một cho lite. Đặt hàng đợi lite dùng short polling và hàng đợi pro dùng long polling.", "reason": "FIFO chỉ giữ thứ tự trong cùng một hàng đợi, còn kiểu polling không tạo ưu tiên giữa hai hàng đợi." }
+    ],
+    "explanationVi": "SQS không có độ ưu tiên message trong một hàng đợi. Cách AWS khuyến nghị là tách thành nhiều hàng đợi theo mức ưu tiên và để consumer poll hàng đợi ưu tiên cao trước. Bẫy: long/short polling, visibility timeout hay FIFO đều không tạo ưu tiên giữa các loại job.",
+    "keyHint": "\"pro users ... processed before ... lite users\" với SQS → hai hàng đợi, worker ưu tiên poll hàng đợi pro."
+  },
+  {
+    "id": 11159,
+    "stemVi": "Một startup edtech chạy nền tảng quản lý khóa học trong private subnet của một VPC trên AWS. Ứng dụng dùng Amazon Cognito user pool để xác thực. Nay nhóm muốn mở rộng ứng dụng để người dùng đã xác thực có thể tải lên và truy cập tài liệu khóa học cá nhân trong Amazon S3. Giải pháp phải bảo đảm kiểm soát truy cập S3 bucket có khả năng mở rộng (scalable), chi tiết (fine-grained) và an toàn, đồng thời giữ kiến trúc mạng riêng tư cho ứng dụng.",
+    "promptVi": "Tổ hợp bước nào giúp tích hợp S3 an toàn cho workload này? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Amazon S3 VPC endpoint trong VPC chứa ứng dụng để có kết nối riêng tư giữa ứng dụng và S3.", "reason": "Ứng dụng ở private subnet; VPC endpoint cho S3 giúp truy cập S3 mà không qua internet hay NAT gateway, giữ đúng kiến trúc mạng riêng tư." },
+      { "key": "B", "textVi": "Tạo một Amazon Cognito identity pool cho phép federated identity. Dùng nó cấp AWS credential tạm thời có quyền truy cập S3 khi người dùng xác thực thành công.", "reason": "User pool chỉ xác thực; identity pool đổi token đó lấy credential AWS tạm thời gắn IAM role, có thể giới hạn mỗi người chỉ vào prefix của mình (biến ${cognito-identity.amazonaws.com:sub}) — chi tiết, an toàn, mở rộng được." },
+      { "key": "C", "textVi": "Gắn một S3 bucket policy chỉ cho phép truy cập nếu request có custom HTTP header chứa Cognito user ID hợp lệ.", "reason": "Bucket policy không kiểm tra được custom HTTP header; giá trị header lại do client tự đặt nên không phải cơ chế xác thực an toàn." },
+      { "key": "D", "textVi": "Cấu hình một AWS Lambda function làm proxy chuyển file người dùng tải lên S3. Gọi Lambda function sau mỗi lần người dùng đăng nhập để tách biệt quyền truy cập S3.", "reason": "Gọi Lambda khi đăng nhập không tạo ra kiểm soát truy cập theo người dùng; proxy mọi file qua Lambda còn vướng giới hạn kích thước payload và tốn công vận hành." },
+      { "key": "E", "textVi": "Dùng Amazon Cognito user pool hiện có để cấp trực tiếp cho người dùng quyền tải lên và tải xuống object trong S3 bucket.", "reason": "User pool chỉ là thư mục người dùng và phát JWT; nó không cấp credential AWS hay quyền IAM để gọi S3." }
+    ],
+    "explanationVi": "Có hai vấn đề: phân quyền S3 theo từng người dùng đã đăng nhập, và giữ mạng riêng tư. Cognito identity pool cấp credential AWS tạm thời theo IAM role (có thể giới hạn theo prefix của từng người); VPC endpoint cho S3 giúp ứng dụng ở private subnet tới S3 mà không ra internet. Bẫy: user pool tự nó không cấp quyền AWS; bucket policy không xác thực bằng custom header.",
+    "keyHint": "\"Cognito user pools\" + \"fine-grained ... access control to the S3 bucket\" + \"private subnet\" → Cognito identity pool + S3 VPC endpoint."
+  },
+  {
+    "id": 11160,
+    "stemVi": "Một công ty nghiên cứu lưu trữ các bộ dữ liệu thí nghiệm do thiết bị phòng lab tự động tạo ra. Mỗi bộ dữ liệu khoảng 10 MB, được truy cập thường xuyên để phân tích trong tháng đầu tiên. Sau đó tần suất truy cập giảm mạnh, nhưng dữ liệu vẫn phải lấy ra được ngay khi cần. Theo chính sách tuân thủ, mỗi bộ dữ liệu phải được lưu trên AWS đúng 4 năm rồi mới xóa. Công ty hiện lưu dữ liệu trong Amazon S3 Standard và muốn giảm tối đa chi phí mà không ảnh hưởng tính sẵn sàng hay tốc độ truy xuất dữ liệu.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với chi phí thấp nhất (most cost-effectively)?",
+    "options": [
+      { "key": "A", "textVi": "Cấu hình S3 Lifecycle policy chuyển bộ dữ liệu sang S3 Glacier Flexible Retrieval sau 30 ngày và tự xóa 4 năm sau khi tạo.", "reason": "Glacier Flexible Retrieval phải restore mất từ vài phút tới vài giờ trước khi đọc, vi phạm yêu cầu lấy ra ngay." },
+      { "key": "B", "textVi": "Định nghĩa S3 Lifecycle policy chuyển bộ dữ liệu sang S3 Standard-Infrequent Access (S3 Standard-IA) 30 ngày sau khi tạo và lên lịch xóa mỗi object đúng 4 năm sau khi tạo.", "reason": "Standard-IA rẻ hơn Standard cho dữ liệu ít truy cập, vẫn đọc ngay trong mili giây với độ sẵn sàng cao nhiều AZ; lifecycle expiration xóa object đúng 4 năm." },
+      { "key": "C", "textVi": "Định nghĩa S3 Lifecycle policy chuyển bộ dữ liệu sang S3 Glacier Instant Retrieval 30 ngày sau khi tạo và lên lịch xóa mỗi object đúng 4 năm sau khi tạo.", "reason": "Theo đáp án gốc, phí truy xuất của Glacier Instant Retrieval (khoảng 0,03 USD/GB) cao gấp ba Standard-IA nên không tối ưu nếu dữ liệu còn được đọc. Thực tế giá lưu trữ của lớp này chỉ khoảng một phần ba Standard-IA, vẫn đọc ngay trong mili giây." },
+      { "key": "D", "textVi": "Thiết lập S3 Lifecycle configuration chuyển mọi bộ dữ liệu sang S3 One Zone-Infrequent Access (S3 One Zone-IA) sau 30 ngày và xóa vĩnh viễn 4 năm sau khi tạo.", "reason": "One Zone-IA chỉ lưu ở một AZ, mất AZ là mất hoặc không truy cập được dữ liệu — trái yêu cầu không ảnh hưởng tính sẵn sàng cho dữ liệu tuân thủ." }
+    ],
+    "explanationVi": "Sau tháng đầu, dữ liệu ít truy cập nhưng vẫn phải đọc được ngay, nhiều AZ, và lưu đúng 4 năm. Đáp án gốc chọn chuyển sang Standard-IA sau 30 ngày (đúng mốc tối thiểu để chuyển sang IA) và dùng lifecycle expiration xóa sau 4 năm. Bẫy: Glacier Flexible Retrieval phải restore; One Zone-IA giảm tính sẵn sàng. Lựa chọn giữa Standard-IA và Glacier Instant Retrieval phụ thuộc tần suất đọc thực tế (xem mục review).",
+    "keyHint": "\"access rate drops significantly\" + \"immediately retrievable\" + \"exactly 4 years\" → lifecycle chuyển sang lớp truy xuất tức thì sau 30 ngày + expiration 4 năm.",
+    "review": {"reason": "Chưa chắc chắn: theo bảng giá S3 (us-east-1), Glacier Instant Retrieval lưu khoảng 0,004 USD/GB-tháng so với 0,0125 của Standard-IA, chỉ phí truy xuất cao hơn (0,03 so với 0,01 USD/GB) và lưu tối thiểu 90 ngày. Mỗi GB dùng Instant Retrieval tiết kiệm khoảng 0,0085 USD/tháng, chỉ mất lợi thế khi mỗi dữ liệu được đọc lại nhiều hơn khoảng một lần mỗi 2–3 tháng. Đề chỉ nói tần suất \"giảm mạnh\" và dữ liệu giữ 4 năm (vượt xa mốc 90 ngày), object 10 MB lớn hơn mức tối thiểu 128 KB, nên Glacier Instant Retrieval (vẫn đọc trong mili giây, nhiều AZ) có thể rẻ hơn; chính giải thích gốc cũng tự mâu thuẫn khi vừa nói lớp này đắt hơn mỗi GB vừa nêu giá lưu trữ rẻ hơn 68%."}
+  },
+  {
+    "id": 11161,
+    "stemVi": "Một công ty có nhiều Amazon Virtual Private Cloud (Amazon VPC) ở nhiều tài khoản khác nhau, cần được nối với nhau theo mạng hình sao (star network) và kết nối với mạng on-premises qua AWS Direct Connect.",
+    "promptVi": "Bạn đề xuất gì?",
+    "options": [
+      { "key": "A", "textVi": "Virtual private gateway (VGW)", "reason": "VGW gắn với một VPC để kết nối VPN/Direct Connect cho riêng VPC đó; nó không làm hub nối nhiều VPC với nhau." },
+      { "key": "B", "textVi": "AWS PrivateLink", "reason": "PrivateLink cho phép truy cập riêng tư tới một service cụ thể qua interface endpoint, không định tuyến toàn bộ mạng giữa nhiều VPC và on-premises." },
+      { "key": "C", "textVi": "VPC Peering Connection", "reason": "VPC peering chỉ nối hai VPC và không có transit routing; nối nhiều VPC phải tạo peering đầy đủ từng cặp (mesh) và không đi qua được tới on-premises." },
+      { "key": "D", "textVi": "AWS Transit Gateway", "reason": "Transit Gateway là hub trung tâm: mỗi VPC (kể cả ở tài khoản khác, chia sẻ qua AWS RAM) và kết nối Direct Connect chỉ cần một attachment, mọi mạng định tuyến qua hub — đúng mô hình hình sao." }
+    ],
+    "explanationVi": "Mạng hình sao nối nhiều VPC nhiều tài khoản với nhau và với on-premises là đúng vai trò của Transit Gateway (kết hợp Direct Connect Gateway cho phần DX). Bẫy: VPC peering không transit nên chỉ thành mạng lưới từng cặp; VGW chỉ phục vụ một VPC; PrivateLink là truy cập service, không phải định tuyến mạng.",
+    "keyHint": "\"many VPCs in various accounts\" + \"star network\" + \"Direct Connect\" → AWS Transit Gateway."
+  },
+  {
+    "id": 11162,
+    "stemVi": "Một ứng dụng chạy trên nhiều Amazon EC2 instance trong cùng một Availability Zone (AZ). Nhóm kỹ sư muốn dùng chung dữ liệu giữa các EC2 instance này bằng Amazon EBS Multi-Attach volume.",
+    "promptVi": "Loại Amazon EBS volume nào là lựa chọn đúng cho các Amazon EC2 instance này?",
+    "options": [
+      { "key": "A", "textVi": "Amazon EBS volume Cold HDD", "reason": "Volume HDD (sc1) không hỗ trợ Multi-Attach." },
+      { "key": "B", "textVi": "Amazon EBS volume General-purpose SSD", "reason": "Volume General Purpose SSD (gp2, gp3) không hỗ trợ Multi-Attach." },
+      { "key": "C", "textVi": "Amazon EBS volume Throughput Optimized HDD", "reason": "Volume HDD (st1) không hỗ trợ Multi-Attach." },
+      { "key": "D", "textVi": "Amazon EBS volume Provisioned IOPS SSD", "reason": "Multi-Attach chỉ hỗ trợ trên Provisioned IOPS SSD (io1, io2), cho một volume gắn đồng thời vào nhiều instance trong cùng AZ với quyền đọc ghi." }
+    ],
+    "explanationVi": "EBS Multi-Attach cho phép gắn một volume vào nhiều instance trong cùng AZ, nhưng chỉ áp dụng cho Provisioned IOPS SSD (io1, io2). Ứng dụng phải tự quản lý ghi đồng thời (ví dụ dùng file system có hỗ trợ cluster). Các loại gp2/gp3, st1, sc1 đều không hỗ trợ.",
+    "keyHint": "\"EBS Multi-Attach\" → chỉ Provisioned IOPS SSD (io1/io2)."
+  },
+  {
+    "id": 11163,
+    "stemVi": "Bạn đã triển khai một công nghệ cơ sở dữ liệu có chế độ sao chép đồng bộ (synchronous replication) để chịu được thảm họa ở data center. Vì vậy database được triển khai trên hai Amazon EC2 instance ở hai Availability Zone (AZ). Database phải truy cập công khai được nên bạn đặt các EC2 instance trong public subnet. Giao thức sao chép hiện đang dùng địa chỉ IP public của các EC2 instance.",
+    "promptVi": "Bạn có thể làm gì để giảm chi phí sao chép?",
+    "options": [
+      { "key": "A", "textVi": "Dùng IP private của các Amazon EC2 instance cho việc sao chép.", "reason": "Theo đáp án gốc, dùng IP private giữ traffic sao chép trong mạng riêng của VPC, không tính như traffic qua IP public, nên giảm chi phí." },
+      { "key": "B", "textVi": "Tạo một Private Link giữa hai Amazon EC2 instance.", "reason": "PrivateLink dùng để cung cấp một service (sau NLB) cho VPC khác qua interface endpoint, không phải đường nối giữa hai instance trong cùng VPC, lại phát sinh thêm phí endpoint." },
+      { "key": "C", "textVi": "Dùng Elastic Fabric Adapter (EFA)", "reason": "EFA tăng hiệu năng giao tiếp cho HPC/ML, không giảm chi phí truyền dữ liệu; traffic OS-bypass của EFA cũng không đi qua được giữa các AZ." },
+      { "key": "D", "textVi": "Gán Elastic IP address (EIP) cho các Amazon EC2 instance và dùng chúng để sao chép.", "reason": "Elastic IP vẫn là địa chỉ IPv4 public, traffic qua nó tính phí như IP public nên không giảm chi phí." }
+    ],
+    "explanationVi": "Ý của đề: traffic giữa hai instance qua địa chỉ IP public (hay Elastic IP) bị tính phí truyền dữ liệu, còn dùng IP private trong cùng VPC thì rẻ hơn — nên đổi giao thức sao chép sang IP private. Chính xác hơn: qua IP private trong cùng AZ là miễn phí, nhưng giữa hai AZ vẫn tính phí cross-AZ (xem mục review). Bẫy: Elastic IP vẫn là IP public; PrivateLink và EFA không phải công cụ giảm chi phí sao chép.",
+    "keyHint": "\"replication protocol currently uses the EC2 public IP addresses\" + \"decrease the replication cost\" → dùng IP private.",
+    "review": {"reason": "Chưa chắc chắn: theo phần Data Transfer của trang giá EC2 On-Demand, traffic giữa các AZ trong cùng Region tính 0,01 USD/GB mỗi chiều kể cả khi dùng IP private, và traffic qua địa chỉ IPv4 public hay Elastic IP trong cùng Region cũng tính 0,01 USD/GB mỗi chiều. Với hai instance ở hai AZ như đề, chuyển sang IP private không làm giảm đơn giá truyền dữ liệu (chỉ miễn phí khi cùng AZ); traffic qua IP public trong cùng Region cũng không đi ra internet như giải thích gốc nói. Đây vẫn là lựa chọn duy nhất hợp lý trong các phương án vì các phương án còn lại đều sai về kỹ thuật."}
+  },
+  {
+    "id": 11164,
+    "stemVi": "Một developer đã cấu hình cho phép lưu lượng inbound trên các port cần thiết ở cả Security Group của Amazon EC2 instance lẫn Network Access Control List (Network ACL) của subnet chứa instance đó. Tuy vậy, developer vẫn không kết nối được tới service đang chạy trên Amazon EC2 instance.",
+    "promptVi": "Là solutions architect, bạn sẽ khắc phục vấn đề này thế nào?",
+    "options": [
+      { "key": "A", "textVi": "Security Group là stateful, nên cho phép lưu lượng inbound tới các port cần thiết là đủ để kết nối. Network ACL là stateless, nên phải cho phép cả lưu lượng inbound lẫn outbound", "reason": "Security Group tự cho phép phản hồi của kết nối đã được cho vào, nhưng Network ACL thì không; vì developer mới mở inbound, cần thêm rule outbound trên Network ACL cho dải ephemeral port (1024-65535) để phản hồi đi ra được." },
+      { "key": "B", "textVi": "Network ACL là stateful, nên cho phép lưu lượng inbound tới các port cần thiết là đủ để kết nối. Security Group là stateless, nên phải cho phép cả lưu lượng inbound lẫn outbound", "reason": "Phát biểu này đảo ngược bản chất hai lớp: Security Group mới là stateful, còn Network ACL là stateless." },
+      { "key": "C", "textVi": "Rule của Network ACL không bao giờ được sửa từ dòng lệnh. Sửa rule từ dòng lệnh sẽ khóa rule và gây hành vi thất thường", "reason": "Không có giới hạn nào như vậy: rule của Network ACL sửa được bằng console, CLI hay API như nhau." },
+      { "key": "D", "textVi": "IAM Role định nghĩa trong Security Group khác với IAM Role được cấp quyền trong Network ACL", "reason": "Security Group và Network ACL lọc lưu lượng theo IP, port và giao thức; chúng không chứa hay dùng IAM Role." }
+    ],
+    "explanationVi": "Security Group là stateful: cho phép inbound thì phản hồi tự được phép đi ra. Network ACL là stateless: phải có rule riêng cho cả chiều vào và chiều ra, trong đó chiều ra là phản hồi tới ephemeral port của client. Developer mới mở inbound ở cả hai nơi nên phản hồi bị Network ACL chặn. Bẫy là phương án đảo ngược stateful/stateless.",
+    "keyHint": "\"configured inbound traffic\" ở cả Security Group và Network ACL nhưng vẫn \"unable to connect\" → Network ACL stateless, cần mở thêm outbound (ephemeral port)."
+  },
+  {
+    "id": 11165,
+    "stemVi": "Một công ty dịch vụ tài chính vận hành nền tảng xử lý giao dịch trọng yếu (mission-critical) ở AWS Region us-east-2. Backend dùng một Amazon Aurora cluster tương thích MySQL, với khối lượng giao dịch lớn suốt cả ngày. Trong kế hoạch duy trì hoạt động kinh doanh, công ty chọn us-west-2 làm Region khôi phục thảm họa (disaster recovery - DR).\n\nCông ty đặt mục tiêu DR nghiêm ngặt:\n\nRecovery Point Objective (RPO): ≤ 5 phút\n\nRecovery Time Objective (RTO): ≤ 15 phút\n\nBan lãnh đạo yêu cầu một giải pháp DR bảo đảm failover nhanh giữa các Region với ít công vận hành và cấu hình nhất.",
+    "promptVi": "Bạn đề xuất gì?",
+    "options": [
+      { "key": "A", "textVi": "Chuyển Aurora cluster thành Aurora global database, với secondary cluster đặt ở us-west-2. Dựa vào managed failover của Aurora global database để đạt mục tiêu RTO và RPO.", "reason": "Global database sao chép ở tầng storage sang Region phụ với độ trễ thường dưới một giây (RPO tính bằng giây), và failover/switchover được quản lý nâng secondary lên primary trong vài phút — đạt RPO 5 phút, RTO 15 phút với ít công cấu hình." },
+      { "key": "B", "textVi": "Tạo một Aurora read replica ở us-west-2 có năng lực tương đương writer node của primary cluster ở us-east-2. Theo dõi tình trạng sao chép và lập quy trình promote thủ công khi failover.", "reason": "Cross-Region read replica dùng sao chép binlog, độ trễ có thể tăng khi tải ghi lớn, và promote thủ công thêm công vận hành, khó bảo đảm RTO — kém hơn global database." },
+      { "key": "C", "textVi": "Cấp phát một Aurora cluster tương thích MySQL riêng ở us-west-2 và cấu hình AWS Database Migration Service (AWS DMS) sao chép liên tục dữ liệu từ database chính sang cluster DR. Failover thủ công khi có sự cố.", "reason": "Phải vận hành DMS task, theo dõi độ trễ CDC và failover thủ công — nhiều công vận hành, khó bảo đảm RPO, RTO hơn tính năng có sẵn của Aurora." },
+      { "key": "D", "textVi": "Triển khai một Aurora cluster riêng ở us-west-2 và dùng các AWS Lambda function chạy theo lịch với script tùy biến để export và import snapshot từ us-east-2 mỗi 5 phút.", "reason": "Tạo, sao chép và restore snapshot của cluster lớn mất nhiều hơn 5 phút mỗi vòng, nên không đạt RPO; restore khi sự cố cũng khó đạt RTO và script tự viết rất mong manh." }
+    ],
+    "explanationVi": "RPO 5 phút và RTO 15 phút giữa hai Region với ít công vận hành là trường hợp điển hình của Aurora Global Database: sao chép tầng storage với độ trễ thường dưới một giây và failover được quản lý sang Region phụ trong vài phút. Bẫy: read replica, DMS hay snapshot theo lịch đều phải tự vận hành và khó bảo đảm RPO/RTO.",
+    "keyHint": "\"cross-regional failover\" + \"RPO ≤ 5 minutes, RTO ≤ 15 minutes\" + \"minimal operational overhead\" → Aurora Global Database."
   }
 ]

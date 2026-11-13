@@ -612,8 +612,7 @@
     "services": [
       "s3",
       "s3-glacier"
-    ],
-    "note": "Giải thích gốc nói S3 Glacier Instant Retrieval đắt hơn mỗi GB so với Standard-IA, nhưng thực tế GIR có giá lưu trữ thấp hơn (khoảng 0,004 so với 0,0125 USD/GB-tháng), chỉ phí truy xuất cao hơn. Với dữ liệu hiếm truy cập thì GIR có thể rẻ hơn, nên đáp án Standard-IA là tranh cãi."
+    ]
   },
   {
     "id": 11161,
@@ -650,8 +649,7 @@
     "services": [
       "vpc",
       "ec2"
-    ],
-    "note": "Đề bài giống hệt câu 10528 (Main 5, file pt3_1, vị trí 28); chỉ khác thứ tự lựa chọn. Đáp án đúng (Security Group stateful, network ACL stateless) và giải thích hai bên nhất quán, không bên nào sai."
+    ]
   },
   {
     "id": 11165,
