@@ -262,7 +262,8 @@
     "services": [
       "s3",
       "rds"
-    ]
+    ],
+    "note": "Giải thích gốc tiếng Anh nói không thể nhập dữ liệu từ Amazon S3 vào Amazon RDS — đã lỗi thời: từ 04/2019 RDS for PostgreSQL nhập được file từ S3 bằng extension aws_s3 (hàm aws_s3.table_import_from_s3). Cách đó vẫn phải nạp toàn bộ 50 TB chỉ để lấy 250 byte đầu mỗi file, nên đáp án Byte Range Fetch không đổi."
   },
   {
     "id": 11127,
@@ -375,7 +376,8 @@
       "guardduty",
       "inspector",
       "organizations"
-    ]
+    ],
+    "note": "Giải thích gốc tiếng Anh nói Firewall Manager không hỗ trợ network ACL — đã lỗi thời: từ 04/2024 Firewall Manager có policy network ACL để tạo và quản lý rule NACL tập trung cho subnet trên các tài khoản. Network ACL không có trong các lựa chọn nên đáp án không đổi."
   },
   {
     "id": 11138,

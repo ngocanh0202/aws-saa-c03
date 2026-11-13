@@ -292,5 +292,298 @@
     ],
     "explanationVi": "Tiến trình chạy 30 phút, chịu được gián đoạn và chạy lại được — đúng đặc điểm hợp với Spot Instance, lựa chọn compute rẻ nhất. Kiểu request persistent giúp request được mở lại sau khi Spot bị thu hồi để tiến trình chạy lại. Bẫy: Lambda bị giới hạn 15 phút; EMR quá nặng; ALB không chạy code.",
     "keyHint": "\"can withstand any interruptions\" + \"MOST cost-effective\" + 30 phút → Spot Instance (persistent request), không phải Lambda."
+  },
+  {
+    "id": 11123,
+    "stemVi": "Một công ty streaming nội dung số muốn dùng Amazon CloudFront để phân phối nội dung chỉ cho những người đăng ký dịch vụ (subscriber).",
+    "promptVi": "Là solutions architect, bạn đề xuất những giải pháp nào sau đây để chỉ giao nội dung bị giới hạn cho đúng người dùng hợp lệ? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Chuyển tiếp request HTTPS tới origin server bằng cipher ECDSA hoặc RSA.", "reason": "Chọn cipher chỉ ảnh hưởng tới việc mã hóa kết nối CloudFront–origin, không xác định người xem nào được quyền xem nội dung." },
+      { "key": "B", "textVi": "Bắt buộc HTTPS cho kết nối giữa Amazon CloudFront và S3 origin.", "reason": "HTTPS chỉ mã hóa đường truyền giữa CloudFront và S3; ai có link vẫn xem được, không giới hạn theo subscriber." },
+      { "key": "C", "textVi": "Bắt buộc HTTPS cho kết nối giữa Amazon CloudFront và custom origin.", "reason": "Giống như với S3 origin: chỉ bảo vệ đường truyền tới origin, không kiểm soát người xem nào được truy cập." },
+      { "key": "D", "textVi": "Dùng Amazon CloudFront signed cookies.", "reason": "Signed cookie cho phép người dùng hợp lệ truy cập nhiều file bị giới hạn (ví dụ cả khu vực dành cho subscriber) mà không phải đổi URL." },
+      { "key": "E", "textVi": "Dùng Amazon CloudFront signed URLs.", "reason": "Signed URL chứa chữ ký và thời hạn hết hiệu lực, chỉ người được cấp URL mới truy cập được từng file bị giới hạn." }
+    ],
+    "explanationVi": "Giới hạn nội dung theo người xem trên CloudFront là việc của signed URL (từng file) và signed cookie (nhiều file, giữ nguyên URL): ứng dụng chỉ cấp chúng cho subscriber đã xác thực. Bẫy: các lựa chọn về HTTPS hay cipher chỉ mã hóa đường truyền tới origin, không quyết định ai được xem.",
+    "keyHint": "\"distribute its content only to its service subscribers\" → CloudFront signed URLs / signed cookies."
+  },
+  {
+    "id": 11124,
+    "stemVi": "Bạn đang triển khai một ứng dụng monolith quan trọng bắt buộc chạy trên một web server duy nhất, vì ứng dụng không được viết để chạy phân tán. Dù vậy, bạn vẫn muốn hệ thống tự động phục hồi khi một Availability Zone (AZ) gặp sự cố.",
+    "promptVi": "Nên kết hợp những lựa chọn nào sau đây để có giải pháp tiết kiệm chi phí nhất (MOST cost-efficient)? (Chọn ba.)",
+    "options": [
+      { "key": "A", "textVi": "Gán một Amazon EC2 Instance Role để thực hiện các lời gọi API cần thiết.", "reason": "Script user data cần gọi API (gắn Elastic IP) nên instance phải có IAM role với quyền tương ứng, thay vì nhúng access key vào máy." },
+      { "key": "B", "textVi": "Tạo một Auto Scaling group trải trên 2 Availability Zone với min=1, max=2, desired=2.", "reason": "desired=2 sẽ chạy hai web server cùng lúc, trái với ràng buộc ứng dụng chỉ chạy trên một server và tốn gấp đôi." },
+      { "key": "C", "textVi": "Tạo một Elastic IP address (EIP) và dùng script user data của Amazon EC2 để gắn nó.", "reason": "Instance thay thế có IP mới; script user data gắn lại cùng Elastic IP khi khởi động nên người dùng vẫn truy cập cùng địa chỉ mà không cần load balancer." },
+      { "key": "D", "textVi": "Tạo một Auto Scaling group trải trên 2 Availability Zone với min=1, max=1, desired=1.", "reason": "Luôn giữ đúng một instance; khi instance hay AZ của nó hỏng, Auto Scaling tự launch instance mới ở AZ còn lại." },
+      { "key": "E", "textVi": "Tạo một Spot Fleet request.", "reason": "Spot có thể bị thu hồi bất cứ lúc nào, không phù hợp với ứng dụng quan trọng chỉ có một server, và Spot Fleet không giải quyết việc phục hồi khi mất AZ." },
+      { "key": "F", "textVi": "Tạo một Application Load Balancer và một target group chứa (các) instance của Auto Scaling group.", "reason": "Dùng được để giữ địa chỉ cố định, nhưng ALB tính phí theo giờ cho chỉ một instance phía sau; Elastic IP gắn bằng user data rẻ hơn." }
+    ],
+    "explanationVi": "Ứng dụng chỉ chạy một server, nên Auto Scaling group min=max=desired=1 trải hai AZ là cách tự phục hồi: mất AZ thì instance mới được launch ở AZ kia. Để người dùng vẫn vào đúng địa chỉ, script user data gắn lại Elastic IP, và instance cần IAM role để gọi API gắn EIP. Bẫy: ALB cũng chạy được nhưng tốn tiền hơn cho một instance; desired=2 vi phạm ràng buộc một server.",
+    "keyHint": "\"single web server\" + \"automatically recover from the failure of an AZ\" + \"MOST cost-efficient\" → ASG 1/1/1 hai AZ + Elastic IP gắn bằng user data + instance role."
+  },
+  {
+    "id": 11125,
+    "stemVi": "Một doanh nghiệp công nghệ vận hành nhiều workload trên Amazon EC2, AWS Fargate và AWS Lambda ở nhiều nhóm. Để tối ưu chi phí compute, công ty đã mua Compute Savings Plans. Nhóm cloud operations cần một giải pháp không chỉ theo dõi mức sử dụng mà còn tự động gửi cảnh báo khi mức độ bao phủ (coverage) của Compute Savings Plans xuống dưới ngưỡng định sẵn.",
+    "promptVi": "Cách nào hiệu quả vận hành nhất (MOST operationally efficient) để làm việc này?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Budgets tạo một coverage budget theo ngày dành riêng cho Compute Savings Plans. Đặt ngưỡng coverage và cấu hình thông báo tới những người liên quan.", "reason": "AWS Budgets có sẵn loại Savings Plans coverage budget, theo dõi tỷ lệ bao phủ theo ngày và tự gửi thông báo (email, SNS) khi xuống dưới ngưỡng — không phải viết code hay dựng hạ tầng." },
+      { "key": "B", "textVi": "Viết script tùy biến gọi Savings Plans utilization API và đẩy kết quả vào một Amazon S3 bucket. Dùng Amazon QuickSight để trực quan hóa coverage và gửi báo cáo qua email hằng tuần.", "reason": "Phải tự viết, vận hành script và dashboard; báo cáo hằng tuần không phải cảnh báo tự động kịp thời khi coverage giảm." },
+      { "key": "C", "textVi": "Tạo một dashboard riêng trong Amazon CloudWatch để theo dõi mức dùng EC2 và Fargate. Dùng metric math để ước tính coverage và kích hoạt alarm.", "reason": "CloudWatch không có sẵn số liệu coverage của Savings Plans; tự ước tính bằng metric math vừa phức tạp vừa thiếu Lambda và thiếu chính xác." },
+      { "key": "D", "textVi": "Bật khuyến nghị của Compute Optimizer cho EC2 và Fargate. Cấu hình thông báo tự động về cơ hội tối ưu chi phí và việc coverage của Savings Plans giảm.", "reason": "Compute Optimizer đưa khuyến nghị chọn đúng kích cỡ tài nguyên, không theo dõi coverage của Savings Plans hay cảnh báo khi coverage giảm." }
+    ],
+    "explanationVi": "Theo dõi tỷ lệ bao phủ của Savings Plans và cảnh báo khi xuống dưới ngưỡng là đúng tính năng Savings Plans coverage budget của AWS Budgets, cấu hình vài bước là xong. Bẫy: script + QuickSight hay CloudWatch metric math đều phải tự xây; Compute Optimizer là công cụ rightsizing, không đo coverage.",
+    "keyHint": "\"alerts when coverage ... of the Compute Savings Plans fall below a defined threshold\" → AWS Budgets Savings Plans coverage budget."
+  },
+  {
+    "id": 11126,
+    "stemVi": "Bạn muốn xây dựng chỉ mục (index) cho các file trong Amazon S3 bằng Amazon RDS PostgreSQL. Để làm việc này, cần đọc 250 byte đầu tiên của mỗi object trong S3, phần chứa một số metadata về nội dung của file. S3 bucket có hơn 100.000 file, tổng cộng 50 terabyte dữ liệu.",
+    "promptVi": "Làm thế nào để xây dựng chỉ mục này một cách hiệu quả?",
+    "options": [
+      { "key": "A", "textVi": "Viết một ứng dụng duyệt qua S3 bucket, gửi Byte Range Fetch lấy 250 byte đầu và lưu thông tin đó vào Amazon RDS.", "reason": "GET với header Range chỉ tải đúng 250 byte cần thiết của mỗi object, nên chỉ truyền khoảng 25 MB thay vì 50 TB — nhanh và rẻ nhất." },
+      { "key": "B", "textVi": "Viết một ứng dụng duyệt qua Amazon S3 bucket, đọc toàn bộ từng file một, trích 250 byte đầu và lưu thông tin đó vào Amazon RDS.", "reason": "Tải toàn bộ 50 TB chỉ để lấy 250 byte đầu mỗi file là lãng phí băng thông, thời gian và chi phí." },
+      { "key": "C", "textVi": "Viết một ứng dụng duyệt qua Amazon S3 bucket, rồi dùng tham số Byte Range Fetch của S3 Select để lấy 250 byte đầu và lưu thông tin đó vào Amazon RDS.", "reason": "S3 Select dùng để truy vấn SQL trên file CSV/JSON/Parquet và không có tham số \"Byte Range Fetch\"; Byte Range Fetch là header Range của lệnh GET thông thường." },
+      { "key": "D", "textVi": "Dùng tính năng Import của Amazon RDS để nạp dữ liệu từ Amazon S3 vào PostgreSQL, rồi chạy truy vấn SQL để xây chỉ mục.", "reason": "RDS for PostgreSQL có nhập được file từ S3 (extension aws_s3), nhưng phải nạp toàn bộ 50 TB vào database chỉ để lấy 250 byte đầu mỗi file — chậm, tốn storage và chỉ hợp với dữ liệu dạng bảng như CSV." }
+    ],
+    "explanationVi": "Chỉ cần 250 byte đầu của mỗi object, nên cách hiệu quả là chỉ tải đúng phần đó bằng Byte Range Fetch (header Range trong GET Object). Bẫy: đọc cả file hay import toàn bộ vào RDS đều phải kéo 50 TB; \"Byte Range Fetch của S3 Select\" là tham số không tồn tại, và S3 Select cũng đã đóng với khách hàng mới.",
+    "keyHint": "\"read the first 250 bytes of each object\" → S3 Byte Range Fetch (header Range)."
+  },
+  {
+    "id": 11127,
+    "stemVi": "Quản trị viên hệ thống của một công ty muốn dựng kiến trúc có tính sẵn sàng cao (highly available) cho giải pháp bastion host.",
+    "promptVi": "Là solutions architect, bạn đề xuất giải pháp nào sau đây?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Network Load Balancer public trỏ tới các Amazon EC2 instance làm bastion host do một Auto Scaling Group quản lý.", "reason": "Bastion host dùng SSH (TCP cổng 22); NLB cân bằng tải ở tầng 4 nên chuyển được kết nối TCP này tới các bastion khỏe mạnh, còn Auto Scaling Group thay bastion hỏng." },
+      { "key": "B", "textVi": "Tạo một Application Load Balancer public trỏ tới các Amazon EC2 instance làm bastion host do một Auto Scaling Group quản lý.", "reason": "ALB chỉ xử lý HTTP/HTTPS (tầng 7), không chuyển tiếp được kết nối SSH thuần TCP." },
+      { "key": "C", "textVi": "Tạo một VPC Endpoint cho nhóm Amazon EC2 instance làm bastion host do một Auto Scaling Group quản lý.", "reason": "VPC endpoint dùng để truy cập riêng tư tới dịch vụ AWS hay endpoint service từ trong VPC, không phải điểm truy cập công khai có cân bằng tải cho bastion." },
+      { "key": "D", "textVi": "Tạo một Elastic IP address (EIP) và gán nó cho tất cả Amazon EC2 instance làm bastion host do một Auto Scaling Group quản lý.", "reason": "Một Elastic IP chỉ gắn được cho một instance tại một thời điểm, không gán cho nhiều instance cùng lúc." }
+    ],
+    "explanationVi": "Bastion host nhận kết nối SSH — giao thức TCP — từ bên ngoài. Để sẵn sàng cao, đặt nhiều bastion trong Auto Scaling Group sau một NLB public, vì NLB cân bằng tải TCP ở tầng 4. Bẫy: ALB chỉ hiểu HTTP/HTTPS; một Elastic IP không dùng chung cho nhiều instance được. Ngoài phạm vi đề, ngày nay AWS Systems Manager Session Manager hay EC2 Instance Connect Endpoint thường thay được bastion.",
+    "keyHint": "\"highly available\" + \"bastion host\" (SSH/TCP) → Network Load Balancer public + Auto Scaling Group."
+  },
+  {
+    "id": 11128,
+    "stemVi": "Một nhà cung cấp dịch vụ tài chính toàn cầu chạy workload phân tích dữ liệu trên nhiều AWS Region. Công ty lưu các bộ dữ liệu chịu quản lý (regulated) trong các Amazon S3 bucket và cần nhìn thấy cấu hình bảo mật và tuân thủ. Trong một đợt kiểm toán mới, nhóm tuân thủ phải xác định mọi S3 bucket trong toàn môi trường chưa bật versioning. Giải pháp phải mở rộng ra mọi Region và tài khoản với ít thao tác thủ công nhất.",
+    "promptVi": "Giải pháp nào đáp ứng các yêu cầu này với ít công vận hành nhất (LEAST operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Bật IAM Access Analyzer cho mọi Region. Xem báo cáo của analyzer để tìm S3 bucket chưa bật versioning và cấu hình IAM policy hạn chế truy cập tới các bucket đó.", "reason": "IAM Access Analyzer phân tích policy để tìm quyền truy cập từ bên ngoài, không báo trạng thái versioning của bucket." },
+      { "key": "B", "textVi": "Tạo một Amazon S3 Multi-Region Access Point tập trung cho mọi bucket. Dùng access point này để kiểm tra versioning bằng chương trình qua metadata của object trong từng bucket.", "reason": "Multi-Region Access Point dùng để định tuyến request tới bucket ở nhiều Region, không phải công cụ kiểm toán cấu hình; đọc metadata object để suy ra versioning vừa vòng vèo vừa phải tự viết code." },
+      { "key": "C", "textVi": "Bật Amazon S3 Storage Lens với advanced metrics and recommendations. Dùng dashboard theo từng bucket để lọc và xem trạng thái versioning trên các Region, tìm mọi bucket chưa bật versioning.", "reason": "Storage Lens tổng hợp số liệu của mọi bucket trên mọi Region và tài khoản trong organization, có chỉ số data protection về versioning theo từng bucket — chỉ cần bật và lọc trên dashboard." },
+      { "key": "D", "textVi": "Cấu hình một AWS CloudTrail trail trên mọi Region. Tạo Amazon EventBridge rule lọc các lời gọi API PutBucketVersioning và DeleteBucketVersioning. Kích hoạt một AWS Lambda function phân tích cấu hình bucket và tạo báo cáo các bucket chưa bật versioning.", "reason": "Chỉ bắt được bucket có thay đổi versioning sau khi bật, bỏ sót các bucket chưa từng bật; lại phải tự viết và vận hành Lambda." }
+    ],
+    "explanationVi": "Đề cần một cái nhìn tập trung về cấu hình versioning của mọi bucket, mọi Region, mọi tài khoản mà gần như không phải làm thủ công. S3 Storage Lens làm đúng việc đó: dashboard cấp organization có chỉ số versioning-enabled bucket count theo từng bucket (chỉ số này thuộc nhóm free metrics, advanced metrics bổ sung thêm số liệu khác). Bẫy: CloudTrail + EventBridge chỉ thấy các thay đổi mới; Access Analyzer xét quyền truy cập chứ không xét versioning.",
+    "keyHint": "\"identify all S3 buckets ... that do not have versioning enabled\" + \"across all Regions and accounts\" → S3 Storage Lens."
+  },
+  {
+    "id": 11129,
+    "stemVi": "Một tổ chức đã triển khai kiến trúc nhiều tài khoản bằng AWS Control Tower để tách biệt môi trường phát triển. Mỗi lập trình viên có một tài khoản AWS riêng để cấp phát và thử nghiệm workload. Tuy nhiên, công ty lo ngại mức dùng tài nguyên và chi tiêu AWS tăng vọt bất ngờ ở từng tài khoản lập trình viên. Ban lãnh đạo muốn một cơ chế kiểm soát chi phí có thể chủ động áp đặt giới hạn ngân sách, tự động phản ứng khi vượt chi, và tốn ít công quản trị liên tục.",
+    "promptVi": "Giải pháp nào hiệu quả nhất để đạt mục tiêu này với ít công vận hành nhất (least operational overhead)?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Budgets đặt ngưỡng chi tiêu cho tài khoản của từng lập trình viên. Cấu hình cảnh báo ngân sách báo cho lập trình viên khi chi tiêu thực tế hoặc dự báo vượt giới hạn. Gắn Budgets actions để tự động áp một IAM policy DenyAll hạn chế lên IAM role chính của lập trình viên khi vượt ngưỡng.", "reason": "Budgets theo dõi cả chi tiêu thực tế lẫn dự báo, gửi cảnh báo, và Budgets actions tự áp IAM policy chặn lên role khi vượt ngưỡng — đủ cả cảnh báo lẫn tự động thực thi mà không phải viết code." },
+      { "key": "B", "textVi": "Triển khai một AWS Lambda function chạy hằng ngày trong tài khoản của từng lập trình viên. Function phân tích báo cáo chi phí qua Cost Explorer API; nếu chi phí vượt ngưỡng, function gọi một AWS Config remediation rule.", "reason": "Phải tự viết, triển khai và bảo trì Lambda ở mọi tài khoản; chạy hằng ngày nên phản ứng chậm, và AWS Config remediation không phải cơ chế chặn chi tiêu." },
+      { "key": "C", "textVi": "Dùng AWS Service Catalog giới hạn lập trình viên vào các template tài nguyên định sẵn có giới hạn giá. Trong mỗi tài khoản, tạo Lambda function chạy theo lịch để dừng mọi tài nguyên đang chạy vào cuối ngày và khởi động lại vào đầu ngày làm việc kế tiếp.", "reason": "Service Catalog không áp giới hạn ngân sách theo tài khoản, còn tắt/bật theo lịch không phản ứng với việc vượt chi và tốn công bảo trì Lambda." },
+      { "key": "D", "textVi": "Dùng AWS Cost Explorer bật báo cáo chi phí và mức dùng chi tiết cho từng tài khoản lập trình viên. Gửi email báo cáo mức dùng hằng ngày cho lập trình viên. Tạo dashboard cho từng người trong Cost Explorer và yêu cầu họ tự theo dõi, tự xử lý khi gần chạm ngưỡng chi tiêu.", "reason": "Chỉ cung cấp thông tin, dựa vào lập trình viên tự xử lý; không có phản ứng tự động khi vượt chi như đề yêu cầu." }
+    ],
+    "explanationVi": "Đề đòi ba thứ: giới hạn ngân sách theo tài khoản, phản ứng tự động khi vượt chi và ít công quản trị. AWS Budgets kèm Budgets actions đáp ứng đủ: cảnh báo theo chi tiêu thực tế hoặc dự báo, rồi tự áp IAM policy (hoặc SCP, hoặc dừng EC2/RDS) khi chạm ngưỡng. Bẫy: Cost Explorer chỉ để xem; các phương án tự viết Lambda đều tốn công bảo trì.",
+    "keyHint": "\"enforce budget limits\" + \"automatic responses to overspending\" → AWS Budgets + Budgets actions."
+  },
+  {
+    "id": 11130,
+    "stemVi": "Trong một đợt rà soát, nhóm bảo mật phát hiện một Amazon EC2 instance đang truy vấn các địa chỉ IP dùng cho đào tiền mã hóa (cryptocurrency mining). EC2 instance này không chạy ứng dụng nào được phép liên quan tới đào tiền mã hóa.",
+    "promptVi": "Có thể dùng dịch vụ AWS nào để bảo vệ các Amazon EC2 instance khỏi hành vi trái phép như vậy về sau?",
+    "options": [
+      { "key": "A", "textVi": "AWS Shield Advanced", "reason": "Shield Advanced chống tấn công DDoS từ bên ngoài vào tài nguyên, không giám sát instance gọi ra các địa chỉ đào tiền mã hóa." },
+      { "key": "B", "textVi": "AWS Web Application Firewall (AWS WAF)", "reason": "WAF lọc request HTTP đi vào ứng dụng web, không phát hiện traffic đi ra từ instance tới máy chủ đào tiền mã hóa." },
+      { "key": "C", "textVi": "AWS Firewall Manager", "reason": "Firewall Manager quản lý tập trung các rule tường lửa (WAF, Shield, security group…), không phải dịch vụ phát hiện mối đe dọa." },
+      { "key": "D", "textVi": "Amazon GuardDuty", "reason": "GuardDuty phân tích liên tục VPC Flow Logs, DNS log, CloudTrail bằng threat intelligence và machine learning, có sẵn loại finding CryptoCurrency:EC2/BitcoinTool cho instance liên lạc với địa chỉ đào tiền mã hóa." }
+    ],
+    "explanationVi": "Hành vi cần bắt là instance liên lạc với địa chỉ IP/domain dùng cho đào tiền mã hóa — loại mối đe dọa mà GuardDuty có finding riêng (CryptoCurrency:EC2/BitcoinTool.B). GuardDuty phát hiện và cảnh báo; muốn tự chặn thì kết hợp EventBridge với Lambda hay Systems Manager. Bẫy: Shield, WAF và Firewall Manager đều là cơ chế lọc hoặc chống tấn công đi vào, không phát hiện hành vi bất thường của instance.",
+    "keyHint": "\"EC2 instance querying IP addresses used for cryptocurrency mining\" → Amazon GuardDuty."
+  },
+  {
+    "id": 11131,
+    "stemVi": "Nhóm quản trị hệ thống cần chạy một số script tùy biến đúng một lần khi khởi chạy các Amazon Elastic Compute Cloud (Amazon EC2) instance chạy ứng dụng của họ.",
+    "promptVi": "Cách nào sau đây là tốt nhất để cấu hình giải pháp cho yêu cầu này với ít công sức nhất?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS CLI để chạy các script user data đúng một lần khi khởi chạy instance.", "reason": "Không cần thêm AWS CLI: user data mặc định đã chỉ chạy một lần lúc launch, bước này thừa và không đúng cách hoạt động." },
+      { "key": "B", "textVi": "Cập nhật cấu hình Amazon EC2 instance để bảo đảm các script tùy biến, được thêm làm script user data, chỉ chạy trong quá trình boot.", "reason": "Không cần cấu hình gì thêm vì đó đã là hành vi mặc định; cấu hình chỉ cần khi muốn user data chạy lại ở mỗi lần khởi động." },
+      { "key": "C", "textVi": "Chạy các script tùy biến dưới dạng script user data trên các Amazon EC2 instance.", "reason": "Mặc định script user data và cloud-init directive chỉ chạy một lần trong chu kỳ boot đầu tiên khi launch instance — đúng yêu cầu mà không cần thêm cấu hình." },
+      { "key": "D", "textVi": "Chạy các script tùy biến dưới dạng script instance metadata trên các Amazon EC2 instance.", "reason": "Instance metadata là dữ liệu mô tả instance (ID, IP, role…), không có cơ chế chạy script." }
+    ],
+    "explanationVi": "User data là nơi đặt script chạy khi launch EC2, và theo mặc định nó chỉ chạy một lần ở lần boot đầu tiên. Vì vậy chỉ cần đưa script vào user data là đủ. Bẫy: cấu hình thêm là thừa (chỉ cần khi muốn chạy lại mỗi lần khởi động); instance metadata không chạy được script.",
+    "keyHint": "\"run ... only once during the launch\" + \"minimal effort\" → EC2 user data (mặc định chạy một lần)."
+  },
+  {
+    "id": 11132,
+    "stemVi": "Một công ty công nghệ sinh học có nhiều workflow tính toán hiệu năng cao (High Performance Computing - HPC) xử lý và phân tích bộ gen nhanh, chính xác để tìm bệnh di truyền. Công ty muốn chuyển các workflow này từ hạ tầng on-premises lên AWS Cloud.",
+    "promptVi": "Là solutions architect, bạn đề xuất thành phần mạng nào sau đây cho các Amazon EC2 instance chạy các workflow HPC này?",
+    "options": [
+      { "key": "A", "textVi": "Elastic Network Adapter (ENA)", "reason": "ENA cung cấp enhanced networking băng thông cao, nhưng không có giao diện OS-bypass cho giao tiếp độ trễ cực thấp giữa các node mà HPC cần." },
+      { "key": "B", "textVi": "Elastic Fabric Adapter (EFA)", "reason": "EFA có mọi tính năng của ENA cộng giao diện OS-bypass, cho ứng dụng HPC (MPI) giao tiếp trực tiếp với phần cứng mạng, tăng tốc giao tiếp giữa các instance — thiết kế riêng cho HPC và ML." },
+      { "key": "C", "textVi": "Elastic IP Address (EIP)", "reason": "Elastic IP chỉ là địa chỉ IPv4 public tĩnh, không ảnh hưởng tới hiệu năng mạng." },
+      { "key": "D", "textVi": "Elastic Network Interface (ENI)", "reason": "ENI là card mạng ảo cơ bản trong VPC, không đủ cho yêu cầu giao tiếp hiệu năng cao giữa các node HPC." }
+    ],
+    "explanationVi": "Workflow HPC cần giao tiếp giữa các node với độ trễ rất thấp và thông lượng cao. EFA là thiết bị mạng dành riêng cho HPC và machine learning, có OS-bypass giúp bỏ qua nhân hệ điều hành khi truyền dữ liệu. Bẫy: ENA cũng nhanh nhưng thiếu OS-bypass; ENI và Elastic IP không liên quan tới hiệu năng.",
+    "keyHint": "\"High Performance Computing (HPC)\" + thành phần mạng cho EC2 → Elastic Fabric Adapter (EFA)."
+  },
+  {
+    "id": 11133,
+    "stemVi": "Là Solutions Architect, bạn muốn bảo vệ hoàn toàn đường giao tiếp giữa Amazon CloudFront distribution và Amazon S3 bucket chứa các file tĩnh của website. Người dùng chỉ được truy cập S3 bucket thông qua Amazon CloudFront, không được truy cập trực tiếp.",
+    "promptVi": "Bạn đề xuất gì?",
+    "options": [
+      { "key": "A", "textVi": "Để Amazon S3 bucket ở chế độ public.", "reason": "Bucket public thì ai cũng truy cập trực tiếp được, trái ngược yêu cầu chỉ đi qua CloudFront." },
+      { "key": "B", "textVi": "Tạo một origin access identity (OAI) và cập nhật Amazon S3 Bucket Policy.", "reason": "OAI là danh tính đặc biệt của CloudFront; bucket policy chỉ cho phép OAI đọc object nên người dùng chỉ lấy được file qua CloudFront, URL S3 trực tiếp bị từ chối." },
+      { "key": "C", "textVi": "Tạo bucket policy chỉ cấp quyền cho IAM role gắn với Amazon CloudFront distribution.", "reason": "CloudFront distribution không có IAM role để gắn; danh tính dùng trong bucket policy là OAI hoặc (với OAC) service principal của CloudFront kèm điều kiện ARN distribution." },
+      { "key": "D", "textVi": "Cập nhật security group của Amazon S3 bucket chỉ cho phép traffic từ security group của Amazon CloudFront.", "reason": "S3 bucket và CloudFront đều không có security group; security group chỉ gắn với tài nguyên trong VPC như EC2, ENI." }
+    ],
+    "explanationVi": "Cách giới hạn S3 origin chỉ cho CloudFront đọc là cấp danh tính riêng cho CloudFront rồi cho phép danh tính đó trong bucket policy, đồng thời chặn truy cập public. Đáp án dùng origin access identity (OAI); từ 08/2022 AWS khuyên dùng origin access control (OAC) — cùng ý tưởng nhưng hỗ trợ SSE-KMS và mọi Region. Bẫy: S3 không có security group; CloudFront không có IAM role.",
+    "keyHint": "\"only be able to access the S3 bucket through CloudFront\" → OAI (nay là OAC) + bucket policy."
+  },
+  {
+    "id": 11134,
+    "stemVi": "Một công ty chăm sóc sức khỏe muốn chạy ứng dụng trên phần cứng single-tenant (dành riêng cho một khách hàng) để đáp ứng hướng dẫn tuân thủ.",
+    "promptVi": "Cách nào sau đây tiết kiệm chi phí nhất (MOST cost-effective) để cô lập các Amazon EC2 instance trên phần cứng single-tenant?",
+    "options": [
+      { "key": "A", "textVi": "On-Demand Instances", "reason": "On-Demand mặc định chạy trên phần cứng dùng chung với khách hàng khác, không đáp ứng yêu cầu single-tenant." },
+      { "key": "B", "textVi": "Spot Instances", "reason": "Spot rẻ nhưng chạy trên phần cứng dùng chung, không đáp ứng yêu cầu single-tenant." },
+      { "key": "C", "textVi": "Dedicated Hosts", "reason": "Dedicated Host đáp ứng single-tenant nhưng phải trả cho cả máy chủ vật lý; chỉ cần thiết khi phải kiểm soát vị trí instance hay mang license theo máy chủ, nên đắt hơn mức cần." },
+      { "key": "D", "textVi": "Dedicated Instances", "reason": "Dedicated Instance chạy trên phần cứng chỉ dành cho một khách hàng, cô lập vật lý với tài khoản khác, mà không phải thuê nguyên máy chủ — đủ cho yêu cầu tuân thủ với chi phí thấp hơn Dedicated Host." }
+    ],
+    "explanationVi": "Yêu cầu chỉ là phần cứng single-tenant, không cần kiểm soát máy chủ vật lý hay mang license theo máy chủ. Dedicated Instances đáp ứng đủ và rẻ hơn Dedicated Hosts. Bẫy: On-Demand và Spot chạy trên phần cứng dùng chung; Dedicated Hosts đúng về mặt cô lập nhưng tốn hơn.",
+    "keyHint": "\"single-tenant hardware\" + \"MOST cost-effective\", không nhắc license → Dedicated Instances."
+  },
+  {
+    "id": 11135,
+    "stemVi": "Một công ty thương mại điện tử dùng Amazon RDS MySQL DB để lưu dữ liệu. Phòng phân tích của công ty chạy báo cáo trên chính database đó. Nhóm kỹ sư nhận thấy database chạy ì ạch khi quá trình lập báo cáo phân tích đang chạy.",
+    "promptVi": "Là AWS Certified Solutions Architect - Associate, bạn đề xuất phương án nào sau đây là giải pháp chi phí tối ưu nhất (MOST cost-optimal) để cải thiện hiệu năng?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một read replica có năng lực compute và storage bằng một nửa primary. Trỏ các truy vấn báo cáo sang read replica.", "reason": "Replica yếu hơn primary dễ không theo kịp tốc độ ghi, gây độ trễ sao chép tăng (replica lag) và chạy báo cáo chậm; AWS khuyên replica có năng lực tương đương nguồn." },
+      { "key": "B", "textVi": "Tạo một read replica có năng lực compute và storage bằng primary. Trỏ các truy vấn báo cáo sang read replica.", "reason": "Read replica gánh riêng truy vấn báo cáo nên primary không còn chậm; năng lực ngang primary giúp replica theo kịp việc sao chép và đủ sức chạy báo cáo." },
+      { "key": "C", "textVi": "Tạo một standby instance theo cấu hình Multi-AZ với năng lực compute và storage bằng primary. Trỏ các truy vấn báo cáo sang standby instance.", "reason": "Standby của Multi-AZ DB instance chỉ dùng cho failover, không nhận truy vấn đọc." },
+      { "key": "D", "textVi": "Tạo một standby instance theo cấu hình Multi-AZ với năng lực compute và storage bằng một nửa primary. Trỏ các truy vấn báo cáo sang standby instance.", "reason": "Standby của Multi-AZ không phục vụ đọc, và cũng không thể chọn cấu hình nhỏ hơn primary." }
+    ],
+    "explanationVi": "Báo cáo phân tích chỉ đọc, nên tách sang read replica là cách xử lý chuẩn. Replica nên có năng lực tương đương nguồn để theo kịp việc sao chép bất đồng bộ; replica yếu hơn dễ bị lag và cuối cùng phải nâng cấp. Bẫy: standby của Multi-AZ không đọc được.",
+    "keyHint": "\"analytics reporting\" làm chậm RDS MySQL → read replica cùng cấu hình với primary."
+  },
+  {
+    "id": 11136,
+    "stemVi": "Nhóm kỹ sư của một startup đang đánh giá loại block storage tối ưu nhất cho các Amazon EC2 instance chạy ứng dụng chủ lực. Storage phải có độ trễ rất thấp nhưng không cần giữ dữ liệu khi instance bị terminate. Là solutions architect, bạn đề xuất dùng Instance Store volume để đáp ứng các yêu cầu này.",
+    "promptVi": "Bạn xác định những đặc điểm chính nào sau đây của Instance Store volume? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Bạn có thể chỉ định instance store volume cho instance khi launch hoặc khi restart nó.", "reason": "Sai: instance store volume chỉ chỉ định được lúc launch instance, không thêm được khi restart." },
+      { "key": "B", "textVi": "Nếu tạo Amazon Machine Image (AMI) từ một instance, dữ liệu trên các instance store volume của nó không được giữ lại.", "reason": "Đúng: AMI không chứa dữ liệu instance store, instance launch từ AMI đó có instance store trống." },
+      { "key": "C", "textVi": "Instance store là một loại network storage.", "reason": "Sai: instance store là ổ đĩa gắn vật lý trên máy chủ chạy instance, chính vì vậy có độ trễ rất thấp; EBS mới là storage qua mạng." },
+      { "key": "D", "textVi": "Bạn không thể tháo instance store volume khỏi một instance để gắn sang instance khác.", "reason": "Đúng: instance store gắn liền với máy chủ vật lý của instance và tồn tại theo vòng đời instance, không detach/attach được như EBS." },
+      { "key": "E", "textVi": "Instance store bị xóa sạch khi stop hoặc terminate instance. Dữ liệu instance store được giữ lại khi hibernate.", "reason": "Sai ở vế sau: khi stop, hibernate hay terminate thì mọi block của instance store đều bị reset; dữ liệu chỉ còn qua reboot." }
+    ],
+    "explanationVi": "Instance store là ổ cục bộ trên máy chủ vật lý: rất nhanh nhưng tạm thời. Dữ liệu chỉ sống qua reboot, mất khi stop, hibernate hay terminate; không detach sang instance khác được; không nằm trong AMI; và chỉ khai báo được lúc launch. Bẫy: nhầm instance store là network storage hay giữ được dữ liệu khi hibernate.",
+    "keyHint": "\"Instance Store\" → ổ cục bộ tạm thời: chỉ khai báo lúc launch, không detach, không vào AMI, mất khi stop/hibernate/terminate."
+  },
+  {
+    "id": 11137,
+    "stemVi": "Nhóm kỹ sư của một công ty đa quốc gia dùng AWS Firewall Manager để cấu hình và quản lý tập trung các rule tường lửa trên mọi tài khoản và ứng dụng thông qua AWS Organizations.",
+    "promptVi": "AWS Firewall Manager có thể cấu hình rule trên những tài nguyên AWS nào sau đây? (Chọn ba.)",
+    "options": [
+      { "key": "A", "textVi": "Amazon GuardDuty", "reason": "GuardDuty là dịch vụ phát hiện mối đe dọa, quản lý tập trung qua tài khoản delegated administrator của chính nó, không thuộc các loại policy của Firewall Manager." },
+      { "key": "B", "textVi": "AWS Shield Advanced", "reason": "Firewall Manager có policy Shield Advanced để tự bật bảo vệ cho tài nguyên trên mọi tài khoản." },
+      { "key": "C", "textVi": "VPC Security Group", "reason": "Firewall Manager có policy security group để áp và kiểm tra security group chung trên các tài khoản." },
+      { "key": "D", "textVi": "AWS Web Application Firewall (AWS WAF)", "reason": "Firewall Manager ban đầu được xây chính là để triển khai rule WAF tập trung trên mọi tài khoản." },
+      { "key": "E", "textVi": "VPC Route Table", "reason": "Firewall Manager không quản lý rule trên route table; nó chỉ kiểm tra cấu hình route liên quan khi dùng policy Network Firewall." },
+      { "key": "F", "textVi": "Amazon Inspector", "reason": "Inspector là dịch vụ quét lỗ hổng, không phải tường lửa và không do Firewall Manager cấu hình." }
+    ],
+    "explanationVi": "Firewall Manager quản lý tập trung các loại policy: AWS WAF, Shield Advanced, VPC security group, AWS Network Firewall, Route 53 Resolver DNS Firewall, tường lửa bên thứ ba và (từ 04/2024) network ACL. Trong các lựa chọn chỉ có WAF, Shield Advanced và security group. Bẫy: GuardDuty và Inspector là dịch vụ phát hiện/quét, không phải tường lửa; route table không phải loại policy.",
+    "keyHint": "\"AWS Firewall Manager\" cấu hình rule cho → WAF, Shield Advanced, security group (cùng Network Firewall, DNS Firewall, NACL)."
+  },
+  {
+    "id": 11138,
+    "stemVi": "Một công ty chăm sóc sức khỏe chạy một nhóm Amazon EC2 instance trong hai private subnet (tên PR1 và PR2) ở hai Availability Zone (AZ) tên A1 và A2. Các EC2 instance cần ra internet để vá hệ điều hành và bảo trì phần mềm bên thứ ba. Để làm việc này, nhóm kỹ sư muốn dựng hai NAT gateway (Network Address Translation gateway) theo cấu hình có tính sẵn sàng cao (highly available).",
+    "promptVi": "Bạn đề xuất phương án nào sau đây?",
+    "options": [
+      { "key": "A", "textVi": "Dựng tổng cộng hai NAT gateway. NAT gateway N1 đặt trong private subnet PR1 ở Availability Zone A1. NAT gateway N2 đặt trong private subnet PR2 ở Availability Zone A2.", "reason": "Public NAT gateway phải nằm ở public subnet (có route tới internet gateway); đặt trong private subnet thì không ra internet được." },
+      { "key": "B", "textVi": "Dựng tổng cộng hai NAT gateway. NAT gateway N1 đặt trong public subnet PU1 ở Availability Zone A1. NAT gateway N2 đặt trong public subnet PU2 ở Availability Zone A2.", "reason": "Mỗi AZ có NAT gateway riêng trong public subnet; route table của private subnet mỗi AZ trỏ tới NAT gateway cùng AZ, nên mất một AZ thì AZ còn lại vẫn ra internet được." },
+      { "key": "C", "textVi": "Dựng tổng cộng một NAT gateway. NAT gateway N1 đặt trong public subnet PU1 ở một trong hai Availability Zone A1 hoặc A2.", "reason": "Chỉ một NAT gateway là điểm lỗi duy nhất: AZ chứa nó gặp sự cố thì instance ở AZ kia cũng mất internet; đề cũng yêu cầu hai NAT gateway." },
+      { "key": "D", "textVi": "Dựng tổng cộng hai NAT gateway. Cả N1 và N2 đặt trong cùng một public subnet PU1 ở một trong hai Availability Zone A1 hoặc A2.", "reason": "Hai NAT gateway cùng một subnet nghĩa là cùng một AZ; AZ đó hỏng thì cả hai cùng mất, không có tính sẵn sàng cao." }
+    ],
+    "explanationVi": "NAT gateway là tài nguyên gắn với một AZ. Muốn sẵn sàng cao, đặt một NAT gateway trong public subnet của mỗi AZ và cho private subnet của từng AZ dùng NAT gateway cùng AZ. Bẫy: NAT gateway để ra internet phải ở public subnet; đặt cả hai trong một AZ hay chỉ dùng một chiếc đều để lại điểm lỗi duy nhất.",
+    "keyHint": "\"two NAT gateways in a highly available configuration\" → mỗi AZ một NAT gateway trong public subnet của AZ đó."
+  },
+  {
+    "id": 11139,
+    "stemVi": "Một công ty truyền thông số đang mở rộng quy mô trên cloud và muốn tách biệt workload development, testing và production bằng các tài khoản AWS riêng. Công ty cũng muốn quản lý tập trung hạ tầng mạng như subnet và gateway, không lặp lại cấu hình ở mọi tài khoản. Ngoài ra, giải pháp phải áp đặt best practice bảo mật — như bắt buộc ghi log và guardrail — khi tạo tài khoản mới. Công ty muốn cách thiết lập ít bảo trì, hướng theo quản trị (governance).",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các mục tiêu này với ít công vận hành nhất?",
+    "options": [
+      { "key": "A", "textVi": "Dùng AWS Control Tower để tạo tài khoản. Triển khai VPC riêng trong từng tài khoản workload và tập trung việc kiểm tra bảo mật bằng Gateway Load Balancer định tuyến traffic qua một thiết bị bảo mật dùng chung.", "reason": "Mỗi tài khoản có VPC riêng nghĩa là vẫn lặp lại cấu hình mạng ở mọi tài khoản; Gateway Load Balancer giải quyết việc kiểm tra traffic chứ không phải quản lý mạng tập trung." },
+      { "key": "B", "textVi": "Dùng AWS Control Tower để tạo và quản trị tài khoản. Triển khai một VPC tập trung trong tài khoản networking dùng chung và chia sẻ subnet của nó cho các tài khoản workload bằng AWS Resource Access Manager (AWS RAM).", "reason": "Control Tower tự động tạo tài khoản kèm guardrail và ghi log tập trung; VPC dùng chung chia subnet qua AWS RAM giúp quản lý subnet, gateway ở một nơi — đáp ứng cả tách tài khoản, mạng tập trung và ít công vận hành." },
+      { "key": "C", "textVi": "Dùng AWS Service Catalog định nghĩa các template VPC đã phê duyệt. Launch mỗi tài khoản workload một VPC từ catalog, và áp guardrail mạng bằng AWS Config conformance pack.", "reason": "Vẫn tạo một VPC cho mỗi tài khoản nên mạng không tập trung, và không có cơ chế tự áp guardrail, logging khi tạo tài khoản mới." },
+      { "key": "D", "textVi": "Dùng AWS Organizations để tạo tài khoản mới và một tài khoản networking dùng chung chứa VPC trung tâm. Chia sẻ subnet của VPC qua AWS RAM và dựa vào service control policy (SCP) để áp guardrail thủ công.", "reason": "Phần mạng dùng chung thì đúng, nhưng phải tự dựng guardrail, logging cho từng tài khoản mới bằng tay — tốn công hơn Control Tower vốn tự động hóa việc này." }
+    ],
+    "explanationVi": "Đề gồm ba yêu cầu: tách tài khoản theo môi trường có guardrail và logging tự động, mạng quản lý tập trung, và ít công vận hành. Control Tower lo phần tạo, quản trị tài khoản kèm guardrail (nay gọi là control); VPC dùng chung chia subnet qua AWS RAM lo phần mạng tập trung. Bẫy: Organizations + SCP thủ công thiếu tự động hóa; VPC riêng mỗi tài khoản là lặp cấu hình.",
+    "keyHint": "\"separate AWS accounts\" + \"centralized ... networking\" + \"guardrails when new accounts are created\" → Control Tower + VPC dùng chung chia sẻ qua AWS RAM."
+  },
+  {
+    "id": 11140,
+    "stemVi": "Một startup muốn dựng kiến trúc có tính sẵn sàng cao (highly available) cho ứng dụng nhiều tầng. Hiện startup chạy một Amazon EC2 instance duy nhất cùng một Amazon RDS MySQL DB instance duy nhất. Startup thuê bạn, một AWS Certified Solutions Architect - Associate, để xây dựng giải pháp đáp ứng yêu cầu này đồng thời giảm thiểu công bảo trì hạ tầng bên dưới.",
+    "promptVi": "Bạn sẽ đề xuất gì?",
+    "options": [
+      { "key": "A", "textVi": "Tạo một Auto Scaling group với desired capacity tổng cộng hai Amazon EC2 instance trong một Availability Zone. Cấu hình Application Load Balancer có target group gồm các EC2 instance này. Dựng Amazon RDS MySQL DB theo cấu hình Multi-AZ.", "reason": "Cả hai EC2 instance nằm trong một AZ nên tầng ứng dụng sập khi AZ đó gặp sự cố — chưa sẵn sàng cao." },
+      { "key": "B", "textVi": "Tạo một Auto Scaling group với desired capacity tổng cộng hai Amazon EC2 instance trải trên hai Availability Zone. Cấu hình Application Load Balancer có target group gồm các EC2 instance này. Dựng một read replica của Amazon RDS MySQL DB ở Availability Zone khác.", "reason": "Read replica sao chép bất đồng bộ và không tự failover; khi primary hỏng phải promote thủ công, có thể mất dữ liệu — không phải giải pháp sẵn sàng cao cho database." },
+      { "key": "C", "textVi": "Cấp phát thêm một Amazon EC2 instance ở Availability Zone khác. Cấp phát thêm một Amazon RDS MySQL DB ở Availability Zone khác. Dùng Amazon Route 53 chia đều traffic tới các EC2 instance. Dùng script tùy biến để đồng bộ dữ liệu giữa hai MySQL DB.", "reason": "Tự viết script đồng bộ hai database dễ lệch dữ liệu và tốn công bảo trì; không có Auto Scaling hay failover database tự động." },
+      { "key": "D", "textVi": "Tạo một Auto Scaling group với desired capacity tổng cộng hai Amazon EC2 instance trải trên hai Availability Zone. Cấu hình Application Load Balancer có target group gồm các EC2 instance này. Dựng Amazon RDS MySQL DB theo cấu hình Multi-AZ.", "reason": "Tầng ứng dụng có instance ở hai AZ sau ALB, Auto Scaling thay instance hỏng; RDS Multi-AZ sao chép đồng bộ sang standby và tự failover — sẵn sàng cao ở cả hai tầng với dịch vụ được quản lý." }
+    ],
+    "explanationVi": "Sẵn sàng cao phải có ở cả hai tầng. Tầng ứng dụng: Auto Scaling group trải hai AZ sau ALB. Tầng database: RDS Multi-AZ với standby đồng bộ và failover tự động. Bẫy: một AZ thì không chịu được mất AZ; read replica không tự failover; tự đồng bộ hai database bằng script thì rủi ro và tốn công.",
+    "keyHint": "\"highly available\" + \"minimizing ... maintenance effort\" → ASG hai AZ + ALB + RDS Multi-AZ."
+  },
+  {
+    "id": 11141,
+    "stemVi": "Một startup dùng một nhóm máy chủ Amazon EC2 để chạy ứng dụng CRM. Các máy chủ này nằm sau Elastic Load Balancing (ELB).",
+    "promptVi": "Cấu hình nào sau đây KHÔNG được phép với Elastic Load Balancing?",
+    "options": [
+      { "key": "A", "textVi": "Dùng Elastic Load Balancing phân phối traffic cho bốn Amazon EC2 instance. Cả bốn instance được triển khai trên hai Availability Zone của Region us-east-1.", "reason": "Hợp lệ: ELB phân phối traffic tới target ở nhiều AZ trong cùng một Region — đây là cách dùng chuẩn." },
+      { "key": "B", "textVi": "Dùng Elastic Load Balancing phân phối traffic cho bốn Amazon EC2 instance. Cả bốn instance được triển khai trong Availability Zone A của Region us-east-1.", "reason": "Hợp lệ (dù không sẵn sàng cao): mọi target nằm trong một AZ của cùng Region." },
+      { "key": "C", "textVi": "Dùng Elastic Load Balancing phân phối traffic cho bốn Amazon EC2 instance. Cả bốn instance được triển khai trong Availability Zone B của Region us-west-1.", "reason": "Hợp lệ: load balancer tạo ở us-west-1 phân phối tới các instance trong một AZ của chính Region đó." },
+      { "key": "D", "textVi": "Dùng Elastic Load Balancing phân phối traffic cho bốn Amazon EC2 instance. Hai instance được triển khai ở Availability Zone A của Region us-east-1, hai instance còn lại ở Availability Zone B của Region us-west-1.", "reason": "Không được phép: một load balancer chỉ phân phối tới target (instance) trong các AZ của chính Region nó; không trải qua hai Region." }
+    ],
+    "explanationVi": "ELB là dịch vụ theo Region: target của nó nằm trong các AZ của cùng một Region. Vì vậy cấu hình trải instance qua us-east-1 và us-west-1 là không được phép; các cấu hình trong một Region (một hay nhiều AZ) đều hợp lệ. Muốn phân phối giữa nhiều Region thì dùng Route 53 hoặc Global Accelerator trước các load balancer của từng Region.",
+    "keyHint": "\"NOT allowed\" + instance ở hai Region → ELB không trải qua nhiều Region."
+  },
+  {
+    "id": 11142,
+    "stemVi": "Một thực tập sinh kỹ thuật phần mềm của công ty đang ghi tài liệu về các tính năng của Amazon EC2 Spot instance và Spot fleet.",
+    "promptVi": "Bạn có thể giúp thực tập sinh chọn các phát biểu đúng mô tả đặc điểm chính của hai loại Spot này không? (Chọn hai.)",
+    "options": [
+      { "key": "A", "textVi": "Spot fleet là năng lực EC2 dư thừa, giúp tiết kiệm tới 90% so với giá On-Demand. Spot fleet thường bị Amazon EC2 ngắt khi cần năng lực, kèm thông báo trước 2 phút.", "reason": "Mô tả này là của Spot Instance; Spot Fleet là cơ chế yêu cầu và quản lý một tập instance (Spot và có thể cả On-Demand), không phải bản thân năng lực dư." },
+      { "key": "B", "textVi": "Một Spot fleet chỉ có thể gồm một tập Spot Instance được launch để đạt target capacity.", "reason": "Sai: Spot Fleet có thể gồm thêm On-Demand Instance tùy chọn để bảo đảm một phần năng lực." },
+      { "key": "C", "textVi": "Một Spot fleet có thể gồm một tập Spot Instance và tùy chọn thêm On-Demand Instance được launch để đạt target capacity.", "reason": "Đúng: Spot Fleet launch Spot Instance và (tùy chọn) On-Demand Instance để đạt target capacity đã khai báo." },
+      { "key": "D", "textVi": "Spot fleet cho phép yêu cầu Amazon EC2 Spot instance trong 1 đến 6 giờ mỗi lần để tránh bị ngắt.", "reason": "Sai: đó là mô tả Spot block (Spot Instance có thời lượng định trước), một tính năng của Spot Instance chứ không phải Spot Fleet, và AWS đã ngừng cung cấp tính năng này." },
+      { "key": "E", "textVi": "Spot instance là năng lực Amazon EC2 dư thừa, giúp tiết kiệm tới 90% so với giá On-Demand. Spot instance có thể bị Amazon EC2 ngắt khi cần năng lực, kèm thông báo trước 2 phút.", "reason": "Đúng: Spot Instance dùng năng lực EC2 dư với mức giảm tới 90%, và EC2 có thể thu hồi khi cần lại năng lực, báo trước 2 phút." }
+    ],
+    "explanationVi": "Phân biệt hai khái niệm: Spot Instance là năng lực EC2 dư giá rẻ (giảm tới 90%, có thể bị thu hồi với thông báo 2 phút); Spot Fleet là một request launch tập instance gồm Spot và tùy chọn On-Demand để đạt target capacity. Bẫy: gán đặc điểm của Spot Instance cho Spot Fleet; Spot block 1–6 giờ đã bị ngừng và không thuộc Spot Fleet.",
+    "keyHint": "\"Spot instances and Spot fleets\" → Spot Instance = năng lực dư, thông báo 2 phút; Spot Fleet = Spot + tùy chọn On-Demand."
+  },
+  {
+    "id": 11143,
+    "stemVi": "Một công ty truyền thông có trụ sở chính ở Los Angeles với data center on-premises kết nối tới AWS VPC bằng AWS Direct Connect. Các văn phòng chi nhánh ở San Francisco và Miami dùng kết nối AWS Site-to-Site VPN tới AWS VPC. Công ty cần giải pháp để các văn phòng chi nhánh gửi và nhận dữ liệu với nhau cũng như với trụ sở chính.",
+    "promptVi": "Là solutions architect, bạn đề xuất dịch vụ AWS nào sau đây cho trường hợp này?",
+    "options": [
+      { "key": "A", "textVi": "VPC Endpoint", "reason": "VPC endpoint kết nối riêng tư từ VPC tới dịch vụ AWS hay endpoint service, không định tuyến traffic giữa các văn phòng on-premises." },
+      { "key": "B", "textVi": "AWS VPN CloudHub", "reason": "VPN CloudHub dùng virtual private gateway làm hub theo mô hình hub-and-spoke, cho các site kết nối Site-to-Site VPN (và site dùng Direct Connect tới cùng gateway) giao tiếp được với nhau, không chỉ với VPC." },
+      { "key": "C", "textVi": "Software VPN", "reason": "Software VPN là tự dựng thiết bị VPN trên EC2, phải tự quản lý và không giải quyết sẵn việc định tuyến giữa các chi nhánh." },
+      { "key": "D", "textVi": "VPC Peering connection", "reason": "VPC peering nối hai VPC với nhau và không cho transit routing, nên không làm cầu nối giữa các mạng on-premises." }
+    ],
+    "explanationVi": "Đề cần các site on-premises (chi nhánh dùng Site-to-Site VPN, trụ sở dùng Direct Connect) nói chuyện được với nhau qua AWS. AWS VPN CloudHub làm đúng việc đó: virtual private gateway làm hub, các site là spoke, quảng bá route qua BGP để site này tới được site kia. Bẫy: VPC peering không cho transit; VPC endpoint dành cho dịch vụ AWS. Thiết kế mới hiện nay thường dùng AWS Transit Gateway cho mô hình hub-and-spoke này.",
+    "keyHint": "\"branch offices send and receive data with each other\" qua Site-to-Site VPN + Direct Connect → AWS VPN CloudHub."
+  },
+  {
+    "id": 11144,
+    "stemVi": "Một công ty phân tích dữ liệu y tế chạy ứng dụng backend trong private subnet của VPC. Ứng dụng đứng sau một Application Load Balancer (ALB) và truy cập Amazon S3 để lưu báo cáo y tế. VPC có cả NAT gateway và internet gateway, nhưng chính sách tuân thủ nghiêm ngặt của công ty cấm mọi traffic dữ liệu đi qua internet. Nhóm phải thiết kế lại kiến trúc để tuân thủ chính sách bảo mật và tiết kiệm chi phí hơn.",
+    "promptVi": "Giải pháp nào đáp ứng tốt nhất các yêu cầu này theo cách tiết kiệm chi phí nhất (most cost-effective)?",
+    "options": [
+      { "key": "A", "textVi": "Tạo VPC peering với một VPC khác có truy cập trực tiếp tới S3. Chuyển tiếp các request S3 API qua VPC đã peer bằng các EC2 instance làm proxy.", "reason": "Thêm VPC, peering và EC2 proxy phải vận hành, tốn tiền và phức tạp, trong khi gateway endpoint giải quyết trực tiếp và miễn phí." },
+      { "key": "B", "textVi": "Sửa S3 bucket policy chỉ cho phép request từ Elastic IP gắn với NAT gateway.", "reason": "Traffic vẫn đi qua NAT gateway ra endpoint public của S3 — vi phạm chính sách không đi qua internet, và vẫn tốn phí xử lý dữ liệu của NAT gateway." },
+      { "key": "C", "textVi": "Tạo một S3 interface VPC endpoint và sửa security group cho phép truy cập từ private subnet của ứng dụng. Định tuyến toàn bộ traffic S3 qua interface endpoint.", "reason": "Đáp ứng được yêu cầu riêng tư, nhưng interface endpoint tính phí theo giờ và theo GB, đắt hơn gateway endpoint miễn phí cho cùng nhu cầu truy cập từ trong VPC." },
+      { "key": "D", "textVi": "Tạo một gateway VPC endpoint cho Amazon S3 và cập nhật route table của private subnet để traffic S3 đi qua endpoint.", "reason": "Gateway endpoint cho S3 đưa traffic S3 đi trong mạng AWS qua một route trong route table, không qua NAT hay internet gateway, và không tính phí theo giờ hay theo GB — vừa tuân thủ vừa rẻ nhất." }
+    ],
+    "explanationVi": "Hai yêu cầu: traffic tới S3 không đi qua internet, và rẻ nhất. Gateway endpoint cho S3 đáp ứng cả hai: traffic đi trong mạng AWS, chỉ cần thêm route, không tính phí, và còn bớt được phí xử lý dữ liệu của NAT gateway. Bẫy: interface endpoint cũng riêng tư nhưng có phí; giới hạn bucket theo IP của NAT vẫn để traffic ra internet.",
+    "keyHint": "\"prohibits any data traffic from traversing the internet\" + S3 + \"most cost-effective\" → S3 gateway VPC endpoint."
   }
 ]
