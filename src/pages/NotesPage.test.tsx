@@ -287,3 +287,88 @@ describe('NotesPage — ghi chú tự do', () => {
     expect(ai.calls[0].systemPrompt).not.toMatch(/Stem \d/);
   });
 });
+
+describe('NotesPage — ôn flashcard', () => {
+  /** Ba ghi chú có nội dung + một ghi chú không nội dung (bị bỏ). */
+  function deckDeps() {
+    const deps = seeded();
+    deps.notes.save(withItems(6, [{ id: 'e1', kind: 'manual', title: 'Rỗng', content: '', at: 400 }]));
+    return deps;
+  }
+  const CONTENT: Record<string, string> = { 'Stem': 'ghi chú ba', 'Tại sao?': 'Vì S3', 'Nhớ Multi-AZ': 'Failover' };
+  const card = () => screen.getByRole('button', { name: /^Thẻ ghi chú/ });
+  const front = () => document.querySelector('.flashcard__face--front .flashcard__title')!.textContent!;
+
+  it('mặt trước là tiêu đề, bấm lật ra nội dung; Sau chuyển thẻ và về mặt trước; bỏ ghi chú không nội dung', () => {
+    renderApp('/notes', deckDeps());
+    fireEvent.click(screen.getByRole('button', { name: 'Ôn flashcard' }));
+    const dialog = screen.getByRole('dialog', { name: 'Ôn flashcard' });
+    expect(within(dialog).getByText('1/3')).toBeInTheDocument();
+    const seen = new Set<string>();
+    for (let i = 0; i < 3; i++) {
+      const title = front();
+      seen.add(title);
+      expect(card()).toHaveAttribute('aria-pressed', 'false');
+      fireEvent.click(card());
+      expect(card()).toHaveAttribute('aria-pressed', 'true');
+      expect(document.querySelector('.flashcard__face--back')).toHaveTextContent(CONTENT[title]);
+      if (i < 2) fireEvent.click(within(dialog).getByRole('button', { name: 'Thẻ sau' }));
+    }
+    expect([...seen].sort()).toEqual(Object.keys(CONTENT).sort());
+    expect(within(dialog).getByText('3/3')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Thẻ sau' })).toBeDisabled();
+  });
+
+  it('chỉ ôn các ghi chú khớp ô tìm', () => {
+    renderApp('/notes', deckDeps());
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm ghi chú' }), { target: { value: 'multi' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Ôn flashcard' }));
+    expect(within(screen.getByRole('dialog', { name: 'Ôn flashcard' })).getByText('1/1')).toBeInTheDocument();
+    expect(front()).toBe('Nhớ Multi-AZ');
+  });
+
+  it('bàn phím: Space lật, mũi tên chuyển thẻ, Esc đóng', () => {
+    renderApp('/notes', deckDeps());
+    fireEvent.click(screen.getByRole('button', { name: 'Ôn flashcard' }));
+    const dialog = screen.getByRole('dialog', { name: 'Ôn flashcard' });
+    fireEvent.keyDown(document, { key: ' ' });
+    expect(card()).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.keyDown(document, { key: 'ArrowRight' });
+    expect(within(dialog).getByText('2/3')).toBeInTheDocument();
+    expect(card()).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.keyDown(document, { key: 'ArrowLeft' });
+    expect(within(dialog).getByText('1/3')).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(screen.queryByRole('dialog', { name: 'Ôn flashcard' })).toBeNull();
+  });
+
+  it('vuốt trái/phải trên điện thoại để chuyển thẻ (vuốt không tính là bấm lật)', () => {
+    renderApp('/notes', deckDeps());
+    fireEvent.click(screen.getByRole('button', { name: 'Ôn flashcard' }));
+    const dialog = screen.getByRole('dialog', { name: 'Ôn flashcard' });
+    fireEvent.pointerDown(card(), { pointerId: 1, clientX: 300, clientY: 200 });
+    fireEvent.pointerUp(card(), { pointerId: 1, clientX: 180, clientY: 205 });
+    fireEvent.click(card());
+    expect(within(dialog).getByText('2/3')).toBeInTheDocument();
+    expect(card()).toHaveAttribute('aria-pressed', 'false');
+    fireEvent.pointerDown(card(), { pointerId: 2, clientX: 100, clientY: 200 });
+    fireEvent.pointerUp(card(), { pointerId: 2, clientX: 230, clientY: 200 });
+    expect(within(dialog).getByText('1/3')).toBeInTheDocument();
+  });
+
+  it('Xáo lại: về thẻ đầu, vẫn đủ thẻ', () => {
+    renderApp('/notes', deckDeps());
+    fireEvent.click(screen.getByRole('button', { name: 'Ôn flashcard' }));
+    const dialog = screen.getByRole('dialog', { name: 'Ôn flashcard' });
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Thẻ sau' }));
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Xáo lại' }));
+    expect(within(dialog).getByText('1/3')).toBeInTheDocument();
+  });
+
+  it('không có ghi chú nào có nội dung: nút Ôn bị khóa', () => {
+    const deps = makeDeps();
+    deps.notes.save(withItems(6, [{ id: 'e1', kind: 'manual', title: 'Rỗng', content: '', at: 400 }]));
+    renderApp('/notes', deps);
+    expect(screen.getByRole('button', { name: 'Ôn flashcard' })).toBeDisabled();
+  });
+});
