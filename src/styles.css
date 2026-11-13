@@ -126,6 +126,8 @@ tr.is-clickable { cursor: pointer; }
   background: var(--surface); border: 1px solid var(--border); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
 }
 .gemini-icon { flex: none; }
+/* Nút đổi Gemini ↔ AI thử nghiệm trong đầu khung chat: icon cỡ nhỏ như các nút công cụ khác. */
+.gemini__mode .gemini-icon { width: 18px; height: 18px; }
 /* Câu có AI đang trả lời ngầm: viền màu nhấn nhấp nháy nhẹ trên nút Hỏi Gemini/Hỏi AI */
 .btn-gemini.btn-gemini--running { border: 2px solid var(--accent); animation: gemini-running 1.6s ease-in-out infinite; }
 @keyframes gemini-running {
