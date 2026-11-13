@@ -25,6 +25,9 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // Test UI dựng cả trang 65 câu (trang thi, trang xem lại): chạy song song cả bộ thì chậm hơn nhiều so với
+    // chạy riêng, 5 s mặc định hay bị quá giờ dù code đúng.
+    testTimeout: 15_000,
     include: ['src/**/*.test.{ts,tsx}', 'scripts/**/*.test.ts'],
   },
 });
