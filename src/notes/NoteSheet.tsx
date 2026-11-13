@@ -78,12 +78,19 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
     if (persist) saveSplit(browserStorage(), next);
   };
   const drag = useRef<number | null>(null);
+  // Đang kéo: CSS tắt hiệu ứng co giãn của trang để trang bám theo tay ngay.
+  const setDragging = (on: boolean) => {
+    if (on) document.documentElement.setAttribute('data-note-drag', '');
+    else document.documentElement.removeAttribute('data-note-drag');
+  };
+  useEffect(() => () => setDragging(false), []);
   const viewportW = () => document.documentElement.clientWidth || window.innerWidth;
   const grip = {
     onPointerDown(e: PointerEvent<HTMLElement>) {
       if (e.button > 0) return;
       e.preventDefault();
       drag.current = e.pointerId;
+      setDragging(true);
       e.currentTarget.setPointerCapture?.(e.pointerId);
     },
     onPointerMove(e: PointerEvent<HTMLElement>) {
@@ -93,11 +100,13 @@ export function NoteSheet({ title, ariaLabel, onClose, docked = false, children 
     onPointerUp(e: PointerEvent<HTMLElement>) {
       if (drag.current !== e.pointerId) return;
       drag.current = null;
+      setDragging(false);
       if (e.currentTarget.hasPointerCapture?.(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
       changeRatio((viewportW() - e.clientX) / viewportW(), true);
     },
     onPointerCancel() {
       drag.current = null;
+      setDragging(false);
     },
     onKeyDown(e: ReactKeyboardEvent<HTMLElement>) {
       // Thanh ở mép trái cột: mũi tên trái nới rộng cột ghi chú, mũi tên phải thu hẹp.

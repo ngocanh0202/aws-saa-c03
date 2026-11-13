@@ -136,6 +136,18 @@ describe('NotePanel — popup chồng lên khung', () => {
   });
 });
 
+describe('NotePanel — kéo thanh không bị trễ vì animation', () => {
+  it('đang kéo thì :root có data-note-drag (CSS tắt transition), thả ra thì bỏ', () => {
+    const { panel } = mount(seed);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mở rộng' }));
+    const grip = screen.getByRole('separator', { name: 'Kéo để đổi độ rộng cột ghi chú' });
+    fireEvent.pointerDown(grip, { pointerId: 1, button: 0, clientX: 700 });
+    expect(document.documentElement).toHaveAttribute('data-note-drag');
+    fireEvent.pointerUp(grip, { pointerId: 1, clientX: 700 });
+    expect(document.documentElement).not.toHaveAttribute('data-note-drag');
+  });
+});
+
 describe('NotePanel — nới rộng cột khi phóng to', () => {
   it('thanh kéo đổi tỉ lệ (phím mũi tên), kẹp trong 20%–60%, nhớ cho lần sau', () => {
     localStorage.removeItem(SPLIT_KEY);

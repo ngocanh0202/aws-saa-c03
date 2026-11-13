@@ -586,8 +586,13 @@ textarea.note-form__input { resize: vertical; min-height: 120px; }
 .note-sheet--center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: 85vh; }
 .note-sheet--dock { right: 20px; bottom: 20px; z-index: 35; width: min(420px, calc(100vw - 32px)); height: min(600px, calc(100vh - 100px)); border-radius: 14px; padding: 12px 14px; animation: service-modal-in 0.18s ease-out; }
 .note-sheet--split { top: 0; right: 0; bottom: 0; z-index: 35; width: max(var(--note-split, 30vw), 300px); border-radius: 0; border-width: 0 0 0 1px; box-shadow: -6px 0 18px rgb(0 0 0 / 0.12); overflow: hidden; padding-left: 24px; }
-/* Phóng to: trang (câu hỏi) chiếm phần còn lại bên trái. */
+/* Phóng to: trang (câu hỏi) chiếm phần còn lại bên trái; cột trượt vào từ mép phải, trang co lại mượt theo. */
 body:has(.note-sheet--split) { padding-right: max(var(--note-split, 30vw), 300px); }
+body { transition: padding-right 0.22s ease-out; }
+:root[data-note-drag] body { transition: none; }
+.note-sheet--split { animation: note-split-in 0.22s ease-out; }
+@keyframes note-split-in { from { transform: translateX(100%); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body { transition: none; } .note-sheet--split { animation: none; } }
 body:has(.note-sheet--split) .exam-dock { right: calc(max(var(--note-split, 30vw), 300px) + 20px); }
 /* Thanh kéo ở mép trái cột: kéo sang trái để nới rộng ghi chú. */
 .note-sheet__split-grip { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; cursor: col-resize; touch-action: none; }
@@ -604,6 +609,10 @@ body:has(.note-sheet__split-grip:active) { cursor: col-resize; user-select: none
 .note-panel__new { display: inline-flex; align-items: center; gap: 6px; }
 .note-panel__new svg { width: 18px; height: 18px; }
 .note-sheet--sheet { left: 0; right: 0; bottom: 0; max-height: 90vh; border-radius: 14px 14px 0 0; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); animation: hl-sheet-in 0.18s ease-out; }
+/* Điện thoại, popup form (Ghi chú mới): cao sẵn 60% màn hình, ô Nội dung giãn hết phần còn lại (kể cả khi kéo cao thêm). */
+.note-sheet--sheet:not(:has(.note-panel__scope)) { height: 60vh; overflow: hidden; }
+.note-sheet--sheet:not(:has(.note-panel__scope)) :is(.note-sheet__body, .note-form__form) { flex: 1 1 auto; min-height: 0; }
+.note-sheet--sheet:not(:has(.note-panel__scope)) textarea.note-form__input { flex: 1 1 auto; min-height: 96px; resize: none; }
 /* Điện thoại: khung danh sách cao sẵn 75% màn hình (kéo thanh để đổi), bố cục gọn. */
 .note-sheet--sheet:has(.note-panel__scope) { height: 75vh; overflow: hidden; gap: 8px; }
 .note-sheet--sheet .note-sheet__head .note-form__title { font-size: 1em; }
