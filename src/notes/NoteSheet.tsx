@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { IconClose } from '../components/icons';
 import { useMobile } from './use-mobile';
@@ -8,15 +8,20 @@ export interface NoteSheetProps {
   title: ReactNode;
   ariaLabel: string;
   onClose: () => void;
+  /** Khung nổi ở góc như khung chat (trang vẫn dùng được), có nút Mở rộng; điện thoại vẫn là bottom sheet. */
+  docked?: boolean;
   children: ReactNode;
 }
 
 /**
- * Khung ghi chú: popup giữa màn hình trên máy tính; điện thoại là bottom sheet có thanh kéo đổi cỡ
- * (kéo xuống quá cỡ nhỏ nhất thì đóng). Esc đóng, trừ khi bên trong đã xử lý (preventDefault). Gắn vào body.
+ * Khung ghi chú. Mặc định là popup giữa màn hình (máy tính); `docked` thì nổi ở góc dưới bên phải như khung
+ * chat (không lớp nền, không modal), Mở rộng thì phủ toàn màn hình. Điện thoại: bottom sheet có thanh kéo
+ * đổi cỡ (kéo xuống quá cỡ nhỏ nhất thì đóng). Esc đóng, trừ khi bên trong đã xử lý (preventDefault).
+ * Gắn vào body. Đổi kiểu hiển thị chỉ đổi class, nên chữ đang gõ trong khung không mất.
  */
-export function NoteSheet({ title, ariaLabel, onClose, children }: NoteSheetProps) {
+export function NoteSheet({ title, ariaLabel, onClose, docked = false, children }: NoteSheetProps) {
   const mobile = useMobile();
+  const [expanded, setExpanded] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
   useLayoutEffect(() => {
@@ -32,10 +37,19 @@ export function NoteSheet({ title, ariaLabel, onClose, children }: NoteSheetProp
     return () => document.removeEventListener('keydown', onKey);
   }, []);
 
-  // Gắn vào body: nút mở có thể nằm trong khối nổi (.exam-dock) có stacking context riêng.
+  const variant = mobile ? 'sheet' : expanded ? 'full' : docked ? 'dock' : 'center';
+  const modal = variant !== 'dock';
+
   return createPortal(
-    <div className="dialog note-sheet" role="presentation" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div ref={ref} className="dialog__box note-sheet__box" style={mobile ? resize.style : undefined} role="dialog" aria-modal="true" aria-label={ariaLabel}>
+    <>
+      <div
+        ref={ref}
+        className={`note-sheet note-sheet--${variant}`}
+        style={mobile ? resize.style : undefined}
+        role="dialog"
+        aria-modal={modal || undefined}
+        aria-label={ariaLabel}
+      >
         {mobile && (
           <div
             className="hl-sheet__grab note-sheet__grab"
@@ -49,13 +63,26 @@ export function NoteSheet({ title, ariaLabel, onClose, children }: NoteSheetProp
         )}
         <div className="note-sheet__head">
           <h2 className="note-form__title">{title}</h2>
+          {docked && !mobile && (
+            <button
+              type="button"
+              className="icon-btn"
+              aria-label={expanded ? 'Thu nhỏ' : 'Mở rộng'}
+              title={expanded ? 'Thu nhỏ' : 'Mở rộng toàn màn hình'}
+              onClick={() => setExpanded((x) => !x)}
+            >
+              {expanded ? '⤡' : '⤢'}
+            </button>
+          )}
           <button type="button" className="icon-btn" aria-label="Đóng" title="Đóng" onClick={onClose}>
             <IconClose />
           </button>
         </div>
         <div className="note-sheet__body">{children}</div>
       </div>
-    </div>,
+      {/* Đứng sau khung để khung giữ nguyên vị trí trong cây (không mount lại) khi lớp nền bật/tắt. */}
+      {modal && <div className="note-sheet__backdrop" onClick={onClose} />}
+    </>,
     document.body,
   );
 }

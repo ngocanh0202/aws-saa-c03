@@ -159,7 +159,7 @@ export function ExamPage() {
               </div>
               {/* Nút nổi góc dưới bên phải: Ghi chú (chỉ Thi thử) rồi Hỏi AI. */}
               <div className="exam-dock">
-                <NoteButton key={`note:${aq.qid}`} qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} question={question} className="btn-note--fab" compact={narrow} />
+                <NoteButton qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} question={question} className="btn-note--fab" compact={narrow} />
                 <GeminiButton
                   key={aq.qid}
                   attemptId={attempt.id}

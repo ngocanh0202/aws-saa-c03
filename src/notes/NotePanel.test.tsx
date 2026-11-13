@@ -3,7 +3,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AppProvider } from '../app/context';
 import { makeDeps, makeQuestion } from '../test/fixtures';
-import type { QuestionNotes } from './model';
+import { createFreeNote, type QuestionNotes } from './model';
 import { NotePanel } from './NotePanel';
 
 const QID = 5;
@@ -19,9 +19,9 @@ const seed: QuestionNotes = {
   ],
 };
 
-function mount(notes?: QuestionNotes) {
+function mount(notes?: QuestionNotes, ...more: QuestionNotes[]) {
   const deps = makeDeps();
-  if (notes) deps.notes.save(notes);
+  for (const n of [notes, ...more]) if (n) deps.notes.save(n);
   const onClose = vi.fn();
   render(
     <AppProvider deps={deps}>
@@ -89,5 +89,71 @@ describe('NotePanel', () => {
     fireEvent.click(within(card()).getByRole('button', { name: 'Xóa ghi chú' }));
     fireEvent.click(within(card()).getByRole('button', { name: 'Xóa' }));
     expect(titles(panel)).toEqual(['Câu hỏi AI', 'Stem']);
+  });
+});
+
+describe('NotePanel — khung nổi như chat', () => {
+  it('không che trang (không modal); Mở rộng thì phủ toàn màn hình, Thu nhỏ thì về góc', () => {
+    const { panel } = mount(seed);
+    expect(panel).not.toHaveAttribute('aria-modal');
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mở rộng' }));
+    const big = screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' });
+    expect(big).toHaveAttribute('aria-modal', 'true');
+    fireEvent.click(within(big).getByRole('button', { name: 'Thu nhỏ' }));
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).not.toHaveAttribute('aria-modal');
+  });
+});
+
+describe('NotePanel — đổi cỡ giữ chữ đang gõ', () => {
+  it('Mở rộng rồi Thu nhỏ không mất chữ trong form thêm', () => {
+    const { panel } = mount();
+    const form = () => document.querySelector('.note-panel__add') as HTMLElement;
+    fireEvent.change(within(form()).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'đang gõ' } });
+    fireEvent.click(within(panel).getByRole('button', { name: 'Mở rộng' }));
+    expect(within(form()).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('đang gõ');
+    fireEvent.click(screen.getByRole('button', { name: 'Thu nhỏ' }));
+    expect(within(form()).getByRole('textbox', { name: 'Tiêu đề' })).toHaveValue('đang gõ');
+  });
+});
+
+describe('NotePanel — tra mọi ghi chú', () => {
+  const other: QuestionNotes = {
+    qid: 3,
+    updatedAt: 50,
+    highlights: [],
+    items: [{ id: 'o1', kind: 'manual', title: 'Glacier Instant Retrieval', content: 'truy xuất ms', createdAt: 50, updatedAt: 50 }],
+  };
+  const free = createFreeNote(-7, { title: 'Ôn VPC', content: 'subnet' }, 'f1', 60);
+
+  it('mặc định Câu này; Tất cả thì thấy ghi chú câu khác kèm nhãn và ghi chú chung', () => {
+    const { panel } = mount(seed, other, free);
+    expect(within(panel).getByRole('button', { name: 'Câu này' })).toHaveAttribute('aria-pressed', 'true');
+    expect(titles(panel)).toEqual(['Tự ghi', 'Câu hỏi AI', 'Stem']);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Tất cả' }));
+    expect(titles(panel)).toEqual(['Ôn VPC', 'Glacier Instant Retrieval', 'Tự ghi', 'Câu hỏi AI', 'Stem']);
+    const card = within(panel).getByRole('heading', { name: 'Glacier Instant Retrieval' }).closest('article')!;
+    expect(card).toHaveTextContent('Đề 1 · Câu 3');
+    expect(within(panel).getByRole('heading', { name: 'Ôn VPC' }).closest('article')!).toHaveTextContent('Ghi chú chung');
+    expect(within(panel).queryByRole('button', { name: 'Mở câu hỏi' })).toBeNull();
+  });
+
+  it('tìm không dấu trong tiêu đề, nội dung và nhãn', () => {
+    const { panel } = mount(seed, other, free);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Tất cả' }));
+    fireEvent.change(within(panel).getByRole('searchbox', { name: 'Tìm ghi chú' }), { target: { value: 'truy xuat' } });
+    expect(titles(panel)).toEqual(['Glacier Instant Retrieval']);
+    fireEvent.change(within(panel).getByRole('searchbox', { name: 'Tìm ghi chú' }), { target: { value: 'khong co' } });
+    expect(within(panel).getByText('Không có ghi chú nào khớp.')).toBeInTheDocument();
+  });
+
+  it('ở Tất cả, form thêm tạo ghi chú chung', () => {
+    const { panel, deps } = mount(seed);
+    fireEvent.click(within(panel).getByRole('button', { name: 'Tất cả' }));
+    const form = panel.querySelector('.note-panel__add') as HTMLElement;
+    fireEvent.change(within(form).getByRole('textbox', { name: 'Tiêu đề' }), { target: { value: 'Chung' } });
+    fireEvent.click(within(form).getByRole('button', { name: 'Lưu' }));
+    const saved = deps.notes.list().find((n) => n.qid < 0)!;
+    expect(saved.items![0]).toMatchObject({ kind: 'manual', title: 'Chung' });
+    expect(deps.notes.get(QID)!.items).toHaveLength(2);
   });
 });

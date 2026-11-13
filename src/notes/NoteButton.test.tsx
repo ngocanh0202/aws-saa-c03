@@ -97,6 +97,37 @@ describe('Nút Ghi chú nổi ở Thi thử', () => {
   });
 });
 
+describe('Khung ghi chú khi làm bài', () => {
+  it('đổi câu khi khung đang mở: khung vẫn mở và theo câu mới', () => {
+    const { deps } = setup('practice');
+    renderApp('/exam/e1', deps);
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Câu sau' }));
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 2' })).toBeInTheDocument();
+  });
+
+  it('mỗi lúc một khung: mở chat thì khung ghi chú đóng, mở ghi chú thì chat đóng', () => {
+    const store = createStore(memoryStorage(), { now: () => 500 });
+    const auth = fakeAuth();
+    const remote = fakeRemote();
+    const sync = createSyncController({ store, auth, remote });
+    const deps = { ...makeDeps({ store, sync }), ai: fakeAi(), chats: fakeChats() };
+    const attempt = createAttempt({ id: 'e1', setId: 1, mode: 'practice', esl: false, seed: 7, now: deps.now(), sets: deps.bank.sets, questions: deps.bank.questions, metas: deps.bank.meta });
+    store.save(attempt);
+    renderApp('/exam/e1', deps);
+    act(() => auth.emit({ uid: 'u1', name: 'An' }));
+    act(() => remote.emit('u1', new Map([[attempt.id, { attempt, updatedAt: 1 }]])));
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hỏi Gemini' }));
+    expect(screen.queryByRole('dialog', { name: /^Ghi chú/ })).toBeNull();
+    expect(screen.getByRole('dialog', { name: /Hỏi Gemini/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Ghi chú' }));
+    expect(screen.queryByRole('dialog', { name: /Hỏi Gemini/ })).toBeNull();
+    expect(screen.getByRole('dialog', { name: 'Ghi chú · Câu 1' })).toBeInTheDocument();
+  });
+});
+
 describe('Tự ghi chú — Thi thật', () => {
   it('đang làm: không có nút Ghi chú', () => {
     const { deps } = setup('real');
