@@ -6,7 +6,7 @@ import { useStoreVersion } from '../app/use-store';
 import { formatDate, modeName, setLabel } from '../app/format';
 import { DomainTable } from '../components/DomainTable';
 import { GeminiButton } from '../components/GeminiChat';
-import { NoteButton } from '../notes/NoteFormDialog';
+import { NoteButton } from '../notes/NotePanel';
 import { GuidePanel } from '../components/GuidePanel';
 import { QuestionCard } from '../components/QuestionCard';
 import { DOMAIN_SHORT } from '../data/constants';
@@ -134,7 +134,7 @@ export function ResultPage() {
             {/* Nút hỏi AI nằm giữa câu hỏi và hướng dẫn. Bài đã nộp: hỏi được cả Thi thật, không mở/gắn nhãn hướng dẫn (đã hiện sẵn). */}
             <div className="review-item__actions">
               <GeminiButton inline attemptId={attempt.id} number={index + 1} question={question} order={aq.optionOrder} />
-              <NoteButton qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} />
+              <NoteButton qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} question={question} />
             </div>
             <GuidePanel question={question} order={aq.optionOrder} vi={bank.vi.get(aq.qid)} meta={bank.meta.get(aq.qid)} services={bank.services} />
           </article>

@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
-import { targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
+import { busyMessage, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { IconClose, IconDelete, IconHighlight, IconNote, IconResize, IconSave } from '../components/icons';
 import type { Question } from '../data/types';
 import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
 import { addHighlight, fitsLimit, locate, newHighlightId, NOTE_MAX, removeHighlight, setNote, TOO_LONG_MESSAGE, type HighlightPart, type QuestionNotes } from './model';
 import { NoteAiButton } from './NoteAiButton';
+import { useMobile } from './use-mobile';
 import { usePopupResize } from './usePopupResize';
 
-const MOBILE_QUERY = '(max-width: 639px)';
 const POP_WIDTH = 360;
 
 export interface HighlighterProps {
@@ -46,18 +46,6 @@ interface OpenPop {
   /** Ghi chú đã lưu lúc mở (hoặc lần đồng bộ gần nhất từ store). */
   base: string;
   box: Box | null;
-}
-
-function useMobile(): boolean {
-  const [mobile, setMobile] = useState(() => window.matchMedia?.(MOBILE_QUERY)?.matches ?? false);
-  useEffect(() => {
-    const mq = window.matchMedia?.(MOBILE_QUERY);
-    if (!mq) return;
-    const on = () => setMobile(mq.matches);
-    mq.addEventListener?.('change', on);
-    return () => mq.removeEventListener?.('change', on);
-  }, []);
-  return mobile;
 }
 
 function toBox(r: DOMRect | undefined | null): Box | null {
@@ -397,7 +385,7 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
         />
         {gateJob && (
           <p className="hl-pop__locked" role="note">
-            {gateJob.kind === 'note' ? `AI đang soạn ghi chú ở ${gateJob.label}` : `AI đang trả lời ở ${gateJob.label}`}
+            {busyMessage(gateJob)}
           </p>
         )}
         <div className="hl-pop__actions">

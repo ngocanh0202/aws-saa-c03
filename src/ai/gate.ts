@@ -7,9 +7,15 @@ export type AiJobTarget =
 
 /** label: "Câu 12" hoặc "Main 1 · Câu 5". */
 export interface AiJob {
-  kind: 'chat' | 'note';
+  /** form: AI hỗ trợ viết trong form ghi chú (không báo toast). */
+  kind: 'chat' | 'note' | 'form';
   label: string;
   target: AiJobTarget;
+}
+
+/** Dòng báo khi chỗ khác đang chạy AI (khung chat, popup tô đề). */
+export function busyMessage(job: AiJob): string {
+  return job.kind === 'chat' ? `AI đang trả lời ở ${job.label}` : `AI đang soạn ghi chú ở ${job.label}`;
 }
 
 export class AiGateBusyError extends Error {

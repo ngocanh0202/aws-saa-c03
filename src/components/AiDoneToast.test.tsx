@@ -65,6 +65,12 @@ describe('AiDoneToast', () => {
     expect(screen.getByRole('status')).toHaveTextContent('AI gặp lỗi ở Câu 12');
   });
 
+  it('AI soạn trong form ghi chú xong: không báo', async () => {
+    const s = setup();
+    await s.finish({ kind: 'form', label: 'Câu 12', target: { page: 'notes', qid: 5, highlightId: 'form' } });
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
   it('đang nhìn đúng chỗ lúc xong thì không báo', async () => {
     const s = setup();
     const job = chat();

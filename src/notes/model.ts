@@ -149,3 +149,15 @@ export function fitsLimit(notes: QuestionNotes): boolean {
 }
 
 export const TOO_LONG_MESSAGE = 'Ghi chú của câu này đã quá dài, hãy xóa bớt.';
+
+/** Ghi chú tự do (không gắn câu) dùng qid âm để không đụng câu thật. */
+export const isFreeNote = (qid: number): boolean => qid < 0;
+
+/** qid âm duy nhất cho ghi chú tự do mới. */
+export function newFreeQid(now: number, rand: () => number = Math.random): number {
+  return -(now * 1000 + Math.floor(rand() * 1000));
+}
+
+export function createFreeNote(qid: number, value: { title: string; content: string }, id: string, now: number): QuestionNotes {
+  return addItem(undefined, qid, { kind: 'manual', ...value }, id, now);
+}

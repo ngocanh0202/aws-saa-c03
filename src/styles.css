@@ -126,6 +126,8 @@ tr.is-clickable { cursor: pointer; }
   background: var(--surface); border: 1px solid var(--border); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
 }
 .gemini-icon { flex: none; }
+/* Nút đổi Gemini ↔ AI thử nghiệm trong đầu khung chat: icon cỡ nhỏ như các nút công cụ khác. */
+.gemini__mode .gemini-icon { width: 18px; height: 18px; }
 /* Câu có AI đang trả lời ngầm: viền màu nhấn nhấp nháy nhẹ trên nút Hỏi Gemini/Hỏi AI */
 .btn-gemini.btn-gemini--running { border: 2px solid var(--accent); animation: gemini-running 1.6s ease-in-out infinite; }
 @keyframes gemini-running {
@@ -136,8 +138,21 @@ tr.is-clickable { cursor: pointer; }
 /* Trang xem lại: nút nằm trong khối câu, không nổi */
 .btn-gemini.btn-gemini--inline { position: static; margin-top: 12px; padding: 8px 16px; font-size: 1em; box-shadow: none; height: auto; }
 /* Chừa chỗ cuối trang để nút nổi không che nội dung */
-.exam__content:has(.btn-gemini) { padding-bottom: 88px; }
+.exam__content:has(.btn-gemini), .exam__content:has(.exam-dock) { padding-bottom: 88px; }
 @media (max-width: 900px) { .btn-gemini { right: 16px; bottom: 24px; height: 56px; padding: 0 18px; font-size: 1em; } }
+/* Thi thử: nút Ghi chú đứng bên trái nút Hỏi AI, cùng nổi ở góc dưới bên phải. */
+.exam-dock { position: fixed; right: 20px; bottom: 24px; z-index: 12; display: flex; align-items: center; gap: 10px; }
+.exam-dock .btn-gemini { position: static; }
+.btn-note.btn-note--fab {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 14px 22px; border-radius: 999px; font-size: 1.1em; font-weight: 600;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: 0 6px 20px rgb(0 0 0 / 0.25);
+}
+.btn-note.btn-note--fab svg { width: 22px; height: 22px; }
+@media (max-width: 900px) {
+  .exam-dock { right: 16px; }
+  .btn-note.btn-note--fab { width: 56px; height: 56px; padding: 0; border-radius: 50%; }
+}
 .guide { margin-top: 12px; padding: 16px 20px; border-radius: 4px var(--radius) var(--radius) 4px; background: var(--guide-bg); border: 1px solid var(--border); border-left: 5px solid var(--guide-bar); }
 .guide h4 { margin: 0 0 8px; }
 .guide h5 { margin: 14px 0 4px; }
@@ -553,18 +568,78 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .btn-note svg { width: 18px; height: 18px; }
 .review-item__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .review-item__actions .btn-note { margin-top: 12px; padding: 8px 16px; }
-.note-form { z-index: 80; }
-.note-form__box { display: flex; flex-direction: column; gap: 10px; max-width: 520px; }
 .note-form__title { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 1.1em; }
 .note-form__title svg { width: 20px; height: 20px; flex: none; }
 .note-form__label { color: var(--muted); font-weight: normal; }
 .note-form__input { width: 100%; box-sizing: border-box; font: inherit; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
 textarea.note-form__input { resize: vertical; min-height: 120px; }
 .note-form__error { margin: 0; color: var(--bad); }
-@media (max-width: 639px) {
-  .note-form { place-items: end stretch; padding: 0; }
-  .note-form__box { max-width: none; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom)); max-height: 85vh; overflow-y: auto; }
+/* Khung ghi chú (NoteSheet): giữa màn hình (center), nổi ở góc như khung chat (dock), cột bên phải khi phóng to
+   (split, độ rộng theo --note-split, kéo được); điện thoại: bottom sheet có thanh kéo (sheet). Lớp nền chỉ có ở
+   các kiểu modal (z-index đặt inline theo thứ tự mở). */
+.note-sheet {
+  position: fixed; z-index: 80; display: flex; flex-direction: column; gap: 12px; box-sizing: border-box; overflow-y: auto;
+  padding: 16px 20px; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.3);
 }
+.note-sheet__backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / 0.45); }
+.note-sheet--center { left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(560px, calc(100vw - 32px)); max-height: 85vh; }
+.note-sheet--dock { right: 20px; bottom: 20px; z-index: 35; width: min(420px, calc(100vw - 32px)); height: min(600px, calc(100vh - 100px)); border-radius: 14px; padding: 12px 14px; animation: service-modal-in 0.18s ease-out; }
+.note-sheet--split { top: 0; right: 0; bottom: 0; z-index: 35; width: max(var(--note-split, 30vw), 300px); border-radius: 0; border-width: 0 0 0 1px; box-shadow: -6px 0 18px rgb(0 0 0 / 0.12); overflow: hidden; padding-left: 24px; }
+/* Phóng to: trang (câu hỏi) chiếm phần còn lại bên trái; cột trượt vào từ mép phải, trang co lại mượt theo. */
+body:has(.note-sheet--split) { padding-right: max(var(--note-split, 30vw), 300px); }
+body { transition: padding-right 0.22s ease-out; }
+:root[data-note-drag] body { transition: none; }
+.note-sheet--split { animation: note-split-in 0.22s ease-out; }
+@keyframes note-split-in { from { transform: translateX(100%); opacity: 0.6; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { body { transition: none; } .note-sheet--split { animation: none; } }
+body:has(.note-sheet--split) .exam-dock { right: calc(max(var(--note-split, 30vw), 300px) + 20px); }
+/* Thanh kéo ở mép trái cột: kéo sang trái để nới rộng ghi chú. */
+.note-sheet__split-grip { position: absolute; left: 0; top: 0; bottom: 0; width: 12px; cursor: col-resize; touch-action: none; }
+.note-sheet__split-grip::before { content: ''; position: absolute; left: 4px; top: 50%; width: 4px; height: 48px; margin-top: -24px; border-radius: 2px; background: var(--border); }
+.note-sheet__split-grip:hover::before, .note-sheet__split-grip:focus-visible::before { background: var(--muted); }
+.note-sheet__split-grip:focus-visible { outline: 2px solid var(--muted); outline-offset: -2px; }
+body:has(.note-sheet__split-grip:active) { cursor: col-resize; user-select: none; }
+/* Khung danh sách (ở góc, cột phóng to, bottom sheet): chỉ danh sách cuộn; ô tìm và nút Ghi chú mới luôn thấy. */
+.note-sheet--dock { overflow: hidden; }
+.note-sheet:has(.note-panel__scope) .note-sheet__body { flex: 1 1 auto; min-height: 0; }
+.note-sheet:has(.note-panel__scope) .note-panel__list { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; align-content: start; margin: 0; }
+.note-sheet:has(.note-panel__scope) .note-panel__empty { flex: 1 1 auto; }
+.note-panel__foot { flex: none; display: flex; justify-content: flex-end; }
+.note-panel__new { display: inline-flex; align-items: center; gap: 6px; }
+.note-panel__new svg { width: 18px; height: 18px; }
+.note-sheet--sheet { left: 0; right: 0; bottom: 0; max-height: 90vh; border-radius: 14px 14px 0 0; padding: 8px 16px calc(12px + env(safe-area-inset-bottom)); animation: hl-sheet-in 0.18s ease-out; }
+/* Điện thoại, popup form (Ghi chú mới): cao sẵn 60% màn hình, ô Nội dung giãn hết phần còn lại (kể cả khi kéo cao thêm). */
+.note-sheet--sheet:not(:has(.note-panel__scope)) { height: 60vh; overflow: hidden; }
+.note-sheet--sheet:not(:has(.note-panel__scope)) :is(.note-sheet__body, .note-form__form) { flex: 1 1 auto; min-height: 0; }
+.note-sheet--sheet:not(:has(.note-panel__scope)) textarea.note-form__input { flex: 1 1 auto; min-height: 96px; resize: none; }
+/* Điện thoại: khung danh sách cao sẵn 75% màn hình (kéo thanh để đổi), bố cục gọn. */
+.note-sheet--sheet:has(.note-panel__scope) { height: 75vh; overflow: hidden; gap: 8px; }
+.note-sheet--sheet .note-sheet__head .note-form__title { font-size: 1em; }
+.note-sheet--sheet .note-sheet__body { gap: 8px; }
+.note-sheet--sheet .note-panel__scope { flex-wrap: nowrap; }
+.note-sheet--sheet .note-panel__scope .chips { flex: none; flex-wrap: nowrap; }
+.note-sheet--sheet .notes-list { gap: 8px; }
+.note-sheet--sheet .notes-entry { padding: 10px 12px; }
+.note-sheet--sheet .notes-entry__meta { font-size: 0.75em; }
+.note-sheet--sheet .notes-entry__title { font-size: 1em; margin: 2px 0; }
+.note-sheet--sheet .notes-entry__actions { gap: 6px; }
+.note-sheet--sheet .notes-entry__actions button { padding: 4px 10px; min-height: 32px; }
+.note-sheet--sheet .note-panel__foot .note-panel__new { flex: 1; justify-content: center; min-height: 44px; }
+.note-sheet__grab { flex: none; }
+.note-panel__scope { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.note-panel__scope .notes-page__search { flex: 1 1 160px; min-width: 0; font: inherit; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+.note-sheet__head { display: flex; align-items: center; gap: 8px; }
+.note-sheet__head .note-form__title { flex: 1; min-width: 0; }
+.note-sheet__body { display: flex; flex-direction: column; gap: 12px; }
+.note-form__form { display: flex; flex-direction: column; gap: 10px; }
+.note-form__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.note-form__spacer { flex: 1; }
+.note-ai { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+.note-ai__status { color: var(--muted); font-size: 0.9em; }
+.note-ai__error { color: var(--bad); font-size: 0.9em; }
+.note-ai__retry { display: inline-flex; align-items: center; gap: 4px; }
+@media (prefers-reduced-motion: reduce) { .note-sheet { animation: none; } }
 .gemini__msg--model { position: relative; }
 .gemini__bookmark { display: inline-flex; margin-top: 4px; color: var(--muted); }
 .gemini__bookmark.is-saved { color: var(--hl-line); }
@@ -572,6 +647,8 @@ textarea.note-form__input { resize: vertical; min-height: 120px; }
 /* Trang Ghi chú: bộ lọc, nhóm, mục, khung xem câu. */
 .notes-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
 .notes-tools .notes-page__search { flex: 1 1 240px; }
+.notes-tools__new { display: inline-flex; align-items: center; gap: 6px; }
+.notes-tools__new svg { width: 18px; height: 18px; }
 .notes-tools__sort select { font: inherit; padding: 4px 6px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); }
 .notes-tools__group { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .notes-tools__group .chip { display: inline-flex; align-items: center; gap: 4px; background: var(--surface); color: var(--text); cursor: pointer; font: inherit; font-size: 0.85em; }

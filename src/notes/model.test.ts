@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ITEM_CONTENT_MAX, NOTE_MAX, TITLE_MAX, addHighlight, addItem, findItem, fitsLimit, locate, mergeNotes, removeHighlight, removeItem, setNote, updateItem, type Highlight, type QuestionNotes } from './model';
+import { createFreeNote, isFreeNote, newFreeQid, ITEM_CONTENT_MAX, NOTE_MAX, TITLE_MAX, addHighlight, addItem, findItem, fitsLimit, locate, mergeNotes, removeHighlight, removeItem, setNote, updateItem, type Highlight, type QuestionNotes } from './model';
 
 const empty = (): QuestionNotes => ({ qid: 5, highlights: [], updatedAt: 0 });
 const hl = (over: Partial<Highlight> = {}): Highlight => ({
@@ -114,5 +114,25 @@ describe('NoteItem', () => {
     expect(fitsLimit(n)).toBe(true);
     for (let i = 0; i < 10; i++) n = addItem(n, 5, { kind: 'manual', title: 'T', content: 'x'.repeat(ITEM_CONTENT_MAX) }, `m${i}`, 1);
     expect(fitsLimit(n)).toBe(false);
+  });
+});
+
+describe('ghi chú tự do', () => {
+  it('isFreeNote theo dấu của qid', () => {
+    expect(isFreeNote(-5)).toBe(true);
+    expect(isFreeNote(10101)).toBe(false);
+  });
+  it('newFreeQid là số nguyên âm an toàn', () => {
+    const q = newFreeQid(1_700_000_000_000, () => 0.5);
+    expect(q).toBe(-1_700_000_000_000_500);
+    expect(Number.isSafeInteger(q)).toBe(true);
+  });
+  it('createFreeNote có đúng một item manual', () => {
+    expect(createFreeNote(-7, { title: 'T', content: '' }, 'i1', 9)).toEqual({
+      qid: -7,
+      highlights: [],
+      items: [{ id: 'i1', kind: 'manual', title: 'T', content: '', createdAt: 9, updatedAt: 9 }],
+      updatedAt: 9,
+    });
   });
 });

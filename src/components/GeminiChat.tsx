@@ -5,7 +5,7 @@ import { formatDate, setLabel } from '../app/format';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
-import { AiGateBusyError, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
+import { AiGateBusyError, busyMessage, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
 import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
@@ -136,7 +136,7 @@ function useRunning(inflight: InflightRegistry, key: string): boolean {
   return running;
 }
 
-/** Khung cần tự mở sau khi chuyển Gemini → AI thử nghiệm (`${attemptId}/${qid}`), để người học khỏi bấm lại nút. */
+/** Khung cần tự mở sau khi đổi Gemini ↔ AI thử nghiệm (`${attemptId}/${qid}`), để người học khỏi bấm lại nút. */
 let openAfterSwitch: string | null = null;
 
 function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand }) {
@@ -219,7 +219,7 @@ function ChatDialog({
   brand,
   onClose,
 }: Props & { uid: string; ai: AiClient; chats: ChatHistoryStore; brand: Brand; onClose: () => void }) {
-  const { store, bank, localAi, aiMode, localSettings } = useApp();
+  const { store, bank, localAi, aiMode, localSettings, ai: geminiAi } = useApp();
   // Nút ⚙ chỉ có ở AI thử nghiệm; cài đặt lưu theo tài khoản, chưa tải xong hoặc tải lỗi thì dùng mặc định.
   const settingsStore = brand === 'AI' ? localSettings : undefined;
   const [settings, setSettings] = useState<LocalAiSettings>(DEFAULT_LOCAL_SETTINGS);
@@ -247,6 +247,14 @@ function ChatDialog({
       ? () => {
           openAfterSwitch = keyOf(attemptId, question.id);
           aiMode.set('local');
+        }
+      : undefined;
+  // Nút đổi Gemini ↔ AI thử nghiệm ở đầu khung: chỉ khi có cả hai; khung của đúng câu này mở lại ở chế độ mới.
+  const switchMode =
+    aiMode && localAi && geminiAi
+      ? () => {
+          openAfterSwitch = keyOf(attemptId, question.id);
+          aiMode.set(brand === 'Gemini' ? 'local' : 'gemini');
         }
       : undefined;
   /** false = khung chat nhỏ ở góc (trang vẫn dùng được); true = phủ toàn màn hình. */
@@ -332,6 +340,18 @@ function ChatDialog({
           {view === 'chat' && <p className="hint gemini__stem">{preview}</p>}
         </div>
         <div className="gemini__tools">
+          {switchMode && (
+            <button
+              type="button"
+              className="icon-btn gemini__mode"
+              aria-label={brand === 'Gemini' ? 'Chuyển sang AI thử nghiệm' : 'Chuyển sang Gemini'}
+              title={brand === 'Gemini' ? 'Chuyển sang AI thử nghiệm' : 'Chuyển sang Gemini'}
+              disabled={busy}
+              onClick={switchMode}
+            >
+              {brand === 'Gemini' ? <RobotIcon /> : <GeminiIcon />}
+            </button>
+          )}
           {settingsStore && (
             <button
               type="button"
@@ -1041,7 +1061,7 @@ function Conversation({
       </form>
       {locked && (
         <p className="gemini__locked" role="note">
-          {locked.kind === 'note' ? `AI đang soạn ghi chú ở ${locked.label}` : `AI đang trả lời ở ${locked.label}`}
+          {busyMessage(locked)}
         </p>
       )}
     </>

@@ -6,7 +6,8 @@ import { useStoreVersion } from '../app/use-store';
 import { EXAM_LABELS } from '../app/labels';
 import { DraggableFab } from '../components/DraggableFab';
 import { GeminiButton } from '../components/GeminiChat';
-import { NoteButton } from '../notes/NoteFormDialog';
+import { NoteButton } from '../notes/NotePanel';
+import { useMediaQuery } from '../notes/use-mobile';
 import { GuidePanel } from '../components/GuidePanel';
 import { NavGrid } from '../components/NavGrid';
 import { QuestionCard } from '../components/QuestionCard';
@@ -18,6 +19,8 @@ export function ExamPage() {
   const { id = '' } = useParams();
   const { bank, store, now, aiGate } = useApp();
   const navigate = useNavigate();
+  // Cùng điểm ngắt với .btn-gemini/.exam-fab trong CSS: màn hình hẹp thì nút Ghi chú chỉ còn icon.
+  const narrow = useMediaQuery('(max-width: 900px)');
   useStoreVersion();
   const attempt = store.get(id);
   const [index, setIndex] = useState(0);
@@ -86,8 +89,6 @@ export function ExamPage() {
           <Timer endsAt={attempt.endsAt} now={now} label={t.timeRemaining} onExpire={submit} />
         )}
         <div className="exam__bar-actions">
-          {/* Tự ghi chú: chỉ Thi thử (Thi thật đang làm không ghi chú). */}
-          {attempt.mode === 'practice' && <NoteButton key={aq.qid} qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} />}
           <button type="button" onClick={() => setConfirming(true)}>
             {t.end}
           </button>
@@ -155,6 +156,10 @@ export function ExamPage() {
                     {t.guide}
                   </button>
                 )}
+              </div>
+              {/* Nút nổi góc dưới bên phải: Ghi chú (chỉ Thi thử) rồi Hỏi AI. */}
+              <div className="exam-dock">
+                <NoteButton qid={bank.canonical(aq.qid)} label={`Câu ${index + 1}`} question={question} className="btn-note--fab" compact={narrow} />
                 <GeminiButton
                   key={aq.qid}
                   attemptId={attempt.id}

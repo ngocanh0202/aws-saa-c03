@@ -1,7 +1,7 @@
 import { setLabel } from '../app/format';
 import { normalizeSearch } from '../components/GeminiChat';
 import type { SetsFile } from '../data/types';
-import type { QuestionNotes } from './model';
+import { isFreeNote, type QuestionNotes } from './model';
 
 export type NoteSource = 'highlight' | 'ai' | 'manual';
 
@@ -42,11 +42,15 @@ const isMain = (qid: number) => qid >= 10000;
 
 /** Đề của câu (theo canonical id): câu main theo id, câu sub theo sets.json; không thuộc đề nào thì null (kho dự phòng). */
 export function noteSetId(qid: number, sets: SetsFile): number | null {
+  if (isFreeNote(qid)) return null;
   if (isMain(qid)) return Math.floor(qid / 100);
   return sets.sets.find((s) => s.questionIds.includes(qid))?.id ?? null;
 }
 
 const RESERVE = 'Kho dự phòng';
+
+/** Nhãn và nhóm của ghi chú tự do (qid âm). */
+export const FREE_LABEL = 'Ghi chú chung';
 
 function setName(set: number | null): string {
   return set === null ? RESERVE : setLabel(set);
@@ -54,14 +58,16 @@ function setName(set: number | null): string {
 
 /** "Main 3 · Câu 12" / "Đề 2 · Câu 245" / "Kho dự phòng · Câu 480". */
 export function noteLabel(qid: number, sets: SetsFile): string {
+  if (isFreeNote(qid)) return FREE_LABEL;
   const set = noteSetId(qid, sets);
   return `${setName(set)} · Câu ${isMain(qid) ? qid % 100 : qid}`;
 }
 
 export type SortKey = 'newest' | 'oldest' | 'question';
 
-/** Khóa sắp theo đề rồi số câu: đề main sau đề sub, kho dự phòng cuối. */
+/** Khóa sắp theo đề rồi số câu: đề main sau đề sub, rồi kho dự phòng, ghi chú tự do cuối cùng. */
 function questionOrder(qid: number, sets: SetsFile): [number, number] {
+  if (isFreeNote(qid)) return [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
   const set = noteSetId(qid, sets);
   return [set ?? Number.MAX_SAFE_INTEGER, qid];
 }
@@ -94,6 +100,7 @@ export interface EntryGroup {
 
 function groupOf(e: NoteEntry, key: GroupKey, sets: SetsFile): { key: string; label: string } {
   if (key === 'source') return { key: e.source, label: SOURCE_LABEL[e.source] };
+  if (isFreeNote(e.qid)) return { key: 'free', label: FREE_LABEL };
   if (key === 'question') return { key: String(e.qid), label: noteLabel(e.qid, sets) };
   const set = noteSetId(e.qid, sets);
   return { key: String(set ?? 'reserve'), label: setName(set) };
@@ -101,7 +108,7 @@ function groupOf(e: NoteEntry, key: GroupKey, sets: SetsFile): { key: string; la
 
 /**
  * Gộp nhiều tầng theo `keys` (thứ tự tự do, tầng đầu ở ngoài). Giữ thứ tự mục đã sắp; nhóm xếp theo lần xuất
- * hiện đầu tiên. `keys` rỗng → [].
+ * hiện đầu tiên, riêng nhóm ghi chú tự do luôn cuối. `keys` rỗng → [].
  */
 export function groupEntries(entries: NoteEntry[], keys: GroupKey[], sets: SetsFile): EntryGroup[] {
   if (keys.length === 0) return [];
@@ -113,7 +120,9 @@ export function groupEntries(entries: NoteEntry[], keys: GroupKey[], sets: SetsF
     if (!bucket) groups.set(g.key, (bucket = { label: g.label, entries: [] }));
     bucket.entries.push(e);
   }
-  return [...groups].map(([key, g]) => ({
+  // Nhóm ghi chú tự do luôn đứng cuối (không thuộc đề nào).
+  const ordered = [...groups].sort(([a], [b]) => Number(a === 'free') - Number(b === 'free'));
+  return ordered.map(([key, g]) => ({
     key,
     label: g.label,
     count: g.entries.length,

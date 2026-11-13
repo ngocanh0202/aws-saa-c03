@@ -1,15 +1,13 @@
-import { useEffect, useState, useSyncExternalStore, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { useApp } from '../app/context';
-import { formatDate } from '../app/format';
 import { normalizeSearch } from '../components/GeminiChat';
 import { GuidePanel } from '../components/GuidePanel';
-import { IconAi, IconClose, IconDelete, IconHighlight, IconNote } from '../components/icons';
-import { Markdown } from '../components/Markdown';
+import { IconClose, IconNote } from '../components/icons';
 import { QuestionCard } from '../components/QuestionCard';
 import type { SetsFile } from '../data/types';
 import {
+  FREE_LABEL,
   GROUP_LABEL,
-  SOURCE_LABEL,
   groupEntries,
   matchesEntry,
   noteLabel,
@@ -18,10 +16,12 @@ import {
   type EntryGroup,
   type GroupKey,
   type NoteEntry,
-  type NoteSource,
   type SortKey,
 } from '../notes/entries';
-import { ITEM_CONTENT_MAX, NOTE_MAX, TITLE_MAX, TOO_LONG_MESSAGE, fitsLimit, removeHighlight, removeItem, setNote, updateItem, type QuestionNotes } from '../notes/model';
+import { createFreeNote, fitsLimit, isFreeNote, newFreeQid, newHighlightId, type QuestionNotes } from '../notes/model';
+import { NoteForm } from '../notes/NoteForm';
+import { NoteSheet } from '../notes/NoteSheet';
+import { NoteEntryCard } from '../notes/NoteEntryCard';
 
 /** Cách xem (sắp xếp, gộp) nhớ theo máy; không đọc/ghi được storage thì dùng mặc định. */
 const VIEW_KEY = 'saa-c03:notes-view:v1';
@@ -56,20 +56,15 @@ function saveView(v: View): void {
   }
 }
 
-const SOURCE_ICON: Record<NoteSource, () => ReactNode> = {
-  highlight: () => <IconHighlight />,
-  ai: () => <IconAi />,
-  manual: () => <IconNote />,
-};
-
 export function NotesPage() {
-  const { notes: store, bank, aiGate } = useApp();
+  const { notes: store, bank, aiGate, now } = useApp();
   // list() trả mảng mới mỗi lần: lấy theo phiên bản (chuỗi JSON) để useSyncExternalStore không lặp vô hạn.
   const json = useSyncExternalStore(store.subscribe, () => JSON.stringify(store.list()));
   const list = JSON.parse(json) as QuestionNotes[];
   const [query, setQuery] = useState('');
   const [view, setView] = useState(loadView);
   const [openQid, setOpenQid] = useState<number | null>(null);
+  const [creating, setCreating] = useState(false);
   const sets = bank.sets;
 
   // Mở từ thông báo AI (AI soạn xong ghi chú đoạn tô): mở khung câu đó; popup do Highlighter trong khung tự mở (takeOpen).
@@ -77,6 +72,15 @@ export function NotesPage() {
   useEffect(() => {
     if (pending?.page === 'notes') setOpenQid(pending.qid);
   }, [pending]);
+
+  // Ghi chú tự do: bản ghi riêng với qid âm, không gắn câu nào.
+  const createFree = (v: { title: string; content: string }) => {
+    const next = createFreeNote(newFreeQid(now()), v, newHighlightId(), now());
+    if (!fitsLimit(next)) return false;
+    store.save(next);
+    setCreating(false);
+    return true;
+  };
 
   const changeView = (v: View) => {
     setView(v);
@@ -87,7 +91,7 @@ export function NotesPage() {
 
   const needle = normalizeSearch(query.trim());
   const entries = sortEntries(
-    toEntries(list).filter((e) => bank.questions.has(e.qid) && matchesEntry(e, needle, sets)),
+    toEntries(list).filter((e) => (isFreeNote(e.qid) || bank.questions.has(e.qid)) && matchesEntry(e, needle, sets)),
     view.sort,
     sets,
   );
@@ -97,11 +101,12 @@ export function NotesPage() {
   return (
     <main className="page notes-page">
       <h1>Ghi chú của tôi</h1>
-      {total === 0 ? (
-        <p>Chưa có ghi chú. Tô đề rồi ghi chú, đánh dấu câu trả lời của AI, hoặc bấm "Ghi chú" khi làm bài.</p>
-      ) : (
-        <>
-          <div className="notes-tools">
+      <div className="notes-tools">
+        <button type="button" className="btn-primary notes-tools__new" onClick={() => setCreating(true)}>
+          <IconNote /> Ghi chú mới
+        </button>
+        {total > 0 && (
+          <>
             <input
               type="search"
               className="notes-page__search"
@@ -132,7 +137,13 @@ export function NotesPage() {
                 );
               })}
             </div>
-          </div>
+          </>
+        )}
+      </div>
+      {total === 0 ? (
+        <p>Chưa có ghi chú. Tô đề rồi ghi chú, đánh dấu câu trả lời của AI, bấm "Ghi chú" khi làm bài, hoặc tạo "Ghi chú mới".</p>
+      ) : (
+        <>
           {entries.length === 0 && <p>Không có ghi chú nào khớp.</p>}
           {view.group.length === 0 ? (
             <EntryList entries={entries} sets={sets} onOpen={setOpenQid} />
@@ -142,6 +153,11 @@ export function NotesPage() {
         </>
       )}
       {openQid !== null && <QuestionDialog qid={openQid} onClose={() => setOpenQid(null)} />}
+      {creating && (
+        <NoteSheet title={<><IconNote /> Ghi chú mới</>} ariaLabel="Ghi chú mới" onClose={() => setCreating(false)}>
+          <NoteForm qid={0} label={FREE_LABEL} onSave={createFree} />
+        </NoteSheet>
+      )}
     </main>
   );
 }
@@ -158,115 +174,13 @@ function Group({ group, sets, onOpen }: { group: EntryGroup; sets: SetsFile; onO
 }
 
 function EntryList({ entries, sets, onOpen }: { entries: NoteEntry[]; sets: SetsFile; onOpen: (qid: number) => void }) {
+  const { bank } = useApp();
   return (
     <div className="notes-list">
       {entries.map((e) => (
-        <Entry key={e.key} entry={e} sets={sets} onOpen={onOpen} />
+        <NoteEntryCard key={e.key} entry={e} label={noteLabel(e.qid, sets)} question={bank.questions.get(e.qid)} onOpen={onOpen} />
       ))}
     </div>
-  );
-}
-
-function Entry({ entry: e, sets, onOpen }: { entry: NoteEntry; sets: SetsFile; onOpen: (qid: number) => void }) {
-  const { notes, now } = useApp();
-  const [editing, setEditing] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-
-  const remove = () => {
-    const cur = notes.get(e.qid);
-    if (!cur) return;
-    notes.save(e.source === 'highlight' ? removeHighlight(cur, e.id, now()) : removeItem(cur, e.id, now()));
-  };
-
-  return (
-    <article className={`notes-entry notes-entry--${e.source}`} id={`note-${e.key}`}>
-      <p className="notes-entry__meta">
-        <span className="notes-entry__source" title={SOURCE_LABEL[e.source]}>
-          {SOURCE_ICON[e.source]()} {SOURCE_LABEL[e.source]}
-        </span>
-        <span>{noteLabel(e.qid, sets)}</span>
-        <span>{formatDate(e.updatedAt)}</span>
-      </p>
-      {editing ? (
-        <EntryEditor entry={e} onDone={() => setEditing(false)} />
-      ) : (
-        <>
-          <h2 className="notes-entry__title">{e.source === 'highlight' ? <mark className="hl">{e.title}</mark> : e.title}</h2>
-          {e.content.trim() !== '' && (e.source === 'ai' ? <Markdown text={e.content} /> : <p className="notes-entry__content">{e.content}</p>)}
-          <div className="notes-entry__actions">
-            <button type="button" onClick={() => onOpen(e.qid)}>
-              Mở câu hỏi
-            </button>
-            <button type="button" onClick={() => setEditing(true)}>
-              Sửa
-            </button>
-            {confirmDelete ? (
-              <>
-                <span>Xóa ghi chú này?</span>
-                <button type="button" className="btn-danger" onClick={remove}>
-                  Xóa
-                </button>
-                <button type="button" onClick={() => setConfirmDelete(false)}>
-                  Hủy
-                </button>
-              </>
-            ) : (
-              <button type="button" className="icon-btn" aria-label="Xóa ghi chú" title="Xóa ghi chú" onClick={() => setConfirmDelete(true)}>
-                <IconDelete />
-              </button>
-            )}
-          </div>
-        </>
-      )}
-    </article>
-  );
-}
-
-/** Sửa tại chỗ: ghi chú AI/tự ghi sửa cả tiêu đề; đoạn tô chỉ sửa nội dung (tiêu đề là chữ trong đề). */
-function EntryEditor({ entry: e, onDone }: { entry: NoteEntry; onDone: () => void }) {
-  const { notes, now } = useApp();
-  const highlight = e.source === 'highlight';
-  const [title, setTitle] = useState(e.title);
-  const [content, setContent] = useState(e.content);
-  const [tooLong, setTooLong] = useState(false);
-
-  const save = (ev: FormEvent) => {
-    ev.preventDefault();
-    if (!highlight && title.trim() === '') return;
-    const cur = notes.get(e.qid);
-    if (!cur) return onDone();
-    const next = highlight ? setNote(cur, e.id, content, now()) : updateItem(cur, e.id, { title, content }, now());
-    if (!fitsLimit(next)) return setTooLong(true);
-    notes.save(next);
-    onDone();
-  };
-
-  return (
-    <form className="notes-entry__edit" onSubmit={save}>
-      {!highlight && <input className="note-form__input" aria-label="Tiêu đề" maxLength={TITLE_MAX} value={title} onChange={(ev) => setTitle(ev.target.value)} />}
-      <textarea
-        className="note-form__input"
-        aria-label="Nội dung"
-        rows={5}
-        maxLength={highlight ? NOTE_MAX : ITEM_CONTENT_MAX}
-        value={content}
-        autoFocus
-        onChange={(ev) => setContent(ev.target.value)}
-      />
-      {tooLong && (
-        <p className="note-form__error" role="alert">
-          {TOO_LONG_MESSAGE}
-        </p>
-      )}
-      <div className="notes-entry__actions">
-        <button type="submit" className="btn-primary" disabled={!highlight && title.trim() === ''}>
-          Lưu
-        </button>
-        <button type="button" onClick={onDone}>
-          Hủy
-        </button>
-      </div>
-    </form>
   );
 }
 
