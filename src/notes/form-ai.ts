@@ -46,7 +46,7 @@ export function buildFormNotePrompt(input: { question?: Question; title: string;
   );
   if (question)
     lines.push(
-      '- Không được nói lựa chọn nào đúng hay sai, không loại trừ lựa chọn nào.',
+      '- Không được nói lựa chọn nào đúng hay sai, không loại trừ lựa chọn nào, không gọi tên dịch vụ nằm trong các lựa chọn như là câu trả lời.',
       '- Nếu người học hỏi đáp án hay lựa chọn nào đúng thì không trả lời điều đó, chỉ nhắc bấm nút "Xem hướng dẫn" để xem đáp án.',
     );
   lines.push('- Chỉ viết nội dung ghi chú, không chào hỏi, không tiêu đề, không dùng LaTeX.');

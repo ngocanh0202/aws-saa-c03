@@ -69,6 +69,16 @@ describe('NotePanel', () => {
     expect(deps.notes.get(QID)!.highlights[0].note).toBe('mới sửa');
   });
 
+  it('đang sửa: Esc (focus tự vào form) chỉ hủy sửa, khung vẫn mở', () => {
+    const { panel, onClose } = mount(seed);
+    const card = within(panel).getByRole('heading', { name: 'Tự ghi' }).closest('article')!;
+    fireEvent.click(within(card).getByRole('button', { name: 'Sửa' }));
+    expect(card.contains(document.activeElement)).toBe(true);
+    fireEvent.keyDown(document.activeElement!, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+    expect(within(card).getByRole('button', { name: 'Sửa' })).toBeInTheDocument();
+  });
+
   it('xóa: Esc hủy xác nhận mà khung vẫn mở; xác nhận thì mục mất', () => {
     const { panel, onClose } = mount(seed);
     const card = () => within(panel).getByRole('heading', { name: 'Tự ghi' }).closest('article')!;

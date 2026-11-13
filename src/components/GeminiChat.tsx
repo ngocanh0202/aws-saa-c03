@@ -5,7 +5,7 @@ import { formatDate, setLabel } from '../app/format';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
-import { AiGateBusyError, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
+import { AiGateBusyError, busyMessage, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { inflightFor, inflightKey, type InflightRegistry } from '../ai/inflight';
 import { DEFAULT_LOCAL_SETTINGS, type LocalAiSettings, type LocalSettingsStore } from '../ai/local-settings';
 import { AiBusyError } from '../ai/retry';
@@ -1061,7 +1061,7 @@ function Conversation({
       </form>
       {locked && (
         <p className="gemini__locked" role="note">
-          {locked.kind === 'note' ? `AI đang soạn ghi chú ở ${locked.label}` : `AI đang trả lời ở ${locked.label}`}
+          {busyMessage(locked)}
         </p>
       )}
     </>

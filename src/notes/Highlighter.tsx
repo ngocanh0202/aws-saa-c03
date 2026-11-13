@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type MouseEvent as ReactMouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
-import { targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
+import { busyMessage, targetKey, useAiGate, type AiJobTarget } from '../ai/gate';
 import { IconClose, IconDelete, IconHighlight, IconNote, IconResize, IconSave } from '../components/icons';
 import type { Question } from '../data/types';
 import { applyHighlights, selectionOffsets, type MarkSpec } from './dom';
@@ -385,7 +385,7 @@ export function Highlighter({ qid, question, stemEl, promptEl, label, target, ai
         />
         {gateJob && (
           <p className="hl-pop__locked" role="note">
-            {gateJob.kind === 'note' ? `AI đang soạn ghi chú ở ${gateJob.label}` : `AI đang trả lời ở ${gateJob.label}`}
+            {busyMessage(gateJob)}
           </p>
         )}
         <div className="hl-pop__actions">

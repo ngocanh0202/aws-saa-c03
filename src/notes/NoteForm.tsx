@@ -31,6 +31,8 @@ export function NoteForm({ question, qid, label, initial, contentOnly = false, c
   const [content, setContent] = useState(initial?.content ?? '');
   const [tooLong, setTooLong] = useState(false);
   const canSave = contentOnly || title.trim() !== '';
+  // Đang sửa (có Hủy): đưa focus vào form để Esc hủy bước sửa, không đóng khung bao ngoài.
+  const editing = onCancel !== undefined;
 
   const save = (e: FormEvent) => {
     e.preventDefault();
@@ -53,7 +55,15 @@ export function NoteForm({ question, qid, label, initial, contentOnly = false, c
   return (
     <form className="note-form__form" onSubmit={save} onKeyDown={onKeyDown}>
       {!contentOnly && (
-        <input className="note-form__input" aria-label="Tiêu đề" placeholder="Tiêu đề" maxLength={TITLE_MAX} value={title} onChange={(e) => setTitle(e.target.value)} />
+        <input
+          className="note-form__input"
+          aria-label="Tiêu đề"
+          placeholder="Tiêu đề"
+          maxLength={TITLE_MAX}
+          value={title}
+          autoFocus={editing}
+          onChange={(e) => setTitle(e.target.value)}
+        />
       )}
       <textarea
         className="note-form__input"
@@ -62,6 +72,7 @@ export function NoteForm({ question, qid, label, initial, contentOnly = false, c
         rows={5}
         maxLength={contentMax}
         value={content}
+        autoFocus={editing && contentOnly}
         onChange={(e) => setContent(e.target.value)}
       />
       {tooLong && (

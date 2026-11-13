@@ -22,12 +22,14 @@ export interface NoteEntryCardProps {
   question?: Question;
   /** Có thì hiện "Mở câu hỏi" (trừ ghi chú tự do). */
   onOpen?: (qid: number) => void;
+  /** Không hiện nhãn ở dòng meta (khung của một câu đã có nhãn ở tiêu đề); nhãn vẫn dùng cho việc AI. */
+  hideLabel?: boolean;
   /** Cấp tiêu đề của mục (trang Ghi chú: 2; trong khung đã có tiêu đề riêng: 3). */
   level?: 2 | 3;
 }
 
 /** Một ghi chú: xem, sửa tại chỗ (đoạn tô chỉ sửa nội dung), xóa có xác nhận. */
-export function NoteEntryCard({ entry: e, label, question, onOpen, level = 2 }: NoteEntryCardProps) {
+export function NoteEntryCard({ entry: e, label, question, onOpen, hideLabel = false, level = 2 }: NoteEntryCardProps) {
   const { notes, now } = useApp();
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -64,7 +66,7 @@ export function NoteEntryCard({ entry: e, label, question, onOpen, level = 2 }: 
         <span className="notes-entry__source" title={SOURCE_LABEL[e.source]}>
           {SOURCE_ICON[e.source]()} {SOURCE_LABEL[e.source]}
         </span>
-        {label && <span>{label}</span>}
+        {label && !hideLabel && <span>{label}</span>}
         <span>{formatDate(e.updatedAt)}</span>
       </p>
       {editing ? (

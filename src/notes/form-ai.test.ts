@@ -37,6 +37,9 @@ describe('buildFormNotePrompt', () => {
     expect(p).not.toMatch(/Option C of 5.*(đúng|correct)/i);
     expect(p).not.toMatch(/đáp án( đúng)?:/i);
   });
+  it('có câu hỏi: cấm gọi tên dịch vụ trong lựa chọn như là đáp án (như popup tô đề)', () => {
+    expect(buildFormNotePrompt({ question, title: 'T', content: '' })).toContain('không gọi tên dịch vụ nằm trong các lựa chọn như là câu trả lời');
+  });
   it('không có câu hỏi: không có mục Đề bài', () => {
     const p = buildFormNotePrompt({ title: 'Ôn VPC', content: '' });
     expect(p).not.toContain('Đề bài');

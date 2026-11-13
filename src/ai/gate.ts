@@ -13,6 +13,11 @@ export interface AiJob {
   target: AiJobTarget;
 }
 
+/** Dòng báo khi chỗ khác đang chạy AI (khung chat, popup tô đề). */
+export function busyMessage(job: AiJob): string {
+  return job.kind === 'chat' ? `AI đang trả lời ở ${job.label}` : `AI đang soạn ghi chú ở ${job.label}`;
+}
+
 export class AiGateBusyError extends Error {
   constructor() {
     super('AI đang bận với yêu cầu khác');

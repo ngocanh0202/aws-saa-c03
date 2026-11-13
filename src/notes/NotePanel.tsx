@@ -46,7 +46,7 @@ export function NotePanel({ qid, label, question, onClose }: NotePanelProps) {
       ) : (
         <div className="notes-list note-panel__list">
           {entries.map((e) => (
-            <NoteEntryCard key={e.key} entry={e} question={question} level={3} />
+            <NoteEntryCard key={e.key} entry={e} label={label} hideLabel question={question} level={3} />
           ))}
         </div>
       )}

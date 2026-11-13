@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { AiGateBusyError, createAiGate, targetKey, type AiJob } from './gate';
+import { AiGateBusyError, busyMessage, createAiGate, targetKey, type AiJob } from './gate';
 
 const chat: AiJob = { kind: 'chat', label: 'Câu 1', target: { page: 'attempt', attemptId: 'e1', qid: 5 } };
 const note: AiJob = { kind: 'note', label: 'Câu 2', target: { page: 'attempt', attemptId: 'e1', qid: 6, highlightId: 'h1' } };
@@ -87,5 +87,14 @@ describe('createAiGate', () => {
     expect(targetKey({ page: 'attempt', attemptId: 'e1', qid: 5 })).toBe('attempt:e1:5');
     expect(targetKey({ page: 'attempt', attemptId: 'e1', qid: 5, highlightId: 'h1' })).toBe('attempt:e1:5:h1');
     expect(targetKey({ page: 'notes', qid: 5, highlightId: 'h1' })).toBe('notes:5:h1');
+  });
+});
+
+describe('busyMessage', () => {
+  const t = { page: 'notes' as const, qid: 5, highlightId: 'h' };
+  it('theo loại việc', () => {
+    expect(busyMessage({ kind: 'chat', label: 'Câu 1', target: { page: 'attempt', attemptId: 'e', qid: 5 } })).toBe('AI đang trả lời ở Câu 1');
+    expect(busyMessage({ kind: 'note', label: 'Câu 1', target: t })).toBe('AI đang soạn ghi chú ở Câu 1');
+    expect(busyMessage({ kind: 'form', label: 'Câu 1', target: t })).toBe('AI đang soạn ghi chú ở Câu 1');
   });
 });

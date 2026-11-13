@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import { AppProvider } from '../app/context';
@@ -10,6 +10,7 @@ import { fakeAi, fakeChats } from '../test/fake-ai';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, makeQuestion, memoryStorage } from '../test/fixtures';
 import { NoteForm } from './NoteForm';
+import { NotePanel } from './NotePanel';
 import { NoteSheet } from './NoteSheet';
 
 const USER: SyncUser = { uid: 'u1', name: 'An Nguyen' };
@@ -122,5 +123,21 @@ describe('NoteSheet', () => {
     fireEvent.keyDown(box('Nội dung'), { key: 'Escape' });
     expect(onCancel).toHaveBeenCalledTimes(1);
     expect(onClose).not.toHaveBeenCalled();
+  });
+});
+
+describe('AI khi sửa trong khung Ghi chú', () => {
+  it('việc AI mang nhãn câu của khung', async () => {
+    const s = mount(<NotePanel qid={5} label="Câu 3" question={question} onClose={() => undefined} />);
+    act(() => s.d.notes.save({ qid: 5, updatedAt: 1, highlights: [], items: [{ id: 'm1', kind: 'manual', title: 'T', content: '', createdAt: 1, updatedAt: 1 }] }));
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa' }));
+    s.ai.hold = true;
+    const card = document.querySelector('.notes-entry') as HTMLElement;
+    fireEvent.click(within(card).getByRole('button', { name: AI }));
+    expect(s.d.aiGate.current()).toMatchObject({ kind: 'form', label: 'Câu 3' });
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 0));
+      s.ai.release();
+    });
   });
 });
