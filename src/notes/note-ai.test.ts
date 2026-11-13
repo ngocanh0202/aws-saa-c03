@@ -102,7 +102,7 @@ describe('draftNote', () => {
     await tick();
     s.client.release();
     await p;
-    expect(s.notes.get(QID)!.highlights).toEqual([]);
+    expect(s.notes.get(QID)).toBeUndefined();
   });
 
   it('đổi tài khoản trước khi xong → ngăn A và B đều không bị ghi', async () => {

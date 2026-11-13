@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { memoryStorage } from '../test/fixtures';
 import { fakeAuth, fakeRemoteNotes } from '../test/fake-sync';
-import type { QuestionNotes } from './model';
+import { createFreeNote, removeItem, type QuestionNotes } from './model';
 import { createNotesStore } from './store';
 import { startNotesSync } from './sync';
 
@@ -117,5 +118,81 @@ describe('startNotesSync', () => {
     notes.save(n(1, 1));
     await tick();
     expect(remote.writes).toEqual([]);
+  });
+});
+
+describe('startNotesSync — xóa hẳn bản ghi rỗng', () => {
+  const empty = (qid: number, updatedAt: number): QuestionNotes => ({ qid, updatedAt, highlights: [], items: [] });
+
+  it('xóa ghi chú cuối của ghi chú chung: xóa ở máy và xóa node trên cloud', async () => {
+    const { notes, auth, remote } = setup();
+    auth.emit(user('A'));
+    remote.emit('A', new Map());
+    const free = createFreeNote(-7, { title: 'T', content: '' }, 'i1', 10);
+    notes.save(free);
+    await tick();
+    expect(remote.data.get('A')?.has(-7)).toBe(true);
+    notes.save(removeItem(free, 'i1', 11));
+    await tick();
+    expect(notes.get(-7)).toBeUndefined();
+    expect(notes.all('A').map((x) => x.qid)).not.toContain(-7);
+    expect(remote.removes).toEqual([{ uid: 'A', qid: -7 }]);
+    expect(remote.data.get('A')?.has(-7)).toBe(false);
+  });
+
+  it('máy khác đã xóa (bản từng có trên cloud nay không còn): xóa ở máy, không đẩy lại', async () => {
+    const { notes, auth, remote } = setup();
+    remote.data.set('A', new Map([[-7, createFreeNote(-7, { title: 'T', content: '' }, 'i1', 10)]]));
+    auth.emit(user('A'));
+    remote.emit('A');
+    await tick();
+    expect(notes.get(-7)).toBeDefined();
+    remote.emit('A', new Map());
+    await tick();
+    expect(notes.get(-7)).toBeUndefined();
+    expect(remote.writes).toEqual([]);
+  });
+
+  it('nhớ những bản đã thấy trên cloud qua lần tải lại trang', async () => {
+    const storage = memoryStorage();
+    const first = createNotesStore(storage);
+    const auth1 = fakeAuth();
+    const remote1 = fakeRemoteNotes();
+    remote1.data.set('A', new Map([[5, n(5, 10)]]));
+    const stop = startNotesSync({ notes: first, auth: auth1, remote: remote1 });
+    auth1.emit(user('A'));
+    remote1.emit('A');
+    await tick();
+    stop();
+    const second = createNotesStore(storage);
+    const auth2 = fakeAuth();
+    const remote2 = fakeRemoteNotes();
+    startNotesSync({ notes: second, auth: auth2, remote: remote2 });
+    auth2.emit(user('A'));
+    remote2.emit('A', new Map());
+    await tick();
+    expect(second.get(5)).toBeUndefined();
+    expect(remote2.writes).toEqual([]);
+  });
+
+  it('bản rỗng cũ còn trên cloud: dọn node, không lưu ở máy', async () => {
+    const { notes, auth, remote } = setup();
+    remote.data.set('A', new Map([[-9, empty(-9, 20)], [1, n(1, 5)]]));
+    auth.emit(user('A'));
+    remote.emit('A');
+    await tick();
+    expect(remote.removes).toEqual([{ uid: 'A', qid: -9 }]);
+    expect(notes.all('A').map((x) => x.qid)).toEqual([1]);
+  });
+
+  it('bản rỗng cũ trên cloud nhưng máy có bản mới hơn còn nội dung: đẩy bản máy lên', async () => {
+    const { notes, auth, remote } = setup();
+    notes.applyRemote('A', n(3, 30));
+    remote.data.set('A', new Map([[3, empty(3, 20)]]));
+    auth.emit(user('A'));
+    remote.emit('A');
+    await tick();
+    expect(remote.removes).toEqual([]);
+    expect(remote.writes.map((w) => w.notes.qid)).toEqual([3]);
   });
 });

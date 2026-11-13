@@ -7,6 +7,7 @@ export interface FakeRemoteNotes extends RemoteNotes {
   /** Dữ liệu cloud theo uid; write() cũng ghi vào đây. */
   data: Map<string, Map<number, QuestionNotes>>;
   writes: { uid: string; notes: QuestionNotes }[];
+  removes: { uid: string; qid: number }[];
   /** Gửi snapshot cho người đang listen uid; bỏ trống thì gửi dữ liệu hiện có trong `data`. */
   emit(uid: string, snapshot?: Map<number, QuestionNotes>): void;
   emitError(uid: string, err: Error): void;
@@ -20,6 +21,7 @@ export function fakeRemoteNotes(): FakeRemoteNotes {
   const remote: FakeRemoteNotes = {
     data: new Map(),
     writes: [],
+    removes: [],
     writeError: null,
     listen(uid, cb, onError) {
       const set = listeners.get(uid) ?? new Set();
@@ -36,6 +38,10 @@ export function fakeRemoteNotes(): FakeRemoteNotes {
       const records = remote.data.get(uid) ?? new Map();
       records.set(notes.qid, notes);
       remote.data.set(uid, records);
+    },
+    async remove(uid, qid) {
+      remote.removes.push({ uid, qid });
+      remote.data.get(uid)?.delete(qid);
     },
     emit(uid, snapshot) {
       const snap = snapshot ?? remote.data.get(uid) ?? new Map();

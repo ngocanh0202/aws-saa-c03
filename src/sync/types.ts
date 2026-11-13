@@ -39,6 +39,8 @@ export interface RemoteNotes {
   /** Snapshot đầy đủ mỗi lần (onValue), khóa là canonical qid; bản hỏng bị bỏ. */
   listen(uid: string, cb: (all: Map<number, QuestionNotes>) => void, onError: (err: Error) => void): () => void;
   write(uid: string, notes: QuestionNotes): Promise<void>;
+  /** Xóa hẳn node của câu (bản ghi đã rỗng). */
+  remove(uid: string, qid: number): Promise<void>;
 }
 
 export type SyncState =

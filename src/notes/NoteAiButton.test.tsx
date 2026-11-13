@@ -90,7 +90,7 @@ describe('AI soạn ghi chú', () => {
     expect(container.querySelector('mark.hl')).not.toHaveClass('hl--drafting');
     // Xóa đoạn tô vẫn được.
     fireEvent.click(within(pop2).getByRole('button', { name: 'Xóa đoạn tô' }));
-    expect(deps.notes.get(canon(1))!.highlights).toEqual([]);
+    expect(deps.notes.get(canon(1))).toBeUndefined();
     // Tô đoạn mới vẫn được.
     select(firstText(stemEl(container)), 0, 4);
     fireEvent.click(screen.getByRole('button', { name: 'Tô' }));
