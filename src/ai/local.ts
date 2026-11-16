@@ -196,7 +196,8 @@ export function createLocalAiClient(baseUrl: string, model?: string, fetchImpl: 
           res = await read(
             fetchImpl(url, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              // ngrok (mở LM Studio ra ngoài) chèn trang cảnh báo HTML vào request từ trình duyệt; header này bỏ trang đó.
+              headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
               body: JSON.stringify({
                 ...(model ? { model } : {}),
                 messages: windowed(convo),
