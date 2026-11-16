@@ -1,7 +1,7 @@
 import type { Question, QuestionMeta, SetsFile } from '../data/types';
 import { DOMAIN_QUOTA } from '../data/constants';
 import { mulberry32 } from './rng';
-import { createAttempt, displayLabel, examDurationMs, isCompatible, pickQuestionIds, type CreateAttemptInput } from './attempt';
+import { MAIN_MIX_SET_ID, createAttempt, displayLabel, examDurationMs, isCompatible, pickQuestionIds, type CreateAttemptInput } from './attempt';
 
 function q(id: number): Question {
   return {
@@ -186,5 +186,51 @@ describe('createAttempt — đề main (cố định)', () => {
   it('lựa chọn luôn được xáo, kể cả khi không xáo câu hỏi', () => {
     const orders = [1, 2, 3, 4, 5].map((seed) => createAttempt(mainInput({ seed })).questions.map((x) => x.optionOrder.join('')));
     expect(orders.flat().some((o) => o !== 'ABCD')).toBe(true);
+  });
+});
+
+describe('createAttempt — đề Main trộn (bốc mới mỗi lượt)', () => {
+  // Kho giả 100 câu main: domain xoay vòng 1→4 (25 câu mỗi domain).
+  const pool = Array.from({ length: 100 }, (_, i) => 20001 + i);
+  const mixDomain = (id: number) => ((((id - 20001) % 4) + 1) as 1 | 2 | 3 | 4);
+  const mixInput = (overrides: Partial<CreateAttemptInput> = {}) => {
+    const base = input();
+    const questions = new Map(base.questions);
+    const metas = new Map(base.metas);
+    for (const id of pool) {
+      questions.set(id, q(id));
+      metas.set(id, { id, domain: mixDomain(id), difficulty: 2, services: [] });
+    }
+    return input({ setId: MAIN_MIX_SET_ID, questions, metas, mainMixPool: pool, ...overrides });
+  };
+
+  it('bốc 65 câu khác nhau trong kho, đúng tỉ lệ domain 20/17/15/13', () => {
+    const a = createAttempt(mixInput());
+    const ids = a.questions.map((x) => x.qid);
+    expect(a.setId).toBe(MAIN_MIX_SET_ID);
+    expect(ids).toHaveLength(65);
+    expect(new Set(ids).size).toBe(65);
+    for (const id of ids) expect(pool).toContain(id);
+    const count = (d: number) => a.questions.filter((x) => x.domain === d).length;
+    expect([count(1), count(2), count(3), count(4)]).toEqual([DOMAIN_QUOTA[1], DOMAIN_QUOTA[2], DOMAIN_QUOTA[3], DOMAIN_QUOTA[4]]);
+  });
+
+  it('mỗi seed một bộ câu khác; cùng seed thì như nhau; câu hỏi không xếp theo domain', () => {
+    const ids = (seed: number) => createAttempt(mixInput({ seed })).questions.map((x) => x.qid);
+    expect(ids(1)).toEqual(ids(1));
+    expect([...ids(1)].sort().join()).not.toBe([...ids(2)].sort().join());
+    const domains = createAttempt(mixInput()).questions.map((x) => x.domain);
+    expect(domains.join()).not.toBe([...domains].sort().join());
+  });
+
+  it('domain nào thiếu câu thì lấy bù từ domain khác cho đủ 65', () => {
+    // Bỏ hết câu domain 4 khỏi kho: còn 75 câu domain 1–3.
+    const a = createAttempt(mixInput({ mainMixPool: pool.filter((id) => mixDomain(id) !== 4) }));
+    expect(a.questions).toHaveLength(65);
+    expect(new Set(a.questions.map((x) => x.qid)).size).toBe(65);
+  });
+
+  it('không có kho câu thì báo lỗi', () => {
+    expect(() => createAttempt(mixInput({ mainMixPool: undefined }))).toThrow();
   });
 });

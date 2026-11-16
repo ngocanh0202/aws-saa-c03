@@ -4,7 +4,7 @@ import { useApp } from '../app/context';
 import { useClockReady, useStoreVersion } from '../app/use-store';
 import { formatDate, modeName, setLabel } from '../app/format';
 import { DOMAINS, DOMAIN_SHORT } from '../data/constants';
-import { isCompatible, type Mode } from '../engine/attempt';
+import { MAIN_MIX_SET_ID, isCompatible, type Mode } from '../engine/attempt';
 import { WEAK_THRESHOLD, setStats, summarize } from '../engine/stats';
 import { finalizeExpiredRealAttempts, viewFinalized } from '../storage/finalize';
 
@@ -19,7 +19,8 @@ export function SetStatsPage() {
     if (clockReady) finalizeExpiredRealAttempts(store, now());
   }, [store, now, version, clockReady]);
 
-  if (!bank.sets.sets.some((s) => s.id === setId) && !bank.mainSets.some((s) => s.id === setId)) {
+  const known = bank.sets.sets.some((s) => s.id === setId) || bank.mainSets.some((s) => s.id === setId) || (setId === MAIN_MIX_SET_ID && bank.mainMixPool.length > 0);
+  if (!known) {
     return (
       <main className="page">
         <p>Không có đề này.</p>

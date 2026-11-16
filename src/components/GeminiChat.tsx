@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, 
 import { createPortal } from 'react-dom';
 import { useApp } from '../app/context';
 import { formatDate, setLabel } from '../app/format';
+import { MAIN_MIX_SET_ID } from '../engine/attempt';
 import { buildSystemPrompt } from '../ai/prompt';
 import type { AiModeStore } from '../ai/ai-mode';
 import { memoryCooldownFor, type Cooldown } from '../ai/cooldown';
@@ -192,8 +193,8 @@ function Launcher({ inline, ...props }: Props & { uid: string; ai: AiClient; cha
   );
 }
 
-/** "Đề 3" → "Đ3", "Main 1" → "M1" (tiêu đề khung chat trên mobile). */
-const shortSetLabel = (setId: number) => (setId > 100 ? `M${setId - 100}` : `Đ${setId}`);
+/** "Đề 3" → "Đ3", "Main 1" → "M1", "Main trộn" → "MT" (tiêu đề khung chat trên mobile). */
+const shortSetLabel = (setId: number) => (setId === MAIN_MIX_SET_ID ? 'MT' : setId > 100 ? `M${setId - 100}` : `Đ${setId}`);
 
 /** Cuộc trò chuyện đang mở trong khung: câu đang làm (home) hoặc một câu ở lượt cũ. */
 interface Target {

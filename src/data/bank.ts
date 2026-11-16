@@ -17,6 +17,8 @@ export interface Bank {
   mainSets: MainSet[];
   /** Đề main trùng hoàn toàn với đề khác (ptX_2 = ptX_1 xáo lại): ẩn khỏi trang chủ. */
   hiddenMainSets: Set<number>;
+  /** Mọi câu main khác nhau (câu trùng quy về câu gốc), theo thứ tự đề: kho bốc câu cho đề Main trộn. */
+  mainMixPool: number[];
   externals: ExternalBook[];
   /** Id gốc của câu: câu trùng trỏ về bản gốc; câu không trùng trả về chính nó. */
   canonical: (qid: number) => number;
@@ -55,6 +57,7 @@ export function buildBank(input: {
     sets: input.sets,
     mainSets: input.mainSets ?? [],
     hiddenMainSets: input.hiddenMainSets ?? new Set(),
+    mainMixPool: [...new Set((input.mainSets ?? []).flatMap((s) => s.questionIds).map((id) => canonicalOf.get(id) ?? id))],
     externals: (input.externals ?? []).map((set) => ({
       ...set,
       vi: new Map((input.externalVis?.[set.slug] ?? []).map((v) => [v.id, v])),

@@ -36,4 +36,16 @@ describe('buildBank', () => {
     expect(bank.canonical(3)).toBe(3);
     expect(bank.canonical(42)).toBe(42);
   });
+
+  it('mainMixPool: mọi câu main khác nhau (câu trùng quy về câu gốc), cho đề Main trộn', () => {
+    const bank = buildBank({
+      ...minimalInput,
+      mainSets: [
+        { id: 101, file: 'pt1_1.json', title: 'Main 1', questionIds: [10101, 10102] },
+        { id: 102, file: 'pt1_2.json', title: 'Main 2', questionIds: [10201, 10202] },
+      ],
+      twins: [[10101, 10202]],
+    });
+    expect(bank.mainMixPool).toEqual([10101, 10102, 10201]);
+  });
 });
