@@ -21,9 +21,9 @@ type Reply = { status?: number; text?: string; pieces?: string[]; hang?: boolean
 
 /** fetch giả: mỗi lần gọi lấy một phản hồi theo thứ tự, ghi lại body đã gửi. */
 function fakeFetch(replies: Reply[]) {
-  const bodies: { url: string; body: Record<string, unknown> }[] = [];
+  const bodies: { url: string; body: Record<string, unknown>; headers: Record<string, string> }[] = [];
   const impl = (async (url: string, init?: RequestInit) => {
-    bodies.push({ url, body: JSON.parse(String(init?.body)) });
+    bodies.push({ url, body: JSON.parse(String(init?.body)), headers: (init?.headers ?? {}) as Record<string, string> });
     const r = replies[Math.min(bodies.length - 1, replies.length - 1)];
     if (r instanceof Error) throw r;
     const status = r.status ?? 200;
@@ -80,6 +80,8 @@ describe('createLocalAiClient', () => {
     expect((await collect(chat.send('hỏi'))).join('')).toBe('Vì S3');
     const body = f.bodies[0];
     expect(f.bodies[0].url).toBe('http://x/v1/chat/completions');
+    // Bỏ trang cảnh báo của ngrok khi LM Studio được mở ra ngoài qua ngrok.
+    expect(body.headers['ngrok-skip-browser-warning']).toBe('true');
     expect(body.body.model).toBe('qwen');
     expect(body.body.stream).toBe(true);
     expect(body.body.messages).toEqual([

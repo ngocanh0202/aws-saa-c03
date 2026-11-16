@@ -22,11 +22,45 @@ const FILTERS: { value: ReviewFilter; label: string }[] = [
   { value: 'guide', label: 'Đã xem hướng dẫn' },
 ];
 
+/** "Cả danh sách": mọi câu nối nhau; "Phân trang": mỗi trang một câu, có lưới số câu để nhảy. */
+type ReviewView = 'list' | 'paged';
+export const REVIEW_VIEW_KEY = 'saa-c03:review-view:v1';
+const VIEW_KEY = REVIEW_VIEW_KEY;
+const VIEWS: { value: ReviewView; label: string }[] = [
+  { value: 'paged', label: 'Phân trang' },
+  { value: 'list', label: 'Cả danh sách' },
+];
+
+/** Kiểu xem nhớ theo máy; mặc định (và khi không đọc được storage) là "Phân trang". */
+function loadView(): ReviewView {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'paged';
+  } catch {
+    return 'paged';
+  }
+}
+
+function saveView(v: ReviewView): void {
+  try {
+    localStorage.setItem(VIEW_KEY, v);
+  } catch {
+    // không lưu được: chỉ nhớ trong phiên
+  }
+}
+
 export function ResultPage() {
   const { id = '' } = useParams();
   const { bank, store, aiGate } = useApp();
   useStoreVersion();
-  const [filter, setFilter] = useState<ReviewFilter>('all');
+  const [filter, setFilterState] = useState<ReviewFilter>('all');
+  const [view, setView] = useState<ReviewView>(loadView);
+  /** Vị trí câu đang xem trong danh sách đã lọc (kiểu Phân trang). */
+  const [page, setPage] = useState(0);
+  const reviewTop = useRef<HTMLHeadingElement>(null);
+  const setFilter = (f: ReviewFilter) => {
+    setFilterState(f);
+    setPage(0);
+  };
   const attempt = store.get(id);
   // Bấm "Đến câu …" trên thông báo AI: bỏ lọc và cuộn tới câu đó (khung chat của câu tự nhận yêu cầu mở).
   const [jumpTo, setJumpTo] = useState<number | null>(null);
@@ -38,7 +72,7 @@ export function ResultPage() {
       // Mỗi yêu cầu chỉ nhảy một lần (yêu cầu chưa ai nhận thì không kéo người học về mãi).
       if (t === jumped.current || t?.page !== 'attempt' || t.attemptId !== id) return;
       jumped.current = t;
-      setFilter('all');
+      setFilterState('all');
       setJumpTo(t.qid);
     };
     jump();
@@ -46,9 +80,17 @@ export function ResultPage() {
   }, [aiGate, id]);
   useEffect(() => {
     if (jumpTo === null) return;
+    // Kiểu Phân trang: mở trang của câu đó trước (bộ lọc đã về "Tất cả" nên vị trí = thứ tự trong lượt), rồi mới cuộn.
+    if (view === 'paged') {
+      const i = attempt?.questions.findIndex((q) => q.qid === jumpTo) ?? -1;
+      if (i >= 0 && i !== page) {
+        setPage(i);
+        return;
+      }
+    }
     document.getElementById(`review-q-${jumpTo}`)?.scrollIntoView?.({ block: 'start' });
     setJumpTo(null);
-  }, [jumpTo]);
+  }, [jumpTo, view, page, attempt]);
 
   if (!attempt || !isCompatible(attempt, bank.questions)) {
     return (
@@ -65,6 +107,21 @@ export function ResultPage() {
   const limit = EXAM_MINUTES + (attempt.esl ? ESL_EXTRA_MINUTES : 0);
   const items = filterReview(attempt, bank.questions, filter);
   const domainFilter = filter.startsWith('domain-') ? (Number(filter.slice(7)) as Domain) : null;
+  const paged = view === 'paged';
+  // Danh sách ngắn lại thì không để vị trí vượt quá câu cuối.
+  const current = Math.min(page, Math.max(0, items.length - 1));
+  const visible = paged ? items.slice(current, current + 1) : items;
+  const changeView = (v: ReviewView) => {
+    setView(v);
+    setPage(0);
+    saveView(v);
+  };
+  /** Sang câu khác ở kiểu Phân trang: đưa đầu phần xem lại vào màn hình (câu dài thì người học đang ở cuối trang). */
+  const goTo = (i: number) => {
+    setPage(i);
+    reviewTop.current?.scrollIntoView?.({ block: 'start' });
+  };
+  const isRight = (qid: number) => isCorrect(attempt.answers[qid] ?? [], bank.questions.get(qid)!.answer);
 
   return (
     <main className="page result" data-testid="result-page">
@@ -90,7 +147,16 @@ export function ResultPage() {
       <h2>Theo domain</h2>
       <DomainTable byDomain={result.byDomain} correct={result.correct} total={result.total} onSelect={(d) => setFilter(`domain-${d}` as ReviewFilter)} />
 
-      <h2>Xem lại bài làm</h2>
+      <h2 ref={reviewTop} className="review-title">
+        Xem lại bài làm
+      </h2>
+      <div className="filters" role="group" aria-label="Kiểu xem">
+        {VIEWS.map((v) => (
+          <button key={v.value} type="button" aria-pressed={view === v.value} onClick={() => changeView(v.value)}>
+            {v.label}
+          </button>
+        ))}
+      </div>
       <div className="filters" role="group" aria-label="Lọc câu hỏi">
         {FILTERS.map((f) => (
           <button key={f.value} type="button" aria-pressed={filter === f.value} onClick={() => setFilter(f.value)}>
@@ -104,7 +170,24 @@ export function ResultPage() {
         )}
       </div>
       {items.length === 0 && <p>Không có câu nào trong bộ lọc này.</p>}
-      {items.map(({ aq, index }) => {
+      {paged && items.length > 0 && (
+        <nav className="navgrid review-grid" aria-label="Chọn câu">
+          {items.map(({ aq, index }, i) => (
+            <button
+              key={aq.qid}
+              type="button"
+              className={['navgrid__cell', isRight(aq.qid) ? 'is-right' : 'is-wrong', attempt.flagged.includes(aq.qid) && 'is-flagged', i === current && 'is-current']
+                .filter(Boolean)
+                .join(' ')}
+              aria-current={i === current ? 'step' : undefined}
+              onClick={() => setPage(i)}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </nav>
+      )}
+      {visible.map(({ aq, index }) => {
         const question = bank.questions.get(aq.qid)!;
         const selected = attempt.answers[aq.qid] ?? [];
         const correct = isCorrect(selected, question.answer);
@@ -140,6 +223,19 @@ export function ResultPage() {
           </article>
         );
       })}
+      {paged && items.length > 0 && (
+        <nav className="pager" aria-label="Chuyển câu">
+          <button type="button" disabled={current === 0} onClick={() => goTo(current - 1)}>
+            ← Câu trước
+          </button>
+          <span>
+            Câu {current + 1}/{items.length}
+          </span>
+          <button type="button" disabled={current >= items.length - 1} onClick={() => goTo(current + 1)}>
+            Câu sau →
+          </button>
+        </nav>
+      )}
     </main>
   );
 }

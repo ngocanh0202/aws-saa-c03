@@ -95,6 +95,11 @@ button[aria-pressed='true'] { border-color: var(--selected); box-shadow: inset 0
 .bars__fill.is-weak { background: var(--bad); }
 
 .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+/* Trang kết quả, kiểu Phân trang: lưới số câu + nút Câu trước/Câu sau. */
+.review-title { scroll-margin-top: 72px; }
+.review-grid { margin: 12px 0; }
+.pager { display: flex; align-items: center; justify-content: center; gap: 12px; margin: 16px 0; }
+.pager span { color: var(--muted); font-size: 0.9em; }
 .table-wrap { overflow-x: auto; }
 table.stats { border-collapse: collapse; width: 100%; background: var(--surface); }
 table.stats th, table.stats td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; white-space: nowrap; }
@@ -718,11 +723,21 @@ body:has(.note-sheet__split-grip:active) { cursor: col-resize; user-select: none
 @media (max-width: 639px) { .flashcard__title { font-size: 1.25em; } .flashcard__face { padding: 18px; } }
 @media (prefers-reduced-motion: reduce) { .flashcard__inner { transition: none; } .flashcards { animation: none; } }
 
-/* Mọi ô nhập (chữ, tìm, số…, textarea, select) có cùng kiểu focus với ô chat AI: viền màu chọn + vòng sáng mềm,
+/* Mọi ô nhập (chữ, tìm, số…, textarea, select) có cùng hình dạng và kiểu focus với ô chat AI: viền màu chọn + vòng sáng mềm,
    hover thì viền nhạt dần sang màu chọn. Không áp cho checkbox/radio/range/nút. Đặt cuối file để thắng kiểu riêng. */
 input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='color']),
-textarea,
-select {
+textarea:not([data-plain]),
+select:not([data-plain]) {
+  /* :not([data-plain]) chỉ để đủ độ ưu tiên thắng kiểu riêng như textarea.note-form__input. */
+  /* Cùng hình dạng với ô chat AI: viền mảnh, bo 10px, nền xám nhạt, đệm 9px 12px. */
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background-color: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.4;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 input:not([type='checkbox'], [type='radio'], [type='range'], [type='button'], [type='submit'], [type='reset'], [type='file'], [type='color']):hover:not(:disabled, :focus),
