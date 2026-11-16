@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from '@testing-library/react';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { submitAttempt } from '../engine/actions';
 import { createAttempt, type Mode } from '../engine/attempt';
 import { createStore } from '../storage/storage';
@@ -7,6 +7,7 @@ import { createSyncController } from '../sync/controller';
 import { fakeAi, fakeChats } from '../test/fake-ai';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
+import { REVIEW_VIEW_KEY } from '../pages/ResultPage';
 import { ITEM_CONTENT_MAX } from './model';
 
 function setup(mode: Mode, submitted = false) {
@@ -29,6 +30,11 @@ function fill(title: string, content: string) {
 }
 
 afterEach(() => document.getSelection()?.removeAllRanges());
+
+
+// Các test này cần thấy mọi câu trên trang xem lại cùng lúc (mặc định là Phân trang, mỗi trang một câu).
+beforeEach(() => localStorage.setItem(REVIEW_VIEW_KEY, 'list'));
+afterEach(() => localStorage.removeItem(REVIEW_VIEW_KEY));
 
 describe('Tự ghi chú — Thi thử', () => {
   it('nút "Ghi chú" mở khung của câu; lưu thành ghi chú tự ghi, khung vẫn mở', () => {

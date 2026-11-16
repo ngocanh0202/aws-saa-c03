@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createAiMode } from '../ai/ai-mode';
 import { LOCAL_CONNECT_ERROR } from '../ai/local';
 import { AiBusyError } from '../ai/retry';
@@ -12,6 +12,7 @@ import { DEFAULT_LOCAL_SETTINGS } from '../ai/local-settings';
 import { fakeAi, fakeChats, fakeLocalSettings } from '../test/fake-ai';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
+import { REVIEW_VIEW_KEY } from '../pages/ResultPage';
 
 const TOGGLE = /Chế độ AI thử nghiệm/;
 
@@ -47,6 +48,11 @@ async function ask(dialog: HTMLElement, text = 'Tại sao?') {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi' }));
   });
 }
+
+
+// Các test này cần thấy mọi câu trên trang xem lại cùng lúc (mặc định là Phân trang, mỗi trang một câu).
+beforeEach(() => localStorage.setItem(REVIEW_VIEW_KEY, 'list'));
+afterEach(() => localStorage.removeItem(REVIEW_VIEW_KEY));
 
 describe('Chế độ AI thử nghiệm (Local AI)', () => {
   it('không có Local AI thì menu tài khoản không có nút chế độ', () => {

@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { submitAttempt } from '../engine/actions';
 import type { Attempt } from '../engine/attempt';
 import { createStore } from '../storage/storage';
@@ -7,6 +7,7 @@ import { createSyncController } from '../sync/controller';
 import { fakeAi, fakeChats } from '../test/fake-ai';
 import { fakeAuth, fakeRemote } from '../test/fake-sync';
 import { makeDeps, memoryStorage, renderApp } from '../test/fixtures';
+import { REVIEW_VIEW_KEY } from './ResultPage';
 
 const GEMINI = 'Hỏi Gemini';
 
@@ -49,6 +50,11 @@ async function ask(dialog: HTMLElement, text = 'Tại sao?') {
     fireEvent.click(within(dialog).getByRole('button', { name: 'Gửi' }));
   });
 }
+
+
+// Các test này cần thấy mọi câu trên trang xem lại cùng lúc (mặc định là Phân trang, mỗi trang một câu).
+beforeEach(() => localStorage.setItem(REVIEW_VIEW_KEY, 'list'));
+afterEach(() => localStorage.removeItem(REVIEW_VIEW_KEY));
 
 describe('Hỏi Gemini ở trang xem lại', () => {
   it('chưa đăng nhập thì không có nút', () => {

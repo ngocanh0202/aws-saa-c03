@@ -1,8 +1,9 @@
-import { fireEvent, screen, within } from '@testing-library/react';
+import { act, fireEvent, screen, within } from '@testing-library/react';
 import { vi } from 'vitest';
 import { submitAttempt } from '../engine/actions';
 import type { Attempt } from '../engine/attempt';
 import { makeDeps, renderApp } from '../test/fixtures';
+import { REVIEW_VIEW_KEY } from './ResultPage';
 
 // Trang xem lại dựng 65 câu, mỗi câu một bộ tô đề: khi cả bộ test chạy song song có thể quá 5 giây mặc định.
 vi.setConfig({ testTimeout: 20_000 });
@@ -28,6 +29,9 @@ function submitted(deps: ReturnType<typeof makeDeps>, mode: Attempt['mode'], ans
   return done;
 }
 
+// Kiểu xem chọn trong test được nhớ ở localStorage: xóa để test sau về mặc định (Phân trang).
+afterEach(() => localStorage.removeItem(REVIEW_VIEW_KEY));
+
 describe('ResultPage', () => {
   it('hiện điểm, Đậu/Trượt, thời gian và bảng % theo domain', () => {
     const deps = makeDeps();
@@ -48,6 +52,7 @@ describe('ResultPage', () => {
     const deps = makeDeps();
     submitted(deps, 'real', { 1: ['B'] });
     renderApp('/result/r1', deps);
+    fireEvent.click(screen.getByRole('button', { name: 'Cả danh sách' }));
     expect(screen.getByText('Option B of 1').closest('button')).toHaveClass('opt--wrong-chosen');
     expect(screen.getByText('Option A of 1').closest('button')).toHaveClass('opt--missed');
     expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(65);
@@ -58,12 +63,72 @@ describe('ResultPage', () => {
     const deps = makeDeps();
     submitted(deps, 'real', { 1: ['A'] });
     renderApp('/result/r1', deps);
+    fireEvent.click(screen.getByRole('button', { name: 'Cả danh sách' }));
     fireEvent.click(screen.getByRole('button', { name: 'Câu sai' }));
     expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(64);
     fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu' }));
     expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(1);
     fireEvent.click(screen.getByRole('button', { name: /Cost-Optimized/ }));
     expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(13);
+  });
+
+  describe('kiểu xem Phân trang', () => {
+    it('mỗi trang một câu; lưới số câu tô đúng/sai để nhảy; Câu trước/Câu sau; nhớ lựa chọn', () => {
+      const deps = makeDeps();
+      submitted(deps, 'real', { 1: ['A'], 2: ['B'] });
+      const view = renderApp('/result/r1', deps);
+      // Mặc định: Phân trang, nút này đứng trước (bên trái) nút Cả danh sách.
+      const views = within(screen.getByRole('group', { name: 'Kiểu xem' })).getAllByRole('button');
+      expect(views.map((b) => b.textContent)).toEqual(['Phân trang', 'Cả danh sách']);
+      expect(views[0]).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(1);
+      expect(screen.getByRole('heading', { name: 'Câu 1' })).toBeInTheDocument();
+      const grid = screen.getByRole('navigation', { name: 'Chọn câu' });
+      const cells = within(grid).getAllByRole('button');
+      expect(cells).toHaveLength(65);
+      expect(cells[0]).toHaveClass('is-right');
+      expect(cells[0]).toHaveAttribute('aria-current', 'step');
+      expect(cells[1]).toHaveClass('is-wrong');
+      expect(screen.getByText('Câu 1/65')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '← Câu trước' })).toBeDisabled();
+
+      fireEvent.click(screen.getByRole('button', { name: 'Câu sau →' }));
+      expect(screen.getByRole('heading', { name: 'Câu 2' })).toBeInTheDocument();
+      fireEvent.click(cells[64]);
+      expect(screen.getByRole('heading', { name: 'Câu 65' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Câu sau →' })).toBeDisabled();
+
+      // Chọn Cả danh sách thì mở lại trang vẫn nhớ.
+      fireEvent.click(screen.getByRole('button', { name: 'Cả danh sách' }));
+      expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(65);
+      expect(screen.queryByRole('navigation', { name: 'Chọn câu' })).toBeNull();
+      view.unmount();
+      renderApp('/result/r1', deps);
+      expect(screen.getByRole('button', { name: 'Cả danh sách' })).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getAllByLabelText('Hướng dẫn')).toHaveLength(65);
+    });
+
+    it('đổi bộ lọc thì về câu đầu của bộ lọc; lưới chỉ có các câu trong bộ lọc', () => {
+      const deps = makeDeps();
+      submitted(deps, 'real', { 1: ['A'] });
+      renderApp('/result/r1', deps);
+      fireEvent.click(screen.getByRole('button', { name: 'Phân trang' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Câu sau →' }));
+      fireEvent.click(screen.getByRole('button', { name: 'Câu sai' }));
+      expect(within(screen.getByRole('navigation', { name: 'Chọn câu' })).getAllByRole('button')).toHaveLength(64);
+      expect(screen.getByRole('heading', { name: 'Câu 2' })).toBeInTheDocument();
+      expect(screen.getByText('Câu 1/64')).toBeInTheDocument();
+    });
+
+    it('"Đến câu …" từ thông báo AI: bỏ lọc và mở đúng trang của câu đó', () => {
+      const deps = makeDeps();
+      const done = submitted(deps, 'real', { 1: ['A'] });
+      renderApp('/result/r1', deps);
+      fireEvent.click(screen.getByRole('button', { name: 'Đánh dấu' }));
+      act(() => deps.aiGate.requestOpen({ page: 'attempt', attemptId: 'r1', qid: done.questions[9].qid }));
+      expect(screen.getByRole('heading', { name: 'Câu 10' })).toBeInTheDocument();
+      expect(screen.getByText('Câu 10/65')).toBeInTheDocument();
+    });
   });
 
   it('Thi thử: hiện số câu đúng khi chưa xem hướng dẫn', () => {
