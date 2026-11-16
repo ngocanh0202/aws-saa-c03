@@ -4,7 +4,8 @@ import { useApp } from '../app/context';
 import { useClockReady, useStoreVersion } from '../app/use-store';
 import { formatDate, modeName, setLabel } from '../app/format';
 import { DomainBars } from '../components/DomainBars';
-import { createAttempt, isCompatible, type Mode } from '../engine/attempt';
+import { SET_SIZE } from '../data/constants';
+import { MAIN_MIX_SET_ID, createAttempt, isCompatible, type Mode } from '../engine/attempt';
 import type { AttemptSummary } from '../engine/stats';
 import { PASS_SCORE } from '../engine/scoring';
 import { setStats, summarize } from '../engine/stats';
@@ -44,6 +45,7 @@ export function HomePage() {
       metas: bank.meta,
       mainSets: bank.mainSets,
       shuffleQuestions: shuffleMain,
+      mainMixPool: bank.mainMixPool,
     });
     store.save(attempt);
     navigate(`/exam/${attempt.id}`);
@@ -94,12 +96,20 @@ export function HomePage() {
             </label>
           </div>
           <p className="hint">
-            {mainSets.length} đề cố định × 65 câu từ <code>question-doc-main</code>. Lựa chọn luôn được xáo; thứ tự câu hỏi giữ như file gốc trừ khi bật xáo.
+            {mainSets.length} đề cố định × 65 câu từ <code>question-doc-main</code>. Lựa chọn luôn được xáo; thứ tự câu hỏi giữ như file gốc trừ khi bật xáo. Đề <em>Main trộn</em> mỗi lượt bốc mới 65 câu từ mọi đề main, chia domain như đề thật.
           </p>
           <div className="set-grid">
             {mainSets.map((set) => (
               <SetCard key={set.id} setId={set.id} subtitle={set.file} summaries={summaries} onStart={start} />
             ))}
+            {bank.mainMixPool.length > 0 && (
+              <SetCard
+                setId={MAIN_MIX_SET_ID}
+                subtitle={`${Math.min(SET_SIZE, bank.mainMixPool.length)} câu ngẫu nhiên từ ${mainSets.length} đề`}
+                summaries={summaries}
+                onStart={start}
+              />
+            )}
           </div>
         </section>
       )}

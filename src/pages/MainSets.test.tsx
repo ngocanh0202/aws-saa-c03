@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react';
+import { MAIN_MIX_SET_ID } from '../engine/attempt';
 import { MAIN_IDS, makeBank, makeDeps, renderApp } from '../test/fixtures';
 
 function setup() {
@@ -9,6 +10,8 @@ function setup() {
 
 const mainSection = () => screen.getByRole('region', { name: 'Main' });
 const subSection = () => screen.getByRole('region', { name: 'Sub' });
+/** Thẻ đề trong phần Main, theo tên đề ở tiêu đề thẻ. */
+const card = (name: RegExp) => within(mainSection()).getByRole('heading', { name }).closest('article') as HTMLElement;
 
 describe('Trang chủ — đề Main và Sub', () => {
   beforeEach(() => localStorage.clear());
@@ -23,7 +26,7 @@ describe('Trang chủ — đề Main và Sub', () => {
 
   it('không bật xáo: lượt thi main giữ đúng thứ tự câu trong file', () => {
     const deps = setup();
-    fireEvent.click(within(mainSection()).getByRole('button', { name: 'Thi thử' }));
+    fireEvent.click(within(card(/^Main 1/)).getByRole('button', { name: 'Thi thử' }));
     const [attempt] = deps.store.list();
     expect(attempt.setId).toBe(101);
     expect(attempt.questions.map((q) => q.qid)).toEqual(MAIN_IDS);
@@ -37,7 +40,7 @@ describe('Trang chủ — đề Main và Sub', () => {
 
   it('câu main hiển thị HTML; sau khi mở hướng dẫn thấy giải thích gốc và ghi chú review', () => {
     setup();
-    fireEvent.click(within(mainSection()).getByRole('button', { name: 'Thi thử' }));
+    fireEvent.click(within(card(/^Main 1/)).getByRole('button', { name: 'Thi thử' }));
     expect(screen.getByText('10101', { selector: 'strong' })).toBeInTheDocument();
     expect(screen.getByText('Main opt B of 10101')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Xem hướng dẫn' }));
@@ -64,5 +67,19 @@ describe('Trang chủ — đề Main và Sub', () => {
     const deps = makeDeps({ bank: makeBank({ main: true }) });
     renderApp('/set/101', deps);
     expect(screen.getByRole('heading', { name: 'Thống kê Main 1' })).toBeInTheDocument();
+  });
+  it('thẻ Main trộn: mỗi lượt bốc mới các câu từ mọi đề main, có trang thống kê riêng', () => {
+    const deps = setup();
+    const mix = card(/^Main trộn/);
+    expect(mix).toHaveTextContent(/ngẫu nhiên/);
+    fireEvent.click(within(mix).getByRole('button', { name: 'Thi thử' }));
+    const [attempt] = deps.store.list();
+    expect(attempt.setId).toBe(MAIN_MIX_SET_ID);
+    expect([...attempt.questions.map((q) => q.qid)].sort()).toEqual([...MAIN_IDS].sort());
+  });
+
+  it('trang thống kê Main trộn mở được', () => {
+    renderApp(`/set/${MAIN_MIX_SET_ID}`, makeDeps({ bank: makeBank({ main: true }) }));
+    expect(screen.getByRole('heading', { name: 'Thống kê Main trộn' })).toBeInTheDocument();
   });
 });

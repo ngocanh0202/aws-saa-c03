@@ -1,7 +1,11 @@
+import { DOMAINS, DOMAIN_QUOTA } from '../data/constants';
 import type { Domain, MainSet, Question, QuestionMeta, SetsFile } from '../data/types';
 import { mulberry32, shuffle, type Rng } from './rng';
 
 export type Mode = 'real' | 'practice';
+
+/** Đề "Main trộn": mỗi lượt bốc mới 65 câu từ mọi câu main (không nằm trong `mainSets`). */
+export const MAIN_MIX_SET_ID = 199;
 
 export const SWAP_COUNT = 10;
 export const EXAM_MINUTES = 130;
@@ -43,6 +47,33 @@ export interface CreateAttemptInput {
   mainSets?: MainSet[];
   /** Chỉ dùng cho đề main: có xáo thứ tự câu hỏi hay giữ thứ tự trong file. */
   shuffleQuestions?: boolean;
+  /** Kho câu của đề Main trộn (`bank.mainMixPool`); bắt buộc khi setId = MAIN_MIX_SET_ID. */
+  mainMixPool?: number[];
+}
+
+/**
+ * Bốc ngẫu nhiên câu cho đề trộn theo tỉ lệ domain của đề thật (20/17/15/13). Domain nào thiếu câu
+ * thì lấy bù từ phần còn lại của kho cho đủ. Kết quả đã xáo (không xếp theo domain).
+ */
+export function pickMixedIds(pool: number[], metas: Map<number, QuestionMeta>, rng: Rng, quota: Record<Domain, number> = DOMAIN_QUOTA): number[] {
+  const size = DOMAINS.reduce((s, d) => s + quota[d], 0);
+  const left = shuffle(pool, rng);
+  const chosen = new Set<number>();
+  for (const d of DOMAINS) {
+    let need = quota[d];
+    for (const id of left) {
+      if (need === 0) break;
+      if (metaOf(metas, id).domain === d) {
+        chosen.add(id);
+        need--;
+      }
+    }
+  }
+  for (const id of left) {
+    if (chosen.size >= size) break;
+    chosen.add(id);
+  }
+  return shuffle([...chosen], rng);
 }
 
 export function examDurationMs(esl: boolean): number {
@@ -104,14 +135,18 @@ export function pickQuestionIds(
 
 export function createAttempt(input: CreateAttemptInput): Attempt {
   const rng = mulberry32(input.seed);
+  const mixed = input.setId === MAIN_MIX_SET_ID;
+  if (mixed && !input.mainMixPool?.length) throw new Error('Không có kho câu cho đề Main trộn');
   const main = input.mainSets?.find((s) => s.id === input.setId);
   const set = main ?? input.sets.sets.find((s) => s.id === input.setId);
-  if (!set) throw new Error(`Không có đề ${input.setId}`);
-  const ids = main
-    ? input.shuffleQuestions
-      ? shuffle(main.questionIds, rng)
-      : main.questionIds.slice()
-    : shuffle(pickQuestionIds(set.questionIds, input.sets.reserve, input.metas, rng, input.sets.duplicates ?? []), rng);
+  if (!set && !mixed) throw new Error(`Không có đề ${input.setId}`);
+  const ids = mixed
+    ? pickMixedIds(input.mainMixPool!, input.metas, rng)
+    : main
+      ? input.shuffleQuestions
+        ? shuffle(main.questionIds, rng)
+        : main.questionIds.slice()
+      : shuffle(pickQuestionIds(set!.questionIds, input.sets.reserve, input.metas, rng, input.sets.duplicates ?? []), rng);
   const questions = ids.map((qid) => {
     const q = input.questions.get(qid);
     if (!q) throw new Error(`Không có câu ${qid}`);
