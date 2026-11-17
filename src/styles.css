@@ -150,7 +150,8 @@ tr.is-clickable { cursor: pointer; }
 }
 @media (prefers-reduced-motion: reduce) { .btn-gemini.btn-gemini--running { animation: none; } }
 /* Trang xem lại: nút nằm trong khối câu, không nổi */
-.btn-gemini.btn-gemini--inline { position: static; margin-top: 12px; padding: 8px 16px; font-size: 1em; box-shadow: none; height: auto; }
+/* z-index: auto vì nút là flex item: flex item vẫn nhận z-index dù position: static, khi đó nút sẽ đè lên header (z-index 5). */
+.btn-gemini.btn-gemini--inline { position: static; z-index: auto; margin-top: 12px; padding: 8px 16px; font-size: 1em; box-shadow: none; height: auto; }
 /* Chừa chỗ cuối trang để nút nổi không che nội dung */
 .exam__content:has(.btn-gemini), .exam__content:has(.exam-dock) { padding-bottom: 88px; }
 @media (max-width: 900px) { .btn-gemini { right: 16px; bottom: 24px; height: 56px; padding: 0 18px; font-size: 1em; } }
@@ -366,6 +367,8 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini-dock {
   position: fixed; right: 20px; bottom: 20px; z-index: 35; display: flex; flex-direction: column;
   width: min(400px, calc(100vw - 32px)); height: min(560px, calc(100vh - 100px));
+  /* Không vượt lên header sticky (--topbar-h do Layout đo); dvh = phần nhìn thấy thật trên điện thoại. */
+  max-height: calc(100dvh - var(--topbar-h, 60px) - 32px);
   background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
   box-shadow: 0 12px 40px rgb(0 0 0 / 0.3); animation: service-modal-in 0.18s ease-out;
 }
@@ -431,7 +434,7 @@ button.chip { font-size: 0.85em; color: var(--link); cursor: pointer; }
 .gemini__filters + .gemini__notice { max-width: 820px; margin: 8px auto 0; }
 .gemini__empty { margin: 0; padding: 0 12px 12px; text-align: center; }
 .gemini__back { display: block; width: 100%; text-align: left; padding: 6px 14px; border: none; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--selected-bg); color: var(--link); font-size: 0.9em; }
-@media (max-width: 600px) { .gemini-dock { right: 8px; left: 8px; bottom: 8px; width: auto; height: min(560px, calc(100vh - 80px)); } }
+@media (max-width: 600px) { .gemini-dock { right: 8px; left: 8px; bottom: 8px; width: auto; height: min(560px, calc(100vh - 80px)); max-height: calc(100dvh - var(--topbar-h, 56px) - 16px); } }
 /* Tiêu đề khung chat: máy tính hiện tên đầy đủ, mobile hiện bản gọn và thu nhỏ thanh tiêu đề */
 .gemini__title-short { display: none; }
 .gemini__brand { font-size: 0.75em; font-weight: 600; color: var(--muted); }

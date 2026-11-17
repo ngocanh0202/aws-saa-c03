@@ -32,9 +32,22 @@ export function Layout() {
   // Điện thoại: link và nút sáng/tối gom vào panel, mở bằng nút ☰; đổi trang thì tự đóng.
   const [navOpen, setNavOpen] = useState(false);
   useEffect(() => setNavOpen(false), [pathname]);
+  // Đo chiều cao header (sticky) vào biến --topbar-h để các khung nổi (chat AI...) không đè lên header.
+  const header = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = header.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const apply = () => root.style.setProperty('--topbar-h', `${Math.ceil(el.getBoundingClientRect().height)}px`);
+    apply();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   return (
     <>
-      <header className={`topbar${navOpen ? ' is-open' : ''}`}>
+      <header ref={header} className={`topbar${navOpen ? ' is-open' : ''}`}>
         <Link to="/" className="brand">
           SAA-C03
         </Link>
